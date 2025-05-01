@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { patientDataService } from '@/services/patientDataService';
+import { patientDataService } from '@/lib/patientDataService';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Button } from './ui/button';
 import { formatDate } from '@/lib/utils';
@@ -16,14 +16,14 @@ export default function RecentConsultations() {
       try {
         setLoading(true);
         // This would ideally get consultations from an API endpoint
-        const patients = await patientDataService.getPatients();
+        const patients = await patientDataService.getAllPatients();
         
         // Mock recent consultations by using patient data and adding timestamps
         // In a real app, this would come from a dedicated API endpoint
         const mockConsultations = patients.slice(0, 5).map(patient => ({
           id: `cons-${patient.id}`,
           patientId: patient.id,
-          patientName: `${patient.firstName} ${patient.lastName}`,
+          patientName: `Patient ${patient.id.substring(0, 8)}`,
           dateOfBirth: patient.dateOfBirth,
           dateTime: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)), // Random date within last week
           status: Math.random() > 0.3 ? 'Completed' : 'In Progress',
