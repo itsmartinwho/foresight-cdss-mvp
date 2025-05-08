@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -28,41 +28,20 @@ import {
   PlayCircle,
 } from "lucide-react";
 
+import { patientDataService } from "@/lib/patientDataService";
+import type { Patient, Admission } from "@/lib/types";
+
+// ***********************************
+// PATIENT DATA (loaded from central service)
+// ***********************************
+
+type UpcomingEntry = { patient: Patient; visit: Admission };
+
 // ***********************************
 // MOCK DATA
 // ***********************************
-const patients = [
-  {
-    id: 1,
-    name: "Maria Gomez",
-    dob: "1988-04-17",
-    sex: "F",
-    nextAppt: "2025-04-24 09:00",
-    reason: "Fatigue, joint pain",
-    photo: "https://i.pravatar.cc/60?u=mg",
-  },
-  {
-    id: 2,
-    name: "James Lee",
-    dob: "1972-11-05",
-    sex: "M",
-    nextAppt: "2025-04-24 09:30",
-    reason: "Chronic cough",
-    photo: "https://i.pravatar.cc/60?u=jl",
-  },
-  {
-    id: 3,
-    name: "Priya Patel",
-    dob: "1990-07-09",
-    sex: "F",
-    nextAppt: "2025-04-24 10:00",
-    reason: "Rash, weight loss",
-    photo: "https://i.pravatar.cc/60?u=pp",
-  },
-];
-
-const transcripts: Record<number, { s: string; t: string }[]> = {
-  1: [
+const transcripts: Record<string, { s: string; t: string }[]> = {
+  "1": [
     { s: "Dr.", t: "How have you been feeling since your last visit?" },
     {
       s: "Maria",
@@ -73,11 +52,8 @@ const transcripts: Record<number, { s: string; t: string }[]> = {
   ],
 };
 
-const providerNotes: Record<
-  number,
-  { subjective: string; objective: string; assessment: string; plan: string }
-> = {
-  1: {
+const providerNotes: Record<string, { subjective: string; objective: string; assessment: string; plan: string }> = {
+  "1": {
     subjective:
       "38-year-old female with 6-month history of symmetric hand pain and morning stiffness (90 min). Denies fever or rash.",
     objective:
@@ -87,19 +63,16 @@ const providerNotes: Record<
   },
 };
 
-const diffDx: Record<number, { dx: string; p: number; cite?: string }[]> = {
-  1: [
+const diffDx: Record<string, { dx: string; p: number; cite?: string }[]> = {
+  "1": [
     { dx: "Rheumatoid Arthritis", p: 0.45, cite: "[1]" },
     { dx: "Systemic Lupus Erythematosus", p: 0.22, cite: "[2]" },
     { dx: "Fibromyalgia", p: 0.16 },
   ],
 };
 
-const treatments: Record<
-  number,
-  { drug: string; status: string; rationale: string }[]
-> = {
-  1: [
+const treatments: Record<string, { drug: string; status: string; rationale: string }[]> = {
+  "1": [
     {
       drug: "Methotrexate 15 mg weekly",
       status: "Proposed",
@@ -113,8 +86,8 @@ const treatments: Record<
   ],
 };
 
-const labs: Record<number, { test: string; value: string; ref: string; flag: string }[]> = {
-  1: [
+const labs: Record<string, { test: string; value: string; ref: string; flag: string }[]> = {
+  "1": [
     { test: "ESR", value: "38 mm/h", ref: "<20", flag: "H" },
     { test: "CRP", value: "18 mg/L", ref: "<5", flag: "H" },
     { test: "RF", value: "+", ref: "Neg", flag: "H" },
@@ -122,8 +95,8 @@ const labs: Record<number, { test: string; value: string; ref: string; flag: str
   ],
 };
 
-const trials: Record<number, { id: string; title: string; distance: string; fit: number }[]> = {
-  1: [
+const trials: Record<string, { id: string; title: string; distance: string; fit: number }[]> = {
+  "1": [
     {
       id: "NCT055123",
       title: "Abatacept vs Placebo in Early RA",
@@ -236,6 +209,17 @@ function Header() {
 // DASHBOARD
 // ***********************************
 function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
+  const [patients, setPatients] = useState<UpcomingEntry[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      await patientDataService.loadPatientData();
+      const upcoming = patientDataService.getUpcomingConsultations();
+      setPatients(upcoming);
+    };
+    load();
+  }, []);
+
   return (
     <div className="p-6 grid xl:grid-cols-2 gap-6">
       <Card>
@@ -256,11 +240,11 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {patients.map((p) => (
+              {patients.map(({ patient: p, visit }) => (
                 <TableRow key={p.id}>
-                  <TableCell>{p.nextAppt.split(" ")[1]}</TableCell>
+                  <TableCell>{new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</TableCell>
                   <TableCell>{p.name}</TableCell>
-                  <TableCell>{p.reason}</TableCell>
+                  <TableCell>{visit.reason || p.reason}</TableCell>
                   <TableCell>
                     <Button
                       size="sm"
@@ -326,7 +310,7 @@ function PatientWorkspace({
           ← Patients
         </Button>
         <span className="font-semibold">{patient.name}</span>
-        <span className="text-muted-foreground text-xs">DOB {patient.dob}</span>
+        <span className="text-muted-foreground text-xs">DOB {patient.dateOfBirth}</span>
       </div>
       <div className="bg-slate-50 border-b px-6 py-2 flex gap-2 sticky top-20 z-30 overflow-x-auto text-sm">
         {[
@@ -456,7 +440,7 @@ function PriorAuth({ patient }: { patient: any }) {
           <CardTitle>Prior Authorization Draft</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <Input disabled value={`Patient: ${patient.name}  DOB: ${patient.dob}`} />
+          <Input disabled value={`Patient: ${patient.name}  DOB: ${patient.dateOfBirth}`} />
           <Input disabled value="Medication: Methotrexate 15 mg weekly" />
           <Input disabled value="Diagnosis: Rheumatoid Arthritis (ICD-10 M06.9)" />
           <Input disabled value="Justification: Failed NSAIDs, elevated CRP 18 mg/L" />
@@ -582,6 +566,68 @@ function SettingsView() {
 }
 
 // ***********************************
+// PATIENTS LIST VIEW
+// ***********************************
+function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
+  const [rows, setRows] = useState<{ patient: Patient; next: Admission | null }[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      await patientDataService.loadPatientData();
+      const all = patientDataService.getAllPatients();
+      const now = new Date();
+      const data = all.map((p) => {
+        const admissions = patientDataService.getPatientAdmissions(p.id);
+        const upcoming = admissions
+          .filter((a) => new Date(a.scheduledStart) > now)
+          .sort((a, b) => new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime())[0] || null;
+        return { patient: p, next: upcoming };
+      });
+      // sort alphabetically
+      data.sort((a, b) => (a.patient.name || "").localeCompare(b.patient.name || ""));
+      setRows(data);
+    };
+    load();
+  }, []);
+
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>All Patients</CardTitle>
+          <CardDescription>Click a patient to open the workspace</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Patient</TableHead>
+                <TableHead>Upcoming Visit</TableHead>
+                <TableHead>Reason</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map(({ patient, next }) => (
+                <TableRow key={patient.id} onClick={() => onSelect(patient)} className="cursor-pointer hover:bg-slate-50">
+                  <TableCell className="flex items-center gap-2">
+                    {patient.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
+                    {patient.name || patient.id}
+                  </TableCell>
+                  <TableCell>
+                    {next ? new Date(next.scheduledStart).toLocaleString() : "—"}
+                  </TableCell>
+                  <TableCell>{next?.reason || patient.reason || ""}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ***********************************
 // MAIN APP
 // ***********************************
 
@@ -601,6 +647,9 @@ function ForesightApp() {
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 overflow-y-auto bg-slate-50">
           {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} />}
+          {active === "patients" && !activePatient && (
+            <PatientsList onSelect={(p) => setActivePatient(p)} />
+          )}
           {active === "patients" && activePatient && (
             <PatientWorkspace
               patient={activePatient}

@@ -60,21 +60,87 @@ class PatientDataService {
           povertyPercentage: 13.03
         },
         // Additional patients would be loaded here
+        // Dashboard demo patients (merged)
+        {
+          id: '1',
+          name: 'Maria Gomez',
+          gender: 'Female',
+          dateOfBirth: '1988-04-17',
+          race: 'Unknown',
+          maritalStatus: 'Unknown',
+          language: 'English',
+          povertyPercentage: 0,
+          nextAppointment: '2025-04-24 09:00',
+          reason: 'Fatigue, joint pain',
+          photo: 'https://i.pravatar.cc/60?u=mg'
+        },
+        {
+          id: '2',
+          name: 'James Lee',
+          gender: 'Male',
+          dateOfBirth: '1972-11-05',
+          race: 'Unknown',
+          maritalStatus: 'Unknown',
+          language: 'English',
+          povertyPercentage: 0,
+          nextAppointment: '2025-04-24 09:30',
+          reason: 'Chronic cough',
+          photo: 'https://i.pravatar.cc/60?u=jl'
+        },
+        {
+          id: '3',
+          name: 'Priya Patel',
+          gender: 'Female',
+          dateOfBirth: '1990-07-09',
+          race: 'Unknown',
+          maritalStatus: 'Unknown',
+          language: 'English',
+          povertyPercentage: 0,
+          nextAppointment: '2025-04-24 10:00',
+          reason: 'Rash, weight loss',
+          photo: 'https://i.pravatar.cc/60?u=pp'
+        },
       ],
       admissions: [
         {
           id: '7',
           patientId: '7A025E77-7832-4F53-B9A7-09A3F98AC17E',
-          startDate: '2011-10-12 14:55:02.027',
-          endDate: '2011-10-22 01:16:07.557'
+          scheduledStart: '2011-10-12 14:55:02.027',
+          scheduledEnd: '2011-10-22 01:16:07.557',
+          actualStart: '2011-10-12 14:55:02.027',
+          actualEnd: '2011-10-22 01:16:07.557'
         },
         {
           id: '1',
           patientId: 'DCE5AEB8-6DB9-4106-8AE4-02CCC5C23741',
-          startDate: '1993-02-11 18:57:04.003',
-          endDate: '1993-02-24 17:22:29.713'
+          scheduledStart: '1993-02-11 18:57:04.003',
+          scheduledEnd: '1993-02-24 17:22:29.713',
+          actualStart: '1993-02-11 18:57:04.003',
+          actualEnd: '1993-02-24 17:22:29.713'
         },
         // Additional admissions would be loaded here
+        // Demo patient upcoming consultations
+        {
+          id: 'demo-1',
+          patientId: '1',
+          scheduledStart: '2026-02-15 10:00',
+          scheduledEnd: '2026-02-15 10:40',
+          reason: 'Follow-up appointment'
+        },
+        {
+          id: 'demo-2',
+          patientId: '2',
+          scheduledStart: '2026-03-18 11:30',
+          scheduledEnd: '2026-03-18 12:10',
+          reason: 'Pulmonary check'
+        },
+        {
+          id: 'demo-3',
+          patientId: '3',
+          scheduledStart: '2026-04-12 14:00',
+          scheduledEnd: '2026-04-12 14:40',
+          reason: 'Weight-loss follow-up'
+        },
       ],
       diagnoses: [
         {
@@ -153,7 +219,14 @@ class PatientDataService {
    * Get all patients
    */
   getAllPatients(): Patient[] {
-    return Object.values(this.patients);
+    return Object.values(this.patients).map((p) => {
+      if (!p.name && (p as any).firstName) {
+        const first = (p as any).firstName;
+        const last = (p as any).lastName ?? "";
+        return { ...p, name: `${first} ${last}`.trim() } as unknown as Patient;
+      }
+      return p;
+    });
   }
 
   /**
@@ -275,6 +348,31 @@ class PatientDataService {
     }
     
     return false;
+  }
+
+  /**
+   * Get list of upcoming consultations across all patients
+   */
+  getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
+    const now = new Date();
+    const upcoming: { patient: Patient; visit: Admission }[] = [];
+    Object.entries(this.admissions).forEach(([pid, visits]) => {
+      const patient = this.patients[pid];
+      if (!patient) return;
+      visits.forEach((v) => {
+        if (new Date(v.scheduledStart) > now) {
+          upcoming.push({ patient, visit: v });
+        }
+      });
+    });
+    upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+    return upcoming;
+  }
+
+  getPastConsultations(patientId: string): Admission[] {
+    const now = new Date();
+    const visits = this.admissions[patientId] || [];
+    return visits.filter((v) => new Date(v.scheduledStart) <= now);
   }
 }
 

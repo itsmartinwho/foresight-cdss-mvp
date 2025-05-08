@@ -8,13 +8,31 @@ export interface Patient {
   maritalStatus: string;
   language: string;
   povertyPercentage: number;
+  // Optional fields coming from dashboard-specific dataset
+  name?: string; // Full patient name
+  firstName?: string;
+  lastName?: string;
+  photo?: string;
+  primaryDiagnosis?: string;
+  diagnosis?: string; // alias when primaryDiagnosis not provided
+  nextAppointment?: string; // ISO or human string
+  reason?: string; // reason for visit / chief complaint
 }
 
 export interface Admission {
   id: string;
   patientId: string;
-  startDate: string;
-  endDate: string;
+  // Deprecated: kept for backward-compat (equals actualStart / actualEnd)
+  startDate?: string;
+  endDate?: string;
+
+  // New schema
+  scheduledStart: string;
+  scheduledEnd: string;
+  actualStart?: string;
+  actualEnd?: string;
+  scheduledDuration?: number; // minutes
+  reason?: string;
 }
 
 export interface Diagnosis {
@@ -199,4 +217,9 @@ export interface CopilotSuggestion {
   createdAt: string;
   dismissed: boolean;
   actioned: boolean;
+}
+
+export interface Consultation {
+  dateTime: string; // ISO string
+  reason?: string;
 }
