@@ -14,6 +14,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('consultation');
+  const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -27,6 +28,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
           setDetailedPatientData(null);
         } else {
           setDetailedPatientData(data);
+          if (data.admissions && data.admissions.length > 0) {
+            setSelectedAdmissionId(data.admissions[0].admission.id);
+          }
         }
       } catch (err: any) {
         setError('Failed to load patient data: ' + err.message);
@@ -119,10 +123,30 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
       </div>
 
       <div className="pt-6 px-4 pb-4 md:px-6 md:pb-6">
+        {/* Consultation selector */}
+        {detailedPatientData && detailedPatientData.admissions && detailedPatientData.admissions.length > 1 && (
+          <div className="mb-4">
+            <label className="mr-2 font-medium text-sm text-gray-700">Consultation:</label>
+            <select
+              className="border rounded px-2 py-1 text-sm"
+              value={selectedAdmissionId || ''}
+              onChange={(e) => setSelectedAdmissionId(e.target.value)}
+            >
+              {detailedPatientData.admissions.map((ad: any) => (
+                <option key={ad.admission.id} value={ad.admission.id}>
+                  {formatDateTime(ad.admission.scheduledStart) || ad.admission.id}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {(() => { const filteredAdmissions = selectedAdmissionId ? detailedPatientData.admissions.filter((ad:any)=>ad.admission.id === selectedAdmissionId) : detailedPatientData.admissions; if (!filteredAdmissions || filteredAdmissions.length === 0) { return (<p>No consultation data found.</p>);} return <React.Fragment>
+
         {activeTab === 'consultation' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Consultation Details</h2>
-            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+            {filteredAdmissions.length > 0 ? filteredAdmissions.map((adDetail: any) => (
               <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
                 <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
                 {adDetail.admission.transcript && <div className="mt-2"><h4 className="font-medium">Transcript:</h4><pre className="text-xs bg-gray-50 p-2 rounded whitespace-pre-wrap">{adDetail.admission.transcript}</pre></div>}
@@ -134,7 +158,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
         {activeTab === 'diagnosis' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Diagnoses by Visit</h2>
-            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+            {filteredAdmissions.length > 0 ? filteredAdmissions.map((adDetail: any) => (
               <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
                 <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
                 {adDetail.diagnoses.length > 0 ? adDetail.diagnoses.map((dx: Diagnosis) => (
@@ -147,7 +171,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
         {activeTab === 'treatment' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Treatments by Visit</h2>
-            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+            {filteredAdmissions.length > 0 ? filteredAdmissions.map((adDetail: any) => (
               <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
                 <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
                 {adDetail.admission.treatments && adDetail.admission.treatments.length > 0 ? adDetail.admission.treatments.map((tx: Treatment) => (
@@ -164,7 +188,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
         {activeTab === 'labs' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Lab Results by Visit</h2>
-            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+            {filteredAdmissions.length > 0 ? filteredAdmissions.map((adDetail: any) => (
               <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
                 <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
                 {adDetail.labResults.length > 0 ? adDetail.labResults.map((lab: LabResult, idx: number) => (
@@ -204,7 +228,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
             </div>
           </div>
         )}
-        {activeTab === 'trials' && (
+        {activeTab === 'trials' && filteredAdmissions[0] && filteredAdmissions[0].trials && filteredAdmissions[0].trials.length > 0 && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Matching Clinical Trials</h2>
             <div className="overflow-x-auto">
@@ -226,38 +250,29 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      NCT055123
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      Abatacept vs Placebo in Early RA
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      12 mi
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      82%
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      NCT061987
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      JAK Inhibitor Tofacitinib Long-Term Safety
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      32 mi
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      77%
-                    </td>
-                  </tr>
+                  {filteredAdmissions[0].trials.map((trial: any) => (
+                    <tr key={trial.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {trial.id}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {trial.title}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {trial.distance}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {trial.fit}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
+        )}
+        {activeTab === 'trials' && (!filteredAdmissions[0] || !filteredAdmissions[0].trials || filteredAdmissions[0].trials.length === 0) && (
+          <p>No trial matches available for this consultation.</p>
         )}
         {activeTab === 'history' && (
           <div>
@@ -283,6 +298,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
             </pre>
           </div>
         )}
+        </React.Fragment>; })()}
       </div>
     </div>
   );

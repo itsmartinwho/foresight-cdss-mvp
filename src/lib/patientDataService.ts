@@ -96,38 +96,96 @@ class PatientDataService {
     this.debugMessages.push("PRINT_DEBUG SERVICE (fetchRawData): Starting fetch for all TSV/TXT files.");
     let patientsArray: any[] = [], admissionsArray: any[] = [], diagnosesArray: any[] = [], labResultsArray: any[] = [];
     
+    // Define files together with fallback names (first entry has highest priority)
     const filesToFetch = [
-      { name: 'Enriched_Patients.tsv', arraySetter: (arr: any[]) => patientsArray = arr, critical: true },
-      { name: 'Enriched_Admissions.tsv', arraySetter: (arr: any[]) => admissionsArray = arr, critical: true },
-      { name: 'AdmissionsDiagnosesCorePopulatedTable.txt', arraySetter: (arr: any[]) => diagnosesArray = arr, critical: false },
-      { name: 'LabsCorePopulatedTable.txt', arraySetter: (arr: any[]) => labResultsArray = arr, critical: false }
+      {
+        names: ['Enriched_Patients.tsv', 'PatientCorePopulatedTable.txt'],
+        arraySetter: (arr: any[]) => (patientsArray = arr),
+        critical: true,
+        label: 'patients',
+      },
+      {
+        names: ['Enriched_Admissions.tsv', 'AdmissionsCorePopulatedTable.txt'],
+        arraySetter: (arr: any[]) => (admissionsArray = arr),
+        critical: true,
+        label: 'admissions',
+      },
+      {
+        names: ['AdmissionsDiagnosesCorePopulatedTable.txt'],
+        arraySetter: (arr: any[]) => (diagnosesArray = arr),
+        critical: false,
+        label: 'diagnoses',
+      },
+      {
+        names: ['LabsCorePopulatedTable.txt'],
+        arraySetter: (arr: any[]) => (labResultsArray = arr),
+        critical: false,
+        label: 'labResults',
+      },
     ];
 
-    for (const file of filesToFetch) {
-      const filePath = `/data/100-patients/${file.name}`;
-      try {
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): Attempting to fetch ${filePath}...`);
-        const response = await fetch(filePath);
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${file.name} - Response OK: ${response.ok}, Status: ${response.status}`);
-        if (response.ok) {
-          const fileText = await response.text();
-          this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${file.name} - Text (first 300 chars): ${fileText.substring(0, 300)}`);
-          // Pass this.debugMessages to parseTSV so it can also log its header parsing attempt
-          const parsedData = parseTSV(fileText, file.name, this.debugMessages); 
-          file.arraySetter(parsedData);
-          this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${file.name} - Parsed Count: ${parsedData.length}`);
-        } else {
-          this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): FAILED to fetch ${file.name}. Status: ${response.statusText}`);
-          if (file.critical) throw new Error(`Critical file ${file.name} failed to load.`);
+    // Attempt to fetch each logical file, trying each of its candidate filenames in order until one succeeds
+    for (const fileEntry of filesToFetch) {
+      let successfullyParsed: any[] | null = null;
+      let lastError: string | null = null;
+
+      for (const candidateName of fileEntry.names) {
+        const filePath = `/data/100-patients/${candidateName}`;
+        try {
+          this.debugMessages.push(
+            `PRINT_DEBUG SERVICE (fetchRawData): Attempting to fetch ${filePath}...`,
+          );
+          const response = await fetch(filePath);
+          this.debugMessages.push(
+            `PRINT_DEBUG SERVICE (fetchRawData): ${candidateName} - Response OK: ${response.ok}, Status: ${response.status}`,
+          );
+
+          if (response.ok) {
+            const fileText = await response.text();
+            this.debugMessages.push(
+              `PRINT_DEBUG SERVICE (fetchRawData): ${candidateName} - Text (first 300 chars): ${fileText.substring(
+                0,
+                300,
+              )}`,
+            );
+            // Parse and store
+            successfullyParsed = parseTSV(fileText, candidateName, this.debugMessages);
+            this.debugMessages.push(
+              `PRINT_DEBUG SERVICE (fetchRawData): ${candidateName} - Parsed Count: ${successfullyParsed.length}`,
+            );
+            // Break the loop once a candidate has succeeded
+            break;
+          } else {
+            lastError = `Status ${response.statusText}`;
+          }
+        } catch (e: any) {
+          lastError = e.message;
+          this.debugMessages.push(
+            `PRINT_DEBUG SERVICE (fetchRawData): EXCEPTION fetching/parsing ${candidateName}: ${e.message}`,
+          );
         }
-      } catch (e: any) { 
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): EXCEPTION fetching/parsing ${file.name}: ${e.message}`);
-        console.error(`Exception Fetch/Parse ${file.name}:`, e);
-        if (file.critical) throw e; // Re-throw if a critical file fails
+      }
+
+      if (successfullyParsed) {
+        fileEntry.arraySetter(successfullyParsed);
+      } else {
+        const msg = `All attempts failed for logical file (${fileEntry.names.join(
+          ', ',
+        )}). Last error: ${lastError}`;
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${msg}`);
+        if (fileEntry.critical) {
+          throw new Error(msg);
+        }
       }
     }
-    this.debugMessages.push("PRINT_DEBUG SERVICE (fetchRawData): Finished all fetch attempts.");
-    return { patients: patientsArray, admissions: admissionsArray, diagnoses: diagnosesArray, labResults: labResultsArray };
+
+    this.debugMessages.push('PRINT_DEBUG SERVICE (fetchRawData): Finished all fetch attempts.');
+    return {
+      patients: patientsArray,
+      admissions: admissionsArray,
+      diagnoses: diagnosesArray,
+      labResults: labResultsArray,
+    };
   }
 
   /**
@@ -233,15 +291,31 @@ class PatientDataService {
             parsedTreatments = [];
         }
       }
+      // Map core and enriched admission fields into unified structure
+      const scheduledStart =
+        aData.ScheduledStartDateTime ||
+        aData.ConsultationScheduledDate ||
+        aData.ConsultationActualStart ||
+        '';
+      const scheduledEnd =
+        aData.ScheduledEndDateTime || aData.ConsultationActualEnd || '';
+      const actualStart =
+        aData.ActualStartDateTime || aData.ConsultationActualStart || undefined;
+      const actualEnd =
+        aData.ActualEndDateTime || aData.ConsultationActualEnd || undefined;
+
       const admission: Admission = {
-        id: aData.AdmissionID, patientId: aData.PatientID,
-        scheduledStart: aData.ScheduledStartDateTime, scheduledEnd: aData.ScheduledEndDateTime,
-        actualStart: aData.ActualStartDateTime || undefined, actualEnd: aData.ActualEndDateTime || undefined,
-        reason: aData.ReasonForVisit, 
+        id: aData.AdmissionID,
+        patientId: aData.PatientID,
+        scheduledStart,
+        scheduledEnd,
+        actualStart,
+        actualEnd,
+        reason: aData.ReasonForVisit || undefined,
         transcript: aData.transcript || undefined,
         soapNote: aData.soapNote || undefined,
         treatments: parsedTreatments.length > 0 ? parsedTreatments : undefined,
-        priorAuthJustification: aData.priorAuthJustification || undefined
+        priorAuthJustification: aData.priorAuthJustification || undefined,
       };
       if (!this.admissions[admission.patientId]) { this.admissions[admission.patientId] = []; }
       this.admissions[admission.patientId].push(admission);
