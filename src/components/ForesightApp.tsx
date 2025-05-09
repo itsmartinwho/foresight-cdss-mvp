@@ -586,7 +586,7 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
       });
 
       upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
-      past.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+      past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
 
       setUpcomingRows(upcoming);
       setPastRows(past);
@@ -608,10 +608,10 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
             <TableRow key={`${patient ? patient.id : 'null'}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
               <TableCell className="flex items-center gap-2">
                 {patient?.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
-                {displayName(patient)}
+                {patient ? displayName(patient) : visit.patientId}
               </TableCell>
               <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
-              <TableCell>{visit.reason}</TableCell>
+              <TableCell>{visit.reason ?? "—"}</TableCell>
             </TableRow>
           ))}
         </TableBody>
