@@ -62,7 +62,9 @@ export const PatientList = () => {
   });
 
   const upcomingPatients = filteredPatients.filter(patient => {
-    return patient.upcomingAppointment === true;
+    const admissions = patientDataService.getPatientAdmissions(patient.id) || [];
+    const now = new Date();
+    return admissions.some(ad => ad.scheduledStart && new Date(ad.scheduledStart) > now);
   });
 
   const renderPatientTable = (patientList: any[]) => {
