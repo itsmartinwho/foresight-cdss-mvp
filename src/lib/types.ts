@@ -12,11 +12,11 @@ export interface Patient {
   language?: string;
   povertyPercentage?: number;
   photo?: string;
-  // Optional fields coming from dashboard-specific dataset
   primaryDiagnosis?: string;
-  diagnosis?: string; // alias when primaryDiagnosis not provided
-  nextAppointment?: string; // ISO or human string
-  reason?: string; // reason for visit / chief complaint
+  diagnosis?: string;
+  nextAppointment?: string;
+  reason?: string; // Patient-level general reason
+  alerts?: ComplexCaseAlert[];
 }
 
 export interface Treatment {
@@ -28,20 +28,15 @@ export interface Treatment {
 export interface Admission {
   id: string;
   patientId: string;
-  // Deprecated: kept for backward-compat (equals actualStart / actualEnd)
-  startDate?: string;
-  endDate?: string;
-
-  // New schema
   scheduledStart: string;
   scheduledEnd: string;
   actualStart?: string;
   actualEnd?: string;
-  scheduledDuration?: number; // minutes
-  reason?: string;
+  reason?: string; // Admission-specific reason
   transcript?: string;
   soapNote?: string;
   treatments?: Treatment[];
+  priorAuthJustification?: string; // Ensured this field is present
 }
 
 export interface Diagnosis {
@@ -60,6 +55,21 @@ export interface LabResult {
   dateTime?: string;
   referenceRange?: string;
   flag?: string;
+}
+
+export interface ComplexCaseAlert {
+  id: string;
+  patientId: string;
+  msg?: string;
+  date?: string;
+  type?: "autoimmune" | "inflammatory" | "oncology";
+  severity: "low" | "medium" | "high" | string;
+  triggeringFactors?: string[];
+  suggestedActions?: string[];
+  createdAt?: string;
+  acknowledged?: boolean;
+  acknowledgedAt?: string;
+  confidence?: number;
 }
 
 export interface ClinicalSource {
@@ -205,18 +215,6 @@ export interface SpecialistReferral {
     }[];
   };
   requestedEvaluation: string[];
-}
-
-export interface ComplexCaseAlert {
-  id: string;
-  patientId: string;
-  type: "autoimmune" | "inflammatory" | "oncology";
-  severity: "low" | "medium" | "high";
-  triggeringFactors: string[];
-  suggestedActions: string[];
-  createdAt: string;
-  acknowledged: boolean;
-  acknowledgedAt?: string;
 }
 
 export interface CopilotSuggestion {
