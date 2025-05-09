@@ -235,6 +235,14 @@ class PatientDataService {
 
         if (currentPID === targetAlertPatientID) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after any manual unwrap for ${targetAlertPatientID}: '${jsonToParse}'`);
 
+        // Replace "" (escaped quotes from TSV's own quoting mechanism) with " (a single quote for standard JSON)
+        // This is done *after* stripping the outermost TSV quotes, if any.
+        // For example, if original TSV cell was "[{\\"\\"key\\": \\"\\"value\\"\\"}]" (a string)
+        // jsonToParse becomes "[{\\"key\\": \\"value\\"}]" (still a string, but with outer quotes removed)
+        // This replacement makes it "[{\\"key\\": \\"value\\"}]" (valid JSON string content)
+        jsonToParse = jsonToParse.replace(/""/g, '"');
+        if (currentPID === targetAlertPatientID) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after replacing double-double-quotes for ${targetAlertPatientID}: '${jsonToParse}'`);
+
         if (jsonToParse && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{")) && (jsonToParse.endsWith("]") || jsonToParse.endsWith("}"))) {
           try {
             const alertsFromFile = JSON.parse(jsonToParse);

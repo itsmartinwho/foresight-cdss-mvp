@@ -296,15 +296,13 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: Patient) => void })
         </CardHeader>
         <CardContent className="space-y-3">
           {complexCaseAlertsForDisplay.length > 0 ? complexCaseAlertsForDisplay.map((alertWithPatientName) => (
-            <div key={alertWithPatientName.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-1">
-                <div className="font-semibold text-base text-gray-800">Alert for: {alertWithPatientName.patientName || 'Unknown Patient'}</div>
-                <SeverityBadge severity={alertWithPatientName.severity || 'Unknown'} />
-              </div>
-              <p className="text-gray-700 mb-1">{alertWithPatientName.msg || 'No message'}</p>
-              <div className="text-xs text-gray-500 flex justify-between">
-                <span>Confidence: {alertWithPatientName.confidence !== undefined ? `${Math.round(alertWithPatientName.confidence * 100)}%` : 'N/A'}</span>
-                <span>Date: {alertWithPatientName.date || 'N/A'}</span>
+            <div key={alertWithPatientName.id} className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+              <SeverityBadge severity={alertWithPatientName.severity || 'Unknown'} />
+              <p className="flex-grow text-sm text-gray-700 truncate" title={alertWithPatientName.msg}>{alertWithPatientName.msg || 'No message'}</p>
+              <div className="text-xs text-gray-500 whitespace-nowrap">
+                {alertWithPatientName.confidence !== undefined ? `${Math.round(alertWithPatientName.confidence * 100)}%` : 'N/A'}
+                {' • '}
+                {alertWithPatientName.date || 'N/A'}
               </div>
             </div>
           )) : (
@@ -734,20 +732,14 @@ function AlertsView() {
             patient.alerts?.map((alert) => (
               <div
                 key={alert.id}
-                className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow"
+                className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="flex justify-between items-start mb-1">
-                  <div className="font-semibold text-base text-gray-800">
-                    Alert for: {patient.name || patient.id}
-                  </div>
-                  <SeverityBadge severity={alert.severity || "Unknown"} />
-                </div>
-                <p className="text-gray-700 mb-1">{alert.msg || "No message"}</p>
-                <div className="text-xs text-gray-500 flex justify-between">
-                  <span>
-                    Confidence: {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : "N/A"}
-                  </span>
-                  <span>Date: {alert.date || "N/A"}</span>
+                <SeverityBadge severity={alert.severity || "Unknown"} />
+                <p className="flex-grow text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || "No message"}</p>
+                <div className="text-xs text-gray-500 whitespace-nowrap">
+                  {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : "N/A"}
+                  {' • '}
+                  {alert.date || "N/A"}
                 </div>
               </div>
             ))
