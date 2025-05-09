@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Patient, Admission, Diagnosis, LabResult } from '@/lib/types';
+import { Patient, Admission, Diagnosis, LabResult, Treatment } from '@/lib/types';
 import { patientDataService } from '@/lib/patientDataService';
-import { clinicalEngineService } from '@/lib/clinicalEngineService';
 import Link from 'next/link';
 
 interface PatientDetailProps {
@@ -11,56 +10,35 @@ interface PatientDetailProps {
 }
 
 export default function PatientDetail({ patientId }: PatientDetailProps) {
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [admissions, setAdmissions] = useState<any[]>([]);
+  const [detailedPatientData, setDetailedPatientData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('consultation');
-  const [selectedAdmission, setSelectedAdmission] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadPatientData() {
+    async function loadData() {
+      setLoading(true);
       try {
         await patientDataService.loadPatientData();
-        const patientData = patientDataService.getPatient(patientId);
+        const data = patientDataService.getPatientData(patientId);
         
-        if (!patientData) {
-          setError('Patient not found');
-          setLoading(false);
-          return;
+        if (!data || !data.patient) {
+          setError('Patient data not found');
+          setDetailedPatientData(null);
+        } else {
+          setDetailedPatientData(data);
         }
-        
-        setPatient(patientData);
-        
-        const patientAdmissions = patientDataService.getPatientAdmissions(patientId);
-        
-        // Get detailed admission data including diagnoses and lab results
-        const admissionsWithDetails = patientAdmissions.map(admission => {
-          const diagnoses = patientDataService.getPatientDiagnoses(patientId, admission.id);
-          const labResults = patientDataService.getPatientLabResults(patientId, admission.id);
-          
-          return {
-            admission,
-            diagnoses,
-            labResults
-          };
-        });
-        
-        setAdmissions(admissionsWithDetails);
-        
-        if (admissionsWithDetails.length > 0) {
-          setSelectedAdmission(admissionsWithDetails[0].admission.id);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to load patient data');
-        setLoading(false);
+      } catch (err: any) {
+        setError('Failed to load patient data: ' + err.message);
         console.error('Error loading patient data:', err);
+      } finally {
+        setLoading(false);
       }
     }
 
-    loadPatientData();
+    if (patientId) {
+      loadData();
+    }
   }, [patientId]);
 
   const calculateAge = (dateOfBirth: string): number => {
@@ -77,49 +55,13 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
   };
 
   const formatDate = (dateString: string): string => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
   };
 
-  const formatDOB = (dateString: string): string => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const getSelectedAdmissionData = () => {
-    if (!selectedAdmission) return null;
-    
-    return admissions.find(item => item.admission.id === selectedAdmission);
-  };
-
-  const hasAutoimmune = patientId ? patientDataService.hasAutoimmuneDiagnosis(patientId) : false;
-  const hasOncology = patientId ? patientDataService.hasOncologyDiagnosis(patientId) : false;
-
-  const getRecentLabResults = () => {
-    if (admissions.length === 0) return [];
-    
-    // Get the most recent admission
-    const sortedAdmissions = [...admissions].sort((a, b) => 
-      new Date(b.admission.startDate).getTime() - new Date(a.admission.startDate).getTime()
-    );
-    
-    const recentAdmission = sortedAdmissions[0];
-    if (!recentAdmission || !recentAdmission.labResults) return [];
-    
-    return recentAdmission.labResults.slice(0, 10);
-  };
-
-  const getDiagnosisByCode = (code: string): string => {
-    for (const admission of admissions) {
-      for (const diagnosis of admission.diagnoses) {
-        if (diagnosis.code.startsWith(code)) {
-          return diagnosis.description;
-        }
-      }
-    }
-    return '';
+  const formatDateTime = (dateString: string): string => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
   };
 
   if (loading) {
@@ -130,382 +72,117 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
     );
   }
 
-  if (error || !patient) {
+  if (error || !detailedPatientData || !detailedPatientData.patient) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg font-medium text-red-500">{error || 'Patient not found'}</div>
+      <div className="p-6">
+        <Link href="/patients" className="text-blue-600 mr-2 mb-4 inline-block">
+          ← Patients
+        </Link>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg font-medium text-red-500">{error || 'Patient not found'}</div>
+        </div>
       </div>
     );
   }
 
-  // Generate a human-readable patient name based on patient ID
-  const patientNames = {
-    'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F': 'John Smith',
-    '64182B95-EB72-4E2B-BE77-8050B71498CE': 'Michael Johnson',
-    'DB22A4D9-7E4D-485C-916A-9CD1386507FB': 'Sarah Williams',
-    '6E70D84D-C75F-477C-BC37-9177C3698C66': 'David Brown',
-    'C8556CC0-32FC-4CA5-A8CD-9CCF38816167': 'Emma Davis',
-    '7FD13988-E58A-4A5C-8680-89AC200950FA': 'James Wilson',
-    'C60FE675-CA52-4C55-A233-F4B27E94987F': 'Robert Taylor',
-    'B39DC5AC-E003-4E6A-91B6-FC07625A1285': 'Jennifer Miller',
-    'FA157FA5-F488-4884-BF87-E144630D595C': 'Patricia Anderson',
-    'B7E9FC4C-5182-4A34-954E-CEF5FC07E96D': 'Maria Gomez'
-  };
-
-  const patientName = patientNames[patientId] || 'Unknown Patient';
+  const { patient, admissions: admissionsWithDetails } = detailedPatientData;
 
   return (
     <div className="bg-white shadow rounded-lg">
-      {/* Patient header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center mb-4">
           <Link href="/patients" className="text-blue-600 mr-2">
             ← Patients
           </Link>
           <h1 className="text-xl font-bold text-gray-800">
-            {patientName} <span className="text-gray-500 font-normal text-sm">DOB {formatDOB(patient.dateOfBirth)}</span>
+            {patient.name || 'Unknown Patient'} <span className="text-gray-500 font-normal text-sm">DOB {formatDate(patient.dateOfBirth)}</span>
           </h1>
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="flex">
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'consultation'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('consultation')}
-          >
-            Consultation
-          </button>
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'diagnosis'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('diagnosis')}
-          >
-            Diagnosis
-          </button>
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'treatment'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('treatment')}
-          >
-            Treatment
-          </button>
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'labs'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('labs')}
-          >
-            Labs
-          </button>
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'prior_auth'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('prior_auth')}
-          >
-            Prior Auth
-          </button>
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'trials'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('trials')}
-          >
-            Trials
-          </button>
-          <button
-            className={`py-5 px-6 text-center border-b-2 font-medium text-sm ${
-              activeTab === 'history'
-                ? 'border-blue-500 text-blue-600 bg-gray-100'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => setActiveTab('history')}
-          >
-            History
-          </button>
+        <nav className="flex px-2 overflow-x-auto">
+          {['consultation', 'diagnosis', 'treatment', 'labs', 'prior_auth', 'trials', 'history', 'all_data'].map(tabName => (
+            <button
+              key={tabName}
+              className={`py-4 px-4 text-center border-b-2 font-medium text-sm whitespace-nowrap ${
+                activeTab === tabName
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveTab(tabName)}
+            >
+              {tabName.replace('_', ' ').replace('all data', 'All Patient Data').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+            </button>
+          ))}
         </nav>
       </div>
 
-      {/* Tab content */}
-      <div className="pt-8 px-6 pb-6">
+      <div className="pt-6 px-4 pb-4 md:px-6 md:pb-6">
         {activeTab === 'consultation' && (
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Live Transcript</h2>
-                <div className="bg-gray-50 p-4 rounded-md mb-6">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-gray-700 font-medium">Dr:</p>
-                      <p className="text-gray-600">How have you been feeling since your last visit?</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 font-medium">Maria:</p>
-                      <p className="text-gray-600">Still tired all the time and my hands ache in the morning.</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 font-medium">Dr:</p>
-                      <p className="text-gray-600">Any swelling or redness in the joints?</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 font-medium">Maria:</p>
-                      <p className="text-gray-600">Some swelling, yes.</p>
-                    </div>
-                  </div>
-                </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Consultation Details</h2>
+            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+              <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
+                <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
+                {adDetail.admission.transcript && <div className="mt-2"><h4 className="font-medium">Transcript:</h4><pre className="text-xs bg-gray-50 p-2 rounded whitespace-pre-wrap">{adDetail.admission.transcript}</pre></div>}
+                {adDetail.admission.soapNote && <div className="mt-2"><h4 className="font-medium">SOAP Note:</h4><pre className="text-xs bg-gray-50 p-2 rounded whitespace-pre-wrap">{adDetail.admission.soapNote}</pre></div>}
               </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Structured Note (SOAP)</h2>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-gray-700 font-medium">S:</p>
-                      <p className="text-gray-600">{calculateAge(patient.dateOfBirth)}-year-old {patient.gender.toLowerCase()} with 6-month history of symmetric hand pain and morning stiffness (90 min). Denies fever or rash.</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 font-medium">O:</p>
-                      <p className="text-gray-600">MCP and PIP joints tender on palpation, mild edema. ESR 38 mm/h, CRP 18 mg/L, RF positive, anti-CCP strongly positive.</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 font-medium">A:</p>
-                      <p className="text-gray-600">Early rheumatoid arthritis highly likely [1].</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-700 font-medium">P:</p>
-                      <p className="text-gray-600">Initiate methotrexate 15 mg weekly with folic acid 1 mg daily. Order baseline LFTs, schedule ultrasound of hands in 6 weeks. Discuss exercise and smoking cessation.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )) : <p>No consultation records found.</p>}
           </div>
         )}
-
         {activeTab === 'diagnosis' && (
           <div>
-            <div className="mb-10">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">AI Differential</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Condition
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Probability
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        Rheumatoid Arthritis
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        45%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                        [1]
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        Systemic Lupus Erythematosus
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        22%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                        [2]
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        Fibromyalgia
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        16%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                        
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Diagnoses by Visit</h2>
+            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+              <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
+                <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
+                {adDetail.diagnoses.length > 0 ? adDetail.diagnoses.map((dx: Diagnosis) => (
+                  <p key={dx.code} className="text-sm ml-4">- {dx.description} ({dx.code})</p>
+                )) : <p className="text-sm ml-4">No diagnoses for this visit.</p>}
               </div>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Explanation & Evidence</h2>
-              <div className="bg-gray-50 p-4 rounded-md space-y-3">
-                <p className="text-gray-600">High anti-CCP titre and symmetric small-joint involvement increase likelihood of RA [1].</p>
-                <p className="text-gray-600">Elevated ESR & CRP consistent with active inflammatory arthritis. [2]</p>
-                <p className="text-gray-500 text-sm mt-4">[1] ACR RA Guidelines 2023 • [2] Lancet Rheumatology 2024 systematic review.</p>
-              </div>
-            </div>
+            )) : <p>No diagnostic records found.</p>}
           </div>
         )}
-
         {activeTab === 'treatment' && (
           <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Current & Proposed Therapy</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Medication
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rationale
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      Methotrexate 15 mg weekly
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Proposed
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      First-line csDMARD per ACR 2023 guidelines after NSAID failure [3]
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      Folic acid 1 mg daily
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Supportive
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      Reduces MTX-induced GI adverse effects [4]
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Treatments by Visit</h2>
+            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+              <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
+                <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
+                {adDetail.admission.treatments && adDetail.admission.treatments.length > 0 ? adDetail.admission.treatments.map((tx: Treatment) => (
+                  <div key={tx.drug} className="text-sm ml-4">
+                    <p><strong>Drug:</strong> {tx.drug}</p>
+                    <p><strong>Status:</strong> {tx.status}</p>
+                    <p><strong>Rationale:</strong> {tx.rationale}</p>
+                  </div>
+                )) : <p className="text-sm ml-4">No treatments for this visit.</p>}
+              </div>
+            )) : <p>No treatment records found.</p>}
           </div>
         )}
-
         {activeTab === 'labs' && (
           <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Labs</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Test
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Value
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ref
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  <tr className="bg-red-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ESR
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      38 mm/h
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      &lt;20
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                      H
-                    </td>
-                  </tr>
-                  <tr className="bg-red-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      CRP
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      18 mg/L
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      &lt;5
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                      H
-                    </td>
-                  </tr>
-                  <tr className="bg-red-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      RF
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      +
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Neg
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                      H
-                    </td>
-                  </tr>
-                  <tr className="bg-red-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      anti-CCP
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ++
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Neg
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                      H
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Lab Results by Visit</h2>
+            {admissionsWithDetails.length > 0 ? admissionsWithDetails.map((adDetail: any) => (
+              <div key={adDetail.admission.id} className="mb-6 p-4 border rounded-md">
+                <h3 className="font-semibold">Visit: {formatDateTime(adDetail.admission.scheduledStart)} - {adDetail.admission.reason}</h3>
+                {adDetail.labResults.length > 0 ? adDetail.labResults.map((lab: LabResult, idx: number) => (
+                  <div key={idx} className="text-sm ml-4 mb-1">
+                    <p><strong>Test:</strong> {lab.name} | <strong>Value:</strong> {lab.value} {lab.units} {lab.flag ? `(${lab.flag})` : ''} | <strong>Ref:</strong> {lab.referenceRange || 'N/A'} | <strong>Date:</strong> {formatDateTime(lab.dateTime)}</p>
+                  </div>
+                )) : <p className="text-sm ml-4">No lab results for this visit.</p>}
+              </div>
+            )) : <p>No lab records found.</p>}
           </div>
         )}
-
         {activeTab === 'prior_auth' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Prior Authorization Draft</h2>
             <div className="bg-gray-50 p-6 rounded-md space-y-4">
               <div>
                 <p className="text-gray-700 font-medium">Patient:</p>
-                <p className="text-gray-600">{patientName} DOB: {formatDOB(patient.dateOfBirth)}</p>
+                <p className="text-gray-600">{patient.name} DOB: {formatDate(patient.dateOfBirth)}</p>
               </div>
               <div>
                 <p className="text-gray-700 font-medium">Medication:</p>
@@ -527,7 +204,6 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
             </div>
           </div>
         )}
-
         {activeTab === 'trials' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Matching Clinical Trials</h2>
@@ -583,7 +259,6 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
             </div>
           </div>
         )}
-
         {activeTab === 'history' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Timeline</h2>
@@ -598,6 +273,14 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                 <p className="text-gray-600">2025-04-24 – AI suggested provisional RA diagnosis.</p>
               </div>
             </div>
+          </div>
+        )}
+        {activeTab === 'all_data' && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">All Patient Data (Raw)</h2>
+            <pre className="text-xs bg-gray-50 p-4 rounded whitespace-pre-wrap break-all">
+              {JSON.stringify(detailedPatientData, null, 2)}
+            </pre>
           </div>
         )}
       </div>
