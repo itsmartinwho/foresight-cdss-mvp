@@ -523,7 +523,7 @@ function Diagnosis({ patient, allAdmissions }: { patient: Patient; allAdmissions
   return (
     <div className="p-6 space-y-6">
       {patient.alerts && patient.alerts.length > 0 && (
-        <Card className="mb-6">
+        <Card className="mt-6 mb-6">
           <CardHeader>
             <CardTitle>Active Complex Case Alerts for {patient.name || patient.id}</CardTitle>
           </CardHeader>
