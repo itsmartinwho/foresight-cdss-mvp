@@ -30,117 +30,104 @@ import {
 } from "lucide-react";
 
 import { patientDataService } from "@/lib/patientDataService";
-import type { Patient, Admission } from "@/lib/types";
+import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types";
 
 // ***********************************
 // PATIENT DATA (loaded from central service)
 // ***********************************
 
+// Reinstated UpcomingEntry, ensure Patient and Admission are imported or correctly typed
+// If Treatment is part of Admission or Patient type directly, it should be handled by their import.
+// For now, assuming UpcomingEntry only needs Patient and Admission as per original structure.
 type UpcomingEntry = { patient: Patient; visit: Admission };
 
+// Placeholder for data used by views not currently in scope for full data unification
+const alerts: any[] = []; 
+const analyticsData: any[] = [];
+
 // ***********************************
-// MOCK DATA
+// HELPER AND NEW TAB VIEW (DEFINED BEFORE PatientWorkspace)
 // ***********************************
-const transcripts: Record<string, { s: string; t: string }[]> = {
-  "1": [
-    { s: "Dr.", t: "How have you been feeling since your last visit?" },
-    {
-      s: "Maria",
-      t: "Still tired all the time and my hands ache in the morning.",
-    },
-    { s: "Dr.", t: "Any swelling or redness in the joints?" },
-    { s: "Maria", t: "Some swelling, yes." },
-  ],
-};
 
-const providerNotes: Record<string, { subjective: string; objective: string; assessment: string; plan: string }> = {
-  "1": {
-    subjective:
-      "38-year-old female with 6-month history of symmetric hand pain and morning stiffness (90 min). Denies fever or rash.",
-    objective:
-      "MCP and PIP joints tender on palpation, mild edema. ESR 38 mm/h, CRP 18 mg/L, RF positive, anti-CCP strongly positive.",
-    assessment: "Early rheumatoid arthritis highly likely [1].",
-    plan: "Initiate methotrexate 15 mg weekly with folic acid 1 mg daily. Order baseline LFTs, schedule ultrasound of hands in 6 weeks. Discuss exercise and smoking cessation.",
-  },
-};
+// Function to render a simple table for displaying object arrays
+function renderDetailTable(title: string, dataArray: any[], headers: string[], columnAccessors?: string[]) {
+  if (!dataArray || dataArray.length === 0) {
+    return <p className="text-sm text-gray-500 mt-1">No {title.toLowerCase()} data available.</p>; // Simplified message
+  }
+  const displayHeaders = headers;
+  const accessors = columnAccessors || headers.map(h => h.toLowerCase().replace(/\s+/g, '')); // default accessors
 
-const diffDx: Record<string, { dx: string; p: number; cite?: string }[]> = {
-  "1": [
-    { dx: "Rheumatoid Arthritis", p: 0.45, cite: "[1]" },
-    { dx: "Systemic Lupus Erythematosus", p: 0.22, cite: "[2]" },
-    { dx: "Fibromyalgia", p: 0.16 },
-  ],
-};
+  return (
+    <div className="mt-3">
+      <h4 className="font-semibold text-sm text-gray-700 mb-1">{title}</h4>
+      <Table className="text-xs">
+        <TableHeader>
+          <TableRow>
+            {displayHeaders.map(header => <TableHead key={header} className="text-left">{header}</TableHead>)}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {dataArray.map((item, index) => (
+            <TableRow key={index}>
+              {accessors.map(accessor => (
+                <TableCell key={accessor} className="text-left">
+                  {item[accessor] !== undefined && item[accessor] !== null ? String(item[accessor]) : 'N/A'}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
-const treatments: Record<string, { drug: string; status: string; rationale: string }[]> = {
-  "1": [
-    {
-      drug: "Methotrexate 15 mg weekly",
-      status: "Proposed",
-      rationale: "First-line csDMARD per ACR 2023 guidelines after NSAID failure [3]",
-    },
-    {
-      drug: "Folic acid 1 mg daily",
-      status: "Supportive",
-      rationale: "Reduces MTX-induced GI adverse effects [4]",
-    },
-  ],
-};
+// AllDataView Implementation
+function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
+  if (!detailedPatientData) return <p className="p-4 text-gray-600">No detailed data available.</p>;
+  const { patient, admissions } = detailedPatientData;
 
-const labs: Record<string, { test: string; value: string; ref: string; flag: string }[]> = {
-  "1": [
-    { test: "ESR", value: "38 mm/h", ref: "<20", flag: "H" },
-    { test: "CRP", value: "18 mg/L", ref: "<5", flag: "H" },
-    { test: "RF", value: "+", ref: "Neg", flag: "H" },
-    { test: "anti-CCP", value: "++", ref: "Neg", flag: "H" },
-  ],
-};
+  return (
+    <div className="p-4 space-y-4">
+      <Card>
+        <CardHeader><CardTitle>Patient Demographics</CardTitle></CardHeader>
+        <CardContent className="text-sm space-y-1">
+          {Object.entries(patient).map(([key, value]) => (
+            (typeof value !== 'object' || value === null) && // Avoid trying to render objects directly
+            <div key={key}><strong className="capitalize">{key.replace(/([A-Z])/g, ' $1')}:</strong> {String(value)}</div>
+          ))}
+        </CardContent>
+      </Card>
 
-const trials: Record<string, { id: string; title: string; distance: string; fit: number }[]> = {
-  "1": [
-    {
-      id: "NCT055123",
-      title: "Abatacept vs Placebo in Early RA",
-      distance: "12 mi",
-      fit: 0.82,
-    },
-    {
-      id: "NCT061987",
-      title: "JAK Inhibitor Tofacitinib Long-Term Safety",
-      distance: "32 mi",
-      fit: 0.77,
-    },
-  ],
-};
+      <h3 className="text-lg font-semibold mt-4">Admissions History</h3>
+      {admissions.map((admMockWrapper: any, index: number) => {
+        const adm: Admission = admMockWrapper.admission; 
+        const diagnoses: Diagnosis[] = admMockWrapper.diagnoses || [];
+        const labResults: LabResult[] = admMockWrapper.labResults || [];
 
-const alerts = [
-  {
-    id: "ALR-017",
-    patientId: 3,
-    msg: "Possible vasculitis – refer to rheumatology",
-    date: "Today 08:11",
-    severity: "High",
-    confidence: 0.87,
-  },
-  {
-    id: "ALR-018",
-    patientId: 2,
-    msg: "Consider lung CT – persistent cough 6 mo",
-    date: "Yesterday 17:40",
-    severity: "Medium",
-    confidence: 0.71,
-  },
-];
-
-const analyticsData = [
-  { date: "Apr 18", consults: 14, timeSaved: 132, accuracyGain: 0.11 },
-  { date: "Apr 19", consults: 18, timeSaved: 162, accuracyGain: 0.14 },
-  { date: "Apr 20", consults: 20, timeSaved: 180, accuracyGain: 0.12 },
-  { date: "Apr 21", consults: 16, timeSaved: 144, accuracyGain: 0.1 },
-  { date: "Apr 22", consults: 21, timeSaved: 198, accuracyGain: 0.15 },
-  { date: "Apr 23", consults: 19, timeSaved: 171, accuracyGain: 0.13 },
-  { date: "Apr 24", consults: 7, timeSaved: 63, accuracyGain: 0.12 },
-];
+        return (
+          <Card key={adm.id || index} className="mt-2">
+            <CardHeader>
+              <CardTitle>Admission on {new Date(adm.scheduledStart).toLocaleString()} (ID: {adm.id})</CardTitle>
+              <CardDescription>Reason: {adm.reason || 'N/A'}</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm space-y-3">
+              <div><strong>Actual Start:</strong> {adm.actualStart ? new Date(adm.actualStart).toLocaleString() : 'N/A'}</div>
+              <div><strong>Actual End:</strong> {adm.actualEnd ? new Date(adm.actualEnd).toLocaleString() : 'N/A'}</div>
+              {adm.transcript && <div><h4 className="font-semibold text-sm text-gray-700 mb-1">Transcript:</h4><pre className="whitespace-pre-wrap text-xs bg-gray-50 p-2 rounded">{adm.transcript}</pre></div>}
+              {adm.soapNote && <div><h4 className="font-semibold text-sm text-gray-700 mb-1">SOAP Note:</h4><pre className="whitespace-pre-wrap text-xs bg-gray-50 p-2 rounded">{adm.soapNote}</pre></div>}
+              
+              {renderDetailTable("Diagnoses", diagnoses, ['Code', 'Description'], ['code', 'description'])}
+              {renderDetailTable("Lab Results", labResults, ['Test Name', 'Value', 'Units', 'Date/Time', 'Ref. Range', 'Flag'], ['name', 'value', 'units', 'dateTime', 'referenceRange', 'flag'])}
+              {renderDetailTable("Treatments", adm.treatments || [], ['Drug', 'Status', 'Rationale'], ['drug', 'status', 'rationale'])}
+            </CardContent>
+          </Card>
+        );
+      })}
+       {admissions.length === 0 && <p className="text-gray-500">No admission history for this patient.</p>}
+    </div>
+  );
+}
 
 // ***********************************
 // GENERIC UI COMPONENTS
@@ -225,7 +212,7 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
     <div className="p-6 grid xl:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Today's Appointments</CardTitle>
+          <CardTitle>Upcoming Appointments</CardTitle>
           <CardDescription>
             Select a patient to start consultation
           </CardDescription>
@@ -284,25 +271,84 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
 }
 
 // ***********************************
-// PATIENT WORKSPACE
+// PATIENT WORKSPACE & ITS TABS
 // ***********************************
-function PatientWorkspace({
-  patient,
-  onBack,
-}: {
-  patient: any;
+
+interface PatientWorkspaceProps {
+  patient: Patient; // The basic patient object passed for identification
   onBack: () => void;
-}) {
-  const [tab, setTab] = useState("consult");
+}
+
+function PatientWorkspace({ patient: initialPatient, onBack }: PatientWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState("consult");
+  const [detailedPatientData, setDetailedPatientData] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // State for the consultation tab's selected admission
+  const [selectedAdmissionForConsultation, setSelectedAdmissionForConsultation] = useState<Admission | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!initialPatient?.id) {
+        setError("No patient ID provided.");
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        // Ensure service is loaded (it might have been loaded by Dashboard already)
+        // await patientDataService.loadPatientData(); // loadPatientData has an internal isLoaded check
+        const data = patientDataService.getPatientData(initialPatient.id);
+        if (data) {
+          setDetailedPatientData(data);
+          // Default select the first admission for the consultation tab if available
+          if (data.admissions && data.admissions.length > 0) {
+            // Find the most recent admission to pre-select, or the first one with a transcript/note
+            // For now, just pick the first one from the comprehensive list.
+            // The list of admissions might not be sorted yet by date within getPatientData
+            // We might need to sort `data.admissions` here if a specific default is needed.
+            setSelectedAdmissionForConsultation(data.admissions[0]?.admission || null);
+          }
+        } else {
+          setError(`Patient data not found for ${initialPatient.name || initialPatient.id}`);
+        }
+      } catch (err: any) {
+        console.error("Error loading detailed patient data:", err);
+        setError(err.message || "Failed to load detailed patient data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [initialPatient]);
+
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
       size="sm"
-      variant={tab === k ? "default" : "ghost"}
-      onClick={() => setTab(k)}
+      variant={activeTab === k ? "default" : "ghost"}
+      onClick={() => setActiveTab(k)}
     >
       {children}
     </Button>
   );
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading patient workspace...</div>;
+  }
+
+  if (error || !detailedPatientData) {
+    return (
+      <div className="p-6">
+        <Button size="sm" variant="ghost" onClick={onBack}>
+          ← Patients
+        </Button>
+        <p className="text-red-500 mt-4">Error: {error || "Detailed patient data could not be loaded."}</p>
+      </div>
+    );
+  }
+  
+  const { patient, admissions: patientAdmissionDetails } = detailedPatientData; // `patient` here is the full patient object from the service
 
   return (
     <div className="h-full flex flex-col">
@@ -311,9 +357,9 @@ function PatientWorkspace({
           ← Patients
         </Button>
         <span className="font-semibold">{patient.name}</span>
-        <span className="text-muted-foreground text-xs">DOB {patient.dateOfBirth}</span>
+        <span className="text-muted-foreground text-xs">DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
       </div>
-      <div className="bg-slate-50 border-b px-6 py-2 flex gap-2 sticky top-20 z-30 overflow-x-auto text-sm">
+      <div className="bg-slate-50 border-b px-6 py-2 flex gap-2 sticky top-[calc(3rem+1.5rem)] z-30 overflow-x-auto text-sm">
         {[
           { key: "consult", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },
@@ -322,6 +368,7 @@ function PatientWorkspace({
           { key: "prior", label: "Prior Auth" },
           { key: "trials", label: "Trials" },
           { key: "history", label: "History" },
+          { key: "allData", label: "All Data" }, // New Tab
         ].map((t) => (
           <TabBtn key={t.key} k={t.key}>
             {t.label}
@@ -329,53 +376,84 @@ function PatientWorkspace({
         ))}
       </div>
       <ScrollArea className="flex-1">
-        {tab === "consult" && <Consultation patient={patient} />}
-        {tab === "diagnosis" && <Diagnosis patient={patient} />}
-        {tab === "treatment" && <Treatment patient={patient} />}
-        {tab === "labs" && <Labs patient={patient} />}
-        {tab === "prior" && <PriorAuth patient={patient} />}
-        {tab === "trials" && <Trials patient={patient} />}
-        {tab === "history" && <History patient={patient} />}
+        {activeTab === "consult" && 
+          <Consultation 
+            patient={patient} 
+            allAdmissions={patientAdmissionDetails} 
+            selectedAdmission={selectedAdmissionForConsultation} 
+            onSelectAdmission={setSelectedAdmissionForConsultation} 
+          />}
+        {/* Other tabs will be updated similarly */}
+        {activeTab === "diagnosis" && <Diagnosis patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "treatment" && <Treatment patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "labs" && <Labs patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "prior" && <PriorAuth patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "trials" && <Trials patient={patient} />}
+        {activeTab === "history" && <History patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "allData" && <AllDataView detailedPatientData={detailedPatientData} />}
       </ScrollArea>
     </div>
   );
 }
 
-function Consultation({ patient }: { patient: any }) {
-  const lines = transcripts[patient.id] || [];
-  const note = providerNotes[patient.id];
+// Updated Consultation Tab
+function Consultation({ 
+  patient, 
+  allAdmissions, 
+  selectedAdmission, 
+  onSelectAdmission 
+}: { 
+  patient: Patient; 
+  allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }>; 
+  selectedAdmission: Admission | null;
+  onSelectAdmission: (admission: Admission | null) => void;
+}) {
+  const availableAdmissions = allAdmissions.map(ad => ad.admission);
+
+  // Find the detailed selected admission object which includes transcript, soapNote etc.
+  const currentDetailedAdmission = allAdmissions.find(ad => ad.admission.id === selectedAdmission?.id)?.admission;
+
   return (
     <div className="p-6 grid lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-3 mb-4">
+        <label htmlFor="consultation-select" className="block text-sm font-medium text-gray-700 mb-1">Select Consultation Date:</label>
+        <select 
+          id="consultation-select"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          value={selectedAdmission?.id || ""}
+          onChange={(e) => {
+            const admissionId = e.target.value;
+            onSelectAdmission(availableAdmissions.find(a => a.id === admissionId) || null);
+          }}
+        >
+          <option value="" disabled>-- Select a consultation --</option>
+          {availableAdmissions.map((adm) => (
+            <option key={adm.id} value={adm.id}>
+              {new Date(adm.scheduledStart).toLocaleString()} - {adm.reason || 'N/A'}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Live Transcript</CardTitle>
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
-          {lines.map((l, i) => (
-            <p key={i}>
-              <strong>{l.s}: </strong>
-              {l.t}
-            </p>
-          ))}
+          {currentDetailedAdmission?.transcript ? 
+            currentDetailedAdmission.transcript.split('\n').map((line, i) => <p key={i}>{line}</p>) :
+            <p>No transcript available for this consultation.</p>
+          }
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
           <CardTitle>Structured Note (SOAP)</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm space-y-2">
-          <p>
-            <strong>S:</strong> {note.subjective}
-          </p>
-          <p>
-            <strong>O:</strong> {note.objective}
-          </p>
-          <p>
-            <strong>A:</strong> {note.assessment}
-          </p>
-          <p>
-            <strong>P:</strong> {note.plan}
-          </p>
+        <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
+          {currentDetailedAdmission?.soapNote ? 
+             currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i}>{line}</p>) :
+            <p>No SOAP note available for this consultation.</p>}
         </CardContent>
       </Card>
     </div>
@@ -385,55 +463,52 @@ function Consultation({ patient }: { patient: any }) {
 // ***********************************
 // DIAGNOSIS & TREATMENT REPORTS
 // ***********************************
-function Diagnosis({ patient }: { patient: any }) {
-  const list = diffDx[patient.id] || [];
+function Diagnosis({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }> }) {
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
-      {list.map((item, index) => (
-        <div key={index} className="flex justify-between items-center">
-          <span>{item.dx}</span>
-          <span className="text-muted-foreground text-xs">
-            {item.p.toFixed(2)}%
-          </span>
+    <div className="p-6 space-y-6">
+      {allAdmissions.length === 0 && <p>No admission data to display diagnoses for.</p>}
+      {allAdmissions.map(({ admission, diagnoses }) => (
+        <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
+          <h3 className="text-md font-semibold text-gray-800">Visit on: {new Date(admission.scheduledStart).toLocaleString()}</h3>
+          <p className="text-sm text-gray-600 mb-2">Reason: {admission.reason || 'N/A'}</p>
+          {renderDetailTable('Diagnoses for this visit', diagnoses, ['Code', 'Description'], ['code', 'description'])}
         </div>
       ))}
     </div>
   );
 }
 
-function Treatment({ patient }: { patient: any }) {
-  const treatmentRows = treatments[patient.id] || [];
+function Treatment({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[]; /* Admission type now includes treatments */ }> }) {
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
-      {treatmentRows.map((t, index) => (
-        <div key={index} className="flex justify-between items-center">
-          <span>{t.drug}</span>
-          <span className="text-muted-foreground text-xs">
-            {t.status}
-          </span>
+    <div className="p-6 space-y-6">
+      {allAdmissions.length === 0 && <p>No admission data to display treatments for.</p>}
+      {allAdmissions.map(({ admission }) => (
+        <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
+          <h3 className="text-md font-semibold text-gray-800">Visit on: {new Date(admission.scheduledStart).toLocaleString()}</h3>
+          <p className="text-sm text-gray-600 mb-2">Reason: {admission.reason || 'N/A'}</p>
+          {renderDetailTable('Treatments for this visit', admission.treatments || [], ['Drug', 'Status', 'Rationale'], ['drug', 'status', 'rationale'])}
         </div>
       ))}
     </div>
   );
 }
 
-function Labs({ patient }: { patient: any }) {
-  const labRows = labs[patient.id] || [];
+function Labs({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }> }) {
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
-      {labRows.map((l, index) => (
-        <div key={index} className="flex justify-between items-center">
-          <span>{l.test}</span>
-          <span className="text-muted-foreground text-xs">
-            {l.value}
-          </span>
+    <div className="p-6 space-y-6">
+      {allAdmissions.length === 0 && <p>No admission data to display labs for.</p>}
+      {allAdmissions.map(({ admission, labResults }) => (
+        <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
+          <h3 className="text-md font-semibold text-gray-800">Visit on: {new Date(admission.scheduledStart).toLocaleString()}</h3>
+          <p className="text-sm text-gray-600 mb-2">Reason: {admission.reason || 'N/A'}</p>
+          {renderDetailTable('Labs for this visit', labResults, ['Test Name', 'Value', 'Units', 'Date/Time', 'Ref. Range', 'Flag'], ['name', 'value', 'units', 'dateTime', 'referenceRange', 'flag'])}
         </div>
       ))}
     </div>
   );
 }
 
-function PriorAuth({ patient }: { patient: any }) {
+function PriorAuth({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }> }) {
   return (
     <div className="p-6 max-w-3xl">
       <Card>
@@ -452,23 +527,27 @@ function PriorAuth({ patient }: { patient: any }) {
   );
 }
 
-function Trials({ patient }: { patient: any }) {
-  const trialRows = trials[patient.id] || [];
+function Trials({ patient }: { patient: Patient }) {
+  // Original mock trials data, specific to patient '1'
+  const MOCK_TRIALS_DATA: Record<string, { id: string; title: string; distance: string; fit: number }[]> = {
+    "1": [
+      { id: "NCT055123", title: "Abatacept vs Placebo in Early RA", distance: "12 mi", fit: 0.82, },
+      { id: "NCT061987", title: "JAK Inhibitor Tofacitinib Long-Term Safety", distance: "32 mi", fit: 0.77, },
+    ],
+  };
+  const trialRows = MOCK_TRIALS_DATA[patient.id] || [];
+  
+  if (trialRows.length === 0) {
+    return <div className="p-6"><p>No clinical trial information available for this patient.</p></div>;
+  }
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
-      {trialRows.map((t, index) => (
-        <div key={index} className="flex justify-between items-center">
-          <span>{t.title}</span>
-          <span className="text-muted-foreground text-xs">
-            {t.distance}
-          </span>
-        </div>
-      ))}
+    <div className="p-6 space-y-4 max-w-3xl">
+      {renderDetailTable('Clinical Trials', trialRows, ['ID', 'Title', 'Distance', 'Fit Score'], ['id', 'title', 'distance', 'fit'])}
     </div>
   );
 }
 
-function History({ patient }: { patient: any }) {
+function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }> }) {
   return (
     <div className="p-6 max-w-2xl space-y-4">
       <Card>
