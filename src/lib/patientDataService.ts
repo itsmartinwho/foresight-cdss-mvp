@@ -1,24 +1,34 @@
 import { Patient, Admission, Diagnosis, LabResult, Treatment, ComplexCaseAlert } from './types';
 
 // Helper function to parse TSV data (can be made more robust)
-function parseTSV(tsvText: string): any[] {
-  if (!tsvText || !tsvText.trim()) return [];
+function parseTSV(tsvText: string, forFile: string, debugMessagesRef: string[]): any[] {
+  // debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Raw text (first 100): ${tsvText.substring(0,100)}`);
+  if (!tsvText || !tsvText.trim()) {
+    debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Received empty or whitespace-only text.`);
+    return [];
+  }
   const lines = tsvText.trim().split('\n');
-  if (lines.length < 2) return []; // Header + at least one data row
-
+  if (lines.length < 1) { // Allow files with only a header or only data (though header is expected)
+     debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): No lines after trim/split.`);
+    return [];
+  }
   const raw_header = lines[0].split('\t');
-  const header = raw_header.map(h => h.trim().replace(/\uFEFF/g, ''));
-  // ##### DEBUG LOG #####
-  // console.log("DEBUG SERVICE: TSV Header in parseTSV:", header);
-  // This will be captured by the tool's print if the calling function prints it.
-  // For direct visibility if this function is called multiple times, we'd need a different strategy
-  // but patientDataService calls it once per file.
+  const header = raw_header.map(h => h.trim().replace(/\uFEFF/g, '')); // Strip BOM from header keys
+  debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Parsed Header: ${JSON.stringify(header)}`);
+  
+  if (lines.length < 2 && header.length > 0) {
+      debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Only header found, no data rows.`);
+      return []; // Only header found
+  }
+  if (header.length === 0 && lines.length > 0) {
+       debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): No header found, cannot process.`);
+      return [];
+  }
 
   const data = [];
-
   for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue; // Skip empty lines
     const values = lines[i].split('\t');
-    // Ensure row has same number of columns as header, pad with empty strings if not
     const paddedValues = [...values];
     while (paddedValues.length < header.length) {
       paddedValues.push('');
@@ -71,39 +81,34 @@ class PatientDataService {
     diagnoses: any[], 
     labResults: any[]
   }> {
-    let patientsArray: any[] = [];
-    let admissionsArray: any[] = [];
-    let diagnosesArray: any[] = [];
-    let labResultsArray: any[] = [];
+    this.debugMessages.push("PRINT_DEBUG SERVICE (fetchRawData): Starting.");
+    let patientsArray: any[] = [], admissionsArray: any[] = [], diagnosesArray: any[] = [], labResultsArray: any[] = [];
+    const filesToFetch = [
+      { name: 'Enriched_Patients.tsv', arrayRef: (arr: any[]) => patientsArray = arr },
+      { name: 'Enriched_Admissions.tsv', arrayRef: (arr: any[]) => admissionsArray = arr },
+      { name: 'AdmissionsDiagnosesCorePopulatedTable.txt', arrayRef: (arr: any[]) => diagnosesArray = arr },
+      { name: 'LabsCorePopulatedTable.txt', arrayRef: (arr: any[]) => labResultsArray = arr }
+    ];
 
-    try {
-      const patientsResponse = await fetch('/data/100-patients/Enriched_Patients.tsv');
-      if (patientsResponse.ok) {
-        const patientsTSV = await patientsResponse.text();
-        patientsArray = parseTSV(patientsTSV);
+    for (const file of filesToFetch) {
+      try {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): Fetching ${file.name}...`);
+        const response = await fetch(`/data/100-patients/${file.name}`);
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${file.name} response ok: ${response.ok}, status: ${response.status}`);
+        if (response.ok) {
+          const tsvText = await response.text();
+          this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${file.name} text (first 300 chars): ${tsvText.substring(0, 300)}`);
+          const parsedData = parseTSV(tsvText, file.name, this.debugMessages);
+          file.arrayRef(parsedData);
+          this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): ${file.name} parsed count: ${parsedData.length}`);
+        } else {
+          this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): Failed to fetch ${file.name}`);
+        }
+      } catch (e: any) { 
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (fetchRawData): Exception fetching/parsing ${file.name}: ${e.message}`);
+        console.error(`Fetch/Parse ${file.name}:`, e);
       }
-    } catch (e: any) { console.error("Fetch/Parse Enriched_Patients.tsv:", e); }
-
-    try {
-      const admissionsResponse = await fetch('/data/100-patients/Enriched_Admissions.tsv');
-      if (admissionsResponse.ok) {
-        const admissionsTSV = await admissionsResponse.text();
-        admissionsArray = parseTSV(admissionsTSV);
-      }
-    } catch (e: any) { console.error("Fetch/Parse Enriched_Admissions.tsv:", e); }
-    
-    try {
-      const diagnosesResponse = await fetch('/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt');
-      if (!diagnosesResponse.ok) throw new Error(`Failed to fetch AdmissionsDiagnosesCorePopulatedTable.txt: ${diagnosesResponse.statusText}`);
-      diagnosesArray = parseTSV(await diagnosesResponse.text());
-    } catch (e) { console.error("Error fetching/parsing AdmissionsDiagnosesCorePopulatedTable.txt:", e); }
-
-    try {
-      const labsResponse = await fetch('/data/100-patients/LabsCorePopulatedTable.txt');
-      if (!labsResponse.ok) throw new Error(`Failed to fetch LabsCorePopulatedTable.txt: ${labsResponse.statusText}`);
-      labResultsArray = parseTSV(await labsResponse.text());
-    } catch (e) { console.error("Error fetching/parsing LabsCorePopulatedTable.txt:", e); }
-
+    }
     return { patients: patientsArray, admissions: admissionsArray, diagnoses: diagnosesArray, labResults: labResultsArray };
   }
 
