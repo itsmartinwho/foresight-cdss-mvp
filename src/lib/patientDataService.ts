@@ -64,6 +64,8 @@ class PatientDataService {
         {
           id: '1',
           name: 'Maria Gomez',
+          firstName: 'Maria',
+          lastName: 'Gomez',
           gender: 'Female',
           dateOfBirth: '1988-04-17',
           race: 'Unknown',
@@ -77,6 +79,8 @@ class PatientDataService {
         {
           id: '2',
           name: 'James Lee',
+          firstName: 'James',
+          lastName: 'Lee',
           gender: 'Male',
           dateOfBirth: '1972-11-05',
           race: 'Unknown',
@@ -90,6 +94,8 @@ class PatientDataService {
         {
           id: '3',
           name: 'Priya Patel',
+          firstName: 'Priya',
+          lastName: 'Patel',
           gender: 'Female',
           dateOfBirth: '1990-07-09',
           race: 'Unknown',

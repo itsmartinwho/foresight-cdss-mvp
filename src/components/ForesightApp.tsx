@@ -569,32 +569,69 @@ function SettingsView() {
 // PATIENTS LIST VIEW
 // ***********************************
 function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
-  const [rows, setRows] = useState<{ patient: Patient; next: Admission | null }[]>([]);
+  const [upcomingRows, setUpcomingRows] = useState<{ patient: Patient; visit: Admission }[]>([]);
+  const [pastRows, setPastRows] = useState<{ patient: Patient; visit: Admission }[]>([]);
 
   useEffect(() => {
     const load = async () => {
       await patientDataService.loadPatientData();
-      const all = patientDataService.getAllPatients();
+      const allPatients = patientDataService.getAllPatients();
       const now = new Date();
-      const data = all.map((p) => {
+
+      const upcoming: { patient: Patient; visit: Admission }[] = [];
+      const past: { patient: Patient; visit: Admission }[] = [];
+
+      allPatients.forEach((p) => {
         const admissions = patientDataService.getPatientAdmissions(p.id);
-        const upcoming = admissions
-          .filter((a) => new Date(a.scheduledStart) > now)
-          .sort((a, b) => new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime())[0] || null;
-        return { patient: p, next: upcoming };
+        admissions.forEach((a) => {
+          const row = { patient: p, visit: a };
+          if (new Date(a.scheduledStart) > now) {
+            upcoming.push(row);
+          } else {
+            past.push(row);
+          }
+        });
       });
-      // sort alphabetically
-      data.sort((a, b) => (a.patient.name || "").localeCompare(b.patient.name || ""));
-      setRows(data);
+
+      upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+      past.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+
+      setUpcomingRows(upcoming);
+      setPastRows(past);
     };
     load();
   }, []);
+
+  const displayName = (p: Patient) => {
+    if (p.firstName || p.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
+    return p.name ?? p.id;
+  };
+
+  const renderSection = (title: string, rows: { patient: Patient; visit: Admission }[]) => (
+    <>
+      <h3 className="font-semibold text-sm mb-2 mt-4">{title}</h3>
+      <Table>
+        <TableBody>
+          {rows.map(({ patient, visit }) => (
+            <TableRow key={`${patient.id}_${visit.id}`} onClick={() => onSelect(patient)} className="cursor-pointer hover:bg-slate-50">
+              <TableCell className="flex items-center gap-2">
+                {patient.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
+                {displayName(patient)}
+              </TableCell>
+              <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
+              <TableCell>{visit.reason || patient.reason || ""}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </>
+  );
 
   return (
     <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle>All Patients</CardTitle>
+          <CardTitle>Consultations</CardTitle>
           <CardDescription>Click a patient to open the workspace</CardDescription>
         </CardHeader>
         <CardContent>
@@ -602,25 +639,13 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Patient</TableHead>
-                <TableHead>Upcoming Visit</TableHead>
-                <TableHead>Reason</TableHead>
+                <TableHead>Scheduled date</TableHead>
+                <TableHead>Reason for visit</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {rows.map(({ patient, next }) => (
-                <TableRow key={patient.id} onClick={() => onSelect(patient)} className="cursor-pointer hover:bg-slate-50">
-                  <TableCell className="flex items-center gap-2">
-                    {patient.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
-                    {patient.name || patient.id}
-                  </TableCell>
-                  <TableCell>
-                    {next ? new Date(next.scheduledStart).toLocaleString() : "—"}
-                  </TableCell>
-                  <TableCell>{next?.reason || patient.reason || ""}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
           </Table>
+          {renderSection('Upcoming visits', upcomingRows)}
+          {renderSection('Past visits', pastRows)}
         </CardContent>
       </Card>
     </div>
