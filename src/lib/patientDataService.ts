@@ -138,37 +138,29 @@ class PatientDataService {
     this.allDiagnosesByAdmission = {};
     this.allLabResultsByAdmission = {};
 
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): processRawData starting. Patients from fetch: ${data.patients?.length || 0}, Admissions from fetch: ${data.admissions?.length || 0}`);
-    
-    // Target patient ID for detailed logging within loops
+    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Starting. Patients from fetch: ${data.patients?.length || 0}, Admissions: ${data.admissions?.length || 0}`);
     const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
 
-    // Patient processing loop (with existing alertsJSON parsing and logging)
     data.patients.forEach((pData: any) => {
-      if (!pData.PatientID) return; 
-      
+      if (!pData.PatientID) { return; }
       let parsedAlerts: ComplexCaseAlert[] = [];
       const alertsJsonString = pData['alertsJSON'];
       if (alertsJsonString && typeof alertsJsonString === 'string') {
         let jsonToParse = alertsJsonString.trim();
-        if (jsonToParse.length >= 2 && 
-            ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || 
-             (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
-          jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - alertsJSON raw: '${jsonToParse}'`);
+        // Iteratively unwrap outer quotes
+        while (jsonToParse.length >= 2 && ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
+            jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
         }
-
-        if (jsonToParse && jsonToParse !== "[]") {
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - alertsJSON after unwrap: '${jsonToParse}'`);
+        if (jsonToParse && jsonToParse !== "[]" && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{"))) {
           try {
             const alertsFromFile = JSON.parse(jsonToParse);
-            if (Array.isArray(alertsFromFile)) {
-              parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
-            }
-          } catch (e: any) {
-            console.error(`Error parsing alertsJSON for patient ${pData.PatientID}: ${e.message}. Processed string: '${jsonToParse}'. Raw: '${alertsJsonString}'`);
-          }
-        }
+            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
+            if (Array.isArray(alertsFromFile)) { parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');}
+          } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Error parsing for ${pData.PatientID}: ${e.message}. Processed str: '${jsonToParse}'`);}
+        } else if (jsonToParse && pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-unwrap for ${pData.PatientID} is empty or not JSON-like: '${jsonToParse}'`);}
       }
-
       const patient: Patient = {
         id: pData.PatientID.trim(),
         name: pData.name,
@@ -184,34 +176,24 @@ class PatientDataService {
         photo: pData.photo || undefined
       };
       this.patients[patient.id] = patient;
-
-      if (pData.PatientID === targetPatientId1) {
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD PatientsLoop): Processing target ${pData.PatientID}. alertsJSON raw: '${pData['alertsJSON']}'`);
-        // ... log parsedAlerts for target patient ...
-      }
+      if (pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Final patient.alerts for ${targetPatientId1}: ${JSON.stringify(this.patients[targetPatientId1]?.alerts)}`);}
     });
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Finished Patient Processing. this.patients count: ${Object.keys(this.patients).length}`);
+    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient map size after file load: ${Object.keys(this.patients).length}`);
 
-    // Admission processing loop (with existing treatmentsJSON parsing and logging)
     data.admissions.forEach((aData: any) => {
       if (!aData.PatientID || !aData.AdmissionID) return;
       let parsedTreatments: Treatment[] = [];
       const treatmentsJsonString = aData.treatmentsJSON;
       if (treatmentsJsonString && typeof treatmentsJsonString === 'string') {
         let jsonToParse = treatmentsJsonString.trim();
-        if (jsonToParse.length >= 2 && 
-            ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || 
-             (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
-          jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+        while (jsonToParse.length >= 2 && ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
+            jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
         }
-        if (jsonToParse && jsonToParse !== "[]") {
+        if (jsonToParse && jsonToParse !== "[]" && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{"))) {
           try { 
             const treatmentsFromFile = JSON.parse(jsonToParse);
-            if(Array.isArray(treatmentsFromFile)) {
-              parsedTreatments = treatmentsFromFile;
-            }
-          } 
-          catch(e: any) { console.error(`Error parsing treatmentsJSON for Admission ${aData.AdmissionID}, Patient ${aData.PatientID}: ${e.message}. Processed: '${jsonToParse}'. Raw: '${treatmentsJsonString}'`); }
+            if(Array.isArray(treatmentsFromFile)) { parsedTreatments = treatmentsFromFile; }
+          } catch(e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Error parsing for Admission ${aData.AdmissionID}, Patient ${aData.PatientID}: ${e.message}. Processed: '${jsonToParse}'`); }
         }
       }
       const admission: Admission = {
@@ -226,8 +208,11 @@ class PatientDataService {
       };
       if (!this.admissions[admission.patientId]) { this.admissions[admission.patientId] = []; }
       this.admissions[admission.patientId].push(admission);
+      if (['demo-upcoming-1', 'demo-upcoming-2', 'demo-upcoming-3'].includes(admission.id)) {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Admissions): Processed demo admission ${admission.id} for patient ${admission.patientId} - Date: ${admission.scheduledStart}, Reason: ${admission.reason}`);
+      }
     });
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Finished Admission Processing. this.admissions key count: ${Object.keys(this.admissions).length}`);
+    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Admissions processed. Total distinct patient IDs in admissions: ${Object.keys(this.admissions).length}`);
 
     // Diagnoses processing loop
     data.diagnoses.forEach((dxData: any) => {
@@ -266,7 +251,7 @@ class PatientDataService {
     });
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Finished Labs Processing. this.allLabResultsByAdmission key count: ${Object.keys(this.allLabResultsByAdmission).length}`);
     
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): processRawData finished. Final this.patients count: ${Object.keys(this.patients).length}`);
+    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): processRawData finished. Final patient count: ${Object.keys(this.patients).length}`);
   }
 
   /**
@@ -320,17 +305,20 @@ class PatientDataService {
   getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
     const now = new Date();
     const upcoming: { patient: Patient; visit: Admission }[] = [];
-    
+    this.debugMessages.push("PRINT_DEBUG SERVICE (getUpcoming): Called");
     Object.values(this.patients).forEach(patient => {
       const patientAdmissions = this.admissions[patient.id] || [];
       patientAdmissions.forEach((visit) => {
         if (visit.scheduledStart && new Date(visit.scheduledStart) > now) {
+          if (['1','2','3'].includes(patient.id)) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (getUpcoming): Found upcoming for demo patient ${patient.id}: Visit ${visit.id}, Date ${visit.scheduledStart}, Patient Name: ${patient.name}, Photo: ${patient.photo}`);
+          }
           upcoming.push({ patient, visit });
         }
       });
     });
-    
     upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+    this.debugMessages.push(`PRINT_DEBUG SERVICE (getUpcoming): Returning ${upcoming.length} upcoming appointments.`);
     return upcoming;
   }
   
