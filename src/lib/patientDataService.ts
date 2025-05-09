@@ -49,20 +49,15 @@ class PatientDataService {
   async loadPatientData(): Promise<void> {
     this.debugMessages = []; 
     this.isLoaded = false; 
-    this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): loadPatientData called.");
     try {
       const rawData = await this.fetchRawData();
-      this.debugMessages.push(`PRINT_DEBUG SERVICE (LPD): fetchRawData returned - Patients: ${rawData.patients?.length || 0}, Admissions: ${rawData.admissions?.length || 0}, Diagnoses: ${rawData.diagnoses?.length || 0}, Labs: ${rawData.labResults?.length || 0}`);
       if ((rawData.patients?.length || 0) === 0) {
-        this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): No patients fetched. Aborting processRawData.");
-        this.isLoaded = true; // Mark as loaded to prevent loops, but data is empty.
+        this.isLoaded = true; 
         return;
       }
       this.processRawData(rawData);
       this.isLoaded = true; 
-      this.debugMessages.push(`PRINT_DEBUG SERVICE (LPD): Successfully loaded. Total patients in map: ${Object.keys(this.patients).length}`);
-    } catch (error: any) {
-      this.debugMessages.push(`PRINT_DEBUG SERVICE (LPD): Error in loadPatientData: ${error.message}`);
+    } catch (error: any) { 
       this.isLoaded = false; 
     }
   }
@@ -76,39 +71,26 @@ class PatientDataService {
     diagnoses: any[], 
     labResults: any[]
   }> {
-    this.debugMessages.push("PRINT_DEBUG SERVICE: fetchRawData started.");
     let patientsArray: any[] = [];
     let admissionsArray: any[] = [];
     let diagnosesArray: any[] = [];
     let labResultsArray: any[] = [];
 
     try {
-      this.debugMessages.push("PRINT_DEBUG SERVICE: Fetching Enriched_Patients.tsv...");
       const patientsResponse = await fetch('/data/100-patients/Enriched_Patients.tsv');
-      this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Patients.tsv response ok: ${patientsResponse.ok}, status: ${patientsResponse.status}`);
       if (patientsResponse.ok) {
         const patientsTSV = await patientsResponse.text();
-        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Patients.tsv text (first 300 chars): ${patientsTSV.substring(0, 300)}`);
         patientsArray = parseTSV(patientsTSV);
-        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Patients.tsv parsed count: ${patientsArray.length}`);
-      } else {
-        this.debugMessages.push(`PRINT_DEBUG SERVICE: Failed to fetch Enriched_Patients.tsv`);
       }
-    } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE: Exception fetching/parsing Enriched_Patients.tsv: ${e.message}`); console.error("Fetch/Parse Enriched_Patients.tsv:", e); }
+    } catch (e: any) { console.error("Fetch/Parse Enriched_Patients.tsv:", e); }
 
     try {
-      this.debugMessages.push("PRINT_DEBUG SERVICE: Fetching Enriched_Admissions.tsv...");
       const admissionsResponse = await fetch('/data/100-patients/Enriched_Admissions.tsv');
-       this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Admissions.tsv response ok: ${admissionsResponse.ok}, status: ${admissionsResponse.status}`);
       if (admissionsResponse.ok) {
         const admissionsTSV = await admissionsResponse.text();
-        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Admissions.tsv text (first 300 chars): ${admissionsTSV.substring(0,300)}`);
         admissionsArray = parseTSV(admissionsTSV);
-        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Admissions.tsv parsed count: ${admissionsArray.length}`);
-      } else {
-         this.debugMessages.push(`PRINT_DEBUG SERVICE: Failed to fetch Enriched_Admissions.tsv`);
       }
-    } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE: Exception fetching/parsing Enriched_Admissions.tsv: ${e.message}`); console.error("Fetch/Parse Enriched_Admissions.tsv:", e); }
+    } catch (e: any) { console.error("Fetch/Parse Enriched_Admissions.tsv:", e); }
     
     try {
       const diagnosesResponse = await fetch('/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt');
@@ -139,31 +121,28 @@ class PatientDataService {
     this.allDiagnosesByAdmission = {};
     this.allLabResultsByAdmission = {};
 
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Starting. Received patients: ${data.patients?.length || 0}`);
-    const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
-
     data.patients.forEach((pData: any) => {
-      if (!pData.PatientID) {
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Row ${pData.index} in Enriched_Patients.tsv missing PatientID.`);
-        return; 
-      }
-      if (pData.PatientID === targetPatientId1) {
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Processing target patient ${pData.PatientID}. Available keys: ${Object.keys(pData).join(', ')}`);
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Raw alertsJSON for ${pData.PatientID}: '${pData.alertsJSON}'`);
-      }
+      if (!pData.PatientID) return; 
       
       let parsedAlerts: ComplexCaseAlert[] = [];
-      if (pData['alertsJSON'] && typeof pData['alertsJSON'] === 'string') {
-        let jsonAlertStringToParse = pData['alertsJSON'].trim();
-        if ((jsonAlertStringToParse.startsWith("'") && jsonAlertStringToParse.endsWith("'")) || (jsonAlertStringToParse.startsWith("\"") && jsonAlertStringToParse.endsWith("\""))) {
-            jsonAlertStringToParse = jsonAlertStringToParse.substring(1, jsonAlertStringToParse.length - 1);
+      const alertsJsonString = pData['alertsJSON'];
+      if (alertsJsonString && typeof alertsJsonString === 'string') {
+        let jsonToParse = alertsJsonString.trim();
+        if (jsonToParse.length >= 2 && 
+            ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || 
+             (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
+          jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
         }
-        if (jsonAlertStringToParse !== "" && jsonAlertStringToParse !== "[]") {
+
+        if (jsonToParse && jsonToParse !== "[]") {
           try {
-            const alertsFromFile = JSON.parse(jsonAlertStringToParse);
-            if (pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Parsed alerts for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`); }
-            if (Array.isArray(alertsFromFile)) { parsedAlerts = alertsFromFile.filter(al => al && al.id && al.msg); }
-          } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Error parsing alertsJSON for ${pData.PatientID}: ${e.message}. Raw: '${pData['alertsJSON']}'`); }
+            const alertsFromFile = JSON.parse(jsonToParse);
+            if (Array.isArray(alertsFromFile)) {
+              parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
+            }
+          } catch (e: any) {
+            console.error(`Error parsing alertsJSON for patient ${pData.PatientID}: ${e.message}. Processed string: '${jsonToParse}'. Raw: '${alertsJsonString}'`);
+          }
         }
       }
 
@@ -179,19 +158,31 @@ class PatientDataService {
         language: pData.PatientLanguage,
         povertyPercentage: parseFloat(pData.PatientPopulationPercentageBelowPoverty) || 0,
         alerts: parsedAlerts.length > 0 ? parsedAlerts : undefined,
-        photo: pData.photo || undefined // Photo now comes from Enriched_Patients.tsv
+        photo: pData.photo || undefined
       };
       this.patients[patient.id] = patient;
-      if (pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Final patient.alerts for ${targetPatientId1}: ${JSON.stringify(this.patients[targetPatientId1]?.alerts)}`); }
     });
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient map size after file load: ${Object.keys(this.patients).length}`);
 
     data.admissions.forEach((aData: any) => {
       if (!aData.PatientID || !aData.AdmissionID) return;
       let parsedTreatments: Treatment[] = [];
-      if (aData.treatmentsJSON && typeof aData.treatmentsJSON === 'string' && aData.treatmentsJSON.trim() !== "[]" && aData.treatmentsJSON.trim() !== ""){
-        try { parsedTreatments = JSON.parse(aData.treatmentsJSON); } 
-        catch(e) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Error parsing treatmentsJSON for Admission ${aData.AdmissionID}, Patient ${aData.PatientID}: ${e}`); }
+      const treatmentsJsonString = aData.treatmentsJSON;
+      if (treatmentsJsonString && typeof treatmentsJsonString === 'string') {
+        let jsonToParse = treatmentsJsonString.trim();
+        if (jsonToParse.length >= 2 && 
+            ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || 
+             (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
+          jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+        }
+        if (jsonToParse && jsonToParse !== "[]") {
+          try { 
+            const treatmentsFromFile = JSON.parse(jsonToParse);
+            if(Array.isArray(treatmentsFromFile)) {
+              parsedTreatments = treatmentsFromFile;
+            }
+          } 
+          catch(e: any) { console.error(`Error parsing treatmentsJSON for Admission ${aData.AdmissionID}, Patient ${aData.PatientID}: ${e.message}. Processed: '${jsonToParse}'. Raw: '${treatmentsJsonString}'`); }
+        }
       }
       const admission: Admission = {
         id: aData.AdmissionID, patientId: aData.PatientID,
@@ -206,7 +197,6 @@ class PatientDataService {
       if (!this.admissions[admission.patientId]) { this.admissions[admission.patientId] = []; }
       this.admissions[admission.patientId].push(admission);
     });
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Admissions processed. Total distinct patient IDs in admissions: ${Object.keys(this.admissions).length}`);
 
     data.diagnoses.forEach((dxData: any) => {
       if (!dxData.PatientID || !dxData.AdmissionID) return; // Basic validation
@@ -240,8 +230,6 @@ class PatientDataService {
        }
        this.allLabResultsByAdmission[key].push(labResult);
     });
-
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): processRawData finished. Final patient count: ${Object.keys(this.patients).length}`);
   }
 
   /**

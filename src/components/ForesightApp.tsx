@@ -695,9 +695,8 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 
 // AlertsView Updated with More Detailed Temporary Debug Output
 function AlertsView() {
-  const [allPatientsWithAlertsFromUI, setAllPatientsWithAlertsFromUI] = useState<Patient[]>([]); // Renamed to avoid confusion
+  const [allPatientsWithAlertsFromUI, setAllPatientsWithAlertsFromUI] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [debugMessagesToDisplay, setDebugMessagesToDisplay] = useState<string[]>([]); // Renamed for clarity
 
   useEffect(() => {
     const loadAlertData = async () => {
@@ -706,9 +705,6 @@ function AlertsView() {
       const allPatientsFromService = patientDataService.getAllPatients();
       setAllPatientsWithAlertsFromUI(allPatientsFromService.filter(p => p.alerts && p.alerts.length > 0));
       
-      // Access instance member debugMessages
-      setDebugMessagesToDisplay([...patientDataService.debugMessages]); 
-
       setIsLoading(false);
     };
     loadAlertData();
@@ -720,19 +716,6 @@ function AlertsView() {
 
   return (
     <div className="p-6">
-      {/* --- TEMPORARY DEBUGGING OUTPUT --- */}
-      {debugMessagesToDisplay.length > 0 && (
-        <Card className="mb-4 bg-indigo-50 border-indigo-300"> 
-          <CardHeader><CardTitle className="text-indigo-700">PatientDataService Internal Debug</CardTitle></CardHeader>
-          <CardContent>
-            <pre className="text-xs whitespace-pre-wrap break-all text-indigo-800">
-              {debugMessagesToDisplay.join('\n')}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
-      {/* --- END TEMPORARY DEBUGGING OUTPUT --- */}
-
       <Card>
         <CardHeader>
           <CardTitle>Patient Alerts</CardTitle>
