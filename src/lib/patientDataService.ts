@@ -6,7 +6,14 @@ function parseTSV(tsvText: string): any[] {
   const lines = tsvText.trim().split('\n');
   if (lines.length < 2) return []; // Header + at least one data row
 
-  const header = lines[0].split('\t').map(h => h.trim());
+  const raw_header = lines[0].split('\t');
+  const header = raw_header.map(h => h.trim());
+  // ##### DEBUG LOG #####
+  // console.log("DEBUG SERVICE: TSV Header in parseTSV:", header);
+  // This will be captured by the tool's print if the calling function prints it.
+  // For direct visibility if this function is called multiple times, we'd need a different strategy
+  // but patientDataService calls it once per file.
+
   const data = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -62,20 +69,30 @@ class PatientDataService {
   private allDiagnosesByAdmission: Record<string, Diagnosis[]> = {}; // Key: patientId_admissionId
   private allLabResultsByAdmission: Record<string, LabResult[]> = {}; // Key: patientId_admissionId
   private isLoaded = false;
+  public debugMessages: string[] = []; // Changed to instance member
 
   /**
    * Load patient data from the provided data files
    */
   async loadPatientData(): Promise<void> {
-    if (this.isLoaded) return;
-    
+    this.debugMessages = []; // Clear instance member messages
+    if (this.isLoaded && this.patients && Object.keys(this.patients).length > 0) { // Avoid redundant loads if already successfully loaded
+        // console.log("PRINT_DEBUG SERVICE: Data already loaded. Skipping redundant load.");
+        // PatientDataService.debugMessages.push("PRINT_DEBUG SERVICE: Data already loaded. Attempted redundant load.");
+        // this.debugMessages.push("PRINT_DEBUG SERVICE: Data already loaded. Attempted redundant load.");
+        return;
+    }
+    this.isLoaded = false; // Reset loaded flag to force re-processing if called again after an error or for refresh
+
     try {
       const rawData = await this.fetchRawData();
       this.processRawData(rawData);
-      this.isLoaded = true;
-      console.log(`Loaded ${Object.keys(this.patients).length} patients, their admissions, diagnoses, and labs.`);
+      this.isLoaded = true; // Set after successful processing
+      this.debugMessages.push(`PRINT_DEBUG SERVICE: Successfully loaded and processed data. Patients: ${Object.keys(this.patients).length}`);
     } catch (error) {
       console.error('Error loading patient data:', error);
+      this.debugMessages.push(`PRINT_DEBUG SERVICE: Error loading patient data: ${error}`);
+      this.isLoaded = false; // Ensure isLoaded is false if there was an error
       throw new Error('Failed to load patient data');
     }
   }
@@ -97,7 +114,14 @@ class PatientDataService {
     try {
       const patientsResponse = await fetch('/data/100-patients/Enriched_Patients.tsv');
       if (!patientsResponse.ok) throw new Error(`Failed to fetch Enriched_Patients.tsv: ${patientsResponse.statusText}`);
-      patientsArray = parseTSV(await patientsResponse.text());
+      const tsvText = await patientsResponse.text();
+      // ##### DEBUG LOG for header within fetchRawData context #####
+      if (tsvText && tsvText.trim().split('\n').length > 0) {
+        const headerLine = tsvText.trim().split('\n')[0];
+        const actualHeader = headerLine.split('\t').map(h => h.trim());
+        console.log("PRINT_DEBUG SERVICE: Actual Header from Enriched_Patients.tsv:", actualHeader);
+      }
+      patientsArray = parseTSV(tsvText);
     } catch (e) { console.error("Error fetching/parsing Enriched_Patients.tsv:", e); }
 
     try {
@@ -135,20 +159,34 @@ class PatientDataService {
     this.allDiagnosesByAdmission = {};
     this.allLabResultsByAdmission = {};
 
+    this.debugMessages.push(`PRINT_DEBUG SERVICE: Starting processRawData. data.patients (from Enriched_Patients.tsv) length: ${data.patients.length}`);
+
+    const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
+    // const targetPatientId2 = '64182B95-EB72-4E2B-BE77-8050B71498CE'; // For brevity, focus on one target
+
     data.patients.forEach((pData: any) => {
+      if (!pData.PatientID) {
+        console.log("PRINT_DEBUG SERVICE: Row in Enriched_Patients.tsv missing PatientID:", pData);
+        return; 
+      }
+      // ##### DEBUG LOG for target patients raw data from TSV #####
+      if (pData.PatientID === 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F' || pData.PatientID === '64182B95-EB72-4E2B-BE77-8050B71498CE') {
+        console.log(`PRINT_DEBUG SERVICE: Raw pData for ${pData.PatientID}:`, JSON.stringify(pData));
+      }
+
       let parsedAlerts: ComplexCaseAlert[] = [];
-      if (pData.alertsJSON) {
+      if (pData.alertsJSON && pData.alertsJSON.trim() !== "" && pData.alertsJSON.trim() !== "[]") {
         try {
           const alertsFromFile = JSON.parse(pData.alertsJSON);
           if (Array.isArray(alertsFromFile)) {
             parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error(`Error parsing alertsJSON for patient ${pData.PatientID}:`, e, pData.alertsJSON);
         }
       }
       const patient: Patient = {
-        id: pData.PatientID,
+        id: pData.PatientID.trim(),
         name: pData.name,
         firstName: pData.firstName,
         lastName: pData.lastName,
@@ -164,6 +202,11 @@ class PatientDataService {
       this.patients[patient.id] = patient;
     });
 
+    const loadedPatientIdsFromFile = Object.keys(this.patients);
+    this.debugMessages.push(`PRINT_DEBUG SERVICE: Count of patients loaded from Enriched_Patients.tsv: ${loadedPatientIdsFromFile.length}`);
+    const patient1FromFile = this.patients[targetPatientId1];
+    this.debugMessages.push(`PRINT_DEBUG SERVICE: Target Patient 1 (FB2...) from file load - Alerts: ${patient1FromFile ? JSON.stringify(patient1FromFile.alerts) : "NOT FOUND IN MAP POST-FILE-LOAD"}`);
+    
     // Process admissions from Enriched_Admissions.tsv
     data.admissions.forEach((aData: any) => {
       const admission: Admission = {
@@ -308,6 +351,10 @@ class PatientDataService {
         }
       }
     });
+
+    this.debugMessages.push(`PRINT_DEBUG SERVICE: Patient IDs AFTER demo overlay: ${Object.keys(this.patients).length}`);
+    const patient1AfterOverlay = this.patients[targetPatientId1];
+    this.debugMessages.push(`PRINT_DEBUG SERVICE: Target Patient 1 (FB2...) AFTER demo overlay - Alerts: ${patient1AfterOverlay ? JSON.stringify(patient1AfterOverlay.alerts) : "NOT FOUND IN MAP POST-OVERLAY"}`);
   }
 
   /**

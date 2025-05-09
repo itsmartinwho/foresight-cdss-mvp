@@ -697,49 +697,17 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 function AlertsView() {
   const [allPatientsWithAlertsFromUI, setAllPatientsWithAlertsFromUI] = useState<Patient[]>([]); // Renamed to avoid confusion
   const [isLoading, setIsLoading] = useState(true);
-  const [debugMessages, setDebugMessages] = useState<string[]>([]);
+  const [debugMessagesToDisplay, setDebugMessagesToDisplay] = useState<string[]>([]); // Renamed for clarity
 
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
-      await patientDataService.loadPatientData(); // Ensure data is loaded
+      await patientDataService.loadPatientData(); 
       const allPatientsFromService = patientDataService.getAllPatients();
-      
       setAllPatientsWithAlertsFromUI(allPatientsFromService.filter(p => p.alerts && p.alerts.length > 0));
       
-      // --- DETAILED TEMPORARY DEBUGGING --- 
-      const newDebugMessages: string[] = [];
-      newDebugMessages.push("--- Patient Service Debug --- GHOST --- ");
-      newDebugMessages.push(`Total patients loaded by service: ${allPatientsFromService.length}`);
-      newDebugMessages.push("All Patient IDs loaded by service:");
-      allPatientsFromService.forEach(p => newDebugMessages.push(`  - ${p.id} (Name: ${p.name || 'N/A'})`));
-      newDebugMessages.push("---------------------------");
-
-      const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
-      const targetPatientId2 = '64182B95-EB72-4E2B-BE77-8050B71498CE';
-      
-      const patient1 = patientDataService.getPatient(targetPatientId1);
-      newDebugMessages.push(`Debug for Patient ${targetPatientId1}:`);
-      if (patient1) {
-        newDebugMessages.push(`  Name: ${patient1.name}`);
-        // To access alertsJSON, we'd ideally need to see the raw data before Patient object creation.
-        // For now, we log patient.alerts which is the result AFTER parsing in the service.
-        newDebugMessages.push(`  patient.alerts (from service): ${JSON.stringify(patient1.alerts, null, 2) || 'undefined/empty'}`);
-      } else {
-        newDebugMessages.push(`  Patient ${targetPatientId1} NOT FOUND by service.getPatient().`);
-      }
-      
-      const patient2 = patientDataService.getPatient(targetPatientId2);
-      newDebugMessages.push(`Debug for Patient ${targetPatientId2}:`);
-      if (patient2) {
-        newDebugMessages.push(`  Name: ${patient2.name}`);
-        newDebugMessages.push(`  patient.alerts (from service): ${JSON.stringify(patient2.alerts, null, 2) || 'undefined/empty'}`);
-      } else {
-        newDebugMessages.push(`  Patient ${targetPatientId2} NOT FOUND by service.getPatient().`);
-      }
-      newDebugMessages.push("--- End Patient Service Debug --- GHOST ---");
-      setDebugMessages(newDebugMessages);
-      // --- END DETAILED TEMPORARY DEBUGGING ---
+      // Access instance member debugMessages
+      setDebugMessagesToDisplay([...patientDataService.debugMessages]); 
 
       setIsLoading(false);
     };
@@ -753,12 +721,12 @@ function AlertsView() {
   return (
     <div className="p-6">
       {/* --- TEMPORARY DEBUGGING OUTPUT --- */}
-      {debugMessages.length > 0 && (
-        <Card className="mb-4 bg-yellow-50 border-yellow-300">
-          <CardHeader><CardTitle className="text-yellow-700">Temporary Debug Info (Alerts Source & Patient Load Status)</CardTitle></CardHeader>
+      {debugMessagesToDisplay.length > 0 && (
+        <Card className="mb-4 bg-indigo-50 border-indigo-300"> 
+          <CardHeader><CardTitle className="text-indigo-700">PatientDataService Internal Debug</CardTitle></CardHeader>
           <CardContent>
-            <pre className="text-xs whitespace-pre-wrap break-all text-yellow-800">
-              {debugMessages.join('\n')}
+            <pre className="text-xs whitespace-pre-wrap break-all text-indigo-800">
+              {debugMessagesToDisplay.join('\n')}
             </pre>
           </CardContent>
         </Card>
