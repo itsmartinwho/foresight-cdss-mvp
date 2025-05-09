@@ -693,43 +693,53 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 // AUXILIARY VIEWS
 // ***********************************
 
-// AlertsView Updated with Temporary Debug Output
+// AlertsView Updated with More Detailed Temporary Debug Output
 function AlertsView() {
-  const [allPatientsWithAlerts, setAllPatientsWithAlerts] = useState<Patient[]>([]);
+  const [allPatientsWithAlertsFromUI, setAllPatientsWithAlertsFromUI] = useState<Patient[]>([]); // Renamed to avoid confusion
   const [isLoading, setIsLoading] = useState(true);
-  const [debugPatientAlertData, setDebugPatientAlertData] = useState<string[]>([]); // For debug output
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
 
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
-      await patientDataService.loadPatientData();
-      const patients = patientDataService.getAllPatients();
-      setAllPatientsWithAlerts(patients.filter(p => p.alerts && p.alerts.length > 0));
+      await patientDataService.loadPatientData(); // Ensure data is loaded
+      const allPatientsFromService = patientDataService.getAllPatients();
       
-      // --- TEMPORARY DEBUGGING --- 
-      const debugMessages: string[] = [];
+      setAllPatientsWithAlertsFromUI(allPatientsFromService.filter(p => p.alerts && p.alerts.length > 0));
+      
+      // --- DETAILED TEMPORARY DEBUGGING --- 
+      const newDebugMessages: string[] = [];
+      newDebugMessages.push("--- Patient Service Debug --- GHOST --- ");
+      newDebugMessages.push(`Total patients loaded by service: ${allPatientsFromService.length}`);
+      newDebugMessages.push("All Patient IDs loaded by service:");
+      allPatientsFromService.forEach(p => newDebugMessages.push(`  - ${p.id} (Name: ${p.name || 'N/A'})`));
+      newDebugMessages.push("---------------------------");
+
       const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
       const targetPatientId2 = '64182B95-EB72-4E2B-BE77-8050B71498CE';
+      
       const patient1 = patientDataService.getPatient(targetPatientId1);
-      const patient2 = patientDataService.getPatient(targetPatientId2);
-      
-      debugMessages.push(`Debug for Patient ${targetPatientId1}:`);
+      newDebugMessages.push(`Debug for Patient ${targetPatientId1}:`);
       if (patient1) {
-        debugMessages.push(`  Name: ${patient1.name}`);
-        debugMessages.push(`  Alerts array: ${JSON.stringify(patient1.alerts, null, 2) || 'undefined/empty'}`);
+        newDebugMessages.push(`  Name: ${patient1.name}`);
+        // To access alertsJSON, we'd ideally need to see the raw data before Patient object creation.
+        // For now, we log patient.alerts which is the result AFTER parsing in the service.
+        newDebugMessages.push(`  patient.alerts (from service): ${JSON.stringify(patient1.alerts, null, 2) || 'undefined/empty'}`);
       } else {
-        debugMessages.push(`  Patient ${targetPatientId1} not found by service.`);
+        newDebugMessages.push(`  Patient ${targetPatientId1} NOT FOUND by service.getPatient().`);
       }
       
-      debugMessages.push(`Debug for Patient ${targetPatientId2}:`);
+      const patient2 = patientDataService.getPatient(targetPatientId2);
+      newDebugMessages.push(`Debug for Patient ${targetPatientId2}:`);
       if (patient2) {
-        debugMessages.push(`  Name: ${patient2.name}`);
-        debugMessages.push(`  Alerts array: ${JSON.stringify(patient2.alerts, null, 2) || 'undefined/empty'}`);
+        newDebugMessages.push(`  Name: ${patient2.name}`);
+        newDebugMessages.push(`  patient.alerts (from service): ${JSON.stringify(patient2.alerts, null, 2) || 'undefined/empty'}`);
       } else {
-        debugMessages.push(`  Patient ${targetPatientId2} not found by service.`);
+        newDebugMessages.push(`  Patient ${targetPatientId2} NOT FOUND by service.getPatient().`);
       }
-      setDebugPatientAlertData(debugMessages);
-      // --- END TEMPORARY DEBUGGING ---
+      newDebugMessages.push("--- End Patient Service Debug --- GHOST ---");
+      setDebugMessages(newDebugMessages);
+      // --- END DETAILED TEMPORARY DEBUGGING ---
 
       setIsLoading(false);
     };
@@ -743,12 +753,12 @@ function AlertsView() {
   return (
     <div className="p-6">
       {/* --- TEMPORARY DEBUGGING OUTPUT --- */}
-      {debugPatientAlertData.length > 0 && (
+      {debugMessages.length > 0 && (
         <Card className="mb-4 bg-yellow-50 border-yellow-300">
-          <CardHeader><CardTitle className="text-yellow-700">Temporary Debug Info (Alerts Source)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-yellow-700">Temporary Debug Info (Alerts Source & Patient Load Status)</CardTitle></CardHeader>
           <CardContent>
             <pre className="text-xs whitespace-pre-wrap break-all text-yellow-800">
-              {debugPatientAlertData.join('\n')}
+              {debugMessages.join('\n')}
             </pre>
           </CardContent>
         </Card>
@@ -760,8 +770,9 @@ function AlertsView() {
           <CardTitle>Patient Alerts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          {allPatientsWithAlerts.length === 0 && <p>No active alerts for any patient.</p>}
-          {allPatientsWithAlerts.map(patient => (
+          {allPatientsWithAlertsFromUI.length === 0 && !isLoading && <p>No active alerts for any patient.</p>}
+          {isLoading && <p>Loading alerts display...</p>}
+          {allPatientsWithAlertsFromUI.map(patient => (
             patient.alerts?.map(alert => (
               <div key={alert.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-1">
