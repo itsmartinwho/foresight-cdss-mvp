@@ -14,7 +14,7 @@ function parseTSV(tsvText: string, forFile: string, debugMessagesRef: string[]):
   }
   const raw_header = lines[0].split('\t');
   const header = raw_header.map(h => h.trim().replace(/\uFEFF/g, '')); // Strip BOM from header keys
-  debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Parsed Header: ${JSON.stringify(header)}`);
+  // debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Parsed Header: ${JSON.stringify(header)}`);
   
   if (lines.length < 2 && header.length > 0) {
       debugMessagesRef.push(`PRINT_DEBUG SERVICE (parseTSV for ${forFile}): Only header found, no data rows.`);
@@ -59,12 +59,12 @@ class PatientDataService {
   async loadPatientData(): Promise<void> {
     this.debugMessages = []; 
     this.isLoaded = false; 
-    this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): loadPatientData CALLED.");
+    this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): loadPatientData CALLED - Unified Data Model.");
     try {
       const rawData = await this.fetchRawData();
       this.debugMessages.push(`PRINT_DEBUG SERVICE (LPD): fetchRawData returned - Patients: ${rawData.patients?.length || 0}, Admissions: ${rawData.admissions?.length || 0}, Diagnoses: ${rawData.diagnoses?.length || 0}, Labs: ${rawData.labResults?.length || 0}`);
-      if ((rawData.patients?.length || 0) === 0 && (rawData.admissions?.length || 0) === 0 ) { // Check if essential data is missing
-        this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): Core patient/admission data missing from fetch. Aborting processRawData.");
+      if (!rawData.patients || rawData.patients.length === 0) {
+        this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): No patients from Enriched_Patients.tsv. Aborting.");
         this.isLoaded = true; 
         return;
       }
@@ -149,14 +149,14 @@ class PatientDataService {
 
       if (alertsJsonField && typeof alertsJsonField === 'string') {
         let S = alertsJsonField.trim();
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON from TSV: '${S}'`);
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON: '${S}'`);
         
         const match = S.match(/^[^\\\[\\{]*(\\[.*\\]|\\{.*\\})[^\\\]\\}]*$/);
         let jsonToParse = null;
 
         if (match && match[1]) {
             jsonToParse = match[1]; 
-            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Regex extracted JSON for ${targetPatientId1}: '${jsonToParse}'`);
+            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Regex extracted for ${targetPatientId1}: '${jsonToParse}'`);
             try {
                 const alertsFromFile = JSON.parse(jsonToParse);
                 if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
@@ -164,11 +164,11 @@ class PatientDataService {
                     parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
                 }
             } catch (e: any) {
-                this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing regex-extracted JSON for ${pData.PatientID}: ${e.message}. String was: '${jsonToParse}'`);
+                this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing for ${pData.PatientID}: ${e.message}. String was: '${jsonToParse}'`);
                 parsedAlerts = []; 
             }
         } else if (S && S !== "[]" && S !== "{}" && (pData.PatientID === targetPatientId1)) {
-             this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Regex could not extract valid JSON structure for ${pData.PatientID} from: '${S}'`);
+             this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Regex failed for ${pData.PatientID}. String: '${S}'`);
              parsedAlerts = [];
         }
       }
@@ -203,8 +203,8 @@ class PatientDataService {
         if (match && match[1]) {
             jsonToParse = match[1];
             try { 
-              const treatmentsFromFile = JSON.parse(jsonToParse);
-              if(Array.isArray(treatmentsFromFile)) { parsedTreatments = treatmentsFromFile; }
+              const T = JSON.parse(jsonToParse);
+              if(Array.isArray(T)) { parsedTreatments = T; }
             } catch(e:any) { 
               // Simplified error log string construction
               const errorMsg = "PRINT_DEBUG SERVICE (PRD Treatments): Error parsing for Admission " + aData.AdmissionID + ", Patient " + aData.PatientID + ": " + e.message + ". String was: " + jsonToParse;
@@ -212,7 +212,7 @@ class PatientDataService {
               parsedTreatments = []; 
             }
         } else if (S && S !== "[]" && S !== "{}") {
-            const errorMsg = "PRINT_DEBUG SERVICE (PRD Treatments): Regex could not extract from for Admission " + aData.AdmissionID + ": '" + S + "'";
+            const errorMsg = "PRINT_DEBUG SERVICE (PRD Treatments): Regex failed for AdID " + aData.AdmissionID + ": '" + S + "'";
             this.debugMessages.push(errorMsg);
             parsedTreatments = [];
         }
@@ -229,9 +229,6 @@ class PatientDataService {
       };
       if (!this.admissions[admission.patientId]) { this.admissions[admission.patientId] = []; }
       this.admissions[admission.patientId].push(admission);
-      if (['demo-upcoming-1', 'demo-upcoming-2', 'demo-upcoming-3'].includes(admission.id)) {
-        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Admissions): Processed demo admission ${admission.id} for patient ${admission.patientId} - Date: ${admission.scheduledStart}, Reason: ${admission.reason}`);
-      }
     });
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Admissions processed. Total distinct patient IDs in admissions: ${Object.keys(this.admissions).length}`);
 
