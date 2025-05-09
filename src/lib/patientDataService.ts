@@ -75,25 +75,26 @@ class PatientDataService {
    * Load patient data from the provided data files
    */
   async loadPatientData(): Promise<void> {
-    this.debugMessages = []; // Clear instance member messages
-    if (this.isLoaded && this.patients && Object.keys(this.patients).length > 0) { // Avoid redundant loads if already successfully loaded
-        // console.log("PRINT_DEBUG SERVICE: Data already loaded. Skipping redundant load.");
-        // PatientDataService.debugMessages.push("PRINT_DEBUG SERVICE: Data already loaded. Attempted redundant load.");
-        // this.debugMessages.push("PRINT_DEBUG SERVICE: Data already loaded. Attempted redundant load.");
-        return;
-    }
-    this.isLoaded = false; // Reset loaded flag to force re-processing if called again after an error or for refresh
+    this.debugMessages = []; // Clear messages on new load
+    // Simplified load logic for debugging - always try to load for now
+    // if (this.isLoaded && this.patients && Object.keys(this.patients).length > 0) {
+    //   this.debugMessages.push("PRINT_DEBUG SERVICE: Data already loaded. Attempted redundant load.");
+    //   return;
+    // }
+    this.isLoaded = false; 
+    this.debugMessages.push("PRINT_DEBUG SERVICE: loadPatientData called.");
 
     try {
       const rawData = await this.fetchRawData();
+      this.debugMessages.push(`PRINT_DEBUG SERVICE: fetchRawData returned - Patients: ${rawData.patients?.length || 0}, Admissions: ${rawData.admissions?.length || 0}, Diagnoses: ${rawData.diagnoses?.length || 0}, Labs: ${rawData.labResults?.length || 0}`);
       this.processRawData(rawData);
-      this.isLoaded = true; // Set after successful processing
-      this.debugMessages.push(`PRINT_DEBUG SERVICE: Successfully loaded and processed data. Patients: ${Object.keys(this.patients).length}`);
-    } catch (error) {
+      this.isLoaded = true; 
+      this.debugMessages.push(`PRINT_DEBUG SERVICE: Successfully loaded and processed data. Patients in map: ${Object.keys(this.patients).length}`);
+    } catch (error: any) {
       console.error('Error loading patient data:', error);
-      this.debugMessages.push(`PRINT_DEBUG SERVICE: Error loading patient data: ${error}`);
-      this.isLoaded = false; // Ensure isLoaded is false if there was an error
-      throw new Error('Failed to load patient data');
+      this.debugMessages.push(`PRINT_DEBUG SERVICE: Error in loadPatientData: ${error.message}`);
+      this.isLoaded = false; 
+      // throw new Error('Failed to load patient data'); // Avoid throwing to see debug messages
     }
   }
 
@@ -106,29 +107,39 @@ class PatientDataService {
     diagnoses: any[], 
     labResults: any[]
   }> {
+    this.debugMessages.push("PRINT_DEBUG SERVICE: fetchRawData started.");
     let patientsArray: any[] = [];
     let admissionsArray: any[] = [];
     let diagnosesArray: any[] = [];
     let labResultsArray: any[] = [];
 
     try {
+      this.debugMessages.push("PRINT_DEBUG SERVICE: Fetching Enriched_Patients.tsv...");
       const patientsResponse = await fetch('/data/100-patients/Enriched_Patients.tsv');
-      if (!patientsResponse.ok) throw new Error(`Failed to fetch Enriched_Patients.tsv: ${patientsResponse.statusText}`);
-      const tsvText = await patientsResponse.text();
-      // ##### DEBUG LOG for header within fetchRawData context #####
-      if (tsvText && tsvText.trim().split('\n').length > 0) {
-        const headerLine = tsvText.trim().split('\n')[0];
-        const actualHeader = headerLine.split('\t').map(h => h.trim());
-        console.log("PRINT_DEBUG SERVICE: Actual Header from Enriched_Patients.tsv:", actualHeader);
+      this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Patients.tsv response ok: ${patientsResponse.ok}, status: ${patientsResponse.status}`);
+      if (patientsResponse.ok) {
+        const patientsTSV = await patientsResponse.text();
+        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Patients.tsv text (first 300 chars): ${patientsTSV.substring(0, 300)}`);
+        patientsArray = parseTSV(patientsTSV);
+        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Patients.tsv parsed count: ${patientsArray.length}`);
+      } else {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE: Failed to fetch Enriched_Patients.tsv`);
       }
-      patientsArray = parseTSV(tsvText);
-    } catch (e) { console.error("Error fetching/parsing Enriched_Patients.tsv:", e); }
+    } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE: Exception fetching/parsing Enriched_Patients.tsv: ${e.message}`); console.error("Fetch/Parse Enriched_Patients.tsv:", e); }
 
     try {
+      this.debugMessages.push("PRINT_DEBUG SERVICE: Fetching Enriched_Admissions.tsv...");
       const admissionsResponse = await fetch('/data/100-patients/Enriched_Admissions.tsv');
-      if (!admissionsResponse.ok) throw new Error(`Failed to fetch Enriched_Admissions.tsv: ${admissionsResponse.statusText}`);
-      admissionsArray = parseTSV(await admissionsResponse.text());
-    } catch (e) { console.error("Error fetching/parsing Enriched_Admissions.tsv:", e); }
+       this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Admissions.tsv response ok: ${admissionsResponse.ok}, status: ${admissionsResponse.status}`);
+      if (admissionsResponse.ok) {
+        const admissionsTSV = await admissionsResponse.text();
+        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Admissions.tsv text (first 300 chars): ${admissionsTSV.substring(0,300)}`);
+        admissionsArray = parseTSV(admissionsTSV);
+        this.debugMessages.push(`PRINT_DEBUG SERVICE: Enriched_Admissions.tsv parsed count: ${admissionsArray.length}`);
+      } else {
+         this.debugMessages.push(`PRINT_DEBUG SERVICE: Failed to fetch Enriched_Admissions.tsv`);
+      }
+    } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE: Exception fetching/parsing Enriched_Admissions.tsv: ${e.message}`); console.error("Fetch/Parse Enriched_Admissions.tsv:", e); }
     
     try {
       const diagnosesResponse = await fetch('/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt');
@@ -159,7 +170,7 @@ class PatientDataService {
     this.allDiagnosesByAdmission = {};
     this.allLabResultsByAdmission = {};
 
-    this.debugMessages.push(`PRINT_DEBUG SERVICE: Starting processRawData. data.patients (from Enriched_Patients.tsv) length: ${data.patients.length}`);
+    this.debugMessages.push(`PRINT_DEBUG SERVICE: processRawData received patients: ${data.patients?.length || 0}`);
 
     const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
     // const targetPatientId2 = '64182B95-EB72-4E2B-BE77-8050B71498CE'; // For brevity, focus on one target
