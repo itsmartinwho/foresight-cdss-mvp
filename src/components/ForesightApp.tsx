@@ -26,6 +26,7 @@ import {
   BarChart3,
   Settings as Cog,
   PlayCircle,
+  UserCircle,
 } from "lucide-react";
 
 import { patientDataService } from "@/lib/patientDataService";
@@ -595,29 +596,10 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
   }, []);
 
   const displayName = (p: Patient | null) => {
+    if (p?.name) return p.name;
     if (p?.firstName || p?.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
-    return p?.name ?? p?.id;
+    return p?.id;
   };
-
-  const renderSection = (title: string, rows: { patient: Patient | null; visit: Admission }[]) => (
-    <>
-      <h3 className="font-semibold text-sm mb-2 mt-4">{title}</h3>
-      <Table>
-        <TableBody>
-          {rows.map(({ patient, visit }) => (
-            <TableRow key={`${patient ? patient.id : 'null'}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
-              <TableCell className="flex items-center gap-2">
-                {patient?.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
-                {patient ? displayName(patient) : visit.patientId}
-              </TableCell>
-              <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
-              <TableCell>{visit.reason ?? "—"}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </>
-  );
 
   return (
     <div className="p-6">
@@ -630,14 +612,45 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Patient</TableHead>
-                <TableHead>Scheduled date</TableHead>
-                <TableHead>Reason for visit</TableHead>
+                <TableHead className="text-left">Patient</TableHead>
+                <TableHead className="text-left">Scheduled date</TableHead>
+                <TableHead className="text-left">Reason for visit</TableHead>
               </TableRow>
             </TableHeader>
+            <TableBody>
+              {upcomingRows.length > 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="font-semibold text-sm pt-4 pb-2 text-left text-gray-700">Upcoming visits</TableCell>
+                </TableRow>
+              )}
+              {upcomingRows.map(({ patient, visit }) => (
+                <TableRow key={`upcoming_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
+                  <TableCell className="text-left flex items-center gap-2">
+                    {patient?.photo ? <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" /> : <UserCircle className="h-6 w-6 text-gray-400" />}
+                    {patient ? displayName(patient) : (visit.patientId ?? 'Unknown Patient')}
+                  </TableCell>
+                  <TableCell className="text-left">{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
+                  <TableCell className="text-left">{visit.reason ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+
+              {pastRows.length > 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="font-semibold text-sm pt-6 pb-2 text-left text-gray-700">Past visits</TableCell>
+                </TableRow>
+              )}
+              {pastRows.map(({ patient, visit }) => (
+                <TableRow key={`past_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
+                  <TableCell className="text-left flex items-center gap-2">
+                    {patient?.photo ? <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" /> : <UserCircle className="h-6 w-6 text-gray-400" />}
+                    {patient ? displayName(patient) : (visit.patientId ?? 'Unknown Patient')}
+                  </TableCell>
+                  <TableCell className="text-left">{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
+                  <TableCell className="text-left">{visit.reason ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
           </Table>
-          {renderSection('Upcoming visits', upcomingRows)}
-          {renderSection('Past visits', pastRows)}
         </CardContent>
       </Card>
     </div>

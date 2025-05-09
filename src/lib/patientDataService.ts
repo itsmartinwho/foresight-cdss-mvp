@@ -59,6 +59,23 @@ class PatientDataService {
           language: 'English',
           povertyPercentage: 13.03
         },
+        // Added for past visits
+        {
+          id: '7A025E77-7832-4F53-B9A7-09A3F98AC17E',
+          firstName: 'John',
+          lastName: 'Doe (Past)',
+          gender: 'Male',
+          dateOfBirth: '1960-01-01',
+          // No photo to test default icon
+        },
+        {
+          id: 'DCE5AEB8-6DB9-4106-8AE4-02CCC5C23741',
+          firstName: 'Jane',
+          lastName: 'Smith (Past)',
+          gender: 'Female',
+          dateOfBirth: '1955-05-05',
+          photo: 'https://i.pravatar.cc/60?u=jsmithpast'
+        },
         // Additional patients would be loaded here
         // Dashboard demo patients (merged)
         {
@@ -114,7 +131,8 @@ class PatientDataService {
           scheduledStart: '2011-10-12 14:55:02.027',
           scheduledEnd: '2011-10-22 01:16:07.557',
           actualStart: '2011-10-12 14:55:02.027',
-          actualEnd: '2011-10-22 01:16:07.557'
+          actualEnd: '2011-10-22 01:16:07.557',
+          reason: 'Historical Checkup A'
         },
         {
           id: '1',
@@ -122,7 +140,8 @@ class PatientDataService {
           scheduledStart: '1993-02-11 18:57:04.003',
           scheduledEnd: '1993-02-24 17:22:29.713',
           actualStart: '1993-02-11 18:57:04.003',
-          actualEnd: '1993-02-24 17:22:29.713'
+          actualEnd: '1993-02-24 17:22:29.713',
+          reason: 'Routine Follow-up B'
         },
         // Additional admissions would be loaded here
         // Demo patient upcoming consultations
