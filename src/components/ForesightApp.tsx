@@ -569,28 +569,20 @@ function SettingsView() {
 // PATIENTS LIST VIEW
 // ***********************************
 function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
-  const [upcomingRows, setUpcomingRows] = useState<{ patient: Patient; visit: Admission }[]>([]);
-  const [pastRows, setPastRows] = useState<{ patient: Patient; visit: Admission }[]>([]);
+  const [upcomingRows, setUpcomingRows] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
+  const [pastRows, setPastRows] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
 
   useEffect(() => {
     const load = async () => {
       await patientDataService.loadPatientData();
-      const allPatients = patientDataService.getAllPatients();
       const now = new Date();
 
-      const upcoming: { patient: Patient; visit: Admission }[] = [];
-      const past: { patient: Patient; visit: Admission }[] = [];
+      const upcoming: { patient: Patient | null; visit: Admission }[] = [];
+      const past: { patient: Patient | null; visit: Admission }[] = [];
 
-      allPatients.forEach((p) => {
-        const admissions = patientDataService.getPatientAdmissions(p.id);
-        admissions.forEach((a) => {
-          const row = { patient: p, visit: a };
-          if (new Date(a.scheduledStart) > now) {
-            upcoming.push(row);
-          } else {
-            past.push(row);
-          }
-        });
+      patientDataService.getAllAdmissions().forEach(({ patient, admission }) => {
+        const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
+        arr.push({ patient, visit: admission });
       });
 
       upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
@@ -602,24 +594,24 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
     load();
   }, []);
 
-  const displayName = (p: Patient) => {
-    if (p.firstName || p.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
-    return p.name ?? p.id;
+  const displayName = (p: Patient | null) => {
+    if (p?.firstName || p?.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
+    return p?.name ?? p?.id;
   };
 
-  const renderSection = (title: string, rows: { patient: Patient; visit: Admission }[]) => (
+  const renderSection = (title: string, rows: { patient: Patient | null; visit: Admission }[]) => (
     <>
       <h3 className="font-semibold text-sm mb-2 mt-4">{title}</h3>
       <Table>
         <TableBody>
           {rows.map(({ patient, visit }) => (
-            <TableRow key={`${patient.id}_${visit.id}`} onClick={() => onSelect(patient)} className="cursor-pointer hover:bg-slate-50">
+            <TableRow key={`${patient ? patient.id : 'null'}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
               <TableCell className="flex items-center gap-2">
-                {patient.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
+                {patient?.photo && <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" />}
                 {displayName(patient)}
               </TableCell>
               <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
-              <TableCell>{visit.reason || patient.reason || ""}</TableCell>
+              <TableCell>{visit.reason || (patient ? patient.reason : "") || ""}</TableCell>
             </TableRow>
           ))}
         </TableBody>

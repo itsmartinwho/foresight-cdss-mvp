@@ -219,6 +219,19 @@ class PatientDataService {
       }
       this.labResults[key].push(labResult);
     });
+
+    // Ensure each admission has a reason; if missing copy first diagnosis description
+    Object.entries(this.admissions).forEach(([pid, list]) => {
+      list.forEach((admission) => {
+        if (!admission.reason || admission.reason.trim() === "") {
+          const diagKey = `${pid}_${admission.id}`;
+          const firstDx = (this.diagnoses[diagKey] || [])[0];
+          if (firstDx) {
+            admission.reason = firstDx.description;
+          }
+        }
+      });
+    });
   }
 
   /**
@@ -379,6 +392,18 @@ class PatientDataService {
     const now = new Date();
     const visits = this.admissions[patientId] || [];
     return visits.filter((v) => new Date(v.scheduledStart) <= now);
+  }
+
+  /**
+   * Return every admission paired with its patient (may be null if patient record missing)
+   */
+  getAllAdmissions(): { patient: Patient | null; admission: Admission }[] {
+    const list: { patient: Patient | null; admission: Admission }[] = [];
+    Object.entries(this.admissions).forEach(([pid, admissions]) => {
+      const patient = this.getPatient(pid);
+      admissions.forEach((ad) => list.push({ patient, admission: ad }));
+    });
+    return list;
   }
 }
 
