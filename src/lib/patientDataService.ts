@@ -143,24 +143,56 @@ class PatientDataService {
 
     data.patients.forEach((pData: any) => {
       if (!pData.PatientID) { return; }
+      
       let parsedAlerts: ComplexCaseAlert[] = [];
-      const alertsJsonString = pData['alertsJSON'];
-      if (alertsJsonString && typeof alertsJsonString === 'string') {
-        let jsonToParse = alertsJsonString.trim();
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - alertsJSON raw: '${jsonToParse}'`);
-        // Iteratively unwrap outer quotes
-        while (jsonToParse.length >= 2 && ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
-            jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+      const alertsJsonField = pData['alertsJSON']; // Use bracket notation
+
+      if (alertsJsonField && typeof alertsJsonField === 'string') {
+        let S = alertsJsonField.trim();
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - alertsJSON raw from pData: '${S}'`);
+        
+        // Attempt to find the start of the actual JSON structure ([ or {)
+        const firstBracket = S.indexOf('[');
+        const firstBrace = S.indexOf('{');
+        let actualJsonStartIndex = -1;
+
+        if (firstBracket !== -1 && firstBrace !== -1) {
+          actualJsonStartIndex = Math.min(firstBracket, firstBrace);
+        } else if (firstBracket !== -1) {
+          actualJsonStartIndex = firstBracket;
+        } else {
+          actualJsonStartIndex = firstBrace;
         }
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - alertsJSON after unwrap: '${jsonToParse}'`);
-        if (jsonToParse && jsonToParse !== "[]" && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{"))) {
-          try {
-            const alertsFromFile = JSON.parse(jsonToParse);
-            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
-            if (Array.isArray(alertsFromFile)) { parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');}
-          } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Error parsing for ${pData.PatientID}: ${e.message}. Processed str: '${jsonToParse}'`);}
-        } else if (jsonToParse && pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-unwrap for ${pData.PatientID} is empty or not JSON-like: '${jsonToParse}'`);}
+
+        if (actualJsonStartIndex !== -1) {
+          // Attempt to find the corresponding closing bracket/brace
+          let lastJsonCharIndex = -1;
+          if (S[actualJsonStartIndex] === '[') {
+            lastJsonCharIndex = S.lastIndexOf(']');
+          } else if (S[actualJsonStartIndex] === '{') {
+            lastJsonCharIndex = S.lastIndexOf('}');
+          }
+
+          if (lastJsonCharIndex !== -1 && lastJsonCharIndex > actualJsonStartIndex) {
+            let potentiaJsonString = S.substring(actualJsonStartIndex, lastJsonCharIndex + 1);
+            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Extracted potential JSON for ${targetPatientId1}: '${potentiaJsonString}'`);
+            try {
+              const alertsFromFile = JSON.parse(potentiaJsonString);
+              if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
+              if (Array.isArray(alertsFromFile)) {
+                parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
+              }
+            } catch (e: any) {
+              this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Error parsing extracted JSON for ${pData.PatientID}: ${e.message}. String was: '${potentiaJsonString}'`);
+            }
+          } else if (pData.PatientID === targetPatientId1) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Could not find valid end for JSON structure for ${pData.PatientID}. Started at ${actualJsonStartIndex}. String: '${S}'`);
+          }
+        } else if (pData.PatientID === targetPatientId1 && S.length > 0 && S !== "[]") {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Did not find start of JSON ([ or {) for ${pData.PatientID}. String: '${S}'`);
+        }
       }
+
       const patient: Patient = {
         id: pData.PatientID.trim(),
         name: pData.name,
@@ -183,17 +215,18 @@ class PatientDataService {
     data.admissions.forEach((aData: any) => {
       if (!aData.PatientID || !aData.AdmissionID) return;
       let parsedTreatments: Treatment[] = [];
-      const treatmentsJsonString = aData.treatmentsJSON;
-      if (treatmentsJsonString && typeof treatmentsJsonString === 'string') {
-        let jsonToParse = treatmentsJsonString.trim();
-        while (jsonToParse.length >= 2 && ((jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) || (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')))) {
-            jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+      const treatmentsJsonField = aData.treatmentsJSON;
+      if (treatmentsJsonField && typeof treatmentsJsonField === 'string') {
+        let S = treatmentsJsonField.trim();
+        // Iteratively unwrap
+        while (S.length >= 2 && ((S.startsWith("'") && S.endsWith("'")) || (S.startsWith('"') && S.endsWith('"')))) {
+            S = S.substring(1, S.length - 1);
         }
-        if (jsonToParse && jsonToParse !== "[]" && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{"))) {
+        if (S && S !== "[]" && (S.startsWith("[") || S.startsWith("{"))) {
           try { 
-            const treatmentsFromFile = JSON.parse(jsonToParse);
-            if(Array.isArray(treatmentsFromFile)) { parsedTreatments = treatmentsFromFile; }
-          } catch(e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Error parsing for Admission ${aData.AdmissionID}, Patient ${aData.PatientID}: ${e.message}. Processed: '${jsonToParse}'`); }
+            const T = JSON.parse(S);
+            if(Array.isArray(T)) { parsedTreatments = T; }
+          } catch(e:any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Error parsing for Admission ${aData.AdmissionID}, Patient ${aData.PatientID}: ${e.message}. Processed: '${S}'`); }
         }
       }
       const admission: Admission = {
