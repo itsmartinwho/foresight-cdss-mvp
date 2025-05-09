@@ -244,7 +244,7 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
                 <TableRow key={p.id}>
                   <TableCell>{new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</TableCell>
                   <TableCell>{p.name}</TableCell>
-                  <TableCell>{visit.reason || p.reason}</TableCell>
+                  <TableCell>{visit.reason}</TableCell>
                   <TableCell>
                     <Button
                       size="sm"
@@ -611,7 +611,7 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
                 {displayName(patient)}
               </TableCell>
               <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
-              <TableCell>{visit.reason || (patient ? patient.reason : "") || ""}</TableCell>
+              <TableCell>{visit.reason}</TableCell>
             </TableRow>
           ))}
         </TableBody>
