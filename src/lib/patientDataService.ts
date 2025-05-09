@@ -7,7 +7,7 @@ function parseTSV(tsvText: string): any[] {
   if (lines.length < 2) return []; // Header + at least one data row
 
   const raw_header = lines[0].split('\t');
-  const header = raw_header.map(h => h.trim());
+  const header = raw_header.map(h => h.trim().replace(/\uFEFF/g, ''));
   // ##### DEBUG LOG #####
   // console.log("DEBUG SERVICE: TSV Header in parseTSV:", header);
   // This will be captured by the tool's print if the calling function prints it.
@@ -175,27 +175,35 @@ class PatientDataService {
     const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
     // const targetPatientId2 = '64182B95-EB72-4E2B-BE77-8050B71498CE'; // For brevity, focus on one target
 
-    data.patients.forEach((pData: any) => {
+    data.patients.forEach((pData: any, index: number) => {
       if (!pData.PatientID) {
-        console.log("PRINT_DEBUG SERVICE: Row in Enriched_Patients.tsv missing PatientID:", pData);
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): Row ${index} in Enriched_Patients.tsv missing PatientID.`);
         return; 
       }
-      // ##### DEBUG LOG for target patients raw data from TSV #####
-      if (pData.PatientID === 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F' || pData.PatientID === '64182B95-EB72-4E2B-BE77-8050B71498CE') {
-        console.log(`PRINT_DEBUG SERVICE: Raw pData for ${pData.PatientID}:`, JSON.stringify(pData));
+      if (pData.PatientID === targetPatientId1) {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): Processing target patient ${pData.PatientID}. Available keys: ${Object.keys(pData).join(', ')}`);
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): Raw alertsJSON for ${pData.PatientID}: '${pData.alertsJSON}'`);
       }
 
       let parsedAlerts: ComplexCaseAlert[] = [];
-      if (pData.alertsJSON && pData.alertsJSON.trim() !== "" && pData.alertsJSON.trim() !== "[]") {
+      if (pData['alertsJSON'] && typeof pData['alertsJSON'] === 'string' && pData['alertsJSON'].trim() !== "" && pData['alertsJSON'].trim() !== "[]") {
         try {
-          const alertsFromFile = JSON.parse(pData.alertsJSON);
+          const alertsFromFile = JSON.parse(pData['alertsJSON']);
+          if (pData.PatientID === targetPatientId1) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): Parsed alertsFromFile for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
+          }
           if (Array.isArray(alertsFromFile)) {
             parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
           }
         } catch (e: any) {
-          console.error(`Error parsing alertsJSON for patient ${pData.PatientID}:`, e, pData.alertsJSON);
+          this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): Error parsing alertsJSON for ${pData.PatientID}: ${e.message}. Raw: '${pData['alertsJSON']}'`);
         }
+      } else if (pData.PatientID === targetPatientId1 && pData.hasOwnProperty('alertsJSON')){
+         this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): alertsJSON for ${pData.PatientID} was present but empty or not a string: '${pData['alertsJSON']}' (Type: ${typeof pData['alertsJSON']})`);
+      } else if (pData.PatientID === targetPatientId1 && !pData.hasOwnProperty('alertsJSON')) {
+         this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): alertsJSON key MISSING for ${pData.PatientID}`);
       }
+
       const patient: Patient = {
         id: pData.PatientID.trim(),
         name: pData.name,
@@ -211,6 +219,9 @@ class PatientDataService {
         photo: undefined 
       };
       this.patients[patient.id] = patient;
+      if (pData.PatientID === targetPatientId1) {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (processRawData): Final patient.alerts for ${targetPatientId1}: ${JSON.stringify(this.patients[targetPatientId1]?.alerts)}`);
+      }
     });
 
     const loadedPatientIdsFromFile = Object.keys(this.patients);
@@ -269,15 +280,13 @@ class PatientDataService {
        this.allLabResultsByAdmission[key].push(labResult);
     });
 
-    // Overlay specific data for the three demo patients (Maria, James, Priya)
-    // This ensures their specific photos, upcoming appointment details, and potentially
-    // more curated reasons for visit for the demo are preserved or enhanced.
-
-    const demoPatientsConfig = [
+    // Demo Patient Overlay (Revised for unification and type safety)
+    const demoPatientConfigs = [
       {
         id: '1', name: 'Maria Gomez', firstName: 'Maria', lastName: 'Gomez', gender: 'Female',
         dateOfBirth: '1988-04-17', photo: 'https://i.pravatar.cc/60?u=mg',
-        demoUpcomingAdmission: {
+        // Note: alerts for demo patients are not defined here; they'd come from Enriched_Patients.tsv if IDs matched
+        demoSpecificAdmissionDetails: { // Renamed to avoid conflict with Patient type fields
           id: 'demo-upcoming-1', patientId: '1',
           scheduledStart: '2026-02-15 10:00:00.000', scheduledEnd: '2026-02-15 10:40:00.000',
           actualStart: '', actualEnd: '', 
@@ -291,74 +300,73 @@ class PatientDataService {
       {
         id: '2', name: 'James Lee', firstName: 'James', lastName: 'Lee', gender: 'Male',
         dateOfBirth: '1972-11-05', photo: 'https://i.pravatar.cc/60?u=jl',
-        demoUpcomingAdmission: {
-          id: 'demo-upcoming-2', patientId: '2',
-          scheduledStart: '2026-03-18 11:30:00.000', scheduledEnd: '2026-03-18 12:10:00.000',
-          actualStart: '', actualEnd: '',
-          reason: 'Pulmonary check'
-        }
+        demoSpecificAdmissionDetails: { id: 'demo-upcoming-2', patientId: '2', scheduledStart: '2026-03-18 11:30:00.000', scheduledEnd: '2026-03-18 12:10:00.000', reason: 'Pulmonary check' }
       },
       {
         id: '3', name: 'Priya Patel', firstName: 'Priya', lastName: 'Patel', gender: 'Female',
         dateOfBirth: '1990-07-09', photo: 'https://i.pravatar.cc/60?u=pp',
-        demoUpcomingAdmission: {
-          id: 'demo-upcoming-3', patientId: '3',
-          scheduledStart: '2026-04-12 14:00:00.000', scheduledEnd: '2026-04-12 14:40:00.000',
-          actualStart: '', actualEnd: '',
-          reason: 'Weight-loss follow-up'
-        }
+        demoSpecificAdmissionDetails: { id: 'demo-upcoming-3', patientId: '3', scheduledStart: '2026-04-12 14:00:00.000', scheduledEnd: '2026-04-12 14:40:00.000', reason: 'Weight-loss follow-up' }
       },
     ];
 
-    demoPatientsConfig.forEach(demoConfig => {
-      const { demoUpcomingAdmission, ...patientCoreDetails } = demoConfig;
-      // Update or add patient, ensuring not to spread undefined upcomingAdmission into patient object
-      if (this.patients[patientCoreDetails.id]) {
-        this.patients[patientCoreDetails.id] = {
-          ...this.patients[patientCoreDetails.id],
-          ...patientCoreDetails,
-        };
+    demoPatientConfigs.forEach(demoConfig => {
+      const { demoSpecificAdmissionDetails, ...patientCoreDemoDetails } = demoConfig;
+      const existingPatient = this.patients[patientCoreDemoDetails.id];
+
+      if (existingPatient) {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (Demo Overlay): Updating existing patient ${patientCoreDemoDetails.id}`);
+        this.patients[patientCoreDemoDetails.id] = {
+          ...existingPatient, // Start with data loaded from file (includes file-based alerts)
+          ...patientCoreDemoDetails, // Overlay demo core patient details (name, photo, etc.)
+          // alerts property is already on existingPatient, no need to explicitly manage here unless demoConfig had its own alerts to merge
+        } as Patient;
       } else {
-        this.patients[patientCoreDetails.id] = patientCoreDetails as Patient;
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (Demo Overlay): Adding new patient ${patientCoreDemoDetails.id} from demo config.`);
+        this.patients[patientCoreDemoDetails.id] = patientCoreDemoDetails as Patient;
       }
 
-      if (demoUpcomingAdmission) {
-        if (!this.admissions[patientCoreDetails.id]) {
-          this.admissions[patientCoreDetails.id] = [];
-        }
-        this.admissions[patientCoreDetails.id] = this.admissions[patientCoreDetails.id].filter(adm => adm.id !== demoUpcomingAdmission.id);
-        const admissionToPush: Admission = {
-          ...demoUpcomingAdmission,
-          // Ensure all fields of Admission type are present if not in demoUpcomingAdmission
-          actualStart: demoUpcomingAdmission.actualStart || '',
-          actualEnd: demoUpcomingAdmission.actualEnd || '',
+      // Handle demoSpecificAdmissionDetails
+      if (demoSpecificAdmissionDetails) {
+        const demoAdm = {
+            ...demoSpecificAdmissionDetails,
+            actualStart: demoSpecificAdmissionDetails.actualStart || '', // Ensure all Admission fields
+            actualEnd: demoSpecificAdmissionDetails.actualEnd || '',
         } as Admission;
-        this.admissions[patientCoreDetails.id].push(admissionToPush);
 
-        // If this is patient '1' and it's their demo admission, augment their labs
-        if (patientCoreDetails.id === '1' && demoUpcomingAdmission.id === 'demo-upcoming-1') {
-          const admissionKey = `${patientCoreDetails.id}_${demoUpcomingAdmission.id}`;
-          if (this.allLabResultsByAdmission[admissionKey]) {
-            this.allLabResultsByAdmission[admissionKey].forEach(lab => {
-              const mockDetail = MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1[lab.name];
-              if (mockDetail) {
-                lab.referenceRange = mockDetail.referenceRange;
-                lab.flag = mockDetail.flag;
-              }
+        if (!this.admissions[patientCoreDemoDetails.id]) {
+          this.admissions[patientCoreDemoDetails.id] = [];
+        }
+        // Remove any existing demo admission with the same ID before adding/updating
+        this.admissions[patientCoreDemoDetails.id] = this.admissions[patientCoreDemoDetails.id].filter(ad => ad.id !== demoAdm.id);
+        this.admissions[patientCoreDemoDetails.id].push(demoAdm);
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (Demo Overlay): Added/Updated demo admission ${demoAdm.id} for patient ${patientCoreDemoDetails.id}`);
+        
+        // Special lab augmentation for Patient '1's demo admission
+        if (patientCoreDemoDetails.id === '1' && demoAdm.id === 'demo-upcoming-1') {
+            const admissionKey = `${patientCoreDemoDetails.id}_${demoAdm.id}`;
+            if (!this.allLabResultsByAdmission[admissionKey]) { // If no labs from file for this demo admission
+                this.allLabResultsByAdmission[admissionKey] = []; // Initialize
+            }
+            // Augment or add mock lab details
+            Object.entries(MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1).forEach(([labName, details]) => {
+                let existingLab = this.allLabResultsByAdmission[admissionKey].find(l => l.name === labName);
+                if (existingLab) {
+                    existingLab.referenceRange = details.referenceRange;
+                    existingLab.flag = details.flag;
+                } else {
+                    this.allLabResultsByAdmission[admissionKey].push({
+                        patientId: '1',
+                        admissionId: 'demo-upcoming-1',
+                        name: labName,
+                        value: "N/A", 
+                        units: "N/A",
+                        dateTime: new Date().toISOString(), 
+                        referenceRange: details.referenceRange,
+                        flag: details.flag
+                    } as LabResult);
+                }
             });
-          } else { // If no labs were loaded from file for this demo admission, create them from mock
-            this.allLabResultsByAdmission[admissionKey] = Object.entries(MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1)
-              .map(([labName, details]) => ({
-                patientId: '1',
-                admissionId: 'demo-upcoming-1',
-                name: labName,
-                value: "N/A", // Or fetch from a more complete mock if needed
-                units: "N/A",
-                dateTime: new Date().toISOString(), // Placeholder
-                referenceRange: details.referenceRange,
-                flag: details.flag
-              } as LabResult));
-          }
+             this.debugMessages.push(`PRINT_DEBUG SERVICE (Demo Overlay): Augmented/Added mock labs for patient 1, admission demo-upcoming-1`);
         }
       }
     });
