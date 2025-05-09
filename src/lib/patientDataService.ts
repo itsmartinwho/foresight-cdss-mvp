@@ -148,31 +148,38 @@ class PatientDataService {
       const alertsJsonField = pData['alertsJSON'];
 
       if (alertsJsonField && typeof alertsJsonField === 'string') {
-        let S = alertsJsonField.trim();
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON: '${S}'`);
+        let jsonToParse = alertsJsonField.trim();
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON from TSV: '${jsonToParse}'`);
         
-        const match = S.match(/^[^\\\[\\{]*(\\[.*\\]|\\{.*\\})[^\\\]\\}]*$/);
-        let jsonToParse = null;
-
-        if (match && match[1]) {
-            jsonToParse = match[1]; 
-            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Regex extracted for ${targetPatientId1}: '${jsonToParse}'`);
-            try {
-                const alertsFromFile = JSON.parse(jsonToParse);
-                if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
-                if (Array.isArray(alertsFromFile)) {
-                    parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
+        let previousLength = -1;
+        while (jsonToParse.length !== previousLength) { 
+            previousLength = jsonToParse.length;
+            if (jsonToParse.length >= 2) {
+                if (jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) {
+                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+                } else if (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')) {
+                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
                 }
-            } catch (e: any) {
-                this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing for ${pData.PatientID}: ${e.message}. String was: '${jsonToParse}'`);
-                parsedAlerts = []; 
             }
-        } else if (S && S !== "[]" && S !== "{}" && (pData.PatientID === targetPatientId1)) {
-             this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Regex failed for ${pData.PatientID}. String: '${S}'`);
-             parsedAlerts = [];
+            jsonToParse = jsonToParse.trim(); 
+        }
+        
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after iterative unwrap for ${targetPatientId1}: '${jsonToParse}'`);
+
+        if (jsonToParse && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{")) && (jsonToParse.endsWith("]") || jsonToParse.endsWith("}"))) {
+          try {
+            const alertsFromFile = JSON.parse(jsonToParse);
+            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
+            if (Array.isArray(alertsFromFile)) { parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');}
+          } catch (e: any) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing final JSON for ${pData.PatientID}: ${e.message}. String was: '${jsonToParse}'`);
+            parsedAlerts = []; 
+          }
+        } else if (jsonToParse && pData.PatientID === targetPatientId1) { 
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-unwrap for ${pData.PatientID} not valid JSON structure: '${jsonToParse}'`);
+            parsedAlerts = [];
         }
       }
-
       const patient: Patient = {
         id: pData.PatientID.trim(),
         name: pData.name,
@@ -197,23 +204,26 @@ class PatientDataService {
       let parsedTreatments: Treatment[] = [];
       const treatmentsJsonField = aData.treatmentsJSON;
       if (treatmentsJsonField && typeof treatmentsJsonField === 'string') {
-        let S = treatmentsJsonField.trim();
-        const match = S.match(/^[^\\\[\\{]*(\\[.*\\]|\\{.*\\})[^\\\]\\}]*$/);
-        let jsonToParse = null;
-        if (match && match[1]) {
-            jsonToParse = match[1];
-            try { 
-              const T = JSON.parse(jsonToParse);
-              if(Array.isArray(T)) { parsedTreatments = T; }
-            } catch(e:any) { 
-              // Simplified error log string construction
-              const errorMsg = "PRINT_DEBUG SERVICE (PRD Treatments): Error parsing for Admission " + aData.AdmissionID + ", Patient " + aData.PatientID + ": " + e.message + ". String was: " + jsonToParse;
-              this.debugMessages.push(errorMsg);
-              parsedTreatments = []; 
+        let jsonToParse = treatmentsJsonField.trim();
+        let previousLength = -1;
+        while (jsonToParse.length !== previousLength) {
+            previousLength = jsonToParse.length;
+            if (jsonToParse.length >= 2) {
+                if (jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) {
+                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+                } else if (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')) {
+                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+                }
             }
-        } else if (S && S !== "[]" && S !== "{}") {
-            const errorMsg = "PRINT_DEBUG SERVICE (PRD Treatments): Regex failed for AdID " + aData.AdmissionID + ": '" + S + "'";
-            this.debugMessages.push(errorMsg);
+            jsonToParse = jsonToParse.trim();
+        }
+        if (jsonToParse && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{")) && (jsonToParse.endsWith("]") || jsonToParse.endsWith("}"))) {
+          try { 
+            const treatmentsFromFile = JSON.parse(jsonToParse);
+            if(Array.isArray(treatmentsFromFile)) { parsedTreatments = treatmentsFromFile; }
+          } catch(e:any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Error parsing final JSON for AdID ${aData.AdmissionID}, PtID ${aData.PatientID}: ${e.message}. String: '${jsonToParse}'`); parsedTreatments = []; }
+        } else if (jsonToParse) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Post-unwrap for AdID ${aData.AdmissionID} not valid JSON: '${jsonToParse}'`);
             parsedTreatments = [];
         }
       }
