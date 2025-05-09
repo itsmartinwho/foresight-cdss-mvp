@@ -1,4 +1,4 @@
-import { Patient, Admission, Diagnosis, LabResult, Treatment } from './types';
+import { Patient, Admission, Diagnosis, LabResult, Treatment, ComplexCaseAlert } from './types';
 
 // Helper function to parse TSV data (can be made more robust)
 function parseTSV(tsvText: string): any[] {
@@ -50,6 +50,25 @@ const MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1: Record<string, { referenceRange?: str
   "RF": { referenceRange: "Neg", flag: "H" },
   "anti-CCP": { referenceRange: "Neg", flag: "H" },
 };
+
+const MOCK_ALERTS_DATA: Omit<ComplexCaseAlert, 'patientId'>[] = [
+  {
+    id: "ALR-017",
+    msg: "Possible vasculitis – refer to rheumatology",
+    date: "Today 08:11", // This date format might need standardization for real use
+    severity: "High",
+    confidence: 0.87,
+  },
+  {
+    id: "ALR-018",
+    msg: "Consider lung CT – persistent cough 6 mo",
+    date: "Yesterday 17:40",
+    severity: "Medium",
+    confidence: 0.71,
+  },
+];
+
+const MOCK_PRIOR_AUTH_JUSTIFICATION_PATIENT1_DEMO1 = "Failed NSAIDs, elevated CRP 18 mg/L and positive RF/anti-CCP. Methotrexate is first-line DMARD.";
 
 /**
  * Service for loading and managing patient data
@@ -202,6 +221,39 @@ class PatientDataService {
        this.allLabResultsByAdmission[key].push(labResult);
     });
 
+    // --- Integrate Mock Alerts (Simplified & More Robust Assignment) ---
+    if (Object.keys(this.patients).length > 0 && MOCK_ALERTS_DATA.length > 0) {
+      const allPatientIds = Object.keys(this.patients);
+      let patientIndex = 0; 
+
+      MOCK_ALERTS_DATA.forEach((alertData) => {
+        const patientIdToAssign = allPatientIds[patientIndex % allPatientIds.length];
+        patientIndex++; // Increment to cycle through patients
+
+        if (this.patients[patientIdToAssign]) {
+          if (!this.patients[patientIdToAssign].alerts) {
+            this.patients[patientIdToAssign].alerts = [];
+          }
+          const newAlert: ComplexCaseAlert = {
+            id: alertData.id,
+            patientId: patientIdToAssign,
+            msg: alertData.msg,
+            date: alertData.date,
+            severity: alertData.severity,
+            confidence: alertData.confidence,
+            type: alertData.type, 
+            triggeringFactors: alertData.triggeringFactors || [],
+            suggestedActions: alertData.suggestedActions || [],
+            createdAt: alertData.createdAt || new Date().toISOString(), 
+            acknowledged: alertData.acknowledged || false, 
+            acknowledgedAt: alertData.acknowledgedAt
+          };
+          this.patients[patientIdToAssign].alerts?.push(newAlert);
+        }
+      });
+    }
+    // --- End Alerts Integration ---
+
     // Overlay specific data for the three demo patients (Maria, James, Priya)
     // This ensures their specific photos, upcoming appointment details, and potentially
     // more curated reasons for visit for the demo are preserved or enhanced.
@@ -217,7 +269,8 @@ class PatientDataService {
           reason: 'Follow-up appointment',
           transcript: MOCK_TRANSCRIPTS['1']?.['demo-upcoming-1'],
           soapNote: MOCK_SOAP_NOTES['1']?.['demo-upcoming-1'],
-          treatments: MOCK_TREATMENTS_FOR_DEMO_ADMISSIONS['1']?.['demo-upcoming-1']
+          treatments: MOCK_TREATMENTS_FOR_DEMO_ADMISSIONS['1']?.['demo-upcoming-1'],
+          priorAuthJustification: MOCK_PRIOR_AUTH_JUSTIFICATION_PATIENT1_DEMO1
         }
       },
       {
@@ -259,7 +312,13 @@ class PatientDataService {
           this.admissions[patientCoreDetails.id] = [];
         }
         this.admissions[patientCoreDetails.id] = this.admissions[patientCoreDetails.id].filter(adm => adm.id !== demoUpcomingAdmission.id);
-        this.admissions[patientCoreDetails.id].push(demoUpcomingAdmission as Admission);
+        const admissionToPush: Admission = {
+          ...demoUpcomingAdmission,
+          // Ensure all fields of Admission type are present if not in demoUpcomingAdmission
+          actualStart: demoUpcomingAdmission.actualStart || '',
+          actualEnd: demoUpcomingAdmission.actualEnd || '',
+        } as Admission;
+        this.admissions[patientCoreDetails.id].push(admissionToPush);
 
         // If this is patient '1' and it's their demo admission, augment their labs
         if (patientCoreDetails.id === '1' && demoUpcomingAdmission.id === 'demo-upcoming-1') {
