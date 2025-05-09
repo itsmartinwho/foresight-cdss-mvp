@@ -32,6 +32,15 @@ LAST_NAMES = [
     "Turner", "Torres", "Parker", "Collins"
 ]
 
+# Pastel color palette (hex without #)
+PASTEL_COLORS = [
+    "AFCBFF",  # light blue
+    "FFE5B4",  # peach
+    "D0F0C0",  # tea green
+    "FFDFD3",  # light pink
+    "E6E6FA"   # lavender
+]
+
 # Define the mock alerts data (ensure structure matches ComplexCaseAlert type as closely as possible)
 # Note: patientId will be set when assigning to a specific patient row.
 MOCK_ALERTS_DEFINITIONS = [
@@ -73,6 +82,28 @@ DEMO_PATIENT_PHOTOS = {
     '3': 'https://i.pravatar.cc/60?u=pp'
 }
 
+# Core data for patients 1, 2, 3 to ensure they exist
+CORE_DEMO_PATIENTS_DATA = {
+    '1': {
+        "PatientID": "1", "PatientGender": "Female", "PatientDateOfBirth": "1988-04-17",
+        "firstName": "Maria", "lastName": "Gomez", "name": "Maria Gomez",
+        "photo": "https://i.pravatar.cc/60?u=mg",
+        "PatientRace": "Unknown", "PatientMaritalStatus": "Unknown", "PatientLanguage": "English", "PatientPopulationPercentageBelowPoverty": "0"
+    },
+    '2': {
+        "PatientID": "2", "PatientGender": "Male", "PatientDateOfBirth": "1972-11-05",
+        "firstName": "James", "lastName": "Lee", "name": "James Lee",
+        "photo": "https://i.pravatar.cc/60?u=jl",
+        "PatientRace": "Unknown", "PatientMaritalStatus": "Unknown", "PatientLanguage": "English", "PatientPopulationPercentageBelowPoverty": "0"
+    },
+    '3': {
+        "PatientID": "3", "PatientGender": "Female", "PatientDateOfBirth": "1990-07-09",
+        "firstName": "Priya", "lastName": "Patel", "name": "Priya Patel",
+        "photo": "https://i.pravatar.cc/60?u=pp",
+        "PatientRace": "Unknown", "PatientMaritalStatus": "Unknown", "PatientLanguage": "English", "PatientPopulationPercentageBelowPoverty": "0"
+    }
+}
+
 def generate_unique_name(existing_names, gender):
     attempts = 0
     while attempts < 1000: # Max attempts to find a unique name
@@ -91,9 +122,16 @@ def generate_unique_name(existing_names, gender):
     existing_names.add(full_name)
     return first, last, full_name
 
+def compute_pastel_avatar_url(first: str, last: str, patient_id: str) -> str:
+    """Return a deterministic ui-avatars.com URL with a pastel background."""
+    import hashlib
+    idx = int(hashlib.sha256(patient_id.encode()).hexdigest(), 16) % len(PASTEL_COLORS)
+    bg = PASTEL_COLORS[idx]
+    initials = (first[:1] + last[:1]).upper()
+    return f"https://ui-avatars.com/api/?name={initials}&background={bg}&color=ffffff&size=60&rounded=true"
 
 def enrich_patients(input_file_path, output_file_path):
-    enriched_patients_data = []
+    enriched_rows_map = {} # Use a map to easily update/add patients by ID
     existing_full_names = set()
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
@@ -102,57 +140,78 @@ def enrich_patients(input_file_path, output_file_path):
         if i < len(MOCK_ALERTS_DEFINITIONS):
             alert_data_copy = MOCK_ALERTS_DEFINITIONS[i].copy()
             alert_data_copy['patientId'] = patient_id_to_assign
-            patient_alerts_map[patient_id_to_assign] = [alert_data_copy] 
+            patient_alerts_map[patient_id_to_assign] = [alert_data_copy]
         else: break
 
+    header_from_file = []
     with open(input_file_path, 'r', newline='', encoding='utf-8-sig') as infile:
         reader = csv.reader(infile, delimiter='\t')
         raw_header = next(reader)
-        header = [h.strip().replace('\ufeff', '') for h in raw_header]
-        # Ensure 'photo' column is added if not present, and 'alertsJSON'
-        output_header = list(header) # Start with a copy
-        if 'photo' not in output_header:
-            output_header.append('photo')
-        if 'alertsJSON' not in output_header:
-             output_header.append('alertsJSON')
-        output_header.extend(['firstName', 'lastName', 'name']) # Add these at the end for consistency
-        # Reorder to make sure new columns are last or in a sensible order if preferred
-        # For now, just ensuring they are present.
+        header_from_file = [h.strip().replace('\ufeff', '') for h in raw_header]
         
-        enriched_patients_data.append(output_header)
-        
-        patient_id_col_index = header.index('PatientID')
-
-        for row_idx, row_values in enumerate(reader):
-            # Create a dictionary for easier access and modification
-            patient_data_dict = dict(zip(header, row_values))
+        for row_values in reader:
+            patient_data_dict = dict(zip(header_from_file, row_values))
             current_patient_id = patient_data_dict.get('PatientID')
-            
-            if not current_patient_id:
-                print(f"Skipping row {row_idx+2} due to missing PatientID")
-                continue
+            if not current_patient_id: continue
 
-            gender = patient_data_dict.get('PatientGender', 'Unknown')
-            if not gender: gender = 'Unknown'
-            first_name, last_name, full_name = generate_unique_name(existing_full_names, gender)
-            patient_data_dict['firstName'] = first_name
-            patient_data_dict['lastName'] = last_name
-            patient_data_dict['name'] = full_name
+            # Generate names if not already present (e.g. for non-1,2,3 IDs or if they were in file without names)
+            if not patient_data_dict.get('firstName') or not patient_data_dict.get('lastName'):
+                gender = patient_data_dict.get('PatientGender', 'Unknown')
+                if not gender: gender = 'Unknown'
+                first_name, last_name, full_name = generate_unique_name(existing_full_names, gender)
+                patient_data_dict['firstName'] = first_name
+                patient_data_dict['lastName'] = last_name
+                patient_data_dict['name'] = full_name
+            else:
+                existing_full_names.add(patient_data_dict['name']) # Add existing name to set
 
-            patient_data_dict['alertsJSON'] = "[]"
-            if current_patient_id in patient_alerts_map:
-                patient_data_dict['alertsJSON'] = json.dumps(patient_alerts_map[current_patient_id])
-            
-            patient_data_dict['photo'] = DEMO_PATIENT_PHOTOS.get(current_patient_id, patient_data_dict.get('photo', '')) # Get photo if demo, else keep existing or empty
+            enriched_rows_map[current_patient_id] = patient_data_dict
 
-            # Construct output row based on output_header order
-            output_row = [patient_data_dict.get(col_name, '') for col_name in output_header]
-            enriched_patients_data.append(output_row)
+    # Ensure patients 1, 2, 3 are present and have their core demo data
+    for demo_id, demo_data in CORE_DEMO_PATIENTS_DATA.items():
+        if demo_id in enriched_rows_map:
+            # Overlay/update specific fields, keep existing name if generated by unique logic unless demo is more specific
+            enriched_rows_map[demo_id].update(demo_data) 
+        else:
+            # If patient 1,2,3 not in input file at all, create them fully
+            enriched_rows_map[demo_id] = demo_data.copy()
+            existing_full_names.add(demo_data['name']) # Add their name to the set
+
+    # Assign pastel avatar photos deterministically where missing
+    for pid, pdata in enriched_rows_map.items():
+        if not pdata.get('photo'):
+            # Ensure names exist to build initials
+            first = pdata.get('firstName') or ''
+            last = pdata.get('lastName') or ''
+            avatar_url = compute_pastel_avatar_url(first, last, pid)
+            pdata['photo'] = avatar_url
+
+    # Define final output header, ensuring all necessary columns are present
+    final_output_header = list(header_from_file) # Start with original file header
+    extra_cols = ['firstName', 'lastName', 'name', 'photo', 'alertsJSON']
+    for col in extra_cols:
+        if col not in final_output_header: final_output_header.append(col)
+    
+    final_data_to_write = [final_output_header]
+    for patient_id, patient_data in enriched_rows_map.items():
+        patient_data['alertsJSON'] = json.dumps(patient_alerts_map.get(patient_id, [])) # Assign alerts, default to empty list string
+        # Ensure photo is present, defaulting from CORE_DEMO_PATIENTS_DATA if this is a demo ID
+        if patient_id in CORE_DEMO_PATIENTS_DATA and not patient_data.get('photo'):
+             patient_data['photo'] = CORE_DEMO_PATIENTS_DATA[patient_id].get('photo','')
+        
+        output_row = [str(patient_data.get(col_name, '')) for col_name in final_output_header] # Ensure all are strings for writer
+        final_data_to_write.append(output_row)
+
+        # Specific debug for patients 1, 2, 3 before writing
+        if patient_id in ['1', '2', '3']:
+            print(f"PYTHON DEBUG: Final data for Patient {patient_id} before write: {output_row}")
+            # Also print the dict form for easier field checking
+            print(f"PYTHON DEBUG: Final dict for Patient {patient_id}: {patient_data}")
 
     with open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
         writer = csv.writer(outfile, delimiter='\t')
-        writer.writerows(enriched_patients_data)
-    print(f"Enriched patient data (with photos, alertsJSON) written to {output_file_path}")
+        writer.writerows(final_data_to_write)
+    print(f"Enriched patient data (unified, with photos, alertsJSON) written to {output_file_path}")
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
