@@ -220,8 +220,36 @@ class PatientDataService {
     return this.admissions[patientId] || [];
   }
 
-  // getPatientDiagnoses and getPatientLabResults might need adjustment
-  // if LabResults are still loaded from a separate file or if diagnoses are needed beyond admission.reason
+  /**
+   * Get comprehensive data for a specific patient, including their admissions.
+   * Note: For this version, diagnoses and labResults per admission are returned as empty arrays
+   * as the pre-enriched data focuses on having a primary reason for visit in the admission itself.
+   */
+  getPatientData(patientId: string): any | null {
+    const patient = this.getPatient(patientId);
+    if (!patient) {
+      console.warn(`getPatientData: Patient not found for ID ${patientId}`);
+      return null;
+    }
+
+    const patientAdmissions = this.getPatientAdmissions(patientId);
+    
+    const admissionDetails = patientAdmissions.map(admission => {
+      // For now, return empty arrays for detailed diagnoses and lab results
+      // as the primary reason is already on the admission object.
+      // This can be expanded if components need more detailed lists.
+      return {
+        admission,
+        diagnoses: [], // Placeholder
+        labResults: []  // Placeholder
+      };
+    });
+    
+    return {
+      patient,
+      admissions: admissionDetails
+    };
+  }
 
   /**
    * Get list of upcoming consultations across all patients
