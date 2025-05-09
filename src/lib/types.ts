@@ -2,21 +2,27 @@
 
 export interface Patient {
   id: string;
-  gender: string;
-  dateOfBirth: string;
-  race: string;
-  maritalStatus: string;
-  language: string;
-  povertyPercentage: number;
-  // Optional fields coming from dashboard-specific dataset
-  name?: string; // Full patient name
+  name?: string;
   firstName?: string;
   lastName?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  race?: string;
+  maritalStatus?: string;
+  language?: string;
+  povertyPercentage?: number;
   photo?: string;
+  // Optional fields coming from dashboard-specific dataset
   primaryDiagnosis?: string;
   diagnosis?: string; // alias when primaryDiagnosis not provided
   nextAppointment?: string; // ISO or human string
   reason?: string; // reason for visit / chief complaint
+}
+
+export interface Treatment {
+  drug: string;
+  status: string;
+  rationale: string;
 }
 
 export interface Admission {
@@ -33,22 +39,27 @@ export interface Admission {
   actualEnd?: string;
   scheduledDuration?: number; // minutes
   reason?: string;
+  transcript?: string;
+  soapNote?: string;
+  treatments?: Treatment[];
 }
 
 export interface Diagnosis {
   patientId: string;
   admissionId: string;
-  code: string;
-  description: string;
+  code?: string;
+  description?: string;
 }
 
 export interface LabResult {
   patientId: string;
   admissionId: string;
   name: string;
-  value: number;
-  units: string;
-  dateTime: string;
+  value: number | string;
+  units?: string;
+  dateTime?: string;
+  referenceRange?: string;
+  flag?: string;
 }
 
 export interface ClinicalSource {

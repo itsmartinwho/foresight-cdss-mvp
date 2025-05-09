@@ -1,4 +1,4 @@
-import { Patient, Admission, Diagnosis, LabResult } from './types';
+import { Patient, Admission, Diagnosis, LabResult, Treatment } from './types';
 
 // Helper function to parse TSV data (can be made more robust)
 function parseTSV(tsvText: string): any[] {
@@ -25,14 +25,40 @@ function parseTSV(tsvText: string): any[] {
   return data;
 }
 
+// Mock data to be integrated - In a real app, this might come from a config or separate JSON files
+const MOCK_TRANSCRIPTS: Record<string, Record<string, string>> = { // patientId -> admissionId -> transcript string
+  '1': { 'demo-upcoming-1': "Dr.: How have you been feeling since your last visit?\nMaria: Still tired all the time and my hands ache in the morning.\nDr.: Any swelling or redness in the joints?\nMaria: Some swelling, yes." },
+};
+
+const MOCK_SOAP_NOTES: Record<string, Record<string, string>> = { // patientId -> admissionId -> SOAP string
+  '1': { 'demo-upcoming-1': "S: 38-year-old female with 6-month history of symmetric hand pain and morning stiffness (90 min). Denies fever or rash.\nO: MCP and PIP joints tender on palpation, mild edema. ESR 38 mm/h, CRP 18 mg/L, RF positive, anti-CCP strongly positive.\nA: Early rheumatoid arthritis highly likely [1].\nP: Initiate methotrexate 15 mg weekly with folic acid 1 mg daily. Order baseline LFTs, schedule ultrasound of hands in 6 weeks. Discuss exercise and smoking cessation." },
+};
+
+const MOCK_TREATMENTS_FOR_DEMO_ADMISSIONS: Record<string, Record<string, Treatment[]>> = { // patientId -> admissionId -> Treatment[]
+  '1': {
+    'demo-upcoming-1': [
+      { drug: "Methotrexate 15 mg weekly", status: "Proposed", rationale: "First-line csDMARD per ACR 2023 guidelines after NSAID failure [3]" },
+      { drug: "Folic acid 1 mg daily", status: "Supportive", rationale: "Reduces MTX-induced GI adverse effects [4]" },
+    ]
+  }
+};
+
+const MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1: Record<string, { referenceRange?: string, flag?: string }> = {
+  // Assuming LabName is the key for patient '1', admission 'demo-upcoming-1'
+  "ESR": { referenceRange: "<20", flag: "H" },
+  "CRP": { referenceRange: "<5", flag: "H" },
+  "RF": { referenceRange: "Neg", flag: "H" },
+  "anti-CCP": { referenceRange: "Neg", flag: "H" },
+};
+
 /**
  * Service for loading and managing patient data
  */
 class PatientDataService {
   private patients: Record<string, Patient> = {};
   private admissions: Record<string, Admission[]> = {}; // PatientID -> Admission[]
-  // private diagnoses: Record<string, Diagnosis[]> = {}; // No longer needed if reason is in admission
-  // private labResults: Record<string, LabResult[]> = {}; // Assuming labs are still loaded if used elsewhere
+  private allDiagnosesByAdmission: Record<string, Diagnosis[]> = {}; // Key: patientId_admissionId
+  private allLabResultsByAdmission: Record<string, LabResult[]> = {}; // Key: patientId_admissionId
   private isLoaded = false;
 
   /**
@@ -42,10 +68,10 @@ class PatientDataService {
     if (this.isLoaded) return;
     
     try {
-      const patientData = await this.fetchPatientData();
-      this.processPatientData(patientData);
+      const rawData = await this.fetchRawData();
+      this.processRawData(rawData);
       this.isLoaded = true;
-      console.log(`Loaded ${Object.keys(this.patients).length} patients and their admissions`);
+      console.log(`Loaded ${Object.keys(this.patients).length} patients, their admissions, diagnoses, and labs.`);
     } catch (error) {
       console.error('Error loading patient data:', error);
       throw new Error('Failed to load patient data');
@@ -55,53 +81,57 @@ class PatientDataService {
   /**
    * Fetch patient data from the ENRICHED static files
    */
-  private async fetchPatientData(): Promise<{patients: any[], admissions: any[]}> {
-    // In a real app, these would be API calls or direct DB reads
-    // For MVP, fetch and parse the enriched TSV files.
-    // Note: This uses 'fetch' which is browser-based. For server-side rendering
-    // or Node.js context, file system reads ('fs' module) would be used.
-    // Assuming this service runs in a context where fetch is available (e.g., client-side or Next.js API route)
-    
+  private async fetchRawData(): Promise<{
+    patients: any[], 
+    admissions: any[], 
+    diagnoses: any[], 
+    labResults: any[]
+  }> {
     let patientsArray: any[] = [];
     let admissionsArray: any[] = [];
+    let diagnosesArray: any[] = [];
+    let labResultsArray: any[] = [];
 
     try {
-      // Adjust path if your files are served from a different public path
       const patientsResponse = await fetch('/data/100-patients/Enriched_Patients.tsv');
       if (!patientsResponse.ok) throw new Error(`Failed to fetch Enriched_Patients.tsv: ${patientsResponse.statusText}`);
-      const patientsTSV = await patientsResponse.text();
-      patientsArray = parseTSV(patientsTSV);
-    } catch (e) {
-      console.error("Error fetching or parsing Enriched_Patients.tsv:", e);
-      // Fallback to empty or throw, depending on desired resilience
-    }
+      patientsArray = parseTSV(await patientsResponse.text());
+    } catch (e) { console.error("Error fetching/parsing Enriched_Patients.tsv:", e); }
 
     try {
       const admissionsResponse = await fetch('/data/100-patients/Enriched_Admissions.tsv');
       if (!admissionsResponse.ok) throw new Error(`Failed to fetch Enriched_Admissions.tsv: ${admissionsResponse.statusText}`);
-      const admissionsTSV = await admissionsResponse.text();
-      admissionsArray = parseTSV(admissionsTSV);
-    } catch (e) {
-      console.error("Error fetching or parsing Enriched_Admissions.tsv:", e);
-    }
+      admissionsArray = parseTSV(await admissionsResponse.text());
+    } catch (e) { console.error("Error fetching/parsing Enriched_Admissions.tsv:", e); }
+    
+    try {
+      const diagnosesResponse = await fetch('/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt');
+      if (!diagnosesResponse.ok) throw new Error(`Failed to fetch AdmissionsDiagnosesCorePopulatedTable.txt: ${diagnosesResponse.statusText}`);
+      diagnosesArray = parseTSV(await diagnosesResponse.text());
+    } catch (e) { console.error("Error fetching/parsing AdmissionsDiagnosesCorePopulatedTable.txt:", e); }
 
-    // Placeholder for LabResults if they were to be loaded from a file
-    // const labResultsArray = []; 
+    try {
+      const labsResponse = await fetch('/data/100-patients/LabsCorePopulatedTable.txt');
+      if (!labsResponse.ok) throw new Error(`Failed to fetch LabsCorePopulatedTable.txt: ${labsResponse.statusText}`);
+      labResultsArray = parseTSV(await labsResponse.text());
+    } catch (e) { console.error("Error fetching/parsing LabsCorePopulatedTable.txt:", e); }
 
-    return {
-      patients: patientsArray,
-      admissions: admissionsArray,
-      // diagnoses: [], // Diagnoses info is now part of admission's reason
-      // labResults: labResultsArray 
-    };
+    return { patients: patientsArray, admissions: admissionsArray, diagnoses: diagnosesArray, labResults: labResultsArray };
   }
 
   /**
    * Process the patient data and organize it into the appropriate data structures
    */
-  private processPatientData(data: {patients: any[], admissions: any[]}): void {
+  private processRawData(data: {
+    patients: any[], 
+    admissions: any[], 
+    diagnoses: any[], 
+    labResults: any[]
+  }): void {
     this.patients = {};
     this.admissions = {};
+    this.allDiagnosesByAdmission = {};
+    this.allLabResultsByAdmission = {};
 
     // Process patients from Enriched_Patients.tsv
     data.patients.forEach((pData: any) => {
@@ -139,25 +169,61 @@ class PatientDataService {
       this.admissions[admission.patientId].push(admission);
     });
 
+    data.diagnoses.forEach((dxData: any) => {
+      if (!dxData.PatientID || !dxData.AdmissionID) return; // Basic validation
+      const key = `${dxData.PatientID}_${dxData.AdmissionID}`;
+      const diagnosis: Diagnosis = {
+        patientId: dxData.PatientID,
+        admissionId: dxData.AdmissionID,
+        code: dxData.PrimaryDiagnosisCode, // Assuming this is the structure
+        description: dxData.PrimaryDiagnosisDescription
+      };
+      if (!this.allDiagnosesByAdmission[key]) {
+        this.allDiagnosesByAdmission[key] = [];
+      }
+      this.allDiagnosesByAdmission[key].push(diagnosis);
+    });
+
+    data.labResults.forEach((labData: any) => {
+       if (!labData.PatientID || !labData.AdmissionID) return; // Basic validation
+       const key = `${labData.PatientID}_${labData.AdmissionID}`;
+       // Assuming TSV headers for labs are: PatientID, AdmissionID, LabTestName, LabTestValue, LabTestUnits, LabDateTime
+       const labResult: LabResult = {
+         patientId: labData.PatientID,
+         admissionId: labData.AdmissionID,
+         name: labData.LabName, // Corrected based on file header
+         value: parseFloat(labData.LabValue) || labData.LabValue, // Corrected based on file header
+         units: labData.LabUnits, // Corrected based on file header
+         dateTime: labData.LabDateTime // Corrected based on file header
+       };
+       if (!this.allLabResultsByAdmission[key]) {
+         this.allLabResultsByAdmission[key] = [];
+       }
+       this.allLabResultsByAdmission[key].push(labResult);
+    });
+
     // Overlay specific data for the three demo patients (Maria, James, Priya)
     // This ensures their specific photos, upcoming appointment details, and potentially
     // more curated reasons for visit for the demo are preserved or enhanced.
 
-    const demoPatientsData = [
+    const demoPatientsConfig = [
       {
         id: '1', name: 'Maria Gomez', firstName: 'Maria', lastName: 'Gomez', gender: 'Female',
         dateOfBirth: '1988-04-17', photo: 'https://i.pravatar.cc/60?u=mg',
-        upcomingAdmission: {
+        demoUpcomingAdmission: {
           id: 'demo-upcoming-1', patientId: '1',
           scheduledStart: '2026-02-15 10:00:00.000', scheduledEnd: '2026-02-15 10:40:00.000',
-          actualStart: '', actualEnd: '', // Can be empty if not yet occurred
-          reason: 'Follow-up appointment'
+          actualStart: '', actualEnd: '', 
+          reason: 'Follow-up appointment',
+          transcript: MOCK_TRANSCRIPTS['1']?.['demo-upcoming-1'],
+          soapNote: MOCK_SOAP_NOTES['1']?.['demo-upcoming-1'],
+          treatments: MOCK_TREATMENTS_FOR_DEMO_ADMISSIONS['1']?.['demo-upcoming-1']
         }
       },
       {
         id: '2', name: 'James Lee', firstName: 'James', lastName: 'Lee', gender: 'Male',
         dateOfBirth: '1972-11-05', photo: 'https://i.pravatar.cc/60?u=jl',
-        upcomingAdmission: {
+        demoUpcomingAdmission: {
           id: 'demo-upcoming-2', patientId: '2',
           scheduledStart: '2026-03-18 11:30:00.000', scheduledEnd: '2026-03-18 12:10:00.000',
           actualStart: '', actualEnd: '',
@@ -167,7 +233,7 @@ class PatientDataService {
       {
         id: '3', name: 'Priya Patel', firstName: 'Priya', lastName: 'Patel', gender: 'Female',
         dateOfBirth: '1990-07-09', photo: 'https://i.pravatar.cc/60?u=pp',
-        upcomingAdmission: {
+        demoUpcomingAdmission: {
           id: 'demo-upcoming-3', patientId: '3',
           scheduledStart: '2026-04-12 14:00:00.000', scheduledEnd: '2026-04-12 14:40:00.000',
           actualStart: '', actualEnd: '',
@@ -176,8 +242,8 @@ class PatientDataService {
       },
     ];
 
-    demoPatientsData.forEach(demoPatient => {
-      const { upcomingAdmission, ...patientCoreDetails } = demoPatient;
+    demoPatientsConfig.forEach(demoConfig => {
+      const { demoUpcomingAdmission, ...patientCoreDetails } = demoConfig;
       // Update or add patient, ensuring not to spread undefined upcomingAdmission into patient object
       if (this.patients[patientCoreDetails.id]) {
         this.patients[patientCoreDetails.id] = {
@@ -188,12 +254,38 @@ class PatientDataService {
         this.patients[patientCoreDetails.id] = patientCoreDetails as Patient;
       }
 
-      if (upcomingAdmission) {
+      if (demoUpcomingAdmission) {
         if (!this.admissions[patientCoreDetails.id]) {
           this.admissions[patientCoreDetails.id] = [];
         }
-        this.admissions[patientCoreDetails.id] = this.admissions[patientCoreDetails.id].filter(adm => adm.id !== upcomingAdmission.id);
-        this.admissions[patientCoreDetails.id].push(upcomingAdmission as Admission);
+        this.admissions[patientCoreDetails.id] = this.admissions[patientCoreDetails.id].filter(adm => adm.id !== demoUpcomingAdmission.id);
+        this.admissions[patientCoreDetails.id].push(demoUpcomingAdmission as Admission);
+
+        // If this is patient '1' and it's their demo admission, augment their labs
+        if (patientCoreDetails.id === '1' && demoUpcomingAdmission.id === 'demo-upcoming-1') {
+          const admissionKey = `${patientCoreDetails.id}_${demoUpcomingAdmission.id}`;
+          if (this.allLabResultsByAdmission[admissionKey]) {
+            this.allLabResultsByAdmission[admissionKey].forEach(lab => {
+              const mockDetail = MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1[lab.name];
+              if (mockDetail) {
+                lab.referenceRange = mockDetail.referenceRange;
+                lab.flag = mockDetail.flag;
+              }
+            });
+          } else { // If no labs were loaded from file for this demo admission, create them from mock
+            this.allLabResultsByAdmission[admissionKey] = Object.entries(MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1)
+              .map(([labName, details]) => ({
+                patientId: '1',
+                admissionId: 'demo-upcoming-1',
+                name: labName,
+                value: "N/A", // Or fetch from a more complete mock if needed
+                units: "N/A",
+                dateTime: new Date().toISOString(), // Placeholder
+                referenceRange: details.referenceRange,
+                flag: details.flag
+              } as LabResult));
+          }
+        }
       }
     });
   }
@@ -231,24 +323,16 @@ class PatientDataService {
       console.warn(`getPatientData: Patient not found for ID ${patientId}`);
       return null;
     }
-
-    const patientAdmissions = this.getPatientAdmissions(patientId);
-    
+    const patientAdmissions = this.getPatientAdmissions(patientId) || [];
     const admissionDetails = patientAdmissions.map(admission => {
-      // For now, return empty arrays for detailed diagnoses and lab results
-      // as the primary reason is already on the admission object.
-      // This can be expanded if components need more detailed lists.
+      const key = `${patient.id}_${admission.id}`;
       return {
         admission,
-        diagnoses: [], // Placeholder
-        labResults: []  // Placeholder
+        diagnoses: this.allDiagnosesByAdmission[key] || [],
+        labResults: this.allLabResultsByAdmission[key] || []
       };
     });
-    
-    return {
-      patient,
-      admissions: admissionDetails
-    };
+    return { patient, admissions: admissionDetails };
   }
 
   /**
