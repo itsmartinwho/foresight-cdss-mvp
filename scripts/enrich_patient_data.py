@@ -67,6 +67,12 @@ ASSIGN_ALERT_TO_PATIENT_IDS = [
     '64182B95-EB72-4E2B-BE77-8050B71498CE'
 ]
 
+DEMO_PATIENT_PHOTOS = {
+    '1': 'https://i.pravatar.cc/60?u=mg',
+    '2': 'https://i.pravatar.cc/60?u=jl',
+    '3': 'https://i.pravatar.cc/60?u=pp'
+}
+
 def generate_unique_name(existing_names, gender):
     attempts = 0
     while attempts < 1000: # Max attempts to find a unique name
@@ -89,7 +95,6 @@ def generate_unique_name(existing_names, gender):
 def enrich_patients(input_file_path, output_file_path):
     enriched_patients_data = []
     existing_full_names = set()
-
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     patient_alerts_map = {}
@@ -97,64 +102,62 @@ def enrich_patients(input_file_path, output_file_path):
         if i < len(MOCK_ALERTS_DEFINITIONS):
             alert_data_copy = MOCK_ALERTS_DEFINITIONS[i].copy()
             alert_data_copy['patientId'] = patient_id_to_assign
-            patient_alerts_map[patient_id_to_assign] = [alert_data_copy]
-        else:
-            break
+            patient_alerts_map[patient_id_to_assign] = [alert_data_copy] 
+        else: break
 
-    with open(input_file_path, 'r', newline='', encoding='utf-8-sig') as infile: # Added utf-8-sig
+    with open(input_file_path, 'r', newline='', encoding='utf-8-sig') as infile:
         reader = csv.reader(infile, delimiter='\t')
         raw_header = next(reader)
-        header = [h.strip() for h in raw_header] # Strip whitespace from headers
+        header = [h.strip().replace('\ufeff', '') for h in raw_header]
+        # Ensure 'photo' column is added if not present, and 'alertsJSON'
+        output_header = list(header) # Start with a copy
+        if 'photo' not in output_header:
+            output_header.append('photo')
+        if 'alertsJSON' not in output_header:
+             output_header.append('alertsJSON')
+        output_header.extend(['firstName', 'lastName', 'name']) # Add these at the end for consistency
+        # Reorder to make sure new columns are last or in a sensible order if preferred
+        # For now, just ensuring they are present.
         
-        output_header = header + ['firstName', 'lastName', 'name', 'alertsJSON']
         enriched_patients_data.append(output_header)
         
-        try:
-            patient_id_col_index = header.index('PatientID') 
-        except ValueError:
-            print(f"Error: 'PatientID' column not found in header: {header}")
-            print("Please ensure the first column in PatientCorePopulatedTable.txt is PatientID and tab-separated.")
-            return # Stop processing if header is wrong
+        patient_id_col_index = header.index('PatientID')
 
-        for row_idx, row in enumerate(reader):
-            while len(row) < len(header):
-                row.append('')
-            # Use the cleaned header for creating the dictionary
-            patient_data_dict = dict(zip(header, row)) 
+        for row_idx, row_values in enumerate(reader):
+            # Create a dictionary for easier access and modification
+            patient_data_dict = dict(zip(header, row_values))
             current_patient_id = patient_data_dict.get('PatientID')
-            gender = patient_data_dict.get('PatientGender', 'Unknown') 
-            if not gender: 
-                 print(f"Warning: PatientID {current_patient_id} at source row {row_idx+2} has empty gender. Defaulting to 'Unknown'.")
-                 gender = 'Unknown'
+            
+            if not current_patient_id:
+                print(f"Skipping row {row_idx+2} due to missing PatientID")
+                continue
 
+            gender = patient_data_dict.get('PatientGender', 'Unknown')
+            if not gender: gender = 'Unknown'
             first_name, last_name, full_name = generate_unique_name(existing_full_names, gender)
-            
-            alerts_for_this_patient_json = "[]"
-            if current_patient_id in patient_alerts_map:
-                alerts_for_this_patient_json = json.dumps(patient_alerts_map[current_patient_id])
-            
-            output_row = row + [first_name, last_name, full_name, alerts_for_this_patient_json]
-            enriched_patients_data.append(output_row)
+            patient_data_dict['firstName'] = first_name
+            patient_data_dict['lastName'] = last_name
+            patient_data_dict['name'] = full_name
 
-            # DEBUG PRINT for one of the target patients
-            if current_patient_id == 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F':
-                print(f"DEBUG PYTHON SCRIPT: Output row for {current_patient_id} -> {output_row}")
-                print(f"DEBUG PYTHON SCRIPT: alertsJSON cell for {current_patient_id} -> {alerts_for_this_patient_json}")
+            patient_data_dict['alertsJSON'] = "[]"
+            if current_patient_id in patient_alerts_map:
+                patient_data_dict['alertsJSON'] = json.dumps(patient_alerts_map[current_patient_id])
+            
+            patient_data_dict['photo'] = DEMO_PATIENT_PHOTOS.get(current_patient_id, patient_data_dict.get('photo', '')) # Get photo if demo, else keep existing or empty
+
+            # Construct output row based on output_header order
+            output_row = [patient_data_dict.get(col_name, '') for col_name in output_header]
+            enriched_patients_data.append(output_row)
 
     with open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
         writer = csv.writer(outfile, delimiter='\t')
         writer.writerows(enriched_patients_data)
-    print(f"Enriched patient data (with alertsJSON) written to {output_file_path}")
+    print(f"Enriched patient data (with photos, alertsJSON) written to {output_file_path}")
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
-    # Ensure the target directory within 'public' exists
     output_data_dir = os.path.join(base_dir, 'public', 'data', '100-patients')
     os.makedirs(output_data_dir, exist_ok=True)
-
     patient_input_file = os.path.join(base_dir, 'data', '100-patients', 'PatientCorePopulatedTable.txt')
-    # Output to public/data/100-patients/
     patient_output_file = os.path.join(output_data_dir, 'Enriched_Patients.tsv')
-    
     enrich_patients(patient_input_file, patient_output_file) 

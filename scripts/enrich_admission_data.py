@@ -1,5 +1,6 @@
 import csv
 import os
+import json # Added for treatmentsJSON
 from datetime import datetime, timedelta
 
 def parse_datetime_flexible(datetime_str):
@@ -21,95 +22,118 @@ def format_datetime_iso(dt_obj):
         return ""
     return dt_obj.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] # Keep 3 decimal places for ms
 
+# Define mock data for the three specific UPCOMING demo admissions
+# This data will be added to the main admissions list.
+DEMO_UPCOMING_ADMISSIONS_DATA = [
+    {
+        "PatientID": "1", "AdmissionID": "demo-upcoming-1", 
+        "ScheduledStartDateTime": "2026-02-15 10:00:00.000", "ScheduledEndDateTime": "2026-02-15 10:40:00.000",
+        "ActualStartDateTime": "", "ActualEndDateTime": "",
+        "ReasonForVisit": "Follow-up appointment",
+        "transcript": "Dr.: How have you been feeling since your last visit?\nMaria: Still tired all the time and my hands ache in the morning.\nDr.: Any swelling or redness in the joints?\nMaria: Some swelling, yes.",
+        "soapNote": "S: 38-year-old female with 6-month history of symmetric hand pain and morning stiffness (90 min). Denies fever or rash.\nO: MCP and PIP joints tender on palpation, mild edema. ESR 38 mm/h, CRP 18 mg/L, RF positive, anti-CCP strongly positive.\nA: Early rheumatoid arthritis highly likely [1].\nP: Initiate methotrexate 15 mg weekly with folic acid 1 mg daily. Order baseline LFTs, schedule ultrasound of hands in 6 weeks. Discuss exercise and smoking cessation.",
+        "treatmentsJSON": json.dumps([
+            { "drug": "Methotrexate 15 mg weekly", "status": "Proposed", "rationale": "First-line csDMARD per ACR 2023 guidelines after NSAID failure [3]" },
+            { "drug": "Folic acid 1 mg daily", "status": "Supportive", "rationale": "Reduces MTX-induced GI adverse effects [4]" },
+        ]),
+        "priorAuthJustification": "Failed NSAIDs, elevated CRP 18 mg/L and positive RF/anti-CCP. Methotrexate is first-line DMARD."
+    },
+    {
+        "PatientID": "2", "AdmissionID": "demo-upcoming-2", 
+        "ScheduledStartDateTime": "2026-03-18 11:30:00.000", "ScheduledEndDateTime": "2026-03-18 12:10:00.000",
+        "ActualStartDateTime": "", "ActualEndDateTime": "",
+        "ReasonForVisit": "Pulmonary check",
+        "transcript": "", "soapNote": "", "treatmentsJSON": "[]", "priorAuthJustification": ""
+    },
+    {
+        "PatientID": "3", "AdmissionID": "demo-upcoming-3", 
+        "ScheduledStartDateTime": "2026-04-12 14:00:00.000", "ScheduledEndDateTime": "2026-04-12 14:40:00.000",
+        "ActualStartDateTime": "", "ActualEndDateTime": "",
+        "ReasonForVisit": "Weight-loss follow-up",
+        "transcript": "", "soapNote": "", "treatmentsJSON": "[]", "priorAuthJustification": ""
+    }
+]
+
 def enrich_admissions(admissions_file_path, diagnoses_file_path, output_file_path):
-    admissions_data_map = {} 
+    admissions_from_file_map = {}
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
     with open(admissions_file_path, 'r', newline='', encoding='utf-8-sig') as adm_file:
         reader = csv.DictReader(adm_file, delimiter='\t')
         for row in reader:
-            if 'PatientID' not in row or 'AdmissionID' not in row:
-                print(f"Skipping malformed row in admissions file: {row}")
-                continue
+            if 'PatientID' not in row or 'AdmissionID' not in row: continue
             key = (row['PatientID'], row['AdmissionID'])
-            admissions_data_map[key] = row
+            admissions_from_file_map[key] = row
 
     diagnoses_reason_map = {}
     with open(diagnoses_file_path, 'r', newline='', encoding='utf-8-sig') as diag_file:
         reader = csv.DictReader(diag_file, delimiter='\t')
         for row in reader:
-            if 'PatientID' not in row or 'AdmissionID' not in row:
-                print(f"Skipping malformed row in diagnoses file: {row}")
-                continue
+            if 'PatientID' not in row or 'AdmissionID' not in row: continue
             key = (row['PatientID'], row['AdmissionID'])
-            if key not in diagnoses_reason_map:
+            if key not in diagnoses_reason_map: # Get first diagnosis desc as reason
                  diagnoses_reason_map[key] = row.get('PrimaryDiagnosisDescription', 'N/A')
 
-    enriched_admissions_list = []
+    all_enriched_admissions_data = []
+    # Define the full output header including new JSON fields for complex objects
     output_header = [
         'PatientID', 'AdmissionID', 
         'ScheduledStartDateTime', 'ScheduledEndDateTime', 
         'ActualStartDateTime', 'ActualEndDateTime', 
-        'ReasonForVisit'
+        'ReasonForVisit', 
+        'transcript', 'soapNote', 'treatmentsJSON', 'priorAuthJustification'
     ]
-    enriched_admissions_list.append(output_header)
+    all_enriched_admissions_data.append(output_header)
 
-    for key, admission_row in admissions_data_map.items():
+    # Process admissions from the core file
+    for key, admin_row_from_file in admissions_from_file_map.items():
         patient_id, admission_id = key
         reason = diagnoses_reason_map.get(key, 'No diagnosis description found.')
         
-        actual_start_str = admission_row.get('ConsultationActualStart', '')
-        actual_end_str = admission_row.get('ConsultationActualEnd', '')
+        actual_start_dt = parse_datetime_flexible(admin_row_from_file.get('ConsultationActualStart', ''))
+        actual_end_dt = parse_datetime_flexible(admin_row_from_file.get('ConsultationActualEnd', ''))
         
-        actual_start_dt_obj = parse_datetime_flexible(actual_start_str)
-        actual_end_dt_obj = parse_datetime_flexible(actual_end_str)
+        scheduled_start_dt_str = admin_row_from_file.get('ConsultationScheduledDate', '')
+        scheduled_duration_str = admin_row_from_file.get('ConsultationScheduledDuration', '')
+        
+        scheduled_start_dt_obj = parse_datetime_flexible(scheduled_start_dt_str)
+        final_scheduled_start_output = ""
+        final_scheduled_end_output = ""
 
-        final_actual_start_output = format_datetime_iso(actual_start_dt_obj)
-        final_actual_end_output = format_datetime_iso(actual_end_dt_obj)
-
-        scheduled_date_orig_str = admission_row.get('ConsultationScheduledDate', '')
-        scheduled_duration_orig_str = admission_row.get('ConsultationScheduledDuration', '')
-
-        final_scheduled_start_dt_output = ""
-        final_scheduled_end_dt_output = ""
-
-        parsed_scheduled_start_orig_dt_obj = parse_datetime_flexible(scheduled_date_orig_str)
-
-        if parsed_scheduled_start_orig_dt_obj and scheduled_duration_orig_str.isdigit():
+        if scheduled_start_dt_obj and scheduled_duration_str.isdigit():
             try:
-                duration_minutes = int(scheduled_duration_orig_str)
-                parsed_scheduled_end_orig_dt_obj = parsed_scheduled_start_orig_dt_obj + timedelta(minutes=duration_minutes)
-                
-                final_scheduled_start_dt_output = format_datetime_iso(parsed_scheduled_start_orig_dt_obj)
-                final_scheduled_end_dt_output = format_datetime_iso(parsed_scheduled_end_orig_dt_obj)
-            except ValueError: 
-                print(f"Warning: Invalid duration for PatientID {patient_id}, AdmissionID {admission_id}. Using actuals for scheduled times.")
-                final_scheduled_start_dt_output = final_actual_start_output
-                final_scheduled_end_dt_output = final_actual_end_output
-        else: 
-            final_scheduled_start_dt_output = final_actual_start_output
-            final_scheduled_end_dt_output = final_actual_end_output
-            if not scheduled_date_orig_str :
-                 pass 
-            elif not scheduled_duration_orig_str.isdigit() and parsed_scheduled_start_orig_dt_obj :
-                 print(f"Warning: Invalid or missing duration for PatientID {patient_id}, AdmissionID {admission_id} (ScheduledDate: {scheduled_date_orig_str}, Duration: '{scheduled_duration_orig_str}'). Using actuals for scheduled times.")
-
+                duration_minutes = int(scheduled_duration_str)
+                final_scheduled_start_output = format_datetime_iso(scheduled_start_dt_obj)
+                final_scheduled_end_output = format_datetime_iso(scheduled_start_dt_obj + timedelta(minutes=duration_minutes))
+            except ValueError: # Fallback to actuals if duration causes issue
+                final_scheduled_start_output = format_datetime_iso(actual_start_dt)
+                final_scheduled_end_output = format_datetime_iso(actual_end_dt)
+        else: # If ConsultationScheduledDate is not a full datetime or duration is invalid, use actuals
+            final_scheduled_start_output = format_datetime_iso(actual_start_dt)
+            final_scheduled_end_output = format_datetime_iso(actual_end_dt)
 
         output_dict = {
-            'PatientID': patient_id,
-            'AdmissionID': admission_id,
-            'ScheduledStartDateTime': final_scheduled_start_dt_output,
-            'ScheduledEndDateTime': final_scheduled_end_dt_output,
-            'ActualStartDateTime': final_actual_start_output,
-            'ActualEndDateTime': final_actual_end_output,
-            'ReasonForVisit': reason
+            'PatientID': patient_id, 'AdmissionID': admission_id,
+            'ScheduledStartDateTime': final_scheduled_start_output,
+            'ScheduledEndDateTime': final_scheduled_end_output,
+            'ActualStartDateTime': format_datetime_iso(actual_start_dt),
+            'ActualEndDateTime': format_datetime_iso(actual_end_dt),
+            'ReasonForVisit': reason,
+            'transcript': '', 'soapNote': '', 'treatmentsJSON': '[]', 'priorAuthJustification': '' # Defaults for file-based admissions
         }
-        enriched_admissions_list.append([output_dict.get(h, '') for h in output_header])
+        all_enriched_admissions_data.append([output_dict.get(h, '') for h in output_header])
+
+    # Add/Update with specific demo upcoming admissions
+    for demo_adm_data in DEMO_UPCOMING_ADMISSIONS_DATA:
+        # Check if this demo admission already processed (it shouldn't be, but as a safeguard)
+        # This simple append assumes demo admission IDs are unique and not in the core file with same ID.
+        # If an ID collision strategy is needed, it would go here.
+        all_enriched_admissions_data.append([demo_adm_data.get(h, '') for h in output_header])
 
     with open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
         writer = csv.writer(outfile, delimiter='\t')
-        writer.writerows(enriched_admissions_list)
-    print(f"Enriched admissions data written to {output_file_path}")
+        writer.writerows(all_enriched_admissions_data)
+    print(f"Enriched admissions data (including demo upcoming) written to {output_file_path}")
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
