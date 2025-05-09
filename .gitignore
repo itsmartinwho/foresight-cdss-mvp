@@ -31,4 +31,7 @@ next-env.d.ts
 
 # IDE settings
 .vscode/
-.idea/ 
+.idea/
+
+# Ignored directories
+.git_old 
