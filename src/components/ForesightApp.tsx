@@ -264,7 +264,12 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: Patient) => void })
                 {upcomingAppointments.map(({ patient: p, visit }) => (
                   <TableRow key={`${p.id}_${visit.id}`}>
                     <TableCell>{new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</TableCell>
-                    <TableCell>{p.name}</TableCell>
+                    <TableCell>
+                      {p.photo && (
+                        <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2" />
+                      )}
+                      {p.name}
+                    </TableCell>
                     <TableCell>{visit.reason}</TableCell>
                     <TableCell>
                       <Button
@@ -861,7 +866,9 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
               {upcomingRows.map(({ patient, visit }) => (
                 <TableRow key={`upcoming_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
                   <TableCell className="text-left flex items-center gap-2">
-                    {patient?.photo ? <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" /> : <UserCircle className="h-6 w-6 text-gray-400" />}
+                    {patient?.photo && (
+                      <img src={patient.photo} alt={patient.name} className="h-6 w-6 rounded-full inline-block mr-2" />
+                    )}
                     {patient ? displayName(patient) : (visit.patientId ?? 'Unknown Patient')}
                   </TableCell>
                   <TableCell className="text-left">{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
@@ -877,7 +884,9 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
               {pastRows.map(({ patient, visit }) => (
                 <TableRow key={`past_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
                   <TableCell className="text-left flex items-center gap-2">
-                    {patient?.photo ? <img src={patient.photo} alt="avatar" className="h-6 w-6 rounded-full" /> : <UserCircle className="h-6 w-6 text-gray-400" />}
+                    {patient?.photo && (
+                      <img src={patient.photo} alt={patient.name} className="h-6 w-6 rounded-full inline-block mr-2" />
+                    )}
                     {patient ? displayName(patient) : (visit.patientId ?? 'Unknown Patient')}
                   </TableCell>
                   <TableCell className="text-left">{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
