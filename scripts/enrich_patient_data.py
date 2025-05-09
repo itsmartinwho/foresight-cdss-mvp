@@ -133,7 +133,13 @@ def enrich_patients(input_file_path, output_file_path):
             if current_patient_id in patient_alerts_map:
                 alerts_for_this_patient_json = json.dumps(patient_alerts_map[current_patient_id])
             
-            enriched_patients_data.append(row + [first_name, last_name, full_name, alerts_for_this_patient_json])
+            output_row = row + [first_name, last_name, full_name, alerts_for_this_patient_json]
+            enriched_patients_data.append(output_row)
+
+            # DEBUG PRINT for one of the target patients
+            if current_patient_id == 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F':
+                print(f"DEBUG PYTHON SCRIPT: Output row for {current_patient_id} -> {output_row}")
+                print(f"DEBUG PYTHON SCRIPT: alertsJSON cell for {current_patient_id} -> {alerts_for_this_patient_json}")
 
     with open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
         writer = csv.writer(outfile, delimiter='\t')
@@ -141,11 +147,14 @@ def enrich_patients(input_file_path, output_file_path):
     print(f"Enriched patient data (with alertsJSON) written to {output_file_path}")
 
 if __name__ == '__main__':
-    # Assuming script is in a 'scripts' directory at workspace root
-    # and data is in 'data/100-patients/' relative to workspace root
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Get workspace root
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
+    # Ensure the target directory within 'public' exists
+    output_data_dir = os.path.join(base_dir, 'public', 'data', '100-patients')
+    os.makedirs(output_data_dir, exist_ok=True)
+
     patient_input_file = os.path.join(base_dir, 'data', '100-patients', 'PatientCorePopulatedTable.txt')
-    patient_output_file = os.path.join(base_dir, 'data', '100-patients', 'Enriched_Patients.tsv')
+    # Output to public/data/100-patients/
+    patient_output_file = os.path.join(output_data_dir, 'Enriched_Patients.tsv')
     
     enrich_patients(patient_input_file, patient_output_file) 

@@ -112,10 +112,15 @@ def enrich_admissions(admissions_file_path, diagnoses_file_path, output_file_pat
     print(f"Enriched admissions data written to {output_file_path}")
 
 if __name__ == '__main__':
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) 
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    # Ensure the target directory within 'public' exists
+    output_data_dir = os.path.join(base_dir, 'public', 'data', '100-patients')
+    os.makedirs(output_data_dir, exist_ok=True)
 
     admissions_input_file = os.path.join(base_dir, 'data', '100-patients', 'AdmissionsCorePopulatedTable.txt')
     diagnoses_input_file = os.path.join(base_dir, 'data', '100-patients', 'AdmissionsDiagnosesCorePopulatedTable.txt')
-    admissions_output_file = os.path.join(base_dir, 'data', '100-patients', 'Enriched_Admissions.tsv')
+    # Output to public/data/100-patients/
+    admissions_output_file = os.path.join(output_data_dir, 'Enriched_Admissions.tsv')
     
     enrich_admissions(admissions_input_file, diagnoses_input_file, admissions_output_file) 
