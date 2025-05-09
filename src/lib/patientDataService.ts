@@ -51,23 +51,6 @@ const MOCK_LAB_DETAILS_FOR_DEMO_PATIENT_1: Record<string, { referenceRange?: str
   "anti-CCP": { referenceRange: "Neg", flag: "H" },
 };
 
-const MOCK_ALERTS_DATA: Omit<ComplexCaseAlert, 'patientId'>[] = [
-  {
-    id: "ALR-017",
-    msg: "Possible vasculitis – refer to rheumatology",
-    date: "Today 08:11", // This date format might need standardization for real use
-    severity: "High",
-    confidence: 0.87,
-  },
-  {
-    id: "ALR-018",
-    msg: "Consider lung CT – persistent cough 6 mo",
-    date: "Yesterday 17:40",
-    severity: "Medium",
-    confidence: 0.71,
-  },
-];
-
 const MOCK_PRIOR_AUTH_JUSTIFICATION_PATIENT1_DEMO1 = "Failed NSAIDs, elevated CRP 18 mg/L and positive RF/anti-CCP. Methotrexate is first-line DMARD.";
 
 /**
@@ -152,20 +135,31 @@ class PatientDataService {
     this.allDiagnosesByAdmission = {};
     this.allLabResultsByAdmission = {};
 
-    // Process patients from Enriched_Patients.tsv
     data.patients.forEach((pData: any) => {
+      let parsedAlerts: ComplexCaseAlert[] = [];
+      if (pData.alertsJSON) {
+        try {
+          const alertsFromFile = JSON.parse(pData.alertsJSON);
+          if (Array.isArray(alertsFromFile)) {
+            parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');
+          }
+        } catch (e) {
+          console.error(`Error parsing alertsJSON for patient ${pData.PatientID}:`, e, pData.alertsJSON);
+        }
+      }
       const patient: Patient = {
         id: pData.PatientID,
-        name: pData.name, // From generated name
+        name: pData.name,
         firstName: pData.firstName,
         lastName: pData.lastName,
         gender: pData.PatientGender,
-        dateOfBirth: pData.PatientDateOfBirth, // Ensure this is in a consistent format
+        dateOfBirth: pData.PatientDateOfBirth,
         race: pData.PatientRace,
         maritalStatus: pData.PatientMaritalStatus,
         language: pData.PatientLanguage,
         povertyPercentage: parseFloat(pData.PatientPopulationPercentageBelowPoverty) || 0,
-        // photo will be added by demo patient overlay if available
+        alerts: parsedAlerts.length > 0 ? parsedAlerts : undefined,
+        photo: undefined 
       };
       this.patients[patient.id] = patient;
     });
@@ -220,39 +214,6 @@ class PatientDataService {
        }
        this.allLabResultsByAdmission[key].push(labResult);
     });
-
-    // --- Integrate Mock Alerts (Simplified & More Robust Assignment) ---
-    if (Object.keys(this.patients).length > 0 && MOCK_ALERTS_DATA.length > 0) {
-      const allPatientIds = Object.keys(this.patients);
-      let patientIndex = 0; 
-
-      MOCK_ALERTS_DATA.forEach((alertData) => {
-        const patientIdToAssign = allPatientIds[patientIndex % allPatientIds.length];
-        patientIndex++; // Increment to cycle through patients
-
-        if (this.patients[patientIdToAssign]) {
-          if (!this.patients[patientIdToAssign].alerts) {
-            this.patients[patientIdToAssign].alerts = [];
-          }
-          const newAlert: ComplexCaseAlert = {
-            id: alertData.id,
-            patientId: patientIdToAssign,
-            msg: alertData.msg,
-            date: alertData.date,
-            severity: alertData.severity,
-            confidence: alertData.confidence,
-            type: alertData.type, 
-            triggeringFactors: alertData.triggeringFactors || [],
-            suggestedActions: alertData.suggestedActions || [],
-            createdAt: alertData.createdAt || new Date().toISOString(), 
-            acknowledged: alertData.acknowledged || false, 
-            acknowledgedAt: alertData.acknowledgedAt
-          };
-          this.patients[patientIdToAssign].alerts?.push(newAlert);
-        }
-      });
-    }
-    // --- End Alerts Integration ---
 
     // Overlay specific data for the three demo patients (Maria, James, Priya)
     // This ensures their specific photos, upcoming appointment details, and potentially

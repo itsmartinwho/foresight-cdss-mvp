@@ -1,6 +1,7 @@
 import csv
 import random
 import os
+import json # Import json module
 
 # Define more extensive lists for better name generation
 MALE_FIRST_NAMES = [
@@ -31,6 +32,41 @@ LAST_NAMES = [
     "Turner", "Torres", "Parker", "Collins"
 ]
 
+# Define the mock alerts data (ensure structure matches ComplexCaseAlert type as closely as possible)
+# Note: patientId will be set when assigning to a specific patient row.
+MOCK_ALERTS_DEFINITIONS = [
+    {
+        "id": "ALR-017",
+        "msg": "Possible vasculitis – refer to rheumatology",
+        "date": "Today 08:11", 
+        "severity": "High",
+        "confidence": 0.87,
+        "type": "autoimmune", # Example type
+        "triggeringFactors": ["Persistent fever", "Elevated ESR"],
+        "suggestedActions": ["Rheumatology consult", "Check ANCA levels"],
+        "createdAt": "2023-10-26T08:11:00Z", # Example ISO date
+        "acknowledged": False
+    },
+    {
+        "id": "ALR-018",
+        "msg": "Consider lung CT – persistent cough 6 mo",
+        "date": "Yesterday 17:40",
+        "severity": "Medium",
+        "confidence": 0.71,
+        "type": "oncology", # Example type
+        "triggeringFactors": ["Chronic cough", "History of smoking"],
+        "suggestedActions": ["Chest X-Ray if not done", "Pulmonology referral", "Low-dose CT scan"],
+        "createdAt": "2023-10-25T17:40:00Z",
+        "acknowledged": False
+    },
+]
+
+# Patient IDs to assign these alerts to (these should exist in your PatientCorePopulatedTable.txt)
+ASSIGN_ALERT_TO_PATIENT_IDS = [
+    'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F',
+    '64182B95-EB72-4E2B-BE77-8050B71498CE'
+]
+
 def generate_unique_name(existing_names, gender):
     attempts = 0
     while attempts < 1000: # Max attempts to find a unique name
@@ -52,37 +88,57 @@ def generate_unique_name(existing_names, gender):
 
 def enrich_patients(input_file_path, output_file_path):
     enriched_patients_data = []
-    header = []
     existing_full_names = set()
 
-    # Ensure the output directory exists
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
-    with open(input_file_path, 'r', newline='', encoding='utf-8') as infile:
+    patient_alerts_map = {}
+    for i, patient_id_to_assign in enumerate(ASSIGN_ALERT_TO_PATIENT_IDS):
+        if i < len(MOCK_ALERTS_DEFINITIONS):
+            alert_data_copy = MOCK_ALERTS_DEFINITIONS[i].copy()
+            alert_data_copy['patientId'] = patient_id_to_assign
+            patient_alerts_map[patient_id_to_assign] = [alert_data_copy]
+        else:
+            break
+
+    with open(input_file_path, 'r', newline='', encoding='utf-8-sig') as infile: # Added utf-8-sig
         reader = csv.reader(infile, delimiter='\t')
-        header = next(reader)
-        # Add new columns to the header
-        output_header = header + ['firstName', 'lastName', 'name']
+        raw_header = next(reader)
+        header = [h.strip() for h in raw_header] # Strip whitespace from headers
+        
+        output_header = header + ['firstName', 'lastName', 'name', 'alertsJSON']
         enriched_patients_data.append(output_header)
         
+        try:
+            patient_id_col_index = header.index('PatientID') 
+        except ValueError:
+            print(f"Error: 'PatientID' column not found in header: {header}")
+            print("Please ensure the first column in PatientCorePopulatedTable.txt is PatientID and tab-separated.")
+            return # Stop processing if header is wrong
+
         for row_idx, row in enumerate(reader):
-            # Pad row with empty strings if it's shorter than header
             while len(row) < len(header):
                 row.append('')
-            patient_data = dict(zip(header, row))
-            gender = patient_data.get('PatientGender', 'Unknown') 
-            if not gender: # Handle empty gender string
-                 print(f"Warning: PatientID {patient_data.get('PatientID', 'N/A')} at source row {row_idx+2} has empty gender. Defaulting to 'Unknown'.")
+            # Use the cleaned header for creating the dictionary
+            patient_data_dict = dict(zip(header, row)) 
+            current_patient_id = patient_data_dict.get('PatientID')
+            gender = patient_data_dict.get('PatientGender', 'Unknown') 
+            if not gender: 
+                 print(f"Warning: PatientID {current_patient_id} at source row {row_idx+2} has empty gender. Defaulting to 'Unknown'.")
                  gender = 'Unknown'
 
             first_name, last_name, full_name = generate_unique_name(existing_full_names, gender)
             
-            enriched_patients_data.append(row + [first_name, last_name, full_name])
+            alerts_for_this_patient_json = "[]"
+            if current_patient_id in patient_alerts_map:
+                alerts_for_this_patient_json = json.dumps(patient_alerts_map[current_patient_id])
+            
+            enriched_patients_data.append(row + [first_name, last_name, full_name, alerts_for_this_patient_json])
 
     with open(output_file_path, 'w', newline='', encoding='utf-8') as outfile:
         writer = csv.writer(outfile, delimiter='\t')
         writer.writerows(enriched_patients_data)
-    print(f"Enriched patient data written to {output_file_path}")
+    print(f"Enriched patient data (with alertsJSON) written to {output_file_path}")
 
 if __name__ == '__main__':
     # Assuming script is in a 'scripts' directory at workspace root
