@@ -29,7 +29,11 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
         } else {
           setDetailedPatientData(data);
           if (data.admissions && data.admissions.length > 0) {
-            setSelectedAdmissionId(data.admissions[0].admission.id);
+            // Default to the most recent admission if possible, otherwise the first one
+            const sortedAdmissions = [...data.admissions].sort((a, b) => 
+              new Date(b.admission.scheduledStart).getTime() - new Date(a.admission.scheduledStart).getTime()
+            );
+            setSelectedAdmissionId(sortedAdmissions[0].admission.id);
           }
         }
       } catch (err: any) {
@@ -46,6 +50,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
   }, [patientId]);
 
   const calculateAge = (dateOfBirth: string): number => {
+    if (!dateOfBirth) return 0; // Handle cases where DOB might be missing
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -60,17 +65,17 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const formatDateTime = (dateString: string): string => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString();
+    return new Date(dateString).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-lg font-medium text-gray-500">Loading patient data...</div>
       </div>
     );
@@ -78,380 +83,376 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
 
   if (error || !detailedPatientData || !detailedPatientData.patient) {
     return (
-      <div className="p-6">
-        <Link href="/patients" className="text-blue-600 mr-2 mb-4 inline-block">
-          ← Patients
+      <div className="p-6 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Link href="/patients" className="self-start text-blue-600 hover:text-blue-800 transition flex items-center mb-8">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Patients
         </Link>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg font-medium text-red-500">{error || 'Patient not found'}</div>
-        </div>
+        <div className="text-lg font-medium text-red-500 text-center">{error || 'Patient not found'}</div>
       </div>
     );
   }
 
   const { patient, admissions: admissionsWithDetails } = detailedPatientData;
+  const currentAdmissionDetails = admissionsWithDetails?.find((ad: any) => ad.admission.id === selectedAdmissionId);
 
   return (
-    <div className="bg-white shadow rounded-lg max-w-7xl mx-auto">
-      {/* Patient header - Enhanced with better spacing and visual hierarchy */}
-      <div className="p-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
-        <div className="flex items-center mb-2">
-          <Link href="/patients" className="text-blue-600 hover:text-blue-800 transition flex items-center mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Patients
-          </Link>
-        </div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-1">
-              {patient.name || 'Unknown Patient'}
-            </h1>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-              <span>DOB: {formatDate(patient.dateOfBirth)}</span>
-              <span>Age: {calculateAge(patient.dateOfBirth)}</span>
-              {patient.mrn && <span>MRN: {patient.mrn}</span>}
-            </div>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-full mx-auto bg-white shadow-lg rounded-b-lg">
+        {/* Patient Header */}
+        <div className="p-6 md:p-8 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-gray-100 rounded-t-lg">
+          <div className="flex items-center mb-4">
+            <Link href="/patients" className="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out flex items-center mr-4 text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              All Patients
+            </Link>
           </div>
-          {/* Consultation selector moved here for better visibility */}
-          {detailedPatientData && detailedPatientData.admissions && detailedPatientData.admissions.length > 1 && (
-            <div className="mt-4 md:mt-0 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-              <label className="font-medium text-sm text-gray-700 block mb-1">Current Visit:</label>
-              <select
-                className="w-full border rounded px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
-                value={selectedAdmissionId || ''}
-                onChange={(e) => setSelectedAdmissionId(e.target.value)}
-              >
-                {detailedPatientData.admissions.map((ad: any) => (
-                  <option key={ad.admission.id} value={ad.admission.id}>
-                    {formatDateTime(ad.admission.scheduledStart) || ad.admission.id}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation tabs - Enhanced with consistent width */}
-      <div className="border-b border-gray-200 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex justify-between overflow-x-auto">
-            {['consultation', 'diagnosis', 'treatment', 'labs', 'prior_auth', 'trials', 'history', 'all_data'].map(tabName => (
-              <button
-                key={tabName}
-                className={`py-4 px-4 text-center border-b-2 font-medium text-sm transition whitespace-nowrap flex-1 ${
-                  activeTab === tabName
-                    ? 'border-blue-500 text-blue-600 bg-white shadow-sm'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-                onClick={() => setActiveTab(tabName)}
-              >
-                {tabName.replace('_', ' ').replace('all data', 'All Patient Data').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Visit Information - Enhanced styling for current visit */}
-      {selectedAdmissionId && detailedPatientData.admissions && (
-        <div className="bg-blue-50 px-8 py-4 border-b border-blue-100">
-          <div className="max-w-7xl mx-auto">
-            {(() => {
-              const currentAdmission = detailedPatientData.admissions.find((ad: any) => ad.admission.id === selectedAdmissionId);
-              if (!currentAdmission) return null;
-              return (
-                <div className="flex flex-col md:flex-row md:items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-800">
-                      Visit on: {formatDateTime(currentAdmission.admission.scheduledStart)}
-                    </h2>
-                    <p className="text-gray-600">Reason: {currentAdmission.admission.reason}</p>
-                  </div>
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              {/* Placeholder for patient avatar/icon */}
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-semibold">
+                {patient.name ? patient.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                  {patient.name || 'Unknown Patient'}
+                </h1>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
+                  <span>DOB: {formatDate(patient.dateOfBirth)} (Age: {calculateAge(patient.dateOfBirth)})</span>
+                  {patient.mrn && <span>MRN: {patient.mrn}</span>}
+                  {patient.gender && <span>Gender: {patient.gender}</span>}
                 </div>
-              );
-            })()}
+              </div>
+            </div>
+            
+            {admissionsWithDetails && admissionsWithDetails.length > 0 && (
+              <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 w-full md:w-auto md:max-w-xs">
+                <label htmlFor="visitSelector" className="block text-sm font-medium text-gray-700 mb-1">Select Visit:</label>
+                <select
+                  id="visitSelector"
+                  className="w-full border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  value={selectedAdmissionId || ''}
+                  onChange={(e) => setSelectedAdmissionId(e.target.value)}
+                >
+                  {admissionsWithDetails.map((ad: any) => (
+                    <option key={ad.admission.id} value={ad.admission.id}>
+                      {formatDateTime(ad.admission.scheduledStart)} - {ad.admission.reason || 'Visit'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Content area - Enhanced with better spacing and margins */}
-      <div className="p-8">
-        {(() => { 
-          const filteredAdmissions = selectedAdmissionId 
-            ? detailedPatientData.admissions.filter((ad:any) => ad.admission.id === selectedAdmissionId) 
-            : detailedPatientData.admissions; 
-          
-          if (!filteredAdmissions || filteredAdmissions.length === 0) { 
-            return (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                <p className="text-yellow-700">No consultation data found.</p>
-              </div>
-            );
-          } 
-          
-          return <React.Fragment>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
+          <div className="max-w-full mx-auto px-2 sm:px-4">
+            <nav className="flex space-x-1 overflow-x-auto">
+              {[
+                { key: 'consultation', label: 'Consultation' },
+                { key: 'diagnosis', label: 'Diagnosis' },
+                { key: 'treatment', label: 'Treatment' },
+                { key: 'labs', label: 'Labs' },
+                { key: 'prior_auth', label: 'Prior Auth' },
+                { key: 'trials', label: 'Clinical Trials' },
+                { key: 'history', label: 'Patient History' },
+                { key: 'all_data', label: 'All Data' },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  className={`py-3 px-3 md:px-4 text-center border-b-2 font-medium text-sm transition-colors duration-150 ease-in-out whitespace-nowrap hover:bg-gray-100 hover:text-blue-600 ${
+                    activeTab === tab.key
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:border-gray-300'
+                  }`}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
 
-        {activeTab === 'consultation' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Consultation Details</h2>
-            {filteredAdmissions.map((adDetail: any) => (
-              <div key={adDetail.admission.id} className="mb-8 p-6 border rounded-lg shadow-sm bg-white">
-                {adDetail.admission.transcript && (
-                  <div className="mb-6">
-                    <h4 className="font-medium text-gray-800 mb-2 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                      </svg>
-                      Transcript
-                    </h4>
-                    <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                      <pre className="text-sm whitespace-pre-wrap text-gray-700">{adDetail.admission.transcript}</pre>
-                    </div>
-                  </div>
-                )}
-                
-                {adDetail.admission.soapNote && (
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      SOAP Note
-                    </h4>
-                    <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                      <pre className="text-sm whitespace-pre-wrap text-gray-700">{adDetail.admission.soapNote}</pre>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+        {/* Current Visit Context (if a visit is selected) */}
+        {currentAdmissionDetails && (
+          <div className="bg-blue-50 px-4 sm:px-6 lg:px-8 py-3 border-b border-blue-200">
+            <div className="max-w-full mx-auto">
+              <h2 className="text-md font-semibold text-blue-700">
+                Current Visit: {formatDateTime(currentAdmissionDetails.admission.scheduledStart)}
+              </h2>
+              <p className="text-sm text-blue-600">Reason: {currentAdmissionDetails.admission.reason || 'N/A'}</p>
+            </div>
           </div>
         )}
 
-        {activeTab === 'diagnosis' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Diagnoses for this Visit</h2>
-            {filteredAdmissions.map((adDetail: any) => (
-              <div key={adDetail.admission.id} className="p-6 border rounded-lg shadow-sm bg-white">
-                <div className="space-y-4">
-                  {adDetail.diagnoses.length > 0 ? (
-                    <div className="divide-y divide-gray-100">
-                      {adDetail.diagnoses.map((dx: Diagnosis) => (
-                        <div key={dx.code} className="py-3 flex justify-between">
-                          <div className="text-gray-800">{dx.description}</div>
-                          <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">{dx.code}</div>
-                        </div>
-                      ))}
+        {/* Tab Content Area */}
+        <div className="p-4 sm:p-6 lg:p-8">
+          {(() => { 
+            const filteredAdmissions = selectedAdmissionId && admissionsWithDetails
+              ? admissionsWithDetails.filter((ad:any) => ad.admission.id === selectedAdmissionId) 
+              : []; // If no visit selected, or no admissions, provide empty array
+            
+            if (!selectedAdmissionId || !currentAdmissionDetails) { 
+              return (
+                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-6 text-center shadow-sm">
+                  <p className="text-yellow-700 font-medium">
+                    {admissionsWithDetails && admissionsWithDetails.length > 0 
+                      ? 'Please select a visit from the dropdown above to see details.' 
+                      : 'No visits found for this patient.'}
+                  </p>
+                </div>
+              );
+            } 
+            
+            // Render content based on activeTab and filteredAdmissions (which now refers to the single selected admission)
+            const adDetail = currentAdmissionDetails; // Use the already found currentAdmissionDetails
+
+            return <React.Fragment>
+              {activeTab === 'consultation' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-gray-900 sr-only">Consultation Details</h3>
+                  {adDetail.admission.transcript && (
+                    <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
+                      <h4 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                        Transcript
+                      </h4>
+                      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
+                        <pre className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{adDetail.admission.transcript}</pre>
+                      </div>
                     </div>
+                  )}
+                  {adDetail.admission.soapNote && (
+                    <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
+                      <h4 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        SOAP Note
+                      </h4>
+                      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
+                        <pre className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{adDetail.admission.soapNote}</pre>
+                      </div>
+                    </div>
+                  )}
+                  {!adDetail.admission.transcript && !adDetail.admission.soapNote && (
+                     <p className="text-center text-gray-500 py-4">No consultation notes (transcript or SOAP) available for this visit.</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'diagnosis' && (
+                <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagnoses for this Visit</h3>
+                  {adDetail.diagnoses && adDetail.diagnoses.length > 0 ? (
+                    <ul className="divide-y divide-gray-200">
+                      {adDetail.diagnoses.map((dx: Diagnosis) => (
+                        <li key={dx.code} className="py-3 flex justify-between items-center">
+                          <span className="text-gray-800 text-sm md:text-base">{dx.description}</span>
+                          <span className="font-mono text-xs md:text-sm bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 tracking-tight">{dx.code}</span>
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
                     <p className="text-center text-gray-500 py-4">No diagnoses recorded for this visit.</p>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
 
-        {activeTab === 'treatment' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Treatments for this Visit</h2>
-            {filteredAdmissions.map((adDetail: any) => (
-              <div key={adDetail.admission.id} className="p-6 border rounded-lg shadow-sm bg-white">
-                {adDetail.admission.treatments && adDetail.admission.treatments.length > 0 ? (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {adDetail.admission.treatments.map((tx: Treatment) => (
-                      <div key={tx.drug} className="p-4 border rounded-md bg-gray-50">
-                        <h4 className="font-medium text-lg mb-2">{tx.drug}</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <span className="w-24 text-gray-600 text-sm">Status:</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              tx.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                              tx.status === 'Discontinued' ? 'bg-red-100 text-red-800' : 
-                              'bg-blue-100 text-blue-800'
-                            }`}>{tx.status}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600 text-sm">Rationale:</span>
-                            <p className="text-gray-800 mt-1">{tx.rationale}</p>
+              {activeTab === 'treatment' && (
+                <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Treatments for this Visit</h3>
+                  {adDetail.admission.treatments && adDetail.admission.treatments.length > 0 ? (
+                    <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 lg:grid-cols-3">
+                      {adDetail.admission.treatments.map((tx: Treatment) => (
+                        <div key={tx.drug} className="p-4 border rounded-lg bg-slate-50 hover:shadow-lg transition-shadow duration-200">
+                          <h4 className="font-semibold text-md text-blue-700 mb-2 truncate" title={tx.drug}>{tx.drug}</h4>
+                          <div className="space-y-1.5 text-sm">
+                            <div className="flex items-center">
+                              <span className="w-20 text-gray-600">Status:</span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide ${{
+                                'Active': 'bg-green-100 text-green-800',
+                                'Discontinued': 'bg-red-100 text-red-800',
+                                'Pending': 'bg-yellow-100 text-yellow-800',
+                              }[tx.status] || 'bg-gray-100 text-gray-800'}`}>{tx.status}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block mb-0.5">Rationale:</span>
+                              <p className="text-gray-700 leading-snug">{tx.rationale || 'N/A'}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-4">No treatments recorded for this visit.</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-4">No treatments recorded for this visit.</p>
+                  )}
+                </div>
+              )}
 
-        {activeTab === 'labs' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Lab Results</h2>
-            {filteredAdmissions.map((adDetail: any) => (
-              <div key={adDetail.admission.id} className="p-6 border rounded-lg shadow-sm bg-white">
-                {adDetail.labResults.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference Range</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {adDetail.labResults.map((lab: LabResult, idx: number) => (
-                          <tr key={idx} className={lab.flag ? 'bg-yellow-50' : ''}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lab.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {lab.value} {lab.units} {lab.flag && <span className="text-red-500 ml-1">({lab.flag})</span>}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lab.referenceRange || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDateTime(lab.dateTime)}</td>
+              {activeTab === 'labs' && (
+                <div className="bg-white p-0 md:p-5 shadow-md rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 px-5 pt-5 md:px-0 md:pt-0">Lab Results</h3>
+                  {adDetail.labResults && adDetail.labResults.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Units</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Ref. Range</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Flag</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Date</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-4">No lab results recorded for this visit.</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {adDetail.labResults.map((lab: LabResult, idx: number) => (
+                            <tr key={idx} className={lab.flag ? 'bg-yellow-50 hover:bg-yellow-100' : 'hover:bg-gray-50'}>
+                              <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{lab.name}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-700">{lab.value}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">{lab.units}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">{lab.referenceRange || 'N/A'}</td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                {lab.flag && <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">{lab.flag}</span>}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">{formatDateTime(lab.dateTime)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-4 px-5 md:px-0">No lab results recorded for this visit.</p>
+                  )}
+                </div>
+              )}
 
-        {activeTab === 'prior_auth' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Prior Authorization</h2>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-3xl mx-auto">
-              <div className="space-y-6">
-                <div className="border-b pb-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Authorization Draft</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-gray-500 text-sm">Patient</p>
-                      <p className="font-medium">{patient.name}</p>
-                      <p className="text-sm text-gray-600">DOB: {formatDate(patient.dateOfBirth)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">Medication</p>
-                      <p className="font-medium">Methotrexate 15 mg weekly</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">Diagnosis</p>
-                      <p className="font-medium">Rheumatoid Arthritis</p>
-                      <p className="text-sm text-gray-600">ICD-10: M06.9</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">Justification</p>
-                      <p>Failed NSAIDs, elevated CRP 18 mg/L</p>
+              {activeTab === 'prior_auth' && (
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-white p-6 shadow-md rounded-lg border border-gray-200">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">Prior Authorization Request</h3>
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 font-medium">Patient:</p>
+                          <p className="text-gray-800">{patient.name} (DOB: {formatDate(patient.dateOfBirth)})</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Medication:</p>
+                          <p className="text-gray-800">Methotrexate 15 mg weekly</p> {/* Example data */}
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Diagnosis:</p>
+                          <p className="text-gray-800">Rheumatoid Arthritis (ICD-10: M06.9)</p> {/* Example data */}
+                        </div>
+                        <div>
+                          <p className="text-gray-500 font-medium">Justification:</p>
+                          <p className="text-gray-800">Failed NSAIDs, elevated CRP 18 mg/L</p> {/* Example data */}
+                        </div>
+                      </div>
+                      <div className="border-t border-gray-200 pt-5 flex justify-center">
+                        <button className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                          Generate PDF Draft
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-center">
-                  <button className="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition shadow-sm">
-                    Generate PDF
-                  </button>
+              )}
+
+              {activeTab === 'trials' && (
+                <div className="bg-white p-0 md:p-5 shadow-md rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 px-5 pt-5 md:px-0 md:pt-0">Matching Clinical Trials</h3>
+                  {adDetail.trials && adDetail.trials.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Trial ID</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Distance</th>
+                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Patient Fit Score</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {adDetail.trials.map((trial: any) => (
+                            <tr key={trial.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap font-medium text-blue-600 hover:underline">
+                                <a href={`#trial-${trial.id}`} onClick={(e) => e.preventDefault()}>{trial.id}</a>
+                              </td>
+                              <td className="px-4 py-3 whitespace-normal text-gray-800">{trial.title}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">{trial.distance}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">
+                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  parseFloat(trial.fit) > 0.7 ? 'bg-green-100 text-green-800' : 
+                                  parseFloat(trial.fit) > 0.4 ? 'bg-yellow-100 text-yellow-800' : 
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {trial.fit}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                     <p className="text-center text-gray-500 py-4 px-5 md:px-0">No clinical trial matches found for this patient based on current data.</p>
+                  )}
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'trials' && filteredAdmissions[0] && filteredAdmissions[0].trials && filteredAdmissions[0].trials.length > 0 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Matching Clinical Trials</h2>
-            <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distance</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredAdmissions[0].trials.map((trial: any) => (
-                      <tr key={trial.id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800">
-                          <a href={`#trial-${trial.id}`}>{trial.id}</a>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{trial.title}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{trial.distance}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            parseFloat(trial.fit) > 0.7 ? 'bg-green-100 text-green-800' : 
-                            parseFloat(trial.fit) > 0.4 ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {trial.fit}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'trials' && (!filteredAdmissions[0] || !filteredAdmissions[0].trials || filteredAdmissions[0].trials.length === 0) && (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No trial matches available for this consultation.</p>
-          </div>
-        )}
-
-        {activeTab === 'history' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Patient History</h2>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="relative">
-                <div className="absolute top-0 bottom-0 left-6 w-1 bg-blue-100"></div>
-                <div className="space-y-8">
-                  <div className="relative pl-10">
-                    <div className="absolute -left-2 top-1 h-4 w-4 rounded-full bg-blue-600"></div>
-                    <div className="mb-1 text-sm font-semibold text-gray-600">2025-04-24</div>
-                    <p className="text-gray-800">Initial consult: fatigue & joint pain.</p>
+              )}
+              
+              {activeTab === 'history' && (
+                <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Patient Timeline</h3>
+                  <div className="relative pl-2.5">
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200 rounded-full" aria-hidden="true"></div> {/* Timeline bar */}
+                    <div className="space-y-8">
+                      {/* Example History Item 1 */}
+                      <div className="relative pl-8">
+                        <div className="absolute left-[-7px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 border-2 border-white"></div>
+                        <p className="text-xs text-gray-500 mb-0.5">Apr 24, 2025</p>
+                        <p className="text-sm text-gray-700">Initial consult: reports fatigue & joint pain.</p>
+                      </div>
+                      {/* Example History Item 2 */}
+                      <div className="relative pl-8">
+                        <div className="absolute left-[-7px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 border-2 border-white"></div>
+                        <p className="text-xs text-gray-500 mb-0.5">Apr 24, 2025</p>
+                        <p className="text-sm text-gray-700">Labs ordered: ESR, CRP, RF, anti-CCP.</p>
+                      </div>
+                       {/* Example History Item 3 */}
+                      <div className="relative pl-8">
+                        <div className="absolute left-[-7px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 border-2 border-white"></div>
+                        <p className="text-xs text-gray-500 mb-0.5">Apr 24, 2025</p>
+                        <p className="text-sm text-gray-700">AI suggested provisional RA diagnosis based on initial symptoms and common patterns.</p>
+                      </div>
+                      {/* Add more history items as needed */}
+                    </div>
                   </div>
-                  <div className="relative pl-10">
-                    <div className="absolute -left-2 top-1 h-4 w-4 rounded-full bg-blue-600"></div>
-                    <div className="mb-1 text-sm font-semibold text-gray-600">2025-04-24</div>
-                    <p className="text-gray-800">Labs ordered: ESR, CRP, RF, anti-CCP.</p>
-                  </div>
-                  <div className="relative pl-10">
-                    <div className="absolute -left-2 top-1 h-4 w-4 rounded-full bg-blue-600"></div>
-                    <div className="mb-1 text-sm font-semibold text-gray-600">2025-04-24</div>
-                    <p className="text-gray-800">AI suggested provisional RA diagnosis.</p>
+                  {(patient?.history?.length === 0 || !patient?.history) && (
+                     <p className="text-center text-gray-500 py-4">No historical events recorded for this patient.</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'all_data' && (
+                <div className="bg-white p-1 shadow-md rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 p-4 border-b">Raw Patient Data (JSON)</h3>
+                  <div className="bg-slate-800 p-4 rounded-b-md max-h-[600px] overflow-auto">
+                    <pre className="text-xs text-slate-100 whitespace-pre-wrap break-all">
+                      {JSON.stringify(detailedPatientData, null, 2)}
+                    </pre>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'all_data' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">Raw Patient Data</h2>
-            <div className="bg-white p-2 rounded-lg shadow-sm border border-gray-200 overflow-auto">
-              <pre className="text-xs font-mono bg-gray-50 p-4 rounded whitespace-pre-wrap break-all">
-                {JSON.stringify(detailedPatientData, null, 2)}
-              </pre>
-            </div>
-          </div>
-        )}
-        </React.Fragment>; 
-        })()}
+              )}
+            </React.Fragment>; 
+          })()}
+        </div>
       </div>
     </div>
   );
