@@ -43,7 +43,17 @@ type UpcomingEntry = { patient: Patient; visit: Admission };
 
 // Placeholder for data used by views not currently in scope for full data unification
 const alerts: any[] = []; 
-const analyticsData: any[] = [];
+
+// Reinstate analyticsData constant
+const analyticsData: any[] = [
+  { date: "Apr 18", consults: 14, timeSaved: 132, accuracyGain: 0.11 },
+  { date: "Apr 19", consults: 18, timeSaved: 162, accuracyGain: 0.14 },
+  { date: "Apr 20", consults: 20, timeSaved: 180, accuracyGain: 0.12 },
+  { date: "Apr 21", consults: 16, timeSaved: 144, accuracyGain: 0.1 },
+  { date: "Apr 22", consults: 21, timeSaved: 198, accuracyGain: 0.15 },
+  { date: "Apr 23", consults: 19, timeSaved: 171, accuracyGain: 0.13 },
+  { date: "Apr 24", consults: 7, timeSaved: 63, accuracyGain: 0.12 },
+];
 
 // ***********************************
 // HELPER AND NEW TAB VIEW (DEFINED BEFORE PatientWorkspace)
@@ -508,21 +518,102 @@ function Labs({ patient, allAdmissions }: { patient: Patient; allAdmissions: Arr
   );
 }
 
-function PriorAuth({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }> }) {
+// Updated PriorAuth Tab
+function PriorAuth({ patient: currentPatientInfo, allAdmissions }: { 
+  patient: Patient; 
+  allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }>
+}) {
+  const [selectedAdmissionState, setSelectedAdmissionState] = useState<Admission | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (allAdmissions && allAdmissions.length > 0) {
+      const sortedAdmissions = [...allAdmissions].sort((a, b) => 
+        new Date(b.admission.scheduledStart).getTime() - new Date(a.admission.scheduledStart).getTime()
+      );
+      setSelectedAdmissionState(sortedAdmissions[0].admission);
+    } else {
+      setSelectedAdmissionState(null);
+    }
+    setIsLoading(false);
+  }, [allAdmissions]);
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading prior auth information...</div>;
+  }
+
+  const selectedAdmissionDetails = allAdmissions.find(ad => ad.admission.id === selectedAdmissionState?.id);
+
+  const medicationForAuth = selectedAdmissionDetails?.admission.treatments?.[0]?.drug || "N/A";
+  const diagnosisForAuth = selectedAdmissionDetails?.diagnoses?.[0]?.description || "N/A";
+  const diagnosisCodeForAuth = selectedAdmissionDetails?.diagnoses?.[0]?.code || "N/A";
+  const justificationForAuth = selectedAdmissionDetails?.admission.priorAuthJustification || "No specific justification provided for this admission.";
+
   return (
-    <div className="p-6 max-w-3xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>Prior Authorization Draft</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <Input disabled value={`Patient: ${patient.name}  DOB: ${patient.dateOfBirth}`} />
-          <Input disabled value="Medication: Methotrexate 15 mg weekly" />
-          <Input disabled value="Diagnosis: Rheumatoid Arthritis (ICD-10 M06.9)" />
-          <Input disabled value="Justification: Failed NSAIDs, elevated CRP 18 mg/L" />
-          <Button className="mt-2">Generate PDF</Button>
-        </CardContent>
-      </Card>
+    <div className="p-6 max-w-3xl mx-auto">
+      <div className="mb-6">
+        <label htmlFor="priorauth-admission-select" className="block text-sm font-medium text-gray-700 mb-1">Select Consultation for Prior Authorization:</label>
+        <select 
+          id="priorauth-admission-select"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          value={selectedAdmissionState?.id || ""}
+          onChange={(e) => {
+            const admissionId = e.target.value;
+            const newSelected = allAdmissions.find(ad => ad.admission.id === admissionId)?.admission || null;
+            setSelectedAdmissionState(newSelected);
+          }}
+        >
+          <option value="" disabled={!selectedAdmissionState}>-- Select a consultation --</option>
+          {allAdmissions.map(({ admission }) => (
+            <option key={admission.id} value={admission.id}>
+              {new Date(admission.scheduledStart).toLocaleString()} - {admission.reason || 'N/A'}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedAdmissionState ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Prior Authorization Draft</CardTitle>
+            <CardDescription>For consultation on: {new Date(selectedAdmissionState.scheduledStart).toLocaleString()}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div>
+              <label htmlFor="pa-patient-name" className="block text-sm font-medium text-gray-700">Patient Name</label>
+              <Input id="pa-patient-name" disabled value={`${currentPatientInfo.name || 'N/A'}`} className="mt-1 bg-gray-50" />
+            </div>
+            <div>
+              <label htmlFor="pa-dob" className="block text-sm font-medium text-gray-700">Date of Birth</label>
+              <Input id="pa-dob" disabled value={`${currentPatientInfo.dateOfBirth ? new Date(currentPatientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}`} className="mt-1 bg-gray-50" />
+            </div>
+            <div>
+              <label htmlFor="pa-medication" className="block text-sm font-medium text-gray-700">Medication / Treatment</label>
+              <Input id="pa-medication" disabled value={medicationForAuth} className="mt-1 bg-gray-50" />
+            </div>
+            <div>
+              <label htmlFor="pa-diag-desc" className="block text-sm font-medium text-gray-700">Diagnosis (Description)</label>
+              <Input id="pa-diag-desc" disabled value={diagnosisForAuth} className="mt-1 bg-gray-50" />
+            </div>
+            <div>
+              <label htmlFor="pa-diag-code" className="block text-sm font-medium text-gray-700">Diagnosis (ICD-10 Code)</label>
+              <Input id="pa-diag-code" disabled value={diagnosisCodeForAuth} className="mt-1 bg-gray-50" />
+            </div>
+            <div>
+              <label htmlFor="pa-justification" className="block text-sm font-medium text-gray-700">Justification:</label>
+              <textarea 
+                id="pa-justification"
+                disabled 
+                value={justificationForAuth} 
+                className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md h-24 bg-gray-50 p-2"
+              />
+            </div>
+            <Button className="mt-3">Generate PDF (Placeholder)</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <p className="text-center text-gray-500">Please select a consultation to view prior authorization details.</p>
+      )}
     </div>
   );
 }
@@ -568,24 +659,49 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 // AUXILIARY VIEWS
 // ***********************************
 
+// AlertsView Updated to use patientDataService
 function AlertsView() {
+  const [allPatientsWithAlerts, setAllPatientsWithAlerts] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAlertData = async () => {
+      setIsLoading(true);
+      // await patientDataService.loadPatientData(); // Ensure data is loaded (has internal check)
+      const patients = patientDataService.getAllPatients();
+      // Filter for patients who actually have alerts defined
+      setAllPatientsWithAlerts(patients.filter(p => p.alerts && p.alerts.length > 0));
+      setIsLoading(false);
+    };
+    loadAlertData();
+  }, []);
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading alerts...</div>;
+  }
+
   return (
-    <div className="p-6 max-w-xl">
+    <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle>All Alerts</CardTitle>
+          <CardTitle>Patient Alerts</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          {alerts.map((a) => (
-            <div key={a.id} className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <SeverityBadge severity={a.severity} />
-                <span>{a.msg}</span>
+        <CardContent className="space-y-4 text-sm">
+          {allPatientsWithAlerts.length === 0 && <p>No active alerts for any patient.</p>}
+          {allPatientsWithAlerts.map(patient => (
+            patient.alerts?.map(alert => (
+              <div key={alert.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="font-semibold text-base text-gray-800">Alert for: {patient.name || patient.id}</div>
+                  <SeverityBadge severity={alert.severity || 'Unknown'} />
+                </div>
+                <p className="text-gray-700 mb-1">{alert.msg || 'No message'}</p>
+                <div className="text-xs text-gray-500 flex justify-between">
+                  <span>Confidence: {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : 'N/A'}</span>
+                  <span>Date: {alert.date || 'N/A'}</span>
+                </div>
               </div>
-              <span className="text-muted-foreground text-xs">
-                {Math.round(a.confidence * 100)}% • {a.date}
-              </span>
-            </div>
+            ))
           ))}
         </CardContent>
       </Card>
