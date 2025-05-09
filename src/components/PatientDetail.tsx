@@ -441,14 +441,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               )}
 
               {activeTab === 'all_data' && (
-                <div className="bg-white p-1 shadow-md rounded-lg border border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 p-4 border-b">Raw Patient Data (JSON)</h3>
-                  <div className="bg-slate-800 p-4 rounded-b-md max-h-[600px] overflow-auto">
-                    <pre className="text-xs text-slate-100 whitespace-pre-wrap break-all">
-                      {JSON.stringify(detailedPatientData, null, 2)}
-                    </pre>
-                  </div>
-                </div>
+                 <div className="p-6 text-center text-gray-500">All Data view temporarily disabled for testing.</div>
               )}
             </React.Fragment>; 
           })()}
