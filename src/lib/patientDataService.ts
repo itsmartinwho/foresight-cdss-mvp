@@ -148,35 +148,33 @@ class PatientDataService {
       const alertsJsonField = pData['alertsJSON'];
 
       if (alertsJsonField && typeof alertsJsonField === 'string') {
-        let jsonToParse = alertsJsonField.trim();
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON from TSV: '${jsonToParse}'`);
+        let S = alertsJsonField.trim();
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON from TSV: '${S}'`);
         
         let previousLength = -1;
-        while (jsonToParse.length !== previousLength) { 
-            previousLength = jsonToParse.length;
-            if (jsonToParse.length >= 2) {
-                if (jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) {
-                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
-                } else if (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')) {
-                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
-                }
+        while (S.length !== previousLength) { 
+            previousLength = S.length;
+            if (S.length >= 2) {
+                if (S.startsWith("'") && S.endsWith("'")) { S = S.substring(1, S.length - 1); }
+                else if (S.startsWith('"') && S.endsWith('"')) { S = S.substring(1, S.length - 1); }
             }
-            jsonToParse = jsonToParse.trim(); 
+            S = S.trim(); 
         }
         
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after iterative unwrap for ${targetPatientId1}: '${jsonToParse}'`);
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after iterative unwrap for ${targetPatientId1}: '${S}'`);
 
-        if (jsonToParse && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{")) && (jsonToParse.endsWith("]") || jsonToParse.endsWith("}"))) {
+        // Aggressive clean attempt + final check for valid JSON structure
+        let cleanedJsonString = S.replace(/[^\x20-\x7E\u00A0-\uFFFF\{\}\[\]\,\:\"\w\d\s\.\-\\/]/g, ""); // Keep more common chars
+        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after aggressive regex clean for ${targetPatientId1}: '${cleanedJsonString}'`);
+
+        if (cleanedJsonString && (cleanedJsonString.startsWith("[") || cleanedJsonString.startsWith("{")) && (cleanedJsonString.endsWith("]") || cleanedJsonString.endsWith("}"))) {
           try {
-            const alertsFromFile = JSON.parse(jsonToParse);
+            const alertsFromFile = JSON.parse(cleanedJsonString);
             if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
             if (Array.isArray(alertsFromFile)) { parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');}
-          } catch (e: any) {
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing final JSON for ${pData.PatientID}: ${e.message}. String was: '${jsonToParse}'`);
-            parsedAlerts = []; 
-          }
-        } else if (jsonToParse && pData.PatientID === targetPatientId1) { 
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-unwrap for ${pData.PatientID} not valid JSON structure: '${jsonToParse}'`);
+          } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing aggressively cleaned JSON for ${pData.PatientID}: ${e.message}. String was: '${cleanedJsonString}'`); parsedAlerts = []; }
+        } else if (cleanedJsonString && pData.PatientID === targetPatientId1) { 
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-aggressive-clean for ${pData.PatientID} not valid JSON structure: '${cleanedJsonString}'`);
             parsedAlerts = [];
         }
       }
@@ -198,32 +196,37 @@ class PatientDataService {
       if (pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Final patient.alerts for ${targetPatientId1}: ${JSON.stringify(this.patients[targetPatientId1]?.alerts)}`);}
     });
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient map size after file load: ${Object.keys(this.patients).length}`);
+    // Log details for patients 1, 2, 3 after file load
+    ['1', '2', '3'].forEach(id => {
+        const p = this.patients[id];
+        if (p) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient ${id} from file - Name: ${p.name}, Photo: ${p.photo}, Alerts: ${JSON.stringify(p.alerts)}`);
+        } else {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient ${id} NOT FOUND after file load.`);
+        }
+    });
 
     data.admissions.forEach((aData: any) => {
       if (!aData.PatientID || !aData.AdmissionID) return;
       let parsedTreatments: Treatment[] = [];
       const treatmentsJsonField = aData.treatmentsJSON;
       if (treatmentsJsonField && typeof treatmentsJsonField === 'string') {
-        let jsonToParse = treatmentsJsonField.trim();
+        let S = treatmentsJsonField.trim();
         let previousLength = -1;
-        while (jsonToParse.length !== previousLength) {
-            previousLength = jsonToParse.length;
-            if (jsonToParse.length >= 2) {
-                if (jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) {
-                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
-                } else if (jsonToParse.startsWith('"') && jsonToParse.endsWith('"')) {
-                    jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
-                }
+        while (S.length !== previousLength) {
+            previousLength = S.length;
+            if (S.length >= 2) {
+                if (S.startsWith("'") && S.endsWith("'")) { S = S.substring(1, S.length - 1); }
+                else if (S.startsWith('"') && S.endsWith('"')) { S = S.substring(1, S.length - 1); }
             }
-            jsonToParse = jsonToParse.trim();
+            S = S.trim();
         }
-        if (jsonToParse && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{")) && (jsonToParse.endsWith("]") || jsonToParse.endsWith("}"))) {
-          try { 
-            const treatmentsFromFile = JSON.parse(jsonToParse);
-            if(Array.isArray(treatmentsFromFile)) { parsedTreatments = treatmentsFromFile; }
-          } catch(e:any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Error parsing final JSON for AdID ${aData.AdmissionID}, PtID ${aData.PatientID}: ${e.message}. String: '${jsonToParse}'`); parsedTreatments = []; }
-        } else if (jsonToParse) {
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Post-unwrap for AdID ${aData.AdmissionID} not valid JSON: '${jsonToParse}'`);
+        let cleanedJsonString = S.replace(/[^\x20-\x7E\u00A0-\uFFFF\{\}\[\]\,\:\"\w\d\s\.\-\\/]/g, "");
+        if (cleanedJsonString && (cleanedJsonString.startsWith("[") || cleanedJsonString.startsWith("{")) && (cleanedJsonString.endsWith("]") || cleanedJsonString.endsWith("}"))) {
+          try { const T = JSON.parse(cleanedJsonString); if(Array.isArray(T)) { parsedTreatments = T; } } 
+          catch(e:any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Error parsing final JSON for AdID ${aData.AdmissionID}, PtID ${aData.PatientID}: ${e.message}. String: '${cleanedJsonString}'`); parsedTreatments = []; }
+        } else if (cleanedJsonString) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Treatments): Post-aggressive-clean for AdID ${aData.AdmissionID} not valid JSON: '${cleanedJsonString}'`);
             parsedTreatments = [];
         }
       }
