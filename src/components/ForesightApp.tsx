@@ -27,6 +27,7 @@ import {
   Settings as Cog,
   PlayCircle,
   UserCircle,
+  ChevronLeft,
 } from "lucide-react";
 
 import { patientDataService } from "@/lib/patientDataService";
@@ -370,9 +371,9 @@ function PatientWorkspace({ patient: initialPatient, onBack }: PatientWorkspaceP
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
-      size="sm"
       variant={activeTab === k ? "default" : "ghost"}
       onClick={() => setActiveTab(k)}
+      className="font-medium"
     >
       {children}
     </Button>
@@ -397,14 +398,17 @@ function PatientWorkspace({ patient: initialPatient, onBack }: PatientWorkspaceP
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-2 border-b bg-white px-6 py-2 sticky top-12 z-30">
-        <Button size="sm" variant="ghost" onClick={onBack}>
-          ← Patients
+      <div className="flex items-center gap-3 border-b bg-white px-4 py-2 sticky top-12 z-30 h-10">
+        <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients">
+          <ChevronLeft className="h-5 w-5" />
+          <Users className="h-5 w-5 ml-0.5" />
         </Button>
-        <span className="font-semibold">{patient.name}</span>
-        <span className="text-muted-foreground text-xs">DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
+        <span className="font-semibold text-base truncate">{patient.name}</span>
+        <span className="text-muted-foreground text-xs whitespace-nowrap">
+          DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
+        </span>
       </div>
-      <div className="bg-slate-50 border-b px-6 py-2 flex gap-2 sticky top-[calc(3rem+1.5rem)] z-30 overflow-x-auto text-sm">
+      <div className="bg-slate-100 border-b px-4 py-2 flex gap-2 sticky top-[calc(3rem+2.5rem)] z-20 overflow-x-auto">
         {[
           { key: "consult", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },
