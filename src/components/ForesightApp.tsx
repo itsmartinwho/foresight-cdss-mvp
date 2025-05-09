@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 
 import { patientDataService } from "@/lib/patientDataService";
-import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types";
+import type { Patient, Admission, Diagnosis, LabResult, Treatment, ComplexCaseAlert } from "@/lib/types";
 
 // ***********************************
 // PATIENT DATA (loaded from central service)
@@ -206,17 +206,39 @@ function Header() {
 // ***********************************
 // DASHBOARD
 // ***********************************
-function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
-  const [patients, setPatients] = useState<UpcomingEntry[]>([]);
+function Dashboard({ onStartConsult }: { onStartConsult: (p: Patient) => void }) {
+  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingEntry[]>([]);
+  // State for alerts, now explicitly typed to include the patientName for display purposes
+  const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      await patientDataService.loadPatientData();
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      await patientDataService.loadPatientData(); 
+      
       const upcoming = patientDataService.getUpcomingConsultations();
-      setPatients(upcoming);
+      setUpcomingAppointments(upcoming);
+
+      const allPatients = patientDataService.getAllPatients();
+      const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
+      allPatients.forEach(p => {
+        if (p.alerts && p.alerts.length > 0) {
+          p.alerts.forEach(alert => {
+            collectedAlerts.push({ ...alert, patientName: p.name || p.id }); 
+          });
+        }
+      });
+      setComplexCaseAlertsForDisplay(collectedAlerts);
+      
+      setIsLoading(false);
     };
-    load();
+    loadDashboardData();
   }, []);
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading dashboard...</div>
+  }
 
   return (
     <div className="p-6 grid xl:grid-cols-2 gap-6">
@@ -228,34 +250,38 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Patient</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {patients.map(({ patient: p, visit }) => (
-                <TableRow key={p.id}>
-                  <TableCell>{new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</TableCell>
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell>{visit.reason}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      onClick={() => onStartConsult(p)}
-                      className="gap-1"
-                    >
-                      <PlayCircle className="h-4 w-4" /> Start
-                    </Button>
-                  </TableCell>
+          {upcomingAppointments.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {upcomingAppointments.map(({ patient: p, visit }) => (
+                  <TableRow key={`${p.id}_${visit.id}`}>
+                    <TableCell>{new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</TableCell>
+                    <TableCell>{p.name}</TableCell>
+                    <TableCell>{visit.reason}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        onClick={() => onStartConsult(p)}
+                        className="gap-1"
+                      >
+                        <PlayCircle className="h-4 w-4" /> Start
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-gray-500">No upcoming appointments scheduled.</p>
+          )}
         </CardContent>
       </Card>
       <Card>
@@ -263,17 +289,21 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: any) => void }) {
           <CardTitle>Complex Case Alerts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {alerts.map((a) => (
-            <div key={a.id} className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2">
-                <SeverityBadge severity={a.severity} />
-                <span>{a.msg}</span>
+          {complexCaseAlertsForDisplay.length > 0 ? complexCaseAlertsForDisplay.map((alertWithPatientName) => (
+            <div key={alertWithPatientName.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-1">
+                <div className="font-semibold text-base text-gray-800">Alert for: {alertWithPatientName.patientName || 'Unknown Patient'}</div>
+                <SeverityBadge severity={alertWithPatientName.severity || 'Unknown'} />
               </div>
-              <span className="text-muted-foreground text-xs">
-                {Math.round(a.confidence * 100)}% • {a.date}
-              </span>
+              <p className="text-gray-700 mb-1">{alertWithPatientName.msg || 'No message'}</p>
+              <div className="text-xs text-gray-500 flex justify-between">
+                <span>Confidence: {alertWithPatientName.confidence !== undefined ? `${Math.round(alertWithPatientName.confidence * 100)}%` : 'N/A'}</span>
+                <span>Date: {alertWithPatientName.date || 'N/A'}</span>
+              </div>
             </div>
-          ))}
+          )) : (
+             <p className="text-sm text-gray-500">No complex case alerts at this time.</p>
+          )}
         </CardContent>
       </Card>
     </div>
