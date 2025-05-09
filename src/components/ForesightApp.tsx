@@ -693,18 +693,44 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 // AUXILIARY VIEWS
 // ***********************************
 
-// AlertsView Updated to use patientDataService
+// AlertsView Updated with Temporary Debug Output
 function AlertsView() {
   const [allPatientsWithAlerts, setAllPatientsWithAlerts] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugPatientAlertData, setDebugPatientAlertData] = useState<string[]>([]); // For debug output
 
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
-      // await patientDataService.loadPatientData(); // Ensure data is loaded (has internal check)
+      await patientDataService.loadPatientData();
       const patients = patientDataService.getAllPatients();
-      // Filter for patients who actually have alerts defined
       setAllPatientsWithAlerts(patients.filter(p => p.alerts && p.alerts.length > 0));
+      
+      // --- TEMPORARY DEBUGGING --- 
+      const debugMessages: string[] = [];
+      const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
+      const targetPatientId2 = '64182B95-EB72-4E2B-BE77-8050B71498CE';
+      const patient1 = patientDataService.getPatient(targetPatientId1);
+      const patient2 = patientDataService.getPatient(targetPatientId2);
+      
+      debugMessages.push(`Debug for Patient ${targetPatientId1}:`);
+      if (patient1) {
+        debugMessages.push(`  Name: ${patient1.name}`);
+        debugMessages.push(`  Alerts array: ${JSON.stringify(patient1.alerts, null, 2) || 'undefined/empty'}`);
+      } else {
+        debugMessages.push(`  Patient ${targetPatientId1} not found by service.`);
+      }
+      
+      debugMessages.push(`Debug for Patient ${targetPatientId2}:`);
+      if (patient2) {
+        debugMessages.push(`  Name: ${patient2.name}`);
+        debugMessages.push(`  Alerts array: ${JSON.stringify(patient2.alerts, null, 2) || 'undefined/empty'}`);
+      } else {
+        debugMessages.push(`  Patient ${targetPatientId2} not found by service.`);
+      }
+      setDebugPatientAlertData(debugMessages);
+      // --- END TEMPORARY DEBUGGING ---
+
       setIsLoading(false);
     };
     loadAlertData();
@@ -716,6 +742,19 @@ function AlertsView() {
 
   return (
     <div className="p-6">
+      {/* --- TEMPORARY DEBUGGING OUTPUT --- */}
+      {debugPatientAlertData.length > 0 && (
+        <Card className="mb-4 bg-yellow-50 border-yellow-300">
+          <CardHeader><CardTitle className="text-yellow-700">Temporary Debug Info (Alerts Source)</CardTitle></CardHeader>
+          <CardContent>
+            <pre className="text-xs whitespace-pre-wrap break-all text-yellow-800">
+              {debugPatientAlertData.join('\n')}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+      {/* --- END TEMPORARY DEBUGGING OUTPUT --- */}
+
       <Card>
         <CardHeader>
           <CardTitle>Patient Alerts</CardTitle>
