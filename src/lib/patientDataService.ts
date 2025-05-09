@@ -34,7 +34,13 @@ function parseTSV(tsvText: string, forFile: string, debugMessagesRef: string[]):
       paddedValues.push('');
     }
     const rowObject = header.reduce((obj: any, colName: string, index: number) => {
-      obj[colName] = paddedValues[index].trim();
+      let rawVal = paddedValues[index] ?? "";
+      // Decode standard CSV/TSV quoting where the entire field is wrapped in double quotes
+      // and internal quotes are doubled. Example: ""{""key"": ""value""}"" -> {"key": "value"}
+      if (typeof rawVal === "string" && rawVal.length >= 2 && rawVal.startsWith('"') && rawVal.endsWith('"')) {
+        rawVal = rawVal.slice(1, -1).replace(/""/g, '"');
+      }
+      obj[colName] = (rawVal as string).trim();
       return obj;
     }, {});
     data.push(rowObject);
@@ -280,6 +286,49 @@ class PatientDataService {
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Finished Labs Processing. this.allLabResultsByAdmission key count: ${Object.keys(this.allLabResultsByAdmission).length}`);
     
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): processRawData finished. Final patient count: ${Object.keys(this.patients).length}`);
+
+    // Inject synthetic upcoming admissions for demo patients if none exist in the future
+    this.ensureDemoUpcomingAdmissions();
+  }
+
+  /**
+   * Ensure demo patients (IDs 1-3) always have at least one upcoming consultation so the dashboard
+   * and patients list showcase the UX appropriately even when historical demo data is dated.
+   */
+  private ensureDemoUpcomingAdmissions() {
+    const demoPatientIDs = ["1", "2", "3"];
+    const now = new Date();
+    const defaultReason = "Routine follow-up";
+
+    demoPatientIDs.forEach((pid, idx) => {
+      const patient = this.patients[pid];
+      if (!patient) return; // Skip if demo patient was not present in TSV
+
+      const existing = (this.admissions[pid] || []).some((ad) => {
+        return ad.scheduledStart && new Date(ad.scheduledStart) > now;
+      });
+      if (existing) return; // Already has a future visit
+
+      // Create a synthetic visit 24h + idx*1h ahead so they don't collide.
+      const start = new Date(now.getTime() + 24 * 60 * 60 * 1000 + idx * 60 * 60 * 1000);
+      const end = new Date(start.getTime() + 30 * 60 * 1000);
+      const synthetic: Admission = {
+        id: `UPCOMING_DEMO_${pid}_${start.getTime()}`,
+        patientId: pid,
+        scheduledStart: start.toISOString(),
+        scheduledEnd: end.toISOString(),
+        actualStart: undefined,
+        actualEnd: undefined,
+        reason: defaultReason,
+        transcript: undefined,
+        soapNote: undefined,
+        treatments: undefined,
+        priorAuthJustification: undefined,
+      } as Admission;
+
+      if (!this.admissions[pid]) this.admissions[pid] = [];
+      this.admissions[pid].push(synthetic);
+    });
   }
 
   /**

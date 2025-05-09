@@ -695,28 +695,16 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 
 // AlertsView Updated with More Detailed Temporary Debug Output
 function AlertsView() {
-  const [allPatientsWithAlertsFromUI, setAllPatientsWithAlertsFromUI] = useState<Patient[]>([]);
+  const [patientsWithAlerts, setPatientsWithAlerts] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [debugMessagesToDisplay, setDebugMessagesToDisplay] = useState<string[]>([]); 
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
-      setLoadError(null);
-      // patientDataService.debugMessages is cleared at the start of its loadPatientData method now
-      try {
-        await patientDataService.loadPatientData(); 
-        const allPatientsFromService = patientDataService.getAllPatients();
-        setAllPatientsWithAlertsFromUI(allPatientsFromService.filter(p => p.alerts && p.alerts.length > 0));
-      } catch (e: any) {
-        console.error("Error in AlertsView loadAlertData calling service:", e);
-        setLoadError(`Service load failed: ${e.message}`);
-      } finally {
-        // Access the instance member for debug messages
-        setDebugMessagesToDisplay([...patientDataService.debugMessages]); 
-        setIsLoading(false);
-      }
+      await patientDataService.loadPatientData();
+      const allPatients = patientDataService.getAllPatients();
+      setPatientsWithAlerts(allPatients.filter((p) => p.alerts && p.alerts.length > 0));
+      setIsLoading(false);
     };
     loadAlertData();
   }, []);
@@ -727,39 +715,34 @@ function AlertsView() {
 
   return (
     <div className="p-6">
-      {(debugMessagesToDisplay.length > 0 || loadError) && (
-        <Card className="mb-4 bg-indigo-50 border-indigo-300">
-          <CardHeader><CardTitle className="text-indigo-700">PatientDataService Internal Debug</CardTitle></CardHeader>
-          <CardContent>
-            {loadError && <p className="text-red-600 font-semibold">Load Error: {loadError}</p>}
-            <pre className="text-xs whitespace-pre-wrap break-all text-indigo-800">
-              {debugMessagesToDisplay.join('\n')}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
       <Card>
         <CardHeader>
           <CardTitle>Patient Alerts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          {allPatientsWithAlertsFromUI.length === 0 && !isLoading && <p>No active alerts for any patient.</p>}
-          {isLoading && <p>Loading alerts display...</p>}
-          {allPatientsWithAlertsFromUI.map(patient => (
-            patient.alerts?.map(alert => (
-              <div key={alert.id} className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+          {patientsWithAlerts.length === 0 && <p>No active alerts for any patient.</p>}
+          {patientsWithAlerts.map((patient) =>
+            patient.alerts?.map((alert) => (
+              <div
+                key={alert.id}
+                className="p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow"
+              >
                 <div className="flex justify-between items-start mb-1">
-                  <div className="font-semibold text-base text-gray-800">Alert for: {patient.name || patient.id}</div>
-                  <SeverityBadge severity={alert.severity || 'Unknown'} />
+                  <div className="font-semibold text-base text-gray-800">
+                    Alert for: {patient.name || patient.id}
+                  </div>
+                  <SeverityBadge severity={alert.severity || "Unknown"} />
                 </div>
-                <p className="text-gray-700 mb-1">{alert.msg || 'No message'}</p>
+                <p className="text-gray-700 mb-1">{alert.msg || "No message"}</p>
                 <div className="text-xs text-gray-500 flex justify-between">
-                  <span>Confidence: {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : 'N/A'}</span>
-                  <span>Date: {alert.date || 'N/A'}</span>
+                  <span>
+                    Confidence: {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : "N/A"}
+                  </span>
+                  <span>Date: {alert.date || "N/A"}</span>
                 </div>
               </div>
             ))
-          ))}
+          )}
         </CardContent>
       </Card>
     </div>
