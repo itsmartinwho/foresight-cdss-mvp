@@ -139,71 +139,68 @@ class PatientDataService {
     this.allLabResultsByAdmission = {};
 
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Starting. Patients from fetch: ${data.patients?.length || 0}, Admissions: ${data.admissions?.length || 0}`);
-    const targetPatientId1 = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
+    const targetAlertPatientID = 'FB2ABB23-C9D0-4D09-8464-49BF0B982F0F';
+    const demoPatientIDs = ['1', '2', '3'];
 
     data.patients.forEach((pData: any) => {
       if (!pData.PatientID) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Skipped row, no PatientID`); return; }
+      const currentPID = pData.PatientID.trim();
+
+      if (demoPatientIDs.includes(currentPID) || currentPID === targetAlertPatientID) {
+        this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Processing PatientID ${currentPID}. Raw pData: ${JSON.stringify(pData)}`);
+      }
       
       let parsedAlerts: ComplexCaseAlert[] = [];
       const alertsJsonField = pData['alertsJSON'];
-
       if (alertsJsonField && typeof alertsJsonField === 'string') {
         let S = alertsJsonField.trim();
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetPatientId1} - Raw alertsJSON from TSV: '${S}'`);
+        if (currentPID === targetAlertPatientID) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Target ${targetAlertPatientID} - Raw alertsJSON from TSV: '${S}'`);
         
-        let previousLength = -1;
-        while (S.length !== previousLength) { 
-            previousLength = S.length;
-            if (S.length >= 2) {
-                if (S.startsWith("'") && S.endsWith("'")) { S = S.substring(1, S.length - 1); }
-                else if (S.startsWith('"') && S.endsWith('"')) { S = S.substring(1, S.length - 1); }
-            }
-            S = S.trim(); 
+        // Most direct attempt assuming the string from TSV is the JSON itself, potentially with one layer of TSV quoting (already handled by parseTSV if simple)
+        // Or the value itself is a string that needs un-quoting like """[...]""" or "'[...]'"
+        let jsonToParse = S;
+        if (jsonToParse.length >= 2 && jsonToParse.startsWith('"') && jsonToParse.endsWith('"')) {
+             // Handles cases like ""[...]"" (double quote around valid JSON string)
+            jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
         }
-        
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after iterative unwrap for ${targetPatientId1}: '${S}'`);
+        // Handle cases like '"[...]"' (single quote around double-quoted JSON string)
+        if (jsonToParse.length >= 2 && jsonToParse.startsWith("'") && jsonToParse.endsWith("'")) {
+            jsonToParse = jsonToParse.substring(1, jsonToParse.length - 1);
+        }
+        // After these, jsonToParse *should* be just [{...}] if it was correctly quoted/escaped by python
 
-        // Aggressive clean attempt + final check for valid JSON structure
-        let cleanedJsonString = S.replace(/[^\x20-\x7E\u00A0-\uFFFF\{\}\[\]\,\:\"\w\d\s\.\-\\/]/g, ""); // Keep more common chars
-        if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after aggressive regex clean for ${targetPatientId1}: '${cleanedJsonString}'`);
+        if (currentPID === targetAlertPatientID) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): alertsJSON after any manual unwrap for ${targetAlertPatientID}: '${jsonToParse}'`);
 
-        if (cleanedJsonString && (cleanedJsonString.startsWith("[") || cleanedJsonString.startsWith("{")) && (cleanedJsonString.endsWith("]") || cleanedJsonString.endsWith("}"))) {
+        if (jsonToParse && (jsonToParse.startsWith("[") || jsonToParse.startsWith("{")) && (jsonToParse.endsWith("]") || jsonToParse.endsWith("}"))) {
           try {
-            const alertsFromFile = JSON.parse(cleanedJsonString);
-            if (pData.PatientID === targetPatientId1) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${pData.PatientID}: ${JSON.stringify(alertsFromFile)}`);
+            const alertsFromFile = JSON.parse(jsonToParse);
+            if (currentPID === targetAlertPatientID) this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Successfully parsed for ${currentPID}: ${JSON.stringify(alertsFromFile)}`);
             if (Array.isArray(alertsFromFile)) { parsedAlerts = alertsFromFile.filter(al => al && typeof al.id === 'string' && typeof al.msg === 'string');}
-          } catch (e: any) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing aggressively cleaned JSON for ${pData.PatientID}: ${e.message}. String was: '${cleanedJsonString}'`); parsedAlerts = []; }
-        } else if (cleanedJsonString && pData.PatientID === targetPatientId1) { 
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-aggressive-clean for ${pData.PatientID} not valid JSON structure: '${cleanedJsonString}'`);
+          } catch (e: any) {
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): ERROR parsing final JSON for ${currentPID}: ${e.message}. String was: '${jsonToParse}'`);
+            parsedAlerts = []; 
+          }
+        } else if (jsonToParse && jsonToParse !== "[]" && currentPID === targetAlertPatientID) { 
+            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Post-unwrap for ${currentPID} not valid JSON structure: '${jsonToParse}'`);
             parsedAlerts = [];
         }
       }
       const patient: Patient = {
-        id: pData.PatientID.trim(),
-        name: pData.name,
-        firstName: pData.firstName,
-        lastName: pData.lastName,
-        gender: pData.PatientGender,
-        dateOfBirth: pData.PatientDateOfBirth,
-        race: pData.PatientRace,
-        maritalStatus: pData.PatientMaritalStatus,
-        language: pData.PatientLanguage,
+        id: currentPID, name: pData.name, firstName: pData.firstName, lastName: pData.lastName,
+        gender: pData.PatientGender, dateOfBirth: pData.PatientDateOfBirth, race: pData.PatientRace,
+        maritalStatus: pData.PatientMaritalStatus, language: pData.PatientLanguage, 
         povertyPercentage: parseFloat(pData.PatientPopulationPercentageBelowPoverty) || 0,
         alerts: parsedAlerts.length > 0 ? parsedAlerts : undefined,
         photo: pData.photo || undefined
       };
       this.patients[patient.id] = patient;
-      if (pData.PatientID === targetPatientId1) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Final patient.alerts for ${targetPatientId1}: ${JSON.stringify(this.patients[targetPatientId1]?.alerts)}`);}
+      if (currentPID === targetAlertPatientID) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD Alerts): Final patient.alerts for ${targetAlertPatientID}: ${JSON.stringify(this.patients[targetAlertPatientID]?.alerts)}`);}
     });
-    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient map size after file load: ${Object.keys(this.patients).length}`);
-    // Log details for patients 1, 2, 3 after file load
-    ['1', '2', '3'].forEach(id => {
+    this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patients processed. Count: ${Object.keys(this.patients).length}`);
+    demoPatientIDs.forEach(id => {
         const p = this.patients[id];
-        if (p) {
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient ${id} from file - Name: ${p.name}, Photo: ${p.photo}, Alerts: ${JSON.stringify(p.alerts)}`);
-        } else {
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Patient ${id} NOT FOUND after file load.`);
-        }
+        if (p) { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD - Post Patient Loop): Patient ${id} - Name: ${p.name}, Photo: ${p.photo}`); }
+        else { this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD - Post Patient Loop): Patient ${id} NOT FOUND.`); }
     });
 
     data.admissions.forEach((aData: any) => {
