@@ -697,15 +697,26 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 function AlertsView() {
   const [allPatientsWithAlertsFromUI, setAllPatientsWithAlertsFromUI] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugMessagesToDisplay, setDebugMessagesToDisplay] = useState<string[]>([]); 
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
-      await patientDataService.loadPatientData(); 
-      const allPatientsFromService = patientDataService.getAllPatients();
-      setAllPatientsWithAlertsFromUI(allPatientsFromService.filter(p => p.alerts && p.alerts.length > 0));
-      
-      setIsLoading(false);
+      setLoadError(null);
+      // patientDataService.debugMessages is cleared at the start of its loadPatientData method now
+      try {
+        await patientDataService.loadPatientData(); 
+        const allPatientsFromService = patientDataService.getAllPatients();
+        setAllPatientsWithAlertsFromUI(allPatientsFromService.filter(p => p.alerts && p.alerts.length > 0));
+      } catch (e: any) {
+        console.error("Error in AlertsView loadAlertData calling service:", e);
+        setLoadError(`Service load failed: ${e.message}`);
+      } finally {
+        // Access the instance member for debug messages
+        setDebugMessagesToDisplay([...patientDataService.debugMessages]); 
+        setIsLoading(false);
+      }
     };
     loadAlertData();
   }, []);
@@ -716,6 +727,17 @@ function AlertsView() {
 
   return (
     <div className="p-6">
+      {(debugMessagesToDisplay.length > 0 || loadError) && (
+        <Card className="mb-4 bg-indigo-50 border-indigo-300">
+          <CardHeader><CardTitle className="text-indigo-700">PatientDataService Internal Debug</CardTitle></CardHeader>
+          <CardContent>
+            {loadError && <p className="text-red-600 font-semibold">Load Error: {loadError}</p>}
+            <pre className="text-xs whitespace-pre-wrap break-all text-indigo-800">
+              {debugMessagesToDisplay.join('\n')}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Patient Alerts</CardTitle>
