@@ -549,6 +549,10 @@ function PriorAuth({ patient: currentPatientInfo, allAdmissions }: {
   const diagnosisCodeForAuth = selectedAdmissionDetails?.diagnoses?.[0]?.code || "N/A";
   const justificationForAuth = selectedAdmissionDetails?.admission.priorAuthJustification || "No specific justification provided for this admission.";
 
+  // Add a log to force change detection and help debug if needed
+  // console.log("Selected Admission for Prior Auth:", selectedAdmissionState);
+  // console.log("Detailed admission data for Prior Auth:", selectedAdmissionDetails);
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
