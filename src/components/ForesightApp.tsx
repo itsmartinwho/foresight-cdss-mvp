@@ -207,7 +207,7 @@ function Header() {
 // ***********************************
 // DASHBOARD
 // ***********************************
-function Dashboard({ onStartConsult }: { onStartConsult: (p: Patient) => void }) {
+function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patient) => void; onAlertClick: (patientId: string) => void }) {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingEntry[]>([]);
   // State for alerts, now explicitly typed to include the patientName for display purposes
   const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
@@ -296,7 +296,11 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: Patient) => void })
         </CardHeader>
         <CardContent className="space-y-3">
           {complexCaseAlertsForDisplay.length > 0 ? complexCaseAlertsForDisplay.map((alertWithPatientName) => (
-            <div key={alertWithPatientName.id} className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow">
+            <div 
+              key={alertWithPatientName.id} 
+              className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => onAlertClick(alertWithPatientName.patientId)}
+            >
               <SeverityBadge severity={alertWithPatientName.severity || 'Unknown'} />
               <p className="flex-grow text-sm text-gray-700 truncate" title={alertWithPatientName.msg}>{alertWithPatientName.msg || 'No message'}</p>
               <div className="text-xs text-gray-500 whitespace-nowrap">
@@ -320,17 +324,22 @@ function Dashboard({ onStartConsult }: { onStartConsult: (p: Patient) => void })
 
 interface PatientWorkspaceProps {
   patient: Patient; // The basic patient object passed for identification
+  initialTab: string;
   onBack: () => void;
 }
 
-function PatientWorkspace({ patient: initialPatient, onBack }: PatientWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState("consult");
+function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: PatientWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [detailedPatientData, setDetailedPatientData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // State for the consultation tab's selected admission
   const [selectedAdmissionForConsultation, setSelectedAdmissionForConsultation] = useState<Admission | null>(null);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -513,6 +522,30 @@ function Consultation({
 function Diagnosis({ patient, allAdmissions }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }> }) {
   return (
     <div className="p-6 space-y-6">
+      {patient.alerts && patient.alerts.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Active Complex Case Alerts for {patient.name || patient.id}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {patient.alerts.map((alert) => (
+              <div 
+                key={alert.id} 
+                className="flex items-center space-x-3 p-3 border rounded-md shadow-sm"
+              >
+                <SeverityBadge severity={alert.severity || 'Unknown'} />
+                <p className="flex-grow text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || 'No message'}</p>
+                <div className="text-xs text-gray-500 whitespace-nowrap">
+                  {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : 'N/A'}
+                  {' • '}
+                  {alert.date || 'N/A'}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {allAdmissions.length === 0 && <p>No admission data to display diagnoses for.</p>}
       {allAdmissions.map(({ admission, diagnoses }) => (
         <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
@@ -701,7 +734,7 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 // ***********************************
 
 // AlertsView Updated with More Detailed Temporary Debug Output
-function AlertsView() {
+function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => void }) {
   const [patientsWithAlerts, setPatientsWithAlerts] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -732,7 +765,8 @@ function AlertsView() {
             patient.alerts?.map((alert) => (
               <div
                 key={alert.id}
-                className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow"
+                className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => onAlertClick(patient.id)}
               >
                 <SeverityBadge severity={alert.severity || "Unknown"} />
                 <p className="flex-grow text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || "No message"}</p>
@@ -903,10 +937,29 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
 
 function ForesightApp() {
   const [active, setActive] = useState("dashboard");
-  const [activePatient, setActivePatient] = useState<any | null>(null);
+  const [activePatient, setActivePatient] = useState<Patient | null>(null);
+  const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
 
-  const onStartConsult = (p: any) => {
+  const handleAlertClick = (patientId: string) => {
+    // Ensure data is loaded before trying to get a patient
+    // patientDataService.loadPatientData() has an internal isLoaded check, 
+    // so calling it multiple times is safe and ensures data is available.
+    patientDataService.loadPatientData().then(() => {
+      const patient = patientDataService.getPatient(patientId);
+      if (patient) {
+        setActivePatient(patient);
+        setSelectedPatientTab("diagnosis");
+        setActive("patients");
+      } else {
+        console.warn(`Patient with ID ${patientId} not found after alert click.`);
+        // Optionally, handle patient not found case, e.g., show a notification
+      }
+    });
+  };
+
+  const onStartConsult = (p: Patient) => {
     setActivePatient(p);
+    setSelectedPatientTab("consult"); // Default to consult tab for appointments
     setActive("patients");
   };
 
@@ -916,17 +969,26 @@ function ForesightApp() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={active} setActive={setActive} />
         <div className="flex-1 overflow-y-auto bg-slate-50">
-          {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} />}
+          {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} onAlertClick={handleAlertClick} />}
           {active === "patients" && !activePatient && (
-            <PatientsList onSelect={(p) => setActivePatient(p)} />
+            <PatientsList onSelect={(p) => {
+              setActivePatient(p);
+              setSelectedPatientTab("consult"); // Reset to consult when selecting from list
+              setActive("patients");
+            }} />
           )}
           {active === "patients" && activePatient && (
             <PatientWorkspace
+              key={activePatient.id} // Re-initialize if patient changes
               patient={activePatient}
-              onBack={() => setActivePatient(null)}
+              initialTab={selectedPatientTab}
+              onBack={() => {
+                setActivePatient(null);
+                setSelectedPatientTab("consult"); // Reset tab for next patient
+              }}
             />
           )}
-          {active === "alerts" && <AlertsView />}
+          {active === "alerts" && <AlertsView onAlertClick={handleAlertClick} />}
           {active === "analytics" && <AnalyticsView />}
           {active === "settings" && <SettingsView />}
         </div>
