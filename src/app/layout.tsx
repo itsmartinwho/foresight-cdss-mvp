@@ -1,8 +1,9 @@
-'use client';
+// Removed 'use client';
 
 import { Metadata } from 'next';
 import './globals.css';
-import { AnimatePresence, motion } from 'framer-motion';
+// Removed AnimatePresence and motion imports from here
+import MotionWrapper from '../components/MotionWrapper'; // Import the new MotionWrapper
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -21,9 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <AnimatePresence mode="wait">
-          {children}
-        </AnimatePresence>
+        <MotionWrapper>{children}</MotionWrapper> {/* Use MotionWrapper here */}
       </body>
     </html>
   );
