@@ -1,5 +1,8 @@
+'use client';
+
 import { Metadata } from 'next';
 import './globals.css';
+import { AnimatePresence, motion } from 'framer-motion';
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -16,8 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <AnimatePresence mode="wait">
+          {children}
+        </AnimatePresence>
+      </body>
     </html>
   );
 }
