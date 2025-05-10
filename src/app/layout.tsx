@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Foresight CDSS',
+  title: 'Foresight',
   description: 'Clinical Decision Support System for healthcare providers',
 };
 

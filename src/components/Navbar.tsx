@@ -19,7 +19,10 @@ export default function Navbar({ currentPath }: NavbarProps) {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/">
-                <span className="text-blue-600 font-bold text-xl">Foresight CDSS</span>
+                <div className="flex items-center">
+                  <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-8 w-8 mr-2" />
+                  <span className="text-blue-600 font-bold text-xl">Foresight</span>
+                </div>
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
