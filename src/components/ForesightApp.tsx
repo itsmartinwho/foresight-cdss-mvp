@@ -34,6 +34,8 @@ import {
 
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment, ComplexCaseAlert } from "@/lib/types";
+import GlassHeader from '@/components/layout/GlassHeader';
+import GlassSidebar from '@/components/layout/GlassSidebar';
 
 // ***********************************
 // PATIENT DATA (loaded from central service)
@@ -272,62 +274,6 @@ function AlertSidePanel({
         )}
       </div>
     </div>
-  );
-}
-
-interface SidebarProps {
-  active: string;
-  setActive: (v: string) => void;
-}
-
-function Sidebar({ active, setActive }: SidebarProps) {
-  const items = [
-    { key: "dashboard", label: "Dashboard", icon: Home },
-    { key: "patients", label: "Patients", icon: Users },
-    { key: "analytics", label: "Analytics", icon: BarChart3 },
-    { key: "alerts", label: "Alerts", icon: BellRing },
-    { key: "settings", label: "Settings", icon: Cog },
-  ];
-  return (
-    <div className="h-full w-56 bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none">
-      {items.map(({ key, label, icon: Icon }) => (
-        <Button
-          key={key}
-          variant={active === key ? "default" : "ghost"}
-          className="justify-start gap-3 mb-1"
-          onClick={() => setActive(key)}
-        >
-          <Icon className="h-[1em] w-[1em]" /> {label}
-        </Button>
-      ))}
-      <Separator className="my-4" />
-      <Input
-        placeholder="Quick search (⌘K)"
-        className="text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-      />
-    </div>
-  );
-}
-
-function Header() {
-  return (
-    <header className="fixed inset-x-0 top-0 z-40 h-16 backdrop-blur-md bg-[rgba(255,255,255,0.06)] border-b border-[rgba(255,255,255,0.12)] flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)]">
-      <div className="flex items-center gap-2">
-        <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-6 w-6" />
-        <span className="text-neon font-bold text-step-1">Foresight</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <Input
-          placeholder="Global search…"
-          className="h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-        />
-        <img
-          src="https://i.pravatar.cc/32?u=clinician"
-          alt="avatar"
-          className="rounded-full h-8 w-8"
-        />
-      </div>
-    </header>
   );
 }
 
@@ -1235,9 +1181,9 @@ function ForesightApp() {
 
   return (
     <div className="h-screen flex flex-col">
-      <Header />
+      <GlassHeader />
       <div className="flex flex-1 overflow-hidden pt-16">
-        <Sidebar active={active} setActive={setActive} />
+        <GlassSidebar active={active} setActive={setActive} />
         <div className="flex-1 overflow-y-auto bg-background/60 relative">
           {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} onAlertClick={handleAlertClick} />}
           {active === "patients" && !activePatient && (
