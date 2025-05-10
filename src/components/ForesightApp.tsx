@@ -195,7 +195,7 @@ function NotificationBell({ count, onClick }: { count: number; onClick: () => vo
       {count > 0 && (
         <div className="absolute -top-1 -right-1 w-5 h-5"> {/* Positioning container for badge & pulse */} 
           <div 
-            className="absolute inset-0 bg-ink text-white text-xs rounded-full flex items-center justify-center z-10"
+            className="absolute inset-0 bg-red-600 text-white text-xs rounded-full flex items-center justify-center z-10"
           >
             {count > 99 ? '99+' : count}
           </div>
@@ -550,8 +550,8 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
         className="my-2 mx-4 flex items-center gap-3 rounded-full px-6 h-12 bg-[rgba(255,255,255,0.1)] border"
         style={{borderImage:'linear-gradient(135deg,#8ef,#c9f) 1'}}
       >
-        <span className="font-semibold text-base truncate text-ink dark:text-lavenderBg">{patient.name}</span>
-        <span className="text-muted-foreground text-xs whitespace-nowrap">
+        <span className="font-semibold text-base truncate text-foreground">{patient.name}</span>
+        <span className="text-muted-foreground/80 text-xs whitespace-nowrap">
           DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
         </span>
       </div>
