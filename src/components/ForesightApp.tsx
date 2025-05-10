@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardHeader,
@@ -28,6 +28,8 @@ import {
   PlayCircle,
   UserCircle,
   ChevronLeft,
+  Bell,
+  X,
 } from "lucide-react";
 
 import { patientDataService } from "@/lib/patientDataService";
@@ -177,6 +179,86 @@ function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
   );
 }
 
+// New component for notification bell with counter
+function NotificationBell({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <div className="relative cursor-pointer" onClick={onClick}>
+      <Bell className="h-6 w-6 text-slate-600" />
+      {count > 0 && (
+        <div className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          {count > 99 ? '99+' : count}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Alert Side Panel that slides in from the right
+function AlertSidePanel({ 
+  isOpen, 
+  onClose, 
+  alerts, 
+  onAlertClick 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  alerts: Array<ComplexCaseAlert & { patientName?: string }>; 
+  onAlertClick: (patientId: string) => void 
+}) {
+  const highPriorityAlerts = alerts.filter(alert => alert.likelihood !== undefined && alert.likelihood >= 4);
+  
+  return (
+    <div 
+      className={`fixed top-0 right-0 h-full bg-white w-80 shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}
+    >
+      <div className="flex items-center justify-between p-4 border-b">
+        <h3 className="font-semibold">High Priority Alerts</h3>
+        <Button size="icon" variant="ghost" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="p-4 overflow-auto max-h-[calc(100vh-64px)]">
+        {highPriorityAlerts.length === 0 ? (
+          <p className="text-sm text-gray-500">No high-priority alerts at this time.</p>
+        ) : (
+          <div className="space-y-3">
+            {highPriorityAlerts.map((alert) => (
+              <div 
+                key={alert.id} 
+                className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => {
+                  onAlertClick(alert.patientId);
+                  onClose();
+                }}
+              >
+                <LikelihoodBadge likelihood={alert.likelihood} />
+                
+                <div className="flex-grow">
+                  <p className="text-sm font-medium text-gray-800 truncate">
+                    {alert.patientName}
+                  </p>
+                  {alert.conditionType && (
+                    <p className="text-xs text-gray-600 truncate">
+                      {alert.conditionType}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="text-xs text-gray-500 whitespace-nowrap">
+                  {alert.date || ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface SidebarProps {
   active: string;
   setActive: (v: string) => void;
@@ -232,6 +314,7 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
   // State for alerts, now explicitly typed to include the patientName for display purposes
   const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -257,13 +340,17 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
     loadDashboardData();
   }, []);
 
+  const highPriorityAlertsCount = complexCaseAlertsForDisplay.filter(
+    alert => alert.likelihood !== undefined && alert.likelihood >= 4
+  ).length;
+
   if (isLoading) {
     return <div className="p-6 text-center">Loading dashboard...</div>
   }
 
   return (
-    <div className="p-6 grid xl:grid-cols-2 gap-6">
-      <Card>
+    <div className="p-6 relative">
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle>Upcoming Appointments</CardTitle>
           <CardDescription>
@@ -310,46 +397,22 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Complex Case Alerts</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {complexCaseAlertsForDisplay.length > 0 ? 
-            complexCaseAlertsForDisplay
-              .filter(alert => alert.likelihood !== undefined && alert.likelihood >= 4)
-              .map((alertWithPatientName) => (
-                <div 
-                  key={alertWithPatientName.id} 
-                  className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => onAlertClick(alertWithPatientName.patientId)}
-                >
-                  <LikelihoodBadge likelihood={alertWithPatientName.likelihood} />
-                  
-                  <div className="flex-grow">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {alertWithPatientName.patientName}
-                    </p>
-                    {alertWithPatientName.conditionType && (
-                      <p className="text-xs text-gray-600 truncate">
-                        {alertWithPatientName.conditionType}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="text-xs text-gray-500 whitespace-nowrap">
-                    {alertWithPatientName.date || ''}
-                  </div>
-                </div>
-              )) : (
-                <p className="text-sm text-gray-500">No high-priority alerts at this time.</p>
-              )}
-              {complexCaseAlertsForDisplay.filter(alert => alert.likelihood !== undefined && alert.likelihood >= 4).length === 0 && 
-                complexCaseAlertsForDisplay.length > 0 && 
-                <p className="text-sm text-gray-500">No high-priority alerts at this time.</p>
-              }
-        </CardContent>
-      </Card>
+      
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="bg-white p-2 rounded-full shadow-lg">
+          <NotificationBell 
+            count={highPriorityAlertsCount} 
+            onClick={() => setIsAlertPanelOpen(true)} 
+          />
+        </div>
+      </div>
+      
+      <AlertSidePanel
+        isOpen={isAlertPanelOpen}
+        onClose={() => setIsAlertPanelOpen(false)}
+        alerts={complexCaseAlertsForDisplay}
+        onAlertClick={onAlertClick}
+      />
     </div>
   );
 }
@@ -842,6 +905,11 @@ function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => voi
     }
   });
 
+  // Calculate high priority alerts count
+  const highPriorityAlertsCount = allAlerts.filter(
+    alert => alert.likelihood !== undefined && alert.likelihood >= 4
+  ).length;
+
   if (isLoading) {
     return <div className="p-6 text-center">Loading alerts...</div>;
   }
@@ -850,7 +918,14 @@ function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => voi
     <div className="p-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Patient Alerts</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Patient Alerts</CardTitle>
+            {highPriorityAlertsCount > 0 && (
+              <div className="bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {highPriorityAlertsCount}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">Sort by:</span>
             <Button 
@@ -1067,6 +1142,26 @@ function ForesightApp() {
   const [active, setActive] = useState("dashboard");
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
+  const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
+  const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
+
+  useEffect(() => {
+    // Load alerts data on app initialization
+    const loadAlerts = async () => {
+      await patientDataService.loadPatientData();
+      const allPatients = patientDataService.getAllPatients();
+      const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
+      allPatients.forEach(p => {
+        if (p.alerts && p.alerts.length > 0) {
+          p.alerts.forEach(alert => {
+            collectedAlerts.push({ ...alert, patientName: p.name || p.id }); 
+          });
+        }
+      });
+      setComplexCaseAlerts(collectedAlerts);
+    };
+    loadAlerts();
+  }, []);
 
   const handleAlertClick = (patientId: string) => {
     // Ensure data is loaded before trying to get a patient
@@ -1090,13 +1185,18 @@ function ForesightApp() {
     setSelectedPatientTab("consult"); // Default to consult tab for appointments
     setActive("patients");
   };
+  
+  // Count high priority alerts (likelihood >= 4)
+  const highPriorityAlertsCount = complexCaseAlerts.filter(
+    alert => alert.likelihood !== undefined && alert.likelihood >= 4
+  ).length;
 
   return (
     <div className="h-screen flex flex-col">
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={active} setActive={setActive} />
-        <div className="flex-1 overflow-y-auto bg-slate-50">
+        <div className="flex-1 overflow-y-auto bg-slate-50 relative">
           {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} onAlertClick={handleAlertClick} />}
           {active === "patients" && !activePatient && (
             <PatientsList onSelect={(p) => {
@@ -1119,6 +1219,26 @@ function ForesightApp() {
           {active === "alerts" && <AlertsView onAlertClick={handleAlertClick} />}
           {active === "analytics" && <AnalyticsView />}
           {active === "settings" && <SettingsView />}
+          
+          {/* Global notification bell for all screens except Dashboard (which has its own) */}
+          {active !== "dashboard" && (
+            <div className="fixed bottom-6 right-6 z-40">
+              <div className="bg-white p-2 rounded-full shadow-lg">
+                <NotificationBell 
+                  count={highPriorityAlertsCount} 
+                  onClick={() => setIsAlertPanelOpen(true)} 
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Global slide-out alert panel */}
+          <AlertSidePanel
+            isOpen={isAlertPanelOpen}
+            onClose={() => setIsAlertPanelOpen(false)}
+            alerts={complexCaseAlerts}
+            onAlertClick={handleAlertClick}
+          />
         </div>
       </div>
     </div>
