@@ -103,7 +103,7 @@ export const PatientList = () => {
                     View
                   </Link>
                   <Link
-                    href={`/consultation/${patient.id}`}
+                    href={`/patients/${patient.id}`}
                     className="text-green-600 hover:underline"
                   >
                     Start Consultation
