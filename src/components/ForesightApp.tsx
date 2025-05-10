@@ -495,13 +495,15 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
         </Button>
       </div>
 
-      <div 
-        className="mt-1 mb-0 mx-4 flex items-center gap-3 rounded-full px-5 h-9 bg-glass backdrop-blur-sm border border-neon/30"
-      >
-        <span className="font-semibold text-step-0 truncate">{patient.name}</span>
-        <span className="text-muted-foreground text-xs whitespace-nowrap">
-          DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
-        </span>
+      <div className="mt-1 mb-2 mx-4 z-10">
+        <div 
+          className="flex items-center gap-3 rounded-full px-5 py-2 bg-white/30 backdrop-blur-sm border border-neon/30 shadow-md"
+        >
+          <span className="font-semibold text-lg text-black dark:text-white truncate">{patient.name}</span>
+          <span className="text-slate-600 dark:text-slate-300 text-sm whitespace-nowrap">
+            DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
+          </span>
+        </div>
       </div>
 
       <div className="bg-slate-100 border-b px-4 py-1 flex gap-2 sticky top-[calc(3rem+2.5rem+3rem)] z-20 overflow-x-auto">
@@ -560,33 +562,32 @@ function Consultation({
 
   return (
     <div className="p-6 grid lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-3 mb-4">
-        <label htmlFor="consultation-select" className="block text-sm font-medium text-gray-700 mb-1">Select Consultation Date:</label>
-        <select 
-          id="consultation-select"
-          className="block w-full pl-3 pr-7 py-1 text-sm border-gray-300 focus:outline-none focus:ring-neon focus:border-neon rounded-md"
-          value={selectedAdmission?.id || ""}
-          onChange={(e) => {
-            const admissionId = e.target.value;
-            onSelectAdmission(availableAdmissions.find(a => a.id === admissionId) || null);
-          }}
-        >
-          <option value="" disabled>-- Select a consultation --</option>
-          {availableAdmissions.map((adm) => (
-            <option key={adm.id} value={adm.id}>
-              {new Date(adm.scheduledStart).toLocaleString()} - {adm.reason || 'N/A'}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Banner for current visit */}
       {selectedAdmission && (
-        <div className="lg:col-span-3 w-full bg-blue-50 text-blue-800 text-sm rounded-md px-4 py-2 mb-2">
-          <span className="font-medium">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} &nbsp;—&nbsp; {selectedAdmission.reason || 'N/A'}
+        <div className="bg-blue-50 text-blue-800 text-sm py-2 px-4 mb-2 mx-4 rounded-md border border-blue-100">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="font-medium">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} — {selectedAdmission.reason || 'N/A'}
+            </div>
+            <select 
+              id="consultation-select"
+              className="text-sm border-blue-200 bg-blue-50 focus:ring-blue-300 focus:border-blue-300 rounded py-0.5 pl-2 pr-7"
+              value={selectedAdmission?.id || ""}
+              onChange={(e) => {
+                const admissionId = e.target.value;
+                onSelectAdmission(availableAdmissions.find(a => a.id === admissionId) || null);
+              }}
+            >
+              <option value="" disabled>Select consultation</option>
+              {availableAdmissions.map((adm) => (
+                <option key={adm.id} value={adm.id}>
+                  {new Date(adm.scheduledStart).toLocaleString()} - {adm.reason || 'N/A'}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
-
+      <div className="lg:col-span-3"></div>
       <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span> Live Transcript</CardTitle>
