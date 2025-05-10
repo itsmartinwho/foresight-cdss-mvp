@@ -496,11 +496,10 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
       </div>
 
       <div 
-        className="my-2 mx-4 flex items-center gap-3 rounded-full px-6 h-12 bg-[rgba(255,255,255,0.1)] border"
-        style={{borderImage:'linear-gradient(135deg,#8ef,#c9f) 1'}}
+        className="my-2 mx-4 flex items-center gap-3 rounded-full px-6 h-10 bg-glass backdrop-blur-sm border border-neon/30"
       >
-        <span className="font-semibold text-base truncate text-foreground">{patient.name}</span>
-        <span className="text-muted-foreground/80 text-xs whitespace-nowrap">
+        <span className="font-semibold text-step-0 truncate">{patient.name}</span>
+        <span className="text-muted-foreground text-xs whitespace-nowrap">
           DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
         </span>
       </div>
@@ -581,9 +580,16 @@ function Consultation({
         </select>
       </div>
 
+      {/* Banner for current visit */}
+      {selectedAdmission && (
+        <div className="lg:col-span-3 w-full bg-blue-50 text-blue-800 text-sm rounded-md px-4 py-2 mb-2">
+          <span className="font-medium">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} &nbsp;—&nbsp; {selectedAdmission.reason || 'N/A'}
+        </div>
+      )}
+
       <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
-          <CardTitle>Live Transcript</CardTitle>
+          <CardTitle className="flex items-center gap-2"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span> Live Transcript</CardTitle>
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
           {currentDetailedAdmission?.transcript ? 
@@ -594,7 +600,7 @@ function Consultation({
       </Card>
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
-          <CardTitle>Structured Note (SOAP)</CardTitle>
+          <CardTitle className="flex items-center gap-2"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span> Structured Note (SOAP)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
           {currentDetailedAdmission?.soapNote ? 
