@@ -1,14 +1,11 @@
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Home, Users, BarChart3, BellRing, Settings as Cog } from "lucide-react";
 
-interface GlassSidebarProps {
-  active: string;
-  setActive: (v: string) => void;
-}
-
-export default function GlassSidebar({ active, setActive }: GlassSidebarProps) {
+export default function GlassSidebar() {
+  const pathname = usePathname();
   const items = [
     { key: "dashboard", label: "Dashboard", icon: Home },
     { key: "patients", label: "Patients", icon: Users },
@@ -18,16 +15,19 @@ export default function GlassSidebar({ active, setActive }: GlassSidebarProps) {
   ];
   return (
     <div className="h-full w-56 bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none">
-      {items.map(({ key, label, icon: Icon }) => (
-        <Button
-          key={key}
-          variant={active === key ? "default" : "ghost"}
-          className="justify-start gap-3 mb-1"
-          onClick={() => setActive(key)}
-        >
-          <Icon className="h-[1em] w-[1em]" /> {label}
-        </Button>
-      ))}
+      {items.map(({ key, label, icon: Icon }) => {
+        const href = `/${key === "dashboard" ? "" : key}`;
+        const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+        return (
+          <Link
+            key={key}
+            href={href}
+            className={`flex items-center gap-3 mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/10 text-neon" : "hover:bg-white/10"}`}
+          >
+            <Icon className="h-[1em] w-[1em]" /> {label}
+          </Link>
+        );
+      })}
       <Separator className="my-4" />
       <Input
         placeholder="Quick search (⌘K)"

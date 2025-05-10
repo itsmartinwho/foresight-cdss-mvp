@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -1127,7 +1128,10 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
 // ***********************************
 
 function ForesightApp() {
-  const [active, setActive] = useState("dashboard");
+  const pathname = usePathname();
+  const router = useRouter();
+  const firstSegment = pathname.split('/')[1] || "";
+  const active = firstSegment === "" ? "dashboard" : firstSegment;
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
   const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
@@ -1160,7 +1164,7 @@ function ForesightApp() {
       if (patient) {
         setActivePatient(patient);
         setSelectedPatientTab("diagnosis");
-        setActive("patients");
+        router.push("/patients");
       } else {
         console.warn(`Patient with ID ${patientId} not found after alert click.`);
         // Optionally, handle patient not found case, e.g., show a notification
@@ -1170,8 +1174,8 @@ function ForesightApp() {
 
   const onStartConsult = (p: Patient) => {
     setActivePatient(p);
-    setSelectedPatientTab("consult"); // Default to consult tab for appointments
-    setActive("patients");
+    setSelectedPatientTab("consult");
+    router.push("/patients");
   };
   
   // Count high priority alerts (likelihood >= 4)
@@ -1183,14 +1187,14 @@ function ForesightApp() {
     <div className="h-screen flex flex-col">
       <GlassHeader />
       <div className="flex flex-1 overflow-hidden pt-16">
-        <GlassSidebar active={active} setActive={setActive} />
+        <GlassSidebar />
         <div className="flex-1 overflow-y-auto bg-background/60 relative">
           {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} onAlertClick={handleAlertClick} />}
           {active === "patients" && !activePatient && (
             <PatientsList onSelect={(p) => {
               setActivePatient(p);
               setSelectedPatientTab("consult"); // Reset to consult when selecting from list
-              setActive("patients");
+              router.push("/patients");
             }} />
           )}
           {active === "patients" && activePatient && (
@@ -1201,6 +1205,7 @@ function ForesightApp() {
               onBack={() => {
                 setActivePatient(null);
                 setSelectedPatientTab("consult"); // Reset tab for next patient
+                router.push("/patients");
               }}
             />
           )}
