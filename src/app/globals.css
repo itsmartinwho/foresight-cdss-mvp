@@ -6,91 +6,153 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
+    /* New color palette from brief */
+    --lavender-bg-val: 244 100% 98%; /* #f4f6ff */
+    --ink-val: 218 20% 8%; /* #0c1116 */
+    --neon-val: 184 100% 68%; /* #5ff3ff */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    --background: var(--lavender-bg-val);
+    --foreground: var(--ink-val);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    /* Shadcn semantic colors mapped to new palette */
+    --card: 240 100% 100%; /* White */
+    --card-foreground: var(--ink-val);
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --popover: 240 100% 100%; /* White */
+    --popover-foreground: var(--ink-val);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --primary: var(--ink-val);
+    --primary-foreground: var(--lavender-bg-val);
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --secondary: 220 13% 45%; /* A neutral gray, derived from ink/lavender mix */
+    --secondary-foreground: var(--lavender-bg-val);
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 220 15% 65%; /* Lighter neutral gray */
+    --muted-foreground: var(--ink-val);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: var(--neon-val);
+    --accent-foreground: var(--ink-val);
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 215 20.2% 65.1%;
+    --destructive: 0 72% 51%; /* Standard vibrant red */
+    --destructive-foreground: 240 100% 100%; /* White */
 
-    --radius: 0.5rem;
+    --border: 220 20% 85%; /* Light gray, good contrast on lavenderBg */
+    --input: 220 30% 90%; /* Slightly darker for input fields */
+    --ring: var(--neon-val); /* Ring focus with neon */
+
+    --radius: 1.25rem; /* Updated radius from brief */
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
+    /* Dark mode palette - inverted and adjusted */
+    --background: var(--ink-val);
+    --foreground: var(--lavender-bg-val);
 
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
+    --card: 218 20% 12%; /* Slightly lighter than ink for cards */
+    --card-foreground: var(--lavender-bg-val);
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 213 31% 91%;
+    --popover: 218 20% 12%;
+    --popover-foreground: var(--lavender-bg-val);
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 1.2%;
+    --primary: var(--lavender-bg-val);
+    --primary-foreground: var(--ink-val);
 
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 15% 75%; /* Light gray for dark mode text */
+    --secondary-foreground: var(--ink-val);
 
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
+    --muted: 220 13% 55%; /* Darker gray for dark mode muted text */
+    --muted-foreground: var(--lavender-bg-val);
 
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 40% 98%;
+    --accent: var(--neon-val);
+    --accent-foreground: var(--ink-val); /* Neon still pops on dark, ink for text on neon */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 60% 50%; /* Slightly adjusted red for dark */
+    --destructive-foreground: var(--lavender-bg-val);
 
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 216 34% 17%;
+    --border: 218 20% 20%; /* Darker border */
+    --input: 218 20% 25%;  /* Darker input */
+    --ring: var(--neon-val);
   }
 
   * {
     @apply border-border;
   }
+
+  html {
+    @apply antialiased; /* Smooths out the font */
+    font-size: 1.25rem; /* Clinical-grade typography scale: 20px base from brief */
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans relative;
+    font-feature-settings: "tnum" on, "lnum" on, "ss01" on; /* Inter font features */
+    min-height: 100vh;
+    /* Apply fade-in-down by default to body or via AnimatePresence */
+    /* animation: fade-in-down 0.12s ease-out forwards; removed for AnimatePresence */
+  }
+
+  /* Transitions for page animations (can be used with Framer Motion AnimatePresence) */
+  .page-transition-enter {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .page-transition-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 120ms ease-out, transform 120ms ease-out;
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar to match new aesthetic */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: hsl(var(--background) / 0.5); /* Semi-transparent background */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: hsl(var(--foreground) / 0.3); /* Semi-transparent foreground */
   border-radius: 4px;
+  border: 2px solid transparent; /* Creates a "thinner" thumb appearance */
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: hsl(var(--foreground) / 0.5);
+}
+
+@layer utilities {
+  /* Low-opacity grain overlay for tactile depth (from brief) */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=");
+    opacity: 0.04; /* As per previous successful implementation */
+    mix-blend-mode: overlay; /* Or 'soft-light' for a subtler effect on dark backgrounds */
+    z-index: 9999; /* Ensure it's on top, but below modals/popovers if necessary */
+  }
+
+  /* Accessibility: Reduced motion (from brief) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    .liquid-bg { /* Example class if we add liquid background directly via CSS */
+      animation: none !important;
+    }
+    /* Add other motion-specific class overrides here if needed */
+  }
 }
