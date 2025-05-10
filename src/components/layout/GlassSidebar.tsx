@@ -32,8 +32,8 @@ export default function GlassSidebar() {
   ];
   return (
     <div className={`h-full ${collapsed ? 'w-[4.5rem]' : 'w-56'} bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none relative`}>
-      <button aria-label="Toggle sidebar" onClick={toggle} className="absolute -right-3 top-4 bg-glass backdrop-blur-sm border border-white/20 rounded-full p-1 shadow-card">
-        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      <button aria-label="Toggle sidebar" onClick={toggle} className="absolute right-2 top-2 bg-glass backdrop-blur-sm border border-white/20 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon">
+        {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
       </button>
       {items.map(({ key, label, icon: Icon }) => {
         const href = `/${key === "dashboard" ? "" : key}`;

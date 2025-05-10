@@ -489,14 +489,14 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 border-b bg-white px-4 py-2 sticky top-12 z-30 h-10">
-        <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients">
-          <ChevronLeft className="h-[1em] w-[1em]" />
-          <Users className="h-[1em] w-[1em] ml-0.5" />
+        <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients" className="p-3 hover:bg-white/10 group">
+          <ChevronLeft className="h-[1.25em] w-[1.25em] group-hover:text-neon" />
+          <Users className="h-[1.25em] w-[1.25em] ml-0.5 group-hover:text-neon" />
         </Button>
       </div>
 
       <div 
-        className="my-2 mx-4 flex items-center gap-3 rounded-full px-6 h-10 bg-glass backdrop-blur-sm border border-neon/30"
+        className="mt-1 mb-0 mx-4 flex items-center gap-3 rounded-full px-5 h-9 bg-glass backdrop-blur-sm border border-neon/30"
       >
         <span className="font-semibold text-step-0 truncate">{patient.name}</span>
         <span className="text-muted-foreground text-xs whitespace-nowrap">
@@ -504,7 +504,7 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
         </span>
       </div>
 
-      <div className="bg-slate-100 border-b px-4 py-2 flex gap-2 sticky top-[calc(3rem+2.5rem+3.5rem)] z-20 overflow-x-auto">
+      <div className="bg-slate-100 border-b px-4 py-1 flex gap-2 sticky top-[calc(3rem+2.5rem+3rem)] z-20 overflow-x-auto">
         {[
           { key: "consult", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },
@@ -564,7 +564,7 @@ function Consultation({
         <label htmlFor="consultation-select" className="block text-sm font-medium text-gray-700 mb-1">Select Consultation Date:</label>
         <select 
           id="consultation-select"
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          className="block w-full pl-3 pr-7 py-1 text-sm border-gray-300 focus:outline-none focus:ring-neon focus:border-neon rounded-md"
           value={selectedAdmission?.id || ""}
           onChange={(e) => {
             const admissionId = e.target.value;
