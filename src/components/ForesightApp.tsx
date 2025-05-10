@@ -291,7 +291,9 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
   useEffect(() => {
     const loadDashboardData = async () => {
       setIsLoading(true);
-      await patientDataService.loadPatientData(); 
+      if (patientDataService.getAllPatients().length === 0) {
+        await patientDataService.loadPatientData();
+      }
       
       const upcoming = patientDataService.getUpcomingConsultations();
       setUpcomingAppointments(upcoming);
@@ -1137,6 +1139,21 @@ function ForesightApp() {
   const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
   const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
 
+  const patientIdSegment = pathname.split('/')[2];
+  useEffect(() => {
+    if (patientIdSegment) {
+      patientDataService.loadPatientData().then(() => {
+        const p = patientDataService.getPatient(patientIdSegment);
+        if (p) {
+          setActivePatient(p);
+        }
+      });
+    } else {
+      // if route is /patients without id, ensure no active patient
+      setActivePatient(null);
+    }
+  }, [patientIdSegment]);
+
   useEffect(() => {
     // Load alerts data on app initialization
     const loadAlerts = async () => {
@@ -1156,26 +1173,17 @@ function ForesightApp() {
   }, []);
 
   const handleAlertClick = (patientId: string) => {
+    router.push(`/patients/${patientId}`);
     // Ensure data is loaded before trying to get a patient
     // patientDataService.loadPatientData() has an internal isLoaded check, 
     // so calling it multiple times is safe and ensures data is available.
-    patientDataService.loadPatientData().then(() => {
-      const patient = patientDataService.getPatient(patientId);
-      if (patient) {
-        setActivePatient(patient);
-        setSelectedPatientTab("diagnosis");
-        router.push("/patients");
-      } else {
-        console.warn(`Patient with ID ${patientId} not found after alert click.`);
-        // Optionally, handle patient not found case, e.g., show a notification
-      }
-    });
+    setSelectedPatientTab("diagnosis");
   };
 
   const onStartConsult = (p: Patient) => {
     setActivePatient(p);
     setSelectedPatientTab("consult");
-    router.push("/patients");
+    router.push(`/patients/${p.id}`);
   };
   
   // Count high priority alerts (likelihood >= 4)
@@ -1193,8 +1201,8 @@ function ForesightApp() {
           {active === "patients" && !activePatient && (
             <PatientsList onSelect={(p) => {
               setActivePatient(p);
-              setSelectedPatientTab("consult"); // Reset to consult when selecting from list
-              router.push("/patients");
+              setSelectedPatientTab("consult");
+              router.push(`/patients/${p.id}`);
             }} />
           )}
           {active === "patients" && activePatient && (
