@@ -293,7 +293,10 @@ function Sidebar({ active, setActive }: SidebarProps) {
 function Header() {
   return (
     <header className="h-12 border-b bg-white flex items-center justify-between px-4 sticky top-0 z-40 shadow-sm">
-      <span className="font-semibold text-lg">Foresight Clinical Co-Pilot</span>
+      <div className="flex items-center gap-2">
+        <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-6 w-6" />
+        <span className="font-semibold text-lg">Foresight</span>
+      </div>
       <div className="flex items-center gap-4">
         <Input placeholder="Global search…" className="w-64" />
         <img
