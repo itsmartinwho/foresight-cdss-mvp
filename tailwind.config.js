@@ -54,6 +54,12 @@ module.exports = {
         neon: "#5ff3ff",
         ink: "#0c1116",
         lavenderBg: "#f4f6ff",
+        sidebar: "rgba(255,255,255,0.08)",
+        "sidebar-border": "rgba(255,255,255,0.12)",
+        "sidebar-ring": "#5ff3ff",
+        "sidebar-accent": "rgba(255,255,255,0.18)",
+        "sidebar-accent-foreground": "#ffffff",
+        "sidebar-foreground": "rgba(255,255,255,0.92)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -66,6 +72,11 @@ module.exports = {
       },
       fontSize: {
         base: "1.25rem",
+        "step--1": "var(--step--1)",
+        "step-0": "var(--step-0)",
+        "step-1": "var(--step-1)",
+        "step-2": "var(--step-2)",
+        "step-3": "var(--step-3)",
       },
       boxShadow: {
         card: "0 6px 16px rgba(0, 0, 0, 0.08)",
@@ -101,7 +112,16 @@ module.exports = {
           "0%": { "background-position": "0% 50%" },
           "50%": { "background-position": "100% 50%" },
           "100%": { "background-position": "0% 50%" },
-        }
+        },
+        "badge-pulse": {
+          "0%": { transform: "scale(1)", opacity: "0.08" },
+          "70%": { transform: "scale(1.6)", opacity: "0" },
+          "100%": { transform: "scale(1.6)", opacity: "0" },
+        },
+        "specular-flash": {
+          "0%": { opacity: "0.15", transform: "scale(0.8)" },
+          "100%": { opacity: "0", transform: "scale(1.8)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -109,6 +129,8 @@ module.exports = {
         "fade-in-down": "fade-in-down 0.12s ease-out forwards",
         "pulse-slow": "pulse-slow 6s ease-in-out infinite",
         "gradient": "gradient 45s ease infinite",
+        "badge-pulse": "badge-pulse 8s ease-out infinite",
+        "specular-flash": "specular-flash 180ms ease-out",
       },
     },
   },

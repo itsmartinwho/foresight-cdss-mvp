@@ -10,17 +10,15 @@ interface LayoutProps {
 
 export default function Layout({ children, currentPath }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen">
       <Navbar currentPath={currentPath} />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="layout-wrapper flex-1 pt-20 pb-6">
         {children}
       </main>
-      <footer className="bg-white shadow mt-auto py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-gray-500">
-            Foresight Clinical Decision Support System &copy; {new Date().getFullYear()}
-          </p>
-        </div>
+      <footer className="layout-wrapper mt-auto py-6 text-step--1 text-center border-t border-white/10">
+        <p className="text-gray-500">
+          Foresight Clinical Decision Support System &copy; {new Date().getFullYear()}
+        </p>
       </footer>
     </div>
   );
