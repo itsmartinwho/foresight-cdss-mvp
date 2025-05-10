@@ -157,6 +157,26 @@ function SeverityBadge({ severity }: { severity: string }) {
   );
 }
 
+function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
+  // Default to 0 if undefined
+  const level = likelihood !== undefined ? likelihood : 0;
+  
+  // Color spectrum from pale green (level 0) to red (level 5)
+  const color = 
+    level >= 5 ? "bg-red-600 text-white" :
+    level >= 4 ? "bg-red-400 text-white" :
+    level >= 3 ? "bg-orange-400 text-white" :
+    level >= 2 ? "bg-yellow-400 text-black" :
+    level >= 1 ? "bg-green-300 text-black" :
+    "bg-green-100 text-black";
+  
+  return (
+    <span className={`${color} text-xs px-2 py-0.5 rounded-full`}>
+      {level}
+    </span>
+  );
+}
+
 interface SidebarProps {
   active: string;
   setActive: (v: string) => void;
@@ -295,23 +315,37 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
           <CardTitle>Complex Case Alerts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {complexCaseAlertsForDisplay.length > 0 ? complexCaseAlertsForDisplay.map((alertWithPatientName) => (
-            <div 
-              key={alertWithPatientName.id} 
-              className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => onAlertClick(alertWithPatientName.patientId)}
-            >
-              <SeverityBadge severity={alertWithPatientName.severity || 'Unknown'} />
-              <p className="flex-grow text-sm text-gray-700 truncate" title={alertWithPatientName.msg}>{alertWithPatientName.msg || 'No message'}</p>
-              <div className="text-xs text-gray-500 whitespace-nowrap">
-                {alertWithPatientName.confidence !== undefined ? `${Math.round(alertWithPatientName.confidence * 100)}%` : 'N/A'}
-                {' • '}
-                {alertWithPatientName.date || 'N/A'}
-              </div>
-            </div>
-          )) : (
-             <p className="text-sm text-gray-500">No complex case alerts at this time.</p>
-          )}
+          {complexCaseAlertsForDisplay.length > 0 ? 
+            complexCaseAlertsForDisplay
+              .filter(alert => alert.likelihood !== undefined && alert.likelihood >= 4)
+              .map((alertWithPatientName) => (
+                <div 
+                  key={alertWithPatientName.id} 
+                  className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => onAlertClick(alertWithPatientName.patientId)}
+                >
+                  <LikelihoodBadge likelihood={alertWithPatientName.likelihood} />
+                  
+                  <div className="flex-grow">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {alertWithPatientName.patientName}
+                    </p>
+                    <p className="text-xs text-gray-600 truncate">
+                      {alertWithPatientName.conditionType || 'Condition not specified'}
+                    </p>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 whitespace-nowrap">
+                    {alertWithPatientName.date || 'N/A'}
+                  </div>
+                </div>
+              )) : (
+                <p className="text-sm text-gray-500">No high-priority alerts at this time.</p>
+              )}
+              {complexCaseAlertsForDisplay.filter(alert => alert.likelihood !== undefined && alert.likelihood >= 4).length === 0 && 
+                complexCaseAlertsForDisplay.length > 0 && 
+                <p className="text-sm text-gray-500">No high-priority alerts at this time.</p>
+              }
         </CardContent>
       </Card>
     </div>
@@ -736,18 +770,52 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 // AlertsView Updated with More Detailed Temporary Debug Output
 function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => void }) {
   const [patientsWithAlerts, setPatientsWithAlerts] = useState<Patient[]>([]);
+  const [allAlerts, setAllAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<'date' | 'likelihood'>('likelihood');
 
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
       await patientDataService.loadPatientData();
       const allPatients = patientDataService.getAllPatients();
+      
+      // Store patients that have alerts
       setPatientsWithAlerts(allPatients.filter((p) => p.alerts && p.alerts.length > 0));
+      
+      // Collect all alerts with patient names
+      const alertsWithPatientNames: Array<ComplexCaseAlert & { patientName?: string }> = [];
+      allPatients.forEach(patient => {
+        if (patient.alerts && patient.alerts.length > 0) {
+          patient.alerts.forEach(alert => {
+            alertsWithPatientNames.push({
+              ...alert,
+              patientName: patient.name || patient.id
+            });
+          });
+        }
+      });
+      
+      setAllAlerts(alertsWithPatientNames);
       setIsLoading(false);
     };
     loadAlertData();
   }, []);
+  
+  // Sort alerts based on selected criteria
+  const sortedAlerts = [...allAlerts].sort((a, b) => {
+    if (sortBy === 'date') {
+      // Sort by date (newest first)
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    } else {
+      // Sort by likelihood (highest first)
+      const likelihoodA = a.likelihood !== undefined ? a.likelihood : 0;
+      const likelihoodB = b.likelihood !== undefined ? b.likelihood : 0;
+      return likelihoodB - likelihoodA;
+    }
+  });
 
   if (isLoading) {
     return <div className="p-6 text-center">Loading alerts...</div>;
@@ -756,28 +824,56 @@ function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => voi
   return (
     <div className="p-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Patient Alerts</CardTitle>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">Sort by:</span>
+            <Button 
+              variant={sortBy === 'likelihood' ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setSortBy('likelihood')}
+            >
+              Priority
+            </Button>
+            <Button 
+              variant={sortBy === 'date' ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setSortBy('date')}
+            >
+              Date
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          {patientsWithAlerts.length === 0 && <p>No active alerts for any patient.</p>}
-          {patientsWithAlerts.map((patient) =>
-            patient.alerts?.map((alert) => (
-              <div
-                key={alert.id}
-                className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onAlertClick(patient.id)}
-              >
-                <SeverityBadge severity={alert.severity || "Unknown"} />
-                <p className="flex-grow text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || "No message"}</p>
-                <div className="text-xs text-gray-500 whitespace-nowrap">
-                  {alert.confidence !== undefined ? `${Math.round(alert.confidence * 100)}%` : "N/A"}
-                  {' • '}
-                  {alert.date || "N/A"}
+          {sortedAlerts.length === 0 && <p>No active alerts for any patient.</p>}
+          {sortedAlerts.map((alert) => (
+            <div
+              key={alert.id}
+              className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => onAlertClick(alert.patientId)}
+            >
+              <LikelihoodBadge likelihood={alert.likelihood} />
+              
+              <div className="flex-grow">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-800">{alert.patientName}</p>
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                    {alert.conditionType || 'Not specified'}
+                  </span>
                 </div>
+                <p className="text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || "No message"}</p>
               </div>
-            ))
-          )}
+              
+              <div className="text-xs text-gray-500 text-right">
+                <div>{alert.date || "N/A"}</div>
+                {alert.severity && (
+                  <div className="mt-1">
+                    <SeverityBadge severity={alert.severity} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
@@ -883,7 +979,7 @@ function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-left">Patient</TableHead>
-                <TableHead className="text-left">Scheduled date</TableHead>
+                <TableHead className="text-left w-48">Scheduled date</TableHead>
                 <TableHead className="text-left">Reason for visit</TableHead>
               </TableRow>
             </TableHeader>

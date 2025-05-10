@@ -70,6 +70,8 @@ export interface ComplexCaseAlert {
   acknowledged?: boolean;
   acknowledgedAt?: string;
   confidence?: number;
+  likelihood?: number; // Scale of 1-5
+  conditionType?: string;
 }
 
 export interface ClinicalSource {
