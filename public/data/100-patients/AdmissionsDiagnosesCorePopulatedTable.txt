@@ -1,4 +1,4 @@
-﻿PatientID	AdmissionID	PrimaryDiagnosisCode	PrimaryDiagnosisDescription
+PatientID	AdmissionID	PrimaryDiagnosisCode	PrimaryDiagnosisDescription
 80AC01B2-BD55-4BE0-A59A-4024104CF4E9	2	M01.X	Direct infection of joint in infectious and parasitic diseases classified elsewhere
 80AC01B2-BD55-4BE0-A59A-4024104CF4E9	3	D65	Disseminated intravascular coagulation [defibrination syndrome]
 80AC01B2-BD55-4BE0-A59A-4024104CF4E9	4	C92.1	Chronic myeloid leukemia, BCR/ABL-positive

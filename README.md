@@ -122,25 +122,11 @@ For questions or support, please contact the Foresight CDSS team.
 ## Data Pipeline
 
 ### Data Sources
-- **Raw input files** (used as input to the enrichment scripts, not used at runtime):
-  - `data/100-patients/PatientCorePopulatedTable.txt`
-  - `data/100-patients/AdmissionsCorePopulatedTable.txt`
-  - `data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt`
-  - `data/100-patients/LabsCorePopulatedTable.txt`
 
-- **Enriched output files** (used by the application at runtime):
+- **Application Data Files** (used by the application at runtime):
   - `public/data/100-patients/Enriched_Patients.tsv`
   - `public/data/100-patients/Enriched_Admissions.tsv`
   - `public/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt`
   - `public/data/100-patients/LabsCorePopulatedTable.txt`
 
-### Data Enrichment
-To generate the enriched data files, run:
-
-```sh
-pnpm run build:data
-```
-
-This will execute the Python enrichment scripts in `scripts/`, which merge, enrich, and clean the raw data, producing the output files in `public/data/100-patients/`.
-
-**Note:** Only the files in `public/data/100-patients/` are used by the application at runtime. Do not edit these files by hand; always regenerate them using the enrichment scripts.
+**Note:** These files in `public/data/100-patients/` are used by the application at runtime.
