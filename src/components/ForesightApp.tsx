@@ -330,13 +330,15 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
                     <p className="text-sm font-medium text-gray-800 truncate">
                       {alertWithPatientName.patientName}
                     </p>
-                    <p className="text-xs text-gray-600 truncate">
-                      {alertWithPatientName.conditionType || 'Condition not specified'}
-                    </p>
+                    {alertWithPatientName.conditionType && (
+                      <p className="text-xs text-gray-600 truncate">
+                        {alertWithPatientName.conditionType}
+                      </p>
+                    )}
                   </div>
                   
                   <div className="text-xs text-gray-500 whitespace-nowrap">
-                    {alertWithPatientName.date || 'N/A'}
+                    {alertWithPatientName.date || ''}
                   </div>
                 </div>
               )) : (
@@ -770,7 +772,7 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 // AlertsView Updated with More Detailed Temporary Debug Output
 function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => void }) {
   const [patientsWithAlerts, setPatientsWithAlerts] = useState<Patient[]>([]);
-  const [allAlerts, setAllAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
+  const [allAlerts, setAllAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'date' | 'likelihood'>('likelihood');
 
@@ -783,14 +785,37 @@ function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => voi
       // Store patients that have alerts
       setPatientsWithAlerts(allPatients.filter((p) => p.alerts && p.alerts.length > 0));
       
-      // Collect all alerts with patient names
-      const alertsWithPatientNames: Array<ComplexCaseAlert & { patientName?: string }> = [];
+      // Collect all alerts with patient names and last consultation dates
+      const alertsWithPatientNames: Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }> = [];
       allPatients.forEach(patient => {
         if (patient.alerts && patient.alerts.length > 0) {
+          // Find the most recent consultation date for this patient
+          const patientAdmissions = patientDataService.getPatientAdmissions(patient.id);
+          let lastConsultDate: string | undefined;
+          
+          if (patientAdmissions.length > 0) {
+            // Sort admissions by date (most recent first)
+            const sortedAdmissions = [...patientAdmissions].sort((a, b) => {
+              const dateA = a.actualEnd || a.actualStart || a.scheduledStart;
+              const dateB = b.actualEnd || b.actualStart || b.scheduledStart;
+              return new Date(dateB).getTime() - new Date(dateA).getTime();
+            });
+            
+            // Use the date from the most recent admission
+            const mostRecentAdmission = sortedAdmissions[0];
+            if (mostRecentAdmission) {
+              const admissionDate = mostRecentAdmission.actualEnd || mostRecentAdmission.actualStart || mostRecentAdmission.scheduledStart;
+              if (admissionDate) {
+                lastConsultDate = new Date(admissionDate).toLocaleDateString();
+              }
+            }
+          }
+          
           patient.alerts.forEach(alert => {
             alertsWithPatientNames.push({
               ...alert,
-              patientName: patient.name || patient.id
+              patientName: patient.name || patient.id,
+              lastConsultation: lastConsultDate
             });
           });
         }
@@ -857,15 +882,22 @@ function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => voi
               <div className="flex-grow">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-gray-800">{alert.patientName}</p>
-                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
-                    {alert.conditionType || 'Not specified'}
-                  </span>
+                  {alert.conditionType && (
+                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                      {alert.conditionType}
+                    </span>
+                  )}
                 </div>
-                <p className="text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || "No message"}</p>
+                <p className="text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || ""}</p>
+                {alert.lastConsultation && (
+                  <p className="text-xs text-gray-500">
+                    Last consultation: {alert.lastConsultation}
+                  </p>
+                )}
               </div>
               
               <div className="text-xs text-gray-500 text-right">
-                <div>{alert.date || "N/A"}</div>
+                {alert.date && <div>{alert.date}</div>}
                 {alert.severity && (
                   <div className="mt-1">
                     <SeverityBadge severity={alert.severity} />
