@@ -497,7 +497,7 @@ function Consultation({
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
           {currentDetailedAdmission?.transcript ? 
-            currentDetailedAdmission.transcript.split('\n').map((line, i) => <p key={i}>{line}</p>) :
+            currentDetailedAdmission.transcript.replace(/\\n/g, '\n').split('\n').map((line, i) => <p key={i}>{line}</p>) :
             <p>No transcript available for this consultation.</p>
           }
         </CardContent>
