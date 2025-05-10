@@ -49,10 +49,10 @@ module.exports = {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
         },
-        glass: "rgba(255, 255, 255, 0.12)",
+        glass: "rgba(255, 255, 255, 0.15)",
         glassHover: "rgba(255, 255, 255, 0.18)",
         neon: "#5ff3ff",
-        ink: "#0c1116",
+        ink: "#0a0d12",
         lavenderBg: "#f4f6ff",
         sidebar: "rgba(255,255,255,0.08)",
         "sidebar-border": "rgba(255,255,255,0.12)",
@@ -79,7 +79,8 @@ module.exports = {
         "step-3": "var(--step-3)",
       },
       boxShadow: {
-        card: "0 6px 16px rgba(0, 0, 0, 0.08)",
+        card: "0 6px 18px rgba(0,0,0,.14)",
+        "card-dark": "0 6px 18px rgba(0,0,0,.25)",
       },
       backdropBlur: {
         none: '0',
@@ -129,10 +130,24 @@ module.exports = {
         "fade-in-down": "fade-in-down 0.12s ease-out forwards",
         "pulse-slow": "pulse-slow 6s ease-in-out infinite",
         "gradient": "gradient 45s ease infinite",
-        "badge-pulse": "badge-pulse 8s ease-out infinite",
+        "badge-pulse": "badge-pulse 2s linear 8s infinite",
         "specular-flash": "specular-flash 180ms ease-out",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    function ({ addUtilities, addVariant }) {
+      const newUtilities = {
+        '.frost-frame': {
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.12), var(--tw-shadow)',
+        },
+        '.glass-dense': {
+          'background-color': 'rgba(255,255,255,0.15)',
+        },
+      }
+      addUtilities(newUtilities, ['responsive', 'hover', 'dark'])
+      addVariant('mobile-card', "@media (max-width: theme('screens.sm'))")
+    }
+  ],
 }; 

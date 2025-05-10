@@ -16,7 +16,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <nav className="fixed inset-x-0 top-0 z-30 h-16 backdrop-blur-lg bg-[rgba(255,255,255,0.06)] border-b border-[rgba(255,255,255,0.12)]">
+    <nav className="fixed inset-x-0 top-0 z-30 h-16 backdrop-blur-md bg-[rgba(255,255,255,0.06)] border-b border-[rgba(255,255,255,0.12)]">
       <div className="layout-wrapper h-full flex items-center justify-between">
         <div className="flex">
           <div className="flex-shrink-0 flex items-center">
@@ -66,7 +66,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
             <Input
               type="text"
               placeholder="Search…"
-              className="h-8 w-64 bg-white/10 backdrop-blur-sm text-step-0 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-neon focus:outline-none rounded-full px-3"
+              className="h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
             />
           </div>
           <button
@@ -74,7 +74,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
             className="md:hidden p-2 rounded-full hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon"
             onClick={() => setSearchOpen(true)}
           >
-            <Search className="h-5 w-5 text-white" />
+            <Search className="h-[1em] w-[1em] text-white" />
           </button>
           <div className="ml-3 relative">
             <button
@@ -91,12 +91,12 @@ export default function Navbar({ currentPath }: NavbarProps) {
 
         {/* Mobile Search Sheet */}
         <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
-          <SheetContent side="top" className="pt-8 pb-4 backdrop-blur-lg bg-white/10 border-b border-white/12">
+          <SheetContent side="top" className="pt-8 pb-4 backdrop-blur-lg bg-[rgba(255,255,255,0.1)] border-b border-[rgba(255,255,255,0.12)]">
             <Input
               autoFocus
               type="text"
               placeholder="Search…"
-              className="h-9 w-full bg-white/10 backdrop-blur-sm text-step-0 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-neon focus:outline-none rounded-full px-4"
+              className="h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
             />
           </SheetContent>
         </Sheet>

@@ -4,6 +4,8 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import { motion } from "framer-motion"
+import { usePathname } from 'next/navigation'
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -212,47 +214,45 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    // Desktop sidebar with Framer Motion
+    const isOpen = state === "expanded";
+    
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground"
+        className={cn(
+          "group peer hidden md:block text-sidebar-foreground",
+          isOpen ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]", 
+          "transition-[width] duration-0 ease-linear"
+          )}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
         data-side={side}
+        {...props}
       >
-        {/* This is what handles the sidebar gap on desktop */}
-        <div
+        <motion.div
+          style={{ width: isOpen ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_ICON }}
+          animate={{ width: isOpen ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_ICON }}
+          transition={{ type: 'spring', stiffness: 260, damping: 26 }}
           className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
-          )}
-        />
-        <div
-          className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+            "fixed inset-y-0 z-10 hidden h-svh md:flex",
             side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
+              ? "left-0" 
+              : "right-0",
             variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "p-2"
+              : `${side === "left" ? "border-r" : "border-l"} border-sidebar-border`,
             className
           )}
-          {...props}
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow overflow-hidden"
           >
             {children}
           </div>
-        </div>
+        </motion.div>
       </div>
     )
   }
@@ -265,17 +265,28 @@ const SidebarTrigger = React.forwardRef<
 >(({ className, onClick, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleSidebar();
+    }
+  };
+
   return (
     <Button
       ref={ref}
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
+      role="button"
+      tabIndex={0}
+      aria-label="Toggle sidebar"
       className={cn("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
+      onKeyDown={handleKeyDown}
       {...props}
     >
       <PanelLeft />
@@ -537,54 +548,72 @@ const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
     asChild?: boolean
-    isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    href?: string
+    children?: React.ReactNode
+    "aria-label"?: string
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
     {
       asChild = false,
-      isActive = false,
       variant = "default",
       size = "default",
       tooltip,
       className,
+      href,
+      children,
+      "aria-label": ariaLabelProp,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
+    const pathname = usePathname()
+    
+    const isActive = href && pathname ? (pathname === href || (href !== "/" && pathname.startsWith(href))) : false;
 
-    const button = (
+    let label = ariaLabelProp;
+    if (!label && typeof children === 'string') {
+      label = children;
+    } else if (!label && tooltip && typeof tooltip === 'string') {
+      label = tooltip;
+    } else if (!label && props.title) {
+      label = props.title;
+    }
+
+    const buttonContent = (
       <Comp
         ref={ref}
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
+        aria-label={label || undefined}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
-      />
-    )
+      >
+        {children}
+        {isActive && (
+          <span className="absolute left-0 h-full w-0.5 bg-gradient-to-b from-neon/0 via-neon to-neon" />
+        )}
+      </Comp>
+    );
 
     if (!tooltip) {
-      return button
+      return buttonContent;
     }
 
-    if (typeof tooltip === "string") {
-      tooltip = {
-        children: tooltip,
-      }
-    }
+    const tooltipProps = typeof tooltip === "string" ? { children: tooltip } : tooltip;
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
           hidden={state !== "collapsed" || isMobile}
-          {...tooltip}
+          {...tooltipProps}
         />
       </Tooltip>
     )
@@ -710,10 +739,21 @@ const SidebarMenuSubButton = React.forwardRef<
   React.ComponentProps<"a"> & {
     asChild?: boolean
     size?: "sm" | "md"
-    isActive?: boolean
+    href?: string
+    children?: React.ReactNode
+    "aria-label"?: string
   }
->(({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
+>(({ asChild = false, size = "md", href, children, className, "aria-label": ariaLabelProp, ...props }, ref) => {
   const Comp = asChild ? Slot : "a"
+  const pathname = usePathname()
+  const isActive = href && pathname ? (pathname === href || (href !== "/" && pathname.startsWith(href))) : false;
+
+  let label = ariaLabelProp;
+  if (!label && typeof children === 'string') {
+    label = children;
+  } else if (!label && props.title) {
+    label = props.title;
+  }
 
   return (
     <Comp
@@ -721,16 +761,23 @@ const SidebarMenuSubButton = React.forwardRef<
       data-sidebar="menu-sub-button"
       data-size={size}
       data-active={isActive}
+      aria-label={label || undefined}
+      href={href}
       className={cn(
         "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
+        isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
         "group-data-[collapsible=icon]:hidden",
         className
       )}
       {...props}
-    />
+    >
+      {children}
+      {isActive && (
+         <span className="absolute left-0 h-full w-0.5 bg-gradient-to-b from-neon/0 via-neon to-neon opacity-100" />
+      )}
+    </Comp>
   )
 })
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"

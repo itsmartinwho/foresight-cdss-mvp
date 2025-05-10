@@ -12,7 +12,7 @@ export default function Layout({ children, currentPath }: LayoutProps) {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar currentPath={currentPath} />
-      <main className="layout-wrapper flex-1 pt-20 pb-6">
+      <main className="layout-wrapper flex-1 pt-16 pb-16 lg:pt-24 lg:pb-24">
         {children}
       </main>
       <footer className="layout-wrapper mt-auto py-6 text-step--1 text-center border-t border-white/10">

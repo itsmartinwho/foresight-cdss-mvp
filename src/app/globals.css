@@ -178,4 +178,22 @@
     }
     /* Add other motion-specific class overrides here if needed */
   }
+
+  /* Specular flash for route transitions (Brief §11.1 / User §10) */
+  .specular-flash {
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 60%);
+  }
+}
+
+/* Safari fallback for backdrop-filter (Brief §14.3 / User §12) */
+@supports not (backdrop-filter: blur(4px)) {
+  .bg-glass, .backdrop-blur-md, .backdrop-blur-sm, .backdrop-blur-lg {
+    background-color: rgba(255,255,255,0.06) !important; /* Ensure fallback takes precedence */
+    /* Override Tailwind's backdrop-filter utilities if they apply filter:none. May need to be more specific */
+  }
+  /* If glass class itself has a backdrop-filter, it needs to be part of this too */
+  .bg-glass {
+     -webkit-backdrop-filter: none !important; /* Explicitly turn off for Safari if rule applies */
+     backdrop-filter: none !important;
+  }
 }

@@ -71,19 +71,27 @@ function renderDetailTable(title: string, dataArray: any[], headers: string[], c
   const accessors = columnAccessors || headers.map(h => h.toLowerCase().replace(/\s+/g, '')); // default accessors
 
   return (
-    <div className="mt-3">
+    <div className="mt-3 p-4 rounded-xl bg-glass glass-dense backdrop-blur-lg">
       <h4 className="font-semibold text-sm text-gray-700 mb-1">{title}</h4>
-      <Table className="text-xs">
-        <TableHeader>
+      <Table className="text-xs mobile-card:block sm:table">
+        <TableHeader className="mobile-card:hidden sm:table-header-group">
           <TableRow>
             {displayHeaders.map(header => <TableHead key={header} className="text-left">{header}</TableHead>)}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="mobile-card:block sm:table-row-group">
           {dataArray.map((item, index) => (
-            <TableRow key={index}>
-              {accessors.map(accessor => (
-                <TableCell key={accessor} className="text-left">
+            <TableRow 
+              key={index} 
+              className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
+            >
+              {accessors.map((accessor, colIndex) => (
+                <TableCell 
+                  key={accessor} 
+                  className="text-left mobile-card:flex mobile-card:flex-col sm:table-cell" 
+                  data-column={displayHeaders[colIndex]}
+                >
+                  <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">{displayHeaders[colIndex]}: </span>
                   {item[accessor] !== undefined && item[accessor] !== null ? String(item[accessor]) : 'N/A'}
                 </TableCell>
               ))}
@@ -179,14 +187,22 @@ function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
   );
 }
 
-// New component for notification bell with counter
+// Renamed NotificationBellV2 to NotificationBell
 function NotificationBell({ count, onClick }: { count: number; onClick: () => void }) {
   return (
-    <div className="relative cursor-pointer" onClick={onClick}>
+    <div className="relative cursor-pointer" onClick={onClick}> {/* Click area */} 
       <Bell className="h-6 w-6 text-slate-600" />
       {count > 0 && (
-        <div className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-          {count > 99 ? '99+' : count}
+        <div className="absolute -top-1 -right-1 w-5 h-5"> {/* Positioning container for badge & pulse */} 
+          <div 
+            className="absolute inset-0 bg-ink text-white text-xs rounded-full flex items-center justify-center z-10"
+          >
+            {count > 99 ? '99+' : count}
+          </div>
+          <span 
+            className="absolute inset-0 rounded-full ring-2 ring-neon/40 animate-badge-pulse"
+            aria-hidden 
+          />
         </div>
       )}
     </div>
@@ -353,7 +369,7 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
 
   return (
     <div className="p-6 relative">
-      <Card className="mb-6">
+      <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle>Upcoming Appointments</CardTitle>
           <CardDescription>
@@ -362,8 +378,8 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
         </CardHeader>
         <CardContent>
           {upcomingAppointments.length > 0 ? (
-            <Table>
-              <TableHeader>
+            <Table className="mobile-card:block sm:table">
+              <TableHeader className="mobile-card:hidden sm:table-header-group">
                 <TableRow>
                   <TableHead>Time</TableHead>
                   <TableHead>Patient</TableHead>
@@ -371,22 +387,32 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="mobile-card:block sm:table-row-group">
                 {upcomingAppointments.map(({ patient: p, visit }) => (
-                  <TableRow key={`${p.id}_${visit.id}`}>
-                    <TableCell>{new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}</TableCell>
-                    <TableCell>
+                  <TableRow 
+                    key={`${p.id}_${visit.id}`} 
+                    className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
+                  >
+                    <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
+                      {new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}
+                    </TableCell>
+                    <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
                       {p.photo && (
-                        <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2" />
+                        <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2 mobile-card:hidden" />
                       )}
                       {p.name}
                     </TableCell>
-                    <TableCell>{visit.reason}</TableCell>
-                    <TableCell>
+                    <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
+                      {visit.reason}
+                    </TableCell>
+                    <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
                       <Button
                         size="sm"
                         onClick={() => onStartConsult(p)}
-                        className="gap-1"
+                        className="gap-1 w-full mobile-card:w-full"
                       >
                         <PlayCircle className="h-4 w-4" /> Start
                       </Button>
@@ -509,15 +535,22 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 border-b bg-white px-4 py-2 sticky top-12 z-30 h-10">
         <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients">
-          <ChevronLeft className="h-5 w-5" />
-          <Users className="h-5 w-5 ml-0.5" />
+          <ChevronLeft className="h-[1em] w-[1em]" />
+          <Users className="h-[1em] w-[1em] ml-0.5" />
         </Button>
-        <span className="font-semibold text-base truncate">{patient.name}</span>
+      </div>
+
+      <div 
+        className="my-2 mx-4 flex items-center gap-3 rounded-full px-6 h-12 bg-[rgba(255,255,255,0.1)] border"
+        style={{borderImage:'linear-gradient(135deg,#8ef,#c9f) 1'}}
+      >
+        <span className="font-semibold text-base truncate text-ink dark:text-lavenderBg">{patient.name}</span>
         <span className="text-muted-foreground text-xs whitespace-nowrap">
           DOB {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
         </span>
       </div>
-      <div className="bg-slate-100 border-b px-4 py-2 flex gap-2 sticky top-[calc(3rem+2.5rem)] z-20 overflow-x-auto">
+
+      <div className="bg-slate-100 border-b px-4 py-2 flex gap-2 sticky top-[calc(3rem+2.5rem+3.5rem)] z-20 overflow-x-auto">
         {[
           { key: "consult", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },
@@ -593,7 +626,7 @@ function Consultation({
         </select>
       </div>
 
-      <Card className="lg:col-span-2">
+      <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle>Live Transcript</CardTitle>
         </CardHeader>
@@ -604,7 +637,7 @@ function Consultation({
           }
         </CardContent>
       </Card>
-      <Card>
+      <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle>Structured Note (SOAP)</CardTitle>
         </CardHeader>

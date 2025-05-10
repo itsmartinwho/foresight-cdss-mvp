@@ -15,9 +15,10 @@ export function FrostCard({ children, className, ...props }: FrostCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, ease: 'easeOut' }} // Adjusted transition from brief sample
+      transition={{ duration: 0.15, ease: 'easeOut' }}
       className={cn(
-        "bg-glass backdrop-blur-lg rounded-card p-[clamp(1rem,2vw,2rem)] shadow-card border border-[rgba(255,255,255,0.15)]",
+        "bg-glass backdrop-blur-lg rounded-card p-[clamp(1rem,2vw,2rem)]",
+        "frost-frame shadow-card dark:shadow-card-dark",
         className
       )}
       {...props}
