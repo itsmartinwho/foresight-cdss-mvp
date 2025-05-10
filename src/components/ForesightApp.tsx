@@ -289,7 +289,7 @@ function Sidebar({ active, setActive }: SidebarProps) {
     { key: "settings", label: "Settings", icon: Cog },
   ];
   return (
-    <div className="h-full w-56 border-r bg-white shadow-sm flex-col p-2 hidden lg:flex">
+    <div className="h-full w-56 bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none">
       {items.map(({ key, label, icon: Icon }) => (
         <Button
           key={key}
@@ -297,28 +297,34 @@ function Sidebar({ active, setActive }: SidebarProps) {
           className="justify-start gap-3 mb-1"
           onClick={() => setActive(key)}
         >
-          <Icon className="h-4 w-4" /> {label}
+          <Icon className="h-[1em] w-[1em]" /> {label}
         </Button>
       ))}
       <Separator className="my-4" />
-      <Input placeholder="Quick search (⌘K)" className="text-sm" />
+      <Input
+        placeholder="Quick search (⌘K)"
+        className="text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+      />
     </div>
   );
 }
 
 function Header() {
   return (
-    <header className="h-12 border-b bg-white flex items-center justify-between px-4 sticky top-0 z-40 shadow-sm">
+    <header className="fixed inset-x-0 top-0 z-40 h-16 backdrop-blur-md bg-[rgba(255,255,255,0.06)] border-b border-[rgba(255,255,255,0.12)] flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)]">
       <div className="flex items-center gap-2">
         <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-6 w-6" />
-        <span className="font-semibold text-lg">Foresight</span>
+        <span className="text-neon font-bold text-step-1">Foresight</span>
       </div>
       <div className="flex items-center gap-4">
-        <Input placeholder="Global search…" className="w-64" />
+        <Input
+          placeholder="Global search…"
+          className="h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+        />
         <img
           src="https://i.pravatar.cc/32?u=clinician"
           alt="avatar"
-          className="rounded-full"
+          className="rounded-full h-8 w-8"
         />
       </div>
     </header>
@@ -1230,9 +1236,9 @@ function ForesightApp() {
   return (
     <div className="h-screen flex flex-col">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden pt-16">
         <Sidebar active={active} setActive={setActive} />
-        <div className="flex-1 overflow-y-auto bg-slate-50 relative">
+        <div className="flex-1 overflow-y-auto bg-background/60 relative">
           {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} onAlertClick={handleAlertClick} />}
           {active === "patients" && !activePatient && (
             <PatientsList onSelect={(p) => {
