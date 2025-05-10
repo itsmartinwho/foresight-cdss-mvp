@@ -4,6 +4,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Foresight',
   description: 'Clinical Decision Support System for healthcare providers',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/images/foresight-icon.png',
+  },
 };
 
 export default function RootLayout({
