@@ -89,7 +89,7 @@
 
   html {
     @apply antialiased; /* Smooths out the font */
-    font-size: 1.25rem; /* Clinical-grade typography scale: 20px base from brief */
+    font-size: 1rem; /* Base 16px for better density */
   }
 
   body {

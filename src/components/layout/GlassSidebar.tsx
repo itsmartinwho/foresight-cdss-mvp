@@ -2,10 +2,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Home, Users, BarChart3, BellRing, Settings as Cog } from "lucide-react";
+import { Home, Users, BarChart3, BellRing, Settings as Cog, ChevronLeft, ChevronRight } from "lucide-react";
+import React from "react";
 
 export default function GlassSidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = React.useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("fs_sidebar_collapsed") === "true";
+    }
+    return false;
+  });
+
+  const toggle = () => {
+    setCollapsed((c) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("fs_sidebar_collapsed", (!c).toString());
+      }
+      return !c;
+    });
+  };
+
   const items = [
     { key: "dashboard", label: "Dashboard", icon: Home },
     { key: "patients", label: "Patients", icon: Users },
@@ -14,7 +31,10 @@ export default function GlassSidebar() {
     { key: "settings", label: "Settings", icon: Cog },
   ];
   return (
-    <div className="h-full w-56 bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none">
+    <div className={`h-full ${collapsed ? 'w-[4.5rem]' : 'w-56'} bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none relative`}>
+      <button aria-label="Toggle sidebar" onClick={toggle} className="absolute -right-3 top-4 bg-glass backdrop-blur-sm border border-white/20 rounded-full p-1 shadow-card">
+        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </button>
       {items.map(({ key, label, icon: Icon }) => {
         const href = `/${key === "dashboard" ? "" : key}`;
         const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
@@ -22,17 +42,18 @@ export default function GlassSidebar() {
           <Link
             key={key}
             href={href}
-            className={`flex items-center gap-3 mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/10 text-neon" : "hover:bg-white/10"}`}
+            className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/10 text-neon" : "hover:bg-white/10"}`}
           >
-            <Icon className="h-[1em] w-[1em]" /> {label}
+            <Icon className="h-[1em] w-[1em]" /> {!collapsed && label}
           </Link>
         );
       })}
       <Separator className="my-4" />
+      {!collapsed && (
       <Input
         placeholder="Quick search (⌘K)"
         className="text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-      />
+      />)}
     </div>
   );
 } 
