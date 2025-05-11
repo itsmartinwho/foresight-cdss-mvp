@@ -4,5 +4,9 @@ import React from 'react';
 import ForesightApp from '@/components/ForesightApp';
 
 export default function PatientsPage() {
-  return <ForesightApp />;
+  return (
+    <React.Suspense fallback={<div>Loading Patients...</div>}>
+      <ForesightApp />
+    </React.Suspense>
+  );
 }

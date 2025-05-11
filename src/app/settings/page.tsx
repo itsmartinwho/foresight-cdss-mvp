@@ -1,5 +1,10 @@
 import ForesightApp from '@/components/ForesightApp';
+import React from 'react';
 
 export default function SettingsPage() {
-  return <ForesightApp />;
+  return (
+    <React.Suspense fallback={<div>Loading Settings...</div>}>
+      <ForesightApp />
+    </React.Suspense>
+  );
 } 
