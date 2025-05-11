@@ -51,12 +51,12 @@ export default function GlassSidebar() {
               {collapsed ? (
                 <PanelLeftOpen
                   strokeWidth={1.5}
-                  className="h-5 w-5 bg-gradient-to-r from-purple-500 to-teal-500 bg-clip-text text-transparent"
+                  className="h-5 w-5 text-purple-500"
                 />
               ) : (
                 <PanelLeftClose
                   strokeWidth={1.5}
-                  className="h-5 w-5 bg-gradient-to-r from-purple-500 to-teal-500 bg-clip-text text-transparent"
+                  className="h-5 w-5 text-purple-500"
                 />
               )}
             </button>
