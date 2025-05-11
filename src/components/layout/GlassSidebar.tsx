@@ -39,7 +39,7 @@ export default function GlassSidebar() {
     { key: "settings", label: "Settings", icon: Cog },
   ];
   return (
-    <div className={`fixed top-16 bottom-0 left-0 z-20 ${collapsed ? 'w-[4.5rem]' : 'w-56'} bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none transition-all duration-300 ease-in-out overflow-hidden`}>
+    <div className={`h-full ${collapsed ? 'w-[4.5rem]' : 'w-56'} bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex flex-col p-3 hidden lg:flex rounded-tr-card rounded-br-none transition-all duration-300 ease-in-out overflow-hidden`}>
       <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
