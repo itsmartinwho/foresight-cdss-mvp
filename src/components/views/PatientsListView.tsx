@@ -1,16 +1,24 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission } from "@/lib/types";
+import { ArrowUp, ArrowDown } from "lucide-react";
+
+// Define SortableKey and SortConfig types
+type SortableKey = 'patientName' | 'scheduledDate';
+interface SortConfig {
+  key: SortableKey;
+  direction: 'ascending' | 'descending';
+}
 
 // PatientsList function from ForesightApp.tsx (approx. lines 1034-1124)
 export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) => void }) {
-  const [upcomingRows, setUpcomingRows] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
-  const [pastRows, setPastRows] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
-  // Add isLoading state for better UX
+  const [upcomingRowsData, setUpcomingRowsData] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
+  const [pastRowsData, setPastRowsData] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -30,8 +38,8 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
       upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
       past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
 
-      setUpcomingRows(upcoming);
-      setPastRows(past);
+      setUpcomingRowsData(upcoming);
+      setPastRowsData(past);
       setIsLoading(false);
     };
     load();
@@ -42,6 +50,42 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
     if (p?.firstName || p?.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
     return p?.id || "Unknown Patient";
   };
+
+  const requestSort = (key: SortableKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedRows = useMemo(() => {
+    const sortData = (data: { patient: Patient | null; visit: Admission }[]) => {
+      if (!sortConfig) return data;
+      return [...data].sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        if (sortConfig.key === 'patientName') {
+          aValue = displayName(a.patient).toLowerCase();
+          bValue = displayName(b.patient).toLowerCase();
+        } else if (sortConfig.key === 'scheduledDate') {
+          aValue = new Date(a.visit.scheduledStart).getTime();
+          bValue = new Date(b.visit.scheduledStart).getTime();
+        } else {
+          return 0; // Should not happen
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+      });
+    };
+    return {
+      upcoming: sortData(upcomingRowsData),
+      past: sortData(pastRowsData),
+    };
+  }, [upcomingRowsData, pastRowsData, sortConfig, displayName]);
 
   if (isLoading) {
     return <div className="p-6 text-center text-muted-foreground">Loading patient list...</div>;
@@ -58,18 +102,36 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
           <Table className="text-step-0">
             <TableHeader>
               <TableRow>
-                <TableHead>Patient</TableHead>
-                <TableHead className="w-48">Scheduled date</TableHead>
-                <TableHead>Reason for visit</TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted/10 transition-colors"
+                  onClick={() => requestSort('patientName')}
+                >
+                  <div className="flex items-center gap-1 py-1">
+                    Patient
+                    {sortConfig?.key === 'patientName' && 
+                      (sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3 text-muted-foreground/80" /> : <ArrowDown className="h-3 w-3 text-muted-foreground/80" />)}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="w-60 cursor-pointer hover:bg-muted/10 transition-colors"
+                  onClick={() => requestSort('scheduledDate')}
+                >
+                  <div className="flex items-center gap-1 py-1">
+                    Scheduled date
+                    {sortConfig?.key === 'scheduledDate' && 
+                      (sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3 text-muted-foreground/80" /> : <ArrowDown className="h-3 w-3 text-muted-foreground/80" />)}
+                  </div>
+                </TableHead>
+                <TableHead><div className="py-1">Reason for visit</div></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {upcomingRows.length > 0 && (
+              {sortedRows.upcoming.length > 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="font-semibold text-sm pt-4 pb-2 text-foreground/80">Upcoming visits</TableCell>
                 </TableRow>
               )}
-              {upcomingRows.map(({ patient, visit }) => (
+              {sortedRows.upcoming.map(({ patient, visit }) => (
                 <TableRow key={`upcoming_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
@@ -81,15 +143,15 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
                   <TableCell>{visit.reason ?? "—"}</TableCell>
                 </TableRow>
               ))}
-              {upcomingRows.length === 0 && pastRows.length === 0 && (
+              {(sortedRows.upcoming.length === 0 && sortedRows.past.length === 0) && (
                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-4">No consultations found.</TableCell></TableRow>
               )}
-              {pastRows.length > 0 && (
+              {sortedRows.past.length > 0 && (
                 <TableRow>
                   <TableCell colSpan={3} className="font-semibold text-sm pt-6 pb-2 text-foreground/80">Past visits</TableCell>
                 </TableRow>
               )}
-              {pastRows.map(({ patient, visit }) => (
+              {sortedRows.past.map(({ patient, visit }) => (
                 <TableRow key={`past_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (

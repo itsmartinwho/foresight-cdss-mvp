@@ -130,14 +130,21 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
           {currentDetailedAdmission?.transcript ?
-            currentDetailedAdmission.transcript.replace(/\n/g, '\n').split('\n').map((line, i) => {
-              const parts = line.split(':');
+            currentDetailedAdmission.transcript.replace(/\\n/g, '\n').split('\n').map((line, i) => {
+              const parts = line.split(/:(.*)/); // Robustly split on the first colon (removed 's' flag)
               const speaker = parts.length > 1 ? parts[0].trim() : '';
-              const dialogue = parts.length > 1 ? parts.slice(1).join(':').trim() : line;
+              // parts[1] will be the dialogue if speaker was found, otherwise parts[0] is the whole line if no colon
+              const dialogue = parts.length > 1 ? (parts[1] || '').trim() : line.trim(); 
+              
+              // If the line became empty after trimming, or was just whitespace, skip rendering it.
+              if (!line.trim()) return null;
+              
               return (
                 <p key={i} className="text-step-0">
                   {speaker && <strong className="text-foreground/90 dark:text-foreground/70 font-medium">{speaker}:</strong>}
-                  <span className="ml-1">{dialogue}</span>
+                  {/* Added conditional padding for lines without a speaker to align them. 
+                       Assumes typical speaker tag like 'Clinician:' is around 6ch wide. */}
+                  <span className={`ml-1 ${speaker ? '' : 'pl-[calc(var(--speaker-indent,6ch)+0.25rem)]'} whitespace-pre-line`}>{dialogue}</span>
                 </p>
               );
             }) :
@@ -438,14 +445,14 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-3 border-b px-4 py-2 sticky top-12 z-30 h-10 bg-background/80 backdrop-blur-sm">
+      <div className="flex items-center gap-3 border-b px-4 py-2 sticky top-0 z-30 h-10 bg-background/80 backdrop-blur-sm">
         <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients" className="p-3 hover:bg-foreground/5 group">
           <ChevronLeft className="h-[1.25em] w-[1.25em] group-hover:text-neon" />
           <Users className="h-[1.25em] w-[1.25em] ml-0.5 group-hover:text-neon" />
         </Button>
       </div>
 
-      <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-4">
+      <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-4 mt-10">
         <div className="flex items-start gap-3">
           <Avatar className="h-16 w-16 border-2 border-neon/30">
             <AvatarImage src={patient.photo} alt={patient.name} />
