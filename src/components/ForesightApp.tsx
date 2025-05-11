@@ -32,11 +32,20 @@ import {
   Bell,
   X,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment, ComplexCaseAlert } from "@/lib/types";
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
+
+// Import the newly extracted view components
+import DashboardView from "@/components/views/DashboardView";
+import PatientsListView from "@/components/views/PatientsListView";
+import PatientWorkspaceView from "@/components/views/PatientWorkspaceView";
+import AlertsScreenView from "@/components/views/AlertsScreenView";
+import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
+import SettingsScreenView from "@/components/views/SettingsScreenView";
 
 // ***********************************
 // PATIENT DATA (loaded from central service)
@@ -495,18 +504,50 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
         </Button>
       </div>
 
-      <div className="mt-1 mb-2 mx-4 z-10">
-        <div 
-          className="flex items-center gap-3 rounded-full px-5 py-2 bg-white/30 backdrop-blur-sm border border-neon/30 shadow-md"
-        >
-          <span className="font-semibold text-lg text-black dark:text-white truncate">{patient.name}</span>
-          <span className="text-slate-600 dark:text-slate-300 text-sm whitespace-nowrap">
-            DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
-          </span>
+      {/* New Patient Header & Select Visit Dropdown */}
+      <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-16 w-16 border-2 border-neon/30">
+            <AvatarImage src={patient.photo} alt={patient.name} />
+            <AvatarFallback className="text-2xl bg-neon/20 text-neon font-medium">
+              {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="pt-1">
+            <h1 className="text-step-2 font-bold text-foreground">{patient.name}</h1>
+            <p className="text-step-0 text-muted-foreground">
+              DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
+              {/* Assuming age is available, if not, this part can be removed */}
+              {/* {patient.age && ` (Age: ${patient.age})`} */}
+            </p>
+            <p className="text-step-0 text-muted-foreground">
+              Gender: {patient.gender || 'N/A'}
+            </p>
+          </div>
+        </div>
+        <div className="ml-auto flex-shrink-0 pt-1">
+          <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
+          <select
+            id="consultation-select-main"
+            className="block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm"
+            value={selectedAdmissionForConsultation?.id || ""}
+            onChange={(e) => {
+              const admissionId = e.target.value;
+              const selected = patientAdmissionDetails.find(ad => ad.admission.id === admissionId)?.admission || null;
+              setSelectedAdmissionForConsultation(selected);
+            }}
+          >
+            <option value="" disabled>-- Select a consultation --</option>
+            {patientAdmissionDetails.map((adDetail: any) => (
+              <option key={adDetail.admission.id} value={adDetail.admission.id}>
+                {new Date(adDetail.admission.scheduledStart).toLocaleString()} - {adDetail.admission.reason || 'N/A'}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div className="bg-slate-100 border-b px-4 py-1 flex gap-2 sticky top-[calc(3rem+2.5rem+3rem)] z-20 overflow-x-auto">
+      <div className="bg-background/70 backdrop-blur-sm border-b px-4 py-1 flex gap-2 sticky top-[calc(2.5rem+5rem)] z-20 overflow-x-auto shadow-sm">
         {[
           { key: "consult", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },
@@ -562,39 +603,29 @@ function Consultation({
 
   return (
     <div className="p-6 grid lg:grid-cols-3 gap-6">
+      {/* New Current Visit Banner (inside Consultation component's grid) */}
       {selectedAdmission && (
-        <div className="bg-blue-50 text-blue-800 text-sm py-2 px-4 mb-2 mx-4 rounded-md border border-blue-100">
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="font-medium">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} — {selectedAdmission.reason || 'N/A'}
-            </div>
-            <select 
-              id="consultation-select"
-              className="text-sm border-blue-200 bg-blue-50 focus:ring-blue-300 focus:border-blue-300 rounded py-0.5 pl-2 pr-7"
-              value={selectedAdmission?.id || ""}
-              onChange={(e) => {
-                const admissionId = e.target.value;
-                onSelectAdmission(availableAdmissions.find(a => a.id === admissionId) || null);
-              }}
-            >
-              <option value="" disabled>Select consultation</option>
-              {availableAdmissions.map((adm) => (
-                <option key={adm.id} value={adm.id}>
-                  {new Date(adm.scheduledStart).toLocaleString()} - {adm.reason || 'N/A'}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="lg:col-span-3 bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-sm rounded-md px-4 py-2 mb-4">
+          <span className="font-semibold">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} &nbsp;—&nbsp; {selectedAdmission.reason || 'N/A'}
         </div>
       )}
-      <div className="lg:col-span-3"></div>
       <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span> Live Transcript</CardTitle>
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
-          {currentDetailedAdmission?.transcript ? 
-            currentDetailedAdmission.transcript.replace(/\\n/g, '\n').split('\n').map((line, i) => <p key={i}>{line}</p>) :
+          {currentDetailedAdmission?.transcript ?
+            currentDetailedAdmission.transcript.replace(/\n/g, '\n').split('\n').map((line, i) => {
+              const parts = line.split(':');
+              const speaker = parts.length > 1 ? parts[0].trim() : '';
+              const dialogue = parts.length > 1 ? parts.slice(1).join(':').trim() : line;
+              return (
+                <p key={i} className="text-step-0">
+                  {speaker && <strong className="text-foreground/90 dark:text-foreground/70 font-medium">{speaker}:</strong>}
+                  <span className="ml-1">{dialogue}</span>
+                </p>
+              );
+            }) :
             <p>No transcript available for this consultation.</p>
           }
         </CardContent>
@@ -604,8 +635,8 @@ function Consultation({
           <CardTitle className="flex items-center gap-2"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span> Structured Note (SOAP)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
-          {currentDetailedAdmission?.soapNote ? 
-             currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i}>{line}</p>) :
+          {currentDetailedAdmission?.soapNote ?
+            currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i} className="text-step-0">{line}</p>) :
             <p>No SOAP note available for this consultation.</p>}
         </CardContent>
       </Card>
@@ -1038,218 +1069,137 @@ function SettingsView() {
 }
 
 // ***********************************
-// PATIENTS LIST VIEW
-// ***********************************
-function PatientsList({ onSelect }: { onSelect: (p: Patient) => void }) {
-  const [upcomingRows, setUpcomingRows] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
-  const [pastRows, setPastRows] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      await patientDataService.loadPatientData();
-      const now = new Date();
-
-      const upcoming: { patient: Patient | null; visit: Admission }[] = [];
-      const past: { patient: Patient | null; visit: Admission }[] = [];
-
-      patientDataService.getAllAdmissions().forEach(({ patient, admission }) => {
-        const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
-        arr.push({ patient, visit: admission });
-      });
-
-      upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
-      past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
-
-      setUpcomingRows(upcoming);
-      setPastRows(past);
-    };
-    load();
-  }, []);
-
-  const displayName = (p: Patient | null) => {
-    if (p?.name) return p.name;
-    if (p?.firstName || p?.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
-    return p?.id;
-  };
-
-  return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Consultations</CardTitle>
-          <CardDescription>Click a patient to open the workspace</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-left">Patient</TableHead>
-                <TableHead className="text-left w-48">Scheduled date</TableHead>
-                <TableHead className="text-left">Reason for visit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {upcomingRows.length > 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="font-semibold text-sm pt-4 pb-2 text-left text-gray-700">Upcoming visits</TableCell>
-                </TableRow>
-              )}
-              {upcomingRows.map(({ patient, visit }) => (
-                <TableRow key={`upcoming_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
-                  <TableCell className="text-left flex items-center gap-2">
-                    {patient?.photo && (
-                      <img src={patient.photo} alt={patient.name} className="h-6 w-6 rounded-full inline-block mr-2" />
-                    )}
-                    {patient ? displayName(patient) : (visit.patientId ?? 'Unknown Patient')}
-                  </TableCell>
-                  <TableCell className="text-left">{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
-                  <TableCell className="text-left">{visit.reason ?? "—"}</TableCell>
-                </TableRow>
-              ))}
-
-              {pastRows.length > 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="font-semibold text-sm pt-6 pb-2 text-left text-gray-700">Past visits</TableCell>
-                </TableRow>
-              )}
-              {pastRows.map(({ patient, visit }) => (
-                <TableRow key={`past_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-slate-50" : "opacity-60"}>
-                  <TableCell className="text-left flex items-center gap-2">
-                    {patient?.photo && (
-                      <img src={patient.photo} alt={patient.name} className="h-6 w-6 rounded-full inline-block mr-2" />
-                    )}
-                    {patient ? displayName(patient) : (visit.patientId ?? 'Unknown Patient')}
-                  </TableCell>
-                  <TableCell className="text-left">{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
-                  <TableCell className="text-left">{visit.reason ?? "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ***********************************
 // MAIN APP
 // ***********************************
 
 function ForesightApp() {
   const pathname = usePathname();
   const router = useRouter();
-  const firstSegment = pathname.split('/')[1] || "";
-  const active = firstSegment === "" ? "dashboard" : firstSegment;
+  const pathSegments = pathname.split('/');
+  const activeView = pathSegments[1] || "dashboard";
+  const patientIdFromPath = activeView === "patients" ? pathSegments[2] : undefined;
+
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
   const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
   const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
 
-  const patientIdSegment = pathname.split('/')[2];
   useEffect(() => {
-    if (patientIdSegment) {
+    // Load patient data if a specific patient ID is in the path
+    // and that patient isn't already the active one.
+    if (patientIdFromPath && patientIdFromPath !== activePatient?.id) {
       patientDataService.loadPatientData().then(() => {
-        const p = patientDataService.getPatient(patientIdSegment);
-        if (p) {
-          setActivePatient(p);
-        }
+        const p = patientDataService.getPatient(patientIdFromPath);
+        if (p) setActivePatient(p);
+        else setActivePatient(null); // Patient not found for this ID
       });
-    } else {
-      // if route is /patients without id, ensure no active patient
+    } else if (!patientIdFromPath && activeView === "patients") {
+      // If on /patients main page, clear active patient
       setActivePatient(null);
     }
-  }, [patientIdSegment]);
+  }, [patientIdFromPath, activeView, activePatient?.id]);
 
   useEffect(() => {
-    // Load alerts data on app initialization
-    const loadAlerts = async () => {
-      await patientDataService.loadPatientData();
-      const allPatients = patientDataService.getAllPatients();
-      const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
-      allPatients.forEach(p => {
-        if (p.alerts && p.alerts.length > 0) {
-          p.alerts.forEach(alert => {
-            collectedAlerts.push({ ...alert, patientName: p.name || p.id }); 
-          });
+    // Load global alerts data on app initialization or when not viewing a specific patient
+    // This ensures alerts are available for the global bell, but might not reload if already populated.
+    const loadGlobalAlerts = async () => {
+        if (patientDataService.getAllPatients().length === 0) { // Ensure core data is there
+            await patientDataService.loadPatientData();
         }
-      });
-      setComplexCaseAlerts(collectedAlerts);
+        const allPatients = patientDataService.getAllPatients();
+        const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
+        allPatients.forEach(p => {
+            if (p.alerts && p.alerts.length > 0) {
+                p.alerts.forEach(alert => {
+                    collectedAlerts.push({ ...alert, patientName: p.name || p.id });
+                });
+            }
+        });
+        setComplexCaseAlerts(collectedAlerts);
     };
-    loadAlerts();
-  }, []);
+    loadGlobalAlerts();
+  }, []); // Runs once on mount, or add dependencies if it should re-run
 
   const handleAlertClick = (patientId: string) => {
     router.push(`/patients/${patientId}`);
-    // Ensure data is loaded before trying to get a patient
-    // patientDataService.loadPatientData() has an internal isLoaded check, 
-    // so calling it multiple times is safe and ensures data is available.
-    setSelectedPatientTab("diagnosis");
+    setSelectedPatientTab("diagnosis"); // As per original logic
   };
 
-  const onStartConsult = (p: Patient) => {
-    setActivePatient(p);
+  const handleStartConsult = (patient: Patient) => {
+    // setActivePatient(patient); // This will be handled by useEffect watching patientIdFromPath
     setSelectedPatientTab("consult");
-    router.push(`/patients/${p.id}`);
+    router.push(`/patients/${patient.id}`);
+  };
+
+  const handlePatientSelect = (patient: Patient) => {
+    // setActivePatient(patient); // Handled by useEffect
+    setSelectedPatientTab("consult");
+    router.push(`/patients/${patient.id}`);
   };
   
-  // Count high priority alerts (likelihood >= 4)
+  const handlePatientWorkspaceBack = () => {
+    // setActivePatient(null); // Handled by useEffect
+    router.push("/patients");
+  };
+
   const highPriorityAlertsCount = complexCaseAlerts.filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
   ).length;
 
-  return (
-    <div className="h-screen flex flex-col">
-      <GlassHeader />
-      <div className="flex flex-1 overflow-hidden pt-16">
-        <GlassSidebar />
-        <div className="flex-1 overflow-y-auto bg-background/60 relative">
-          {active === "dashboard" && <Dashboard onStartConsult={onStartConsult} onAlertClick={handleAlertClick} />}
-          {active === "patients" && !activePatient && (
-            <PatientsList onSelect={(p) => {
-              setActivePatient(p);
-              setSelectedPatientTab("consult");
-              router.push(`/patients/${p.id}`);
-            }} />
-          )}
-          {active === "patients" && activePatient && (
-            <PatientWorkspace
-              key={activePatient.id} // Re-initialize if patient changes
-              patient={activePatient}
-              initialTab={selectedPatientTab}
-              onBack={() => {
-                setActivePatient(null);
-                setSelectedPatientTab("consult"); // Reset tab for next patient
-                router.push("/patients");
-              }}
-            />
-          )}
-          {active === "alerts" && <AlertsView onAlertClick={handleAlertClick} />}
-          {active === "analytics" && <AnalyticsView />}
-          {active === "settings" && <SettingsView />}
-          
-          {/* Global notification bell for all screens except Dashboard (which has its own) */}
-          {active !== "dashboard" && (
-            <div className="fixed bottom-6 right-6 z-40">
-              <div className="bg-white p-2 rounded-full shadow-lg">
-                <NotificationBell 
-                  count={highPriorityAlertsCount} 
-                  onClick={() => setIsAlertPanelOpen(true)} 
-                />
-              </div>
-            </div>
-          )}
-          
-          {/* Global slide-out alert panel */}
-          <AlertSidePanel
-            isOpen={isAlertPanelOpen}
-            onClose={() => setIsAlertPanelOpen(false)}
-            alerts={complexCaseAlerts}
-            onAlertClick={handleAlertClick}
+  let currentView;
+  switch (activeView) {
+    case "dashboard":
+      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} />;
+      break;
+    case "patients":
+      if (activePatient && patientIdFromPath) {
+        currentView = (
+          <PatientWorkspaceView
+            key={activePatient.id} // Ensures re-render if patient changes
+            patient={activePatient}
+            initialTab={selectedPatientTab}
+            onBack={handlePatientWorkspaceBack}
           />
-        </div>
-      </div>
-    </div>
+        );
+      } else {
+        currentView = <PatientsListView onSelect={handlePatientSelect} />;
+      }
+      break;
+    case "alerts":
+      currentView = <AlertsScreenView onAlertClick={handleAlertClick} />;
+      break;
+    case "analytics":
+      currentView = <AnalyticsScreenView />;
+      break;
+    case "settings":
+      currentView = <SettingsScreenView />;
+      break;
+    default:
+      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} />;
+  }
+
+  return (
+    <>
+      {currentView}
+      {/* Global notification bell for all screens. It could also be part of RootLayout if always visible */}
+      {/* For now, keeping it here to manage its state alongside ForesightApp's logic */}
+      {activeView !== "dashboard" && (
+         <div className="fixed bottom-6 right-6 z-40">
+           <div className="bg-white p-2 rounded-full shadow-lg">
+             <NotificationBell 
+                count={highPriorityAlertsCount} 
+                onClick={() => setIsAlertPanelOpen(true)} 
+             />
+           </div>
+         </div>
+      )}
+      <AlertSidePanel
+        isOpen={isAlertPanelOpen}
+        onClose={() => setIsAlertPanelOpen(false)}
+        alerts={complexCaseAlerts}
+        onAlertClick={handleAlertClick} // Alert clicks from panel also navigate
+      />
+    </>
   );
 }
 

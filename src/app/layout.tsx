@@ -1,9 +1,10 @@
 // Removed 'use client';
 
-import { Metadata } from 'next';
 import './globals.css';
-// Removed AnimatePresence and motion imports from here
-import MotionWrapper from '../components/MotionWrapper'; // Import the new MotionWrapper
+import { Metadata } from 'next';
+import MotionWrapper from '../components/MotionWrapper';
+import GlassHeader from '@/components/layout/GlassHeader';
+import GlassSidebar from '@/components/layout/GlassSidebar';
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -22,7 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <MotionWrapper>{children}</MotionWrapper> {/* Use MotionWrapper here */}
+        <GlassHeader />
+        <div className="flex flex-1 pt-16"> {/* pt-16 for fixed header height */}
+          <GlassSidebar />
+          <main className="flex-1 overflow-y-auto bg-background/60 relative">
+            <MotionWrapper>{children}</MotionWrapper>
+          </main>
+        </div>
       </body>
     </html>
   );
