@@ -133,6 +133,10 @@ module.exports = {
           "0%": { opacity: "0.15", transform: "scale(0.8)" },
           "100%": { opacity: "0", transform: "scale(1.8)" },
         },
+        "conic-spin": {
+          "from": { "transform": "rotate(0turn)" },
+          "to": { "transform": "rotate(1turn)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -142,6 +146,7 @@ module.exports = {
         "gradient": "gradient 45s ease infinite",
         "badge-pulse": "badge-pulse 2s linear 8s infinite",
         "specular-flash": "specular-flash 180ms ease-out",
+        "conic-spin": "conic-spin 4s linear infinite",
       },
     },
   },

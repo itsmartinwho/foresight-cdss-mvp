@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function GlassHeader() {
   return (
-    <header className="fixed inset-x-0 top-0 z-40 h-16 backdrop-blur-md bg-[rgba(255,255,255,0.06)] border-b border-[rgba(255,255,255,0.12)] flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)]">
+    <header className="fixed inset-x-0 top-0 z-40 h-16 glass flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)]">
       <div className="flex items-center gap-2">
         <Link href="/">
           <a className="flex items-center gap-2">

@@ -5,6 +5,7 @@ import { Metadata } from 'next';
 import MotionWrapper from '../components/MotionWrapper';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
+import dynamic from 'next/dynamic';
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
     apple: '/images/foresight-icon.png',
   },
 };
+
+const IridescentBg = dynamic(() => import('../components/IridescentCanvas'), { ssr: false });
 
 export default function RootLayout({
   children,
@@ -30,6 +33,7 @@ export default function RootLayout({
             <MotionWrapper>{children}</MotionWrapper>
           </main>
         </div>
+        {process.env.NEXT_PUBLIC_ENABLE_NEW_UI !== 'false' && <IridescentBg />}
       </body>
     </html>
   );
