@@ -446,31 +446,31 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center gap-3 border-b px-4 py-2 sticky top-0 z-30 h-10 bg-background/80 backdrop-blur-sm">
-        <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients" className="p-3 hover:bg-foreground/5 group">
-          <ChevronLeft className="h-[1.25em] w-[1.25em] group-hover:text-neon" />
-          <Users className="h-[1.25em] w-[1.25em] ml-0.5 group-hover:text-neon" />
+        <Button size="icon" variant="ghost" onClick={onBack} aria-label="Back to Patients" className="h-8 w-8 p-0 hover:bg-foreground/5 group">
+          <div className="flex items-center">
+            <ChevronLeft className="h-4 w-4 group-hover:text-neon" />
+            <Users className="h-4 w-4 group-hover:text-neon" />
+          </div>
         </Button>
       </div>
 
-      <div className="px-4 pt-2 pb-2 flex items-start justify-between gap-4 mt-10">
-        <div className="flex items-start gap-3">
-          <Avatar className="h-16 w-16 border-2 border-neon/30">
+      <div className="px-4 pt-2 pb-2 flex items-center justify-between gap-4 mt-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-14 w-14 border-2 border-neon/30">
             <AvatarImage src={patient.photo} alt={patient.name} />
-            <AvatarFallback className="text-2xl bg-neon/20 text-neon font-medium">
+            <AvatarFallback className="text-xl bg-neon/20 text-neon font-medium">
               {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
             </AvatarFallback>
           </Avatar>
-          <div className="pt-1">
+          <div className="flex items-baseline gap-4">
             <h1 className="text-step-2 font-bold text-foreground">{patient.name}</h1>
-            <p className="text-step-0 text-muted-foreground">
-              DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}
-            </p>
-            <p className="text-step-0 text-muted-foreground">
-              Gender: {patient.gender || 'N/A'}
-            </p>
+            <div className="text-step-0 text-muted-foreground">
+              <span className="mr-4">DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
+              <span>Gender: {patient.gender || 'N/A'}</span>
+            </div>
           </div>
         </div>
-        <div className="ml-auto flex-shrink-0 pt-1">
+        <div className="ml-auto flex-shrink-0">
           <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
           <select
             id="consultation-select-main"
@@ -492,7 +492,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         </div>
       </div>
 
-      <div className="bg-background/70 backdrop-blur-sm border-b px-4 py-1 flex gap-2 sticky top-[calc(2.5rem+5rem)] z-20 overflow-x-auto shadow-sm">
+      <div className="bg-background/70 backdrop-blur-sm border-b px-4 py-1 flex gap-2 sticky top-[calc(2.5rem+3rem)] z-20 overflow-x-auto shadow-sm">
         {[
           { key: "consult", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },

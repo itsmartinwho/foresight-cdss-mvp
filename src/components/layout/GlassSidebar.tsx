@@ -46,9 +46,13 @@ export default function GlassSidebar() {
             <button
               aria-label={collapsed ? "Maximize menu" : "Minimize menu"}
               onClick={toggle}
-              className="mb-4 self-end bg-glass backdrop-blur-sm border border-white/20 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon"
+              className={`${collapsed ? 'self-center' : 'self-end'} bg-glass backdrop-blur-sm border border-white/20 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon mb-4`}
             >
-              {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+              {collapsed ? (
+                <PanelLeftOpen className="h-5 w-5 stroke-[1.5] bg-gradient-to-r from-purple-500 to-teal-500 bg-clip-text text-transparent" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5 stroke-[1.5] bg-gradient-to-r from-purple-500 to-teal-500 bg-clip-text text-transparent" />
+              )}
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">
