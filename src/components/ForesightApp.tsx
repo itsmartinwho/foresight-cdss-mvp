@@ -1152,11 +1152,11 @@ function ForesightApp() {
       currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} />;
       break;
     case "patients":
-      if (activePatient && patientIdFromPath) {
+      if (patientIdFromPath) {
         currentView = (
           <PatientWorkspaceView
-            key={activePatient.id} // Ensures re-render if patient changes
-            patient={activePatient}
+            key={patientIdFromPath} // Ensures re-render when navigating to a different patient
+            patient={{ id: patientIdFromPath } as Patient}
             initialTab={selectedPatientTab}
             onBack={handlePatientWorkspaceBack}
           />
