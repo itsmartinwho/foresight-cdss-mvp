@@ -103,7 +103,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
             <TableHeader>
               <TableRow>
                 <TableHead
-                  className="cursor-pointer hover:bg-muted/10 transition-colors"
+                  className="w-[40%] cursor-pointer hover:bg-muted/10 transition-colors"
                   onClick={() => requestSort('patientName')}
                 >
                   <div className="flex items-center gap-1 py-1">
