@@ -112,6 +112,14 @@
           "message": "Use CSS custom properties (design tokens) instead of raw color literals."
         }
       ]
-    }
+    },
+    "overrides": [
+      {
+        "files": ["src/stories/**/*.{ts,tsx,js,jsx}", "src/stories/**/*.css"],
+        "rules": {
+          "no-restricted-syntax": "off"
+        }
+      }
+    ]
   }
 }
