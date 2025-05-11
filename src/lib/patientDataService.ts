@@ -413,9 +413,19 @@ class PatientDataService {
       return {
         admission,
         diagnoses: this.allDiagnosesByAdmission[key] || [],
-        labResults: this.allLabResultsByAdmission[key] || []
+        labResults: this.allLabResultsByAdmission[key] || [],
       };
     });
+    // After constructing, patch transcripts from localStorage if present (client only)
+    if (typeof window !== 'undefined') {
+      admissionDetails.forEach((detail) => {
+        const ad = detail.admission;
+        const stored = localStorage.getItem(`transcript-${patient.id}-${ad.id}`);
+        if (stored && !ad.transcript) {
+          ad.transcript = stored;
+        }
+      });
+    }
     return { patient, admissions: admissionDetails };
   }
 
@@ -454,6 +464,50 @@ class PatientDataService {
       });
     });
     return list;
+  }
+
+  /**
+   * Update the transcript for a given patient admission (in-memory only for now)
+   */
+  updateAdmissionTranscript(patientId: string, admissionId: string, transcript: string) {
+    const admissionList = this.admissions[patientId];
+    if (!admissionList) return;
+    const admission = admissionList.find((a) => a.id === admissionId);
+    if (admission) {
+      admission.transcript = transcript;
+    }
+    // Also persist in localStorage so it survives reloads (client side only)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`transcript-${patientId}-${admissionId}`, transcript);
+      } catch (_) {}
+    }
+  }
+
+  /**
+   * Create a new admission (consultation) for a patient and return it so the UI can select it.
+   * This is an in-memory helper – in a real app you would persist to a backend.
+   */
+  createNewAdmission(patientId: string): Admission {
+    const newId = `new-${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    const newAdmission: Admission = {
+      id: newId,
+      patientId,
+      scheduledStart: nowIso,
+      scheduledEnd: '',
+      actualStart: undefined,
+      actualEnd: undefined,
+      reason: undefined,
+      transcript: undefined,
+      soapNote: undefined,
+    } as Admission;
+
+    if (!this.admissions[patientId]) {
+      this.admissions[patientId] = [];
+    }
+    this.admissions[patientId].unshift(newAdmission); // place newest first
+    return newAdmission;
   }
 
   // Methods like searchPatients, hasAutoimmuneDiagnosis, hasOncologyDiagnosis would continue

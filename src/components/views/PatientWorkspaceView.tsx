@@ -117,6 +117,91 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
   const availableAdmissions = allAdmissions.map(ad => ad.admission);
   const currentDetailedAdmission = allAdmissions.find(ad => ad.admission.id === selectedAdmission?.id)?.admission;
 
+  // NEW STATE FOR LIVE TRANSCRIPTION
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState<string>('');
+
+  const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+  const socketRef = React.useRef<WebSocket | null>(null);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+
+  const startTranscription = async () => {
+    if (!apiKey) {
+      alert('Deepgram API key not configured');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const ws = new WebSocket(
+        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true',
+        ['token', apiKey]
+      );
+      socketRef.current = ws;
+      mediaRecorderRef.current = mediaRecorder;
+
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data && data.channel && data.is_final) {
+            const alt = data.channel.alternatives[0];
+            if (alt && alt.transcript) {
+              setLiveTranscript((prev) => (prev ? prev + '\n' + alt.transcript : alt.transcript));
+            }
+          }
+        } catch (_) {}
+      };
+
+      ws.onopen = () => {
+        mediaRecorder.addEventListener('dataavailable', (event) => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            ws.send(event.data);
+          }
+        });
+        mediaRecorder.start(250);
+        setIsTranscribing(true);
+        setIsPaused(false);
+      };
+
+      ws.onclose = () => {
+        mediaRecorder.stop();
+      };
+    } catch (err: any) {
+      console.error('Error starting transcription', err);
+    }
+  };
+
+  const pauseTranscription = () => {
+    if (mediaRecorderRef.current && socketRef.current) {
+      if (!isPaused) {
+        mediaRecorderRef.current.pause();
+        setIsPaused(true);
+      } else {
+        mediaRecorderRef.current.resume();
+        setIsPaused(false);
+      }
+    }
+  };
+
+  const endTranscription = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'CloseStream' }));
+      socketRef.current.close();
+    }
+    setIsTranscribing(false);
+    setIsPaused(false);
+    // Persist transcript to patient data service
+    if (patient && selectedAdmission) {
+      patientDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, liveTranscript);
+    }
+  };
+
+  const displayTranscript = currentDetailedAdmission?.transcript || liveTranscript;
+
   return (
     <div className="p-6 grid lg:grid-cols-3 gap-6">
       {selectedAdmission && (
@@ -124,33 +209,54 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
           <span className="font-semibold">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} &nbsp;—&nbsp; {selectedAdmission.reason || 'N/A'}
         </div>
       )}
-      <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg">
+      <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg relative">
+        {/* Overlay when not transcribing & no transcript */}
+        {!displayTranscript && !isTranscribing && (
+          <button
+            onClick={startTranscription}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 backdrop-blur-md text-neon hover:brightness-125 transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3 text-neon animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 1a4 4 0 00-4 4v6a4 4 0 008 0V5a4 4 0 00-4-4z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 10v2a7 7 0 01-14 0v-2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19v4m-4 0h8" />
+            </svg>
+            <span className="text-step-0 font-semibold">Start Transcription</span>
+          </button>
+        )}
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-step-0"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span> Live Transcript</CardTitle>
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
-          {currentDetailedAdmission?.transcript ?
-            currentDetailedAdmission.transcript.replace(/\\n/g, '\n').split('\n').map((line, i) => {
-              const parts = line.split(/:(.*)/); // Robustly split on the first colon (removed 's' flag)
-              const speaker = parts.length > 1 ? parts[0].trim() : '';
-              // parts[1] will be the dialogue if speaker was found, otherwise parts[0] is the whole line if no colon
-              const dialogue = parts.length > 1 ? (parts[1] || '').trim() : line.trim(); 
-              
-              // If the line became empty after trimming, or was just whitespace, skip rendering it.
-              if (!line.trim()) return null;
-              
-              return (
-                <p key={i} className="text-step-0">
-                  {speaker && <strong className="text-foreground/90 dark:text-foreground/70 font-medium">{speaker}:</strong>}
-                  {/* Added conditional padding for lines without a speaker to align them. 
-                       Assumes typical speaker tag like 'Clinician:' is around 6ch wide. */}
-                  <span className={`ml-1 ${speaker ? '' : 'pl-[calc(var(--speaker-indent,6ch)+0.25rem)]'} whitespace-pre-line`}>{dialogue}</span>
-                </p>
-              );
-            }) :
+          {displayTranscript ?
+            <div
+              contentEditable={!isTranscribing}
+              suppressContentEditableWarning
+              onInput={(e) => {
+                const text = (e.currentTarget as HTMLDivElement).innerText;
+                if (!isTranscribing && patient && selectedAdmission) {
+                  patientDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, text);
+                }
+              }}
+              className="whitespace-pre-wrap outline-none"
+            >
+              {displayTranscript}
+            </div>
+            :
             <p className="text-muted-foreground">No transcript available for this consultation.</p>
           }
         </CardContent>
+        {/* Controls */}
+        {isTranscribing && (
+          <div className="absolute bottom-2 right-4 flex gap-4">
+            <button onClick={pauseTranscription} className="rounded-full bg-purple-600 text-white px-4 py-1 text-xs shadow hover:bg-purple-500 transition">
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
+            <button onClick={endTranscription} className="rounded-full bg-red-600 text-white px-4 py-1 text-xs shadow hover:bg-red-500 transition">
+              End
+            </button>
+          </div>
+        )}
       </Card>
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
@@ -468,6 +574,24 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
               <span className="mr-4">DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
               <span>Gender: {patient.gender || 'N/A'}</span>
             </div>
+            <button
+              onClick={() => {
+                const newAd = patientDataService.createNewAdmission(patient.id);
+                // Update local state so UI reflects new consultation immediately
+                setDetailedPatientData((prev: any) => {
+                  if (!prev) return prev;
+                  return {
+                    ...prev,
+                    admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...prev.admissions],
+                  };
+                });
+                setSelectedAdmissionForConsultation(newAd);
+                setActiveTab('consult');
+              }}
+              className="ml-6 inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+            >
+              Start new consultation
+            </button>
           </div>
         </div>
         <div className="ml-auto flex-shrink-0">
