@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
 };
 
-const IridescentBg = dynamic(() => import('../components/IridescentCanvas'), { ssr: false });
+const IridescentBg = dynamic(() => import('../components/IridescentCanvas'));
 
 export default function RootLayout({
   children,
