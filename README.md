@@ -1,132 +1,118 @@
-# Foresight Clinical Decision Support System (CDSS)
+# Foresight Clinical Decision Support System (CDSS) - MVP Prototype
 
 ## Overview
 
-Foresight CDSS is a browser-based clinical decision support system designed to assist healthcare providers with diagnostic planning, treatment recommendations, and complex case identification for autoimmune and oncology conditions. The system integrates ambient voice transcription, clinical data analysis, AI diagnostic assistance, and automated documentation to streamline clinical workflows and improve patient care.
+Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and a refactored frontend architecture. It uses mock data to simulate functionalities like patient dashboards, lists, and workspaces. The system is designed to eventually assist healthcare providers with diagnostic planning, treatment recommendations, and complex case identification for autoimmune and oncology conditions by integrating ambient voice transcription, clinical data analysis, AI diagnostic assistance, and automated documentation.
 
-## Features
+**Note:** This is currently a prototype and does not connect to live backend services or perform real clinical analysis. The data displayed is mock data for demonstration purposes.
 
-### 1. Ambient Voice Transcription and Note Generation
-- Real-time transcription of doctor-patient conversations
-- Automatic generation of SOAP notes from transcripts
-- Editable clinical notes for physician review and finalization
+## Features (Current Prototype Highlights)
 
-### 2. Clinical Data Integration
-- Patient demographic information display
-- Medical history and previous diagnoses
-- Laboratory results and admission records
-- Identification of autoimmune and oncology cases
+*   **Modular UI Components:** Demonstrates a component-based architecture with reusable UI elements for:
+    *   Dashboard Overview
+    *   Patient List & Search
+    *   Individual Patient Workspace (Demographics, Admissions, Diagnoses, Labs - using mock data)
+    *   Alerts, Analytics, and Settings screens (placeholders or basic views)
+*   **Client-Side Routing:** Utilizes Next.js for routing, with a central `ForesightApp.tsx` component managing view rendering.
+*   **Glassmorphism UI:** Features a modern "glassmorphism" visual style for header and sidebar.
+*   **Responsive Layout:** Basic responsive design for different screen sizes.
 
-### 3. AI Diagnostic and Treatment Advisor
-- Symptom-based diagnostic plan generation
-- Step-by-step diagnostic process execution
-- Evidence-based diagnostic results with confidence scores
-- Treatment recommendations based on clinical guidelines
-- Differential diagnosis suggestions
+## Target State Features (Vision)
 
-### 4. Real-time Clinical Co-pilot
-- Context-aware clinical suggestions during consultations
-- Recommended questions based on patient symptoms
-- Test and medication recommendations
-- Clinical guideline references
-
-### 5. Complex Case Alerting
-- Automatic detection of potential autoimmune cases
-- Automatic detection of potential oncology cases
-- Severity assessment and suggested actions
-- Early identification of complex cases requiring specialist attention
-
-### 6. Documentation Automation
-- Prior authorization request generation
-- Specialist referral letter creation
-- Clinical justification for treatments and referrals
-- Structured documentation for insurance and administrative purposes
-
-### 7. Clinical Trial Matching
-- Matching patients to relevant clinical trials
-- Trial eligibility assessment
-- Contact information for trial coordinators
+The long-term vision for Foresight CDSS includes:
+*   **Ambient Voice Transcription & Note Generation:** Real-time transcription and automatic SOAP note generation.
+*   **EHR Integration:** Securely connect to Electronic Health Record systems.
+*   **AI Diagnostic & Treatment Advisor:** Symptom-based diagnostic plans, evidence-based results, and treatment recommendations.
+*   **Real-time Clinical Co-pilot:** Context-aware suggestions during consultations.
+*   **Complex Case Alerting:** Passive scanning for potential complex conditions (autoimmune, oncology) and clinical trial eligibility.
+*   **Documentation Automation:** Generation of prior authorization requests and specialist referral letters.
+*   **Clinical Chatbot:** AI-powered assistant for general medical questions.
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18.0 or higher
-- npm or yarn package manager
+- Node.js (version specified in `.nvmrc` if available, otherwise LTS recommended, e.g., 18.x or 20.x)
+- pnpm (Package manager. If not installed, run `npm install -g pnpm`)
 
-### Installation
-1. Clone the repository
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Start the development server:
-   ```
-   npm run dev
-   ```
-4. Open your browser and navigate to `http://localhost:3000`
+### Installation & Setup
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/itsmartinwho/foresight-cdss-mvp.git
+    cd foresight-cdss-mvp
+    ```
+2.  Install dependencies using pnpm:
+    ```bash
+    pnpm install
+    ```
 
-## Usage Guide
+### Running the Development Server
+To start the Next.js development server:
+```bash
+pnpm run dev
+```
+Open your browser and navigate to `http://localhost:3000`.
 
-### Dashboard
-The dashboard provides an overview of recent patients, autoimmune cases, and oncology cases. Use the navigation links to access different sections of the application.
+### Building the Project
+To create a production build:
+```bash
+pnpm run build
+```
 
-### Patient List
-View all patients in the system, search for specific patients, and access patient details or start consultations.
+### Running Storybook
+To explore UI components in isolation using Storybook:
+```bash
+pnpm run storybook
+```
+This will typically open Storybook in your browser at `http://localhost:6006`.
 
-### Patient Detail
-View comprehensive patient information including demographics, admission history, diagnoses, and laboratory results.
+### Running Playwright E2E Tests
+To run end-to-end tests using Playwright:
+```bash
+pnpm run test:e2e
+```
+This will launch the Playwright test runner. Ensure the development server (`pnpm run dev`) is running in a separate terminal, as the Playwright config is set up to use an existing server on `http://localhost:3000`. Alternatively, Playwright can be configured to start the server automatically (current `playwright.config.ts` includes a `webServer` block for this).
 
-### Consultation
-Start a new consultation with a patient, which includes:
-- Voice transcription (simulated in the MVP)
-- Clinical note generation
-- Co-pilot suggestions
-- Complex case alerts
+## Usage Guide (Prototype)
 
-### Diagnostic Advisor
-Enter patient symptoms to generate a diagnostic plan, execute the plan to receive diagnostic results, and access treatment recommendations and clinical trial matches.
+The application currently uses mock data loaded from `public/data/`.
 
-## Technical Architecture
+*   **Dashboard:** Provides a landing page.
+*   **Patient List:** (`/patients`) Displays a list of mock patients.
+*   **Patient Workspace:** (Accessed by clicking a patient) Shows tabs for Demographics, Admissions, Diagnoses, and Labs using mock data.
+*   **Other sections:** Alerts, Analytics, Settings are placeholders or have minimal functionality in the prototype.
 
-### Frontend
-- Next.js React framework
-- TypeScript for type safety
-- Tailwind CSS for styling
+## Technical Architecture (Current Frontend)
 
-### Services
-- Patient Data Service: Manages patient information
-- Clinical Engine Service: Provides diagnostic and treatment recommendations
-- Transcription Service: Handles voice transcription and note generation
-- Alert Service: Detects complex cases and generates co-pilot suggestions
+*   **Framework:** Next.js (App Router paradigm)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS, CSS Modules. Features a "glassmorphism" theme.
+*   **State Management:** React Context and local component state (e.g., within `ForesightApp.tsx` for global UI states like active patient).
+*   **Component Structure:**
+    *   Global Layout: `src/app/layout.tsx` renders `GlassHeader` and `GlassSidebar`.
+    *   View Components: Located in `src/components/views/` (e.g., `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`).
+    *   Routing Logic: `src/app/ForesightApp.tsx` acts as a client-side router, determining which view component to render based on the URL pathname.
+    *   Page Entry Points: Files like `src/app/page.tsx`, `src/app/patients/page.tsx` primarily render `<ForesightApp />`.
+*   **Testing:**
+    *   **Storybook:** For UI component development and visualization.
+    *   **Playwright:** For end-to-end testing.
+*   **Linting/Formatting:** ESLint, Prettier (assumed, common for Next.js projects).
 
-### Data Model
-- Patient: Demographics and core information
-- Admission: Hospital/clinic admission records
-- Diagnosis: ICD-coded diagnoses
-- LabResult: Laboratory test results
-- Transcript: Voice transcription segments
-- ClinicalNote: SOAP-formatted clinical notes
-- DiagnosticPlan: Step-by-step diagnostic process
-- DiagnosticResult: AI-generated diagnostic assessment
+### Data Model (Mock Data Structure)
+The prototype uses mock data primarily from TSV and TXT files in `public/data/100-patients/`:
+- `Enriched_Patients.tsv`: Patient demographic information.
+- `Enriched_Admissions.tsv`: Admission records.
+- `AdmissionsDiagnosesCorePopulatedTable.txt`: Diagnoses linked to admissions.
+- `LabsCorePopulatedTable.txt`: Laboratory test results.
 
-## Future Enhancements
-- Integration with electronic health record (EHR) systems
-- Real voice transcription using speech-to-text APIs
-- Machine learning models for improved diagnostic accuracy
-- Mobile application for on-the-go access
-- Expanded coverage for additional medical specialties
+## Data Pipeline (Mock Data Source)
+
+The application currently loads static mock data files at runtime. These are located in:
+- `public/data/100-patients/Enriched_Patients.tsv`
+- `public/data/100-patients/Enriched_Admissions.tsv`
+- `public/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt`
+- `public/data/100-patients/LabsCorePopulatedTable.txt`
+
+There is no live data pipeline or backend integration in this MVP prototype.
 
 ## Support
-For questions or support, please contact the Foresight CDSS team.
-
-## Data Pipeline
-
-### Data Sources
-
-- **Application Data Files** (used by the application at runtime):
-  - `public/data/100-patients/Enriched_Patients.tsv`
-  - `public/data/100-patients/Enriched_Admissions.tsv`
-  - `public/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt`
-  - `public/data/100-patients/LabsCorePopulatedTable.txt`
-
-**Note:** These files in `public/data/100-patients/` are used by the application at runtime.
+For questions regarding this prototype, please refer to the project's GitHub repository and issues.
