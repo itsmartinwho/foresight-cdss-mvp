@@ -104,7 +104,14 @@
       "plugin:storybook/recommended"
     ],
     "rules": {
-      "@next/next/no-img-element": "off"
+      "@next/next/no-img-element": "off",
+      "no-restricted-syntax": [
+        "error",
+        {
+          "selector": "Literal[value=/^#(?:[0-9a-fA-F]{3}){1,2}$/]",
+          "message": "Use CSS custom properties (design tokens) instead of raw color literals."
+        }
+      ]
     }
   }
 }

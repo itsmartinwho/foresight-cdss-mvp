@@ -49,6 +49,16 @@ module.exports = {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
         },
+        /* ----- New surface and iridescent accent tokens (UI refresh) ----- */
+        surface: {
+          0: "hsl(var(--surface-0) / <alpha-value>)",
+          1: "hsl(var(--surface-1) / <alpha-value>)",
+          2: "hsl(var(--surface-2) / <alpha-value>)",
+          3: "hsl(var(--surface-3) / <alpha-value>)",
+        },
+        "accent-secondary": "hsl(var(--accent-secondary) / <alpha-value>)",
+        "accent-tertiary": "hsl(var(--accent-tertiary) / <alpha-value>)",
+        /* --------------------------------------------------------------- */
         glass: "rgba(255, 255, 255, 0.15)",
         glassHover: "rgba(255, 255, 255, 0.18)",
         neon: "#5ff3ff",
