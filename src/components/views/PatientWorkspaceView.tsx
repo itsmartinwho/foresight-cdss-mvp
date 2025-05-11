@@ -131,6 +131,8 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
       alert('Deepgram API key not configured');
       return;
     }
+    // Reset live transcript for a fresh run – user can still undo via browser undo if needed.
+    setLiveTranscript('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -247,13 +249,19 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
           }
         </CardContent>
         {/* Controls */}
-        {isTranscribing && (
+        {isTranscribing ? (
           <div className="absolute bottom-2 right-4 flex gap-4">
             <button onClick={pauseTranscription} className="rounded-full bg-purple-600 text-white px-4 py-1 text-xs shadow hover:bg-purple-500 transition">
               {isPaused ? 'Resume' : 'Pause'}
             </button>
             <button onClick={endTranscription} className="rounded-full bg-red-600 text-white px-4 py-1 text-xs shadow hover:bg-red-500 transition">
               End
+            </button>
+          </div>
+        ) : (
+          <div className="absolute bottom-2 right-4">
+            <button onClick={startTranscription} className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white px-4 py-1 text-xs font-medium rounded-full shadow hover:brightness-110 transition">
+              Start transcription
             </button>
           </div>
         )}
