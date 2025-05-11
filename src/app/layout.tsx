@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <GlassHeader />
-        <div className="flex flex-1 pt-16"> {/* pt-16 for fixed header height */}
+        <div className="flex min-h-screen pt-16"> {/* full viewport height below header */}
           <GlassSidebar />
           <main className="flex-1 overflow-y-auto bg-background/60 relative">
             <MotionWrapper>{children}</MotionWrapper>
