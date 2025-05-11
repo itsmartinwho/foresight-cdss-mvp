@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -1075,6 +1075,7 @@ function SettingsView() {
 function ForesightApp() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const pathSegments = pathname.split('/');
   const activeView = pathSegments[1] || "dashboard";
   const patientIdFromPath = activeView === "patients" ? pathSegments[2] : undefined;
@@ -1099,6 +1100,19 @@ function ForesightApp() {
     }
   }, [patientIdFromPath, activeView, activePatient?.id]);
 
+  // New useEffect to sync selectedPatientTab from URL query param
+  useEffect(() => {
+    const queryTab = searchParams.get('tab');
+    if (patientIdFromPath && queryTab) { // When on a patient page and tab is in URL
+      if (queryTab !== selectedPatientTab) { 
+          setSelectedPatientTab(queryTab);
+      }
+    }
+    // If navigating away from a patient page or no tab is specified,
+    // selectedPatientTab retains its last value or default. This is generally fine.
+    // If specific reset logic is needed, it could be added here.
+  }, [patientIdFromPath, searchParams, selectedPatientTab]);
+
   useEffect(() => {
     // Load global alerts data on app initialization or when not viewing a specific patient
     // This ensures alerts are available for the global bell, but might not reload if already populated.
@@ -1121,24 +1135,20 @@ function ForesightApp() {
   }, []); // Runs once on mount, or add dependencies if it should re-run
 
   const handleAlertClick = (patientId: string) => {
-    setSelectedPatientTab("diagnosis"); // Set tab state FIRST
-    router.push(`/patients/${patientId}`); // Then navigate
+    router.push(`/patients/${patientId}?tab=diagnosis`); // Navigate with tab query parameter
   };
 
   const handleStartConsult = (patient: Patient) => {
-    // setActivePatient(patient); // This will be handled by useEffect watching patientIdFromPath
     setSelectedPatientTab("consult");
     router.push(`/patients/${patient.id}`);
   };
 
   const handlePatientSelect = (patient: Patient) => {
-    // setActivePatient(patient); // Handled by useEffect
     setSelectedPatientTab("consult");
     router.push(`/patients/${patient.id}`);
   };
   
   const handlePatientWorkspaceBack = () => {
-    // setActivePatient(null); // Handled by useEffect
     router.push("/patients");
   };
 
