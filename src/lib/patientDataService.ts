@@ -63,6 +63,10 @@ class PatientDataService {
    * Load patient data from the provided data files
    */
   async loadPatientData(): Promise<void> {
+    if (this.isLoaded) {
+      this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): loadPatientData CALLED - Data already loaded. Skipping.");
+      return;
+    }
     this.debugMessages = []; 
     this.isLoaded = false; 
     this.debugMessages.push("PRINT_DEBUG SERVICE (LPD): loadPatientData CALLED - Unified Data Model.");
