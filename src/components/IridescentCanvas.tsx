@@ -5,7 +5,7 @@ import * as THREE from "three";
 
 export default function IridescentCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const frameRef = useRef<number>();
+  const frameRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const canvas = canvasRef.current;
