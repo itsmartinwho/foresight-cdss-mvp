@@ -1121,8 +1121,8 @@ function ForesightApp() {
   }, []); // Runs once on mount, or add dependencies if it should re-run
 
   const handleAlertClick = (patientId: string) => {
-    router.push(`/patients/${patientId}`);
-    setSelectedPatientTab("diagnosis"); // As per original logic
+    setSelectedPatientTab("diagnosis"); // Set tab state FIRST
+    router.push(`/patients/${patientId}`); // Then navigate
   };
 
   const handleStartConsult = (patient: Patient) => {
