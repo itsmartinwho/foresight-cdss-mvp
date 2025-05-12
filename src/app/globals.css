@@ -189,8 +189,34 @@
   /* Blurred circle background for icon buttons */
   .blurred-circle-bg {
     position: relative;
-    background: radial-gradient(circle, rgba(255,255,255,0.95) 45%, rgba(255,255,255,0.25) 70%, rgba(255,255,255,0) 100%);
-    /* Strong, smooth, wide radial fade for blurred/faded edge */
+    /* Base class, specific implementations defined below */
+  }
+
+  /* Sidebar collapse/expand button - purple background with faded edges */
+  .sidebar-button-bg {
+    position: relative;
+    background: radial-gradient(
+      circle,
+      rgba(255,255,255,0.15) 55%, /* Solid inner circle matching original bg-glass */
+      rgba(255,255,255,0.12) 65%,
+      rgba(255,255,255,0.08) 75%, 
+      rgba(255,255,255,0.04) 85%,
+      rgba(255,255,255,0) 100%
+    );
+    overflow: visible;
+  }
+
+  /* Alert button - white background with faded edges */
+  .alert-button-bg {
+    position: relative;
+    background: radial-gradient(
+      circle,
+      rgba(255,255,255,0.95) 55%, /* Solid white inner circle */
+      rgba(255,255,255,0.8) 65%,
+      rgba(255,255,255,0.5) 75%,
+      rgba(255,255,255,0.2) 85%,
+      rgba(255,255,255,0) 100%
+    );
     overflow: visible;
   }
 }

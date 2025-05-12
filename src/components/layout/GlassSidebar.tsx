@@ -46,7 +46,7 @@ export default function GlassSidebar() {
             <button
               aria-label={collapsed ? "Maximize menu" : "Minimize menu"}
               onClick={toggle}
-              className={`${collapsed ? 'self-center' : 'self-end'} blurred-circle-bg rounded-full w-8 h-8 flex items-center justify-center mb-4`}
+              className={`${collapsed ? 'self-center' : 'self-end'} sidebar-button-bg rounded-full w-8 h-8 flex items-center justify-center mb-4`}
             >
               {collapsed ? (
                 <PanelLeftOpen
