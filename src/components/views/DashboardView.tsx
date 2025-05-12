@@ -51,17 +51,17 @@ function AlertSidePanel({ isOpen, onClose, alerts, onAlertClick }: { isOpen: boo
   const highPriorityAlerts = alerts.filter(alert => alert.likelihood !== undefined && alert.likelihood >= 4);
   return (
     <div
-      className={`fixed top-0 right-0 h-full bg-white w-80 shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 right-0 h-full bg-white w-80 shadow-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
         <h3 className="font-semibold">High Priority Alerts</h3>
         <Button size="icon" variant="ghost" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div className="p-4 overflow-auto max-h-[calc(100vh-64px)]">
+      <div className="p-4 overflow-auto flex-1">
         {highPriorityAlerts.length === 0 ? (
           <p className="text-sm text-gray-500">No high-priority alerts at this time.</p>
         ) : (
