@@ -206,12 +206,14 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
         </div>
       </div>
 
-      <AlertSidePanel
-        isOpen={isAlertPanelOpen}
-        onClose={() => setIsAlertPanelOpen(false)}
-        alerts={complexCaseAlertsForDisplay}
-        onAlertClick={onAlertClick}
-      />
+      {isAlertPanelOpen && (
+        <AlertSidePanel
+          isOpen={true}
+          onClose={() => setIsAlertPanelOpen(false)}
+          alerts={complexCaseAlertsForDisplay}
+          onAlertClick={onAlertClick}
+        />
+      )}
     </div>
   );
 } 
