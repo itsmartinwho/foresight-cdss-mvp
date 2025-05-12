@@ -178,183 +178,235 @@ interface PlasmaBackgroundProps {
 interface PlasmaSingleton {
   canvas: HTMLCanvasElement;
   destroy: () => void;
+  isStatic?: boolean; // Flag to indicate if it's a static canvas for reduced motion
 }
 
 const globalAny = globalThis as any;
-// Attach to window so that Fast Refresh in dev does not duplicate instances
-if (!globalAny.__plasmaSingleton) {
+// Initialize the singleton container on globalThis if it doesn't exist
+if (typeof globalAny.__plasmaSingleton === 'undefined') {
   globalAny.__plasmaSingleton = null as PlasmaSingleton | null;
+}
+// Ensure a global beforeunload listener flag exists
+if (typeof globalAny.__plasmaBeforeUnloadListenerAttached === 'undefined') {
+  globalAny.__plasmaBeforeUnloadListenerAttached = false;
 }
 
 const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  // Removed isInitializedRef as the singleton state itself should be the source of truth
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = () => {
+    const updateMotionPreference = () => {
       setPrefersReducedMotion(mediaQuery.matches);
     };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
+    updateMotionPreference(); // Initial check
+    mediaQuery.addEventListener('change', updateMotionPreference);
+    return () => mediaQuery.removeEventListener('change', updateMotionPreference);
   }, []);
 
-
   useEffect(() => {
-    // If a singleton already exists, reuse its canvas to avoid re-starting the
-    // animation. We simply swap the DOM node reference so Tailwind classes /
-    // z-index continue to apply correctly.
+    const container = containerRef.current;
+    if (!container) return;
 
-    const existing: PlasmaSingleton | null = globalAny.__plasmaSingleton;
-    if (existing) {
-      const placeholder = canvasRef.current;
-      if (placeholder && placeholder !== existing.canvas) {
-        // Copy runtime classes from placeholder (important for dev where class
-        // names might be added dynamically by Tailwind's JIT) then replace.
-        existing.canvas.className = `${placeholder.className}`;
-        placeholder.replaceWith(existing.canvas);
-        // Make sure ref points to the actual canvas used by Three.js.
-        canvasRef.current = existing.canvas;
+    const targetCanvasClassName = `absolute top-0 left-0 w-full h-full z-0 ${className || ''}`;
+
+    // --- Reduced Motion Handling ---
+    if (prefersReducedMotion) {
+      // If currently showing 3D canvas or a different static canvas, clean up
+      if (globalAny.__plasmaSingleton && (!globalAny.__plasmaSingleton.isStatic || globalAny.__plasmaSingleton.canvas?.parentElement !== container)) {
+        if (globalAny.__plasmaSingleton.destroy) {
+          // console.log('Plasma: Reduced motion - destroying existing instance.');
+          globalAny.__plasmaSingleton.destroy();
+        }
+        globalAny.__plasmaSingleton = null; // Clear the singleton reference
+      }
+      // Clear container before adding new static canvas
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
       }
 
-      // Nothing else to do – Three.js render loop is already ticking.
+      // If already has a suitable static canvas, do nothing
+      if (globalAny.__plasmaSingleton?.isStatic && globalAny.__plasmaSingleton.canvas?.parentElement === container) {
+         if (globalAny.__plasmaSingleton.canvas.className !== targetCanvasClassName) {
+            globalAny.__plasmaSingleton.canvas.className = targetCanvasClassName;
+         }
+        // console.log('Plasma: Reduced motion - static canvas already in place.');
+        return;
+      }
+      
+      // console.log('Plasma: Reduced motion - rendering static gradient.');
+      const staticCanvas = document.createElement('canvas');
+      staticCanvas.className = targetCanvasClassName;
+      staticCanvas.width = container.clientWidth || window.innerWidth;
+      staticCanvas.height = container.clientHeight || window.innerHeight;
+      container.appendChild(staticCanvas);
+
+      const ctx = staticCanvas.getContext('2d');
+      if (ctx) {
+        const gradient = ctx.createRadialGradient(
+          staticCanvas.width / 2, staticCanvas.height / 2, 0,
+          staticCanvas.width / 2, staticCanvas.height / 2, Math.max(staticCanvas.width, staticCanvas.height) / 1.5
+        );
+        gradient.addColorStop(0, 'rgba(30, 50, 100, 0.8)');
+        gradient.addColorStop(0.5, 'rgba(10, 20, 50, 0.7)');
+        gradient.addColorStop(1, 'rgba(0, 5, 20, 0.6)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, staticCanvas.width, staticCanvas.height);
+      }
+      
+      const destroyStatic = () => {
+        // console.log('Plasma: Destroying static canvas instance.');
+        if (staticCanvas.parentElement) {
+          staticCanvas.parentElement.removeChild(staticCanvas);
+        }
+        if (globalAny.__plasmaSingleton?.canvas === staticCanvas) {
+          globalAny.__plasmaSingleton = null;
+        }
+      };
+      globalAny.__plasmaSingleton = { canvas: staticCanvas, destroy: destroyStatic, isStatic: true };
       return;
     }
 
-    if (prefersReducedMotion) {
-        // Reduced motion fallback: Render a static gradient or image
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+    // --- Full Motion (Three.js) Handling ---
 
-        // Example: Static radial gradient
-        const gradient = ctx.createRadialGradient(
-            canvas.width / 2, canvas.height / 2, 0,
-            canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 1.5
-        );
-        gradient.addColorStop(0, 'rgba(30, 50, 100, 0.8)'); // Center color
-        gradient.addColorStop(0.5, 'rgba(10, 20, 50, 0.7)');
-        gradient.addColorStop(1, 'rgba(0, 5, 20, 0.6)');   // Outer color
-
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        return; // Skip Three.js setup if reduced motion is preferred
+    // If previously in reduced motion (static canvas exists), destroy it
+    if (globalAny.__plasmaSingleton?.isStatic) {
+      // console.log('Plasma: Full motion - destroying static canvas.');
+      if (globalAny.__plasmaSingleton.destroy) {
+        globalAny.__plasmaSingleton.destroy();
+      }
+      globalAny.__plasmaSingleton = null;
+      // Clear container as it held the static canvas
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
     }
 
+    // If a Three.js singleton already exists:
+    if (globalAny.__plasmaSingleton?.canvas && !globalAny.__plasmaSingleton.isStatic) {
+      const singletonCanvas = globalAny.__plasmaSingleton.canvas;
+      if (singletonCanvas.className !== targetCanvasClassName) {
+        // console.log('Plasma: Full motion - updating existing singleton canvas className.');
+        singletonCanvas.className = targetCanvasClassName;
+      }
+      if (singletonCanvas.parentElement !== container) {
+        // console.log('Plasma: Full motion - appending existing singleton canvas to container.');
+        // Ensure container is empty before appending, just in case.
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        container.appendChild(singletonCanvas);
+      }
+      // console.log('Plasma: Full motion - singleton canvas already active.');
+      return; 
+    }
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    // console.log('Plasma: Full motion - initializing Three.js scene.');
+    const threeCanvas = document.createElement('canvas');
+    threeCanvas.className = targetCanvasClassName;
+    // Append to container *before* renderer init to get clientWidth/Height
+    container.appendChild(threeCanvas);
 
-    // --- Three.js Setup ---
-    const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true }); // Use alpha for potential transparency
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); // Use clientWidth/Height and set updateStyle=false
+    // Initialize Three.js (helper function defined below or inline)
+    initializeThreeJS(threeCanvas, container);
 
-    const scene = new THREE.Scene();
 
-    // Orthographic camera for full-screen shader effect
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-    camera.position.z = 1;
-
-    const clock = new THREE.Clock();
-
-    // Fullscreen Plane
-    const geometry = new THREE.PlaneGeometry(2, 2); // Covers the [-1, 1] clip space
-
-    // Shader Material
-    const uniforms = {
-      u_time: { value: 0.0 },
-      u_resolution: { value: new THREE.Vector2(canvas.clientWidth, canvas.clientHeight) },
-    };
-
-    const material = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    // --- Animation Loop ---
-    let animationFrameId: number;
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-
-      // Update time uniform
-      uniforms.u_time.value = clock.getElapsedTime();
-
-      // Render the scene
-      renderer.render(scene, camera);
-    };
-
-    // --- Resize Handling ---
-    const handleResize = () => {
-      const currentCanvas = canvasRef.current;
-      if (!currentCanvas) return;
-
-      // Update camera and renderer size
-      const width = currentCanvas.clientWidth;
-      const height = currentCanvas.clientHeight;
-      renderer.setSize(width, height, false); // Important: updateStyle = false
+    function initializeThreeJS(canvasElement: HTMLCanvasElement, canvasContainer: HTMLDivElement) {
+      // console.log('Plasma: Three.js init helper running.');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvasElement, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
       
-      // Update resolution uniform
-      uniforms.u_resolution.value.set(width, height);
+      const setSize = () => {
+        const width = canvasContainer.clientWidth;
+        const height = canvasContainer.clientHeight;
+        if (width > 0 && height > 0) {
+            renderer.setSize(width, height, false);
+            uniforms.u_resolution.value.set(width, height);
+        }
+      };
 
-      // For orthographic camera, aspect ratio update isn't strictly needed
-      // unless you change the left/right/top/bottom based on aspect.
-      // camera.aspect = width / height; // Needed for PerspectiveCamera
-      // camera.updateProjectionMatrix();
-    };
+      const scene = new THREE.Scene();
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+      camera.position.z = 1;
+      const clock = new THREE.Clock();
+      const geometry = new THREE.PlaneGeometry(2, 2);
+      const uniforms = {
+        u_time: { value: 0.0 },
+        u_resolution: { value: new THREE.Vector2(1,1) }, // Initial dummy value
+      };
+      const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader, transparent: true });
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
 
-    // Use ResizeObserver for more reliable size detection
-    const resizeObserver = new ResizeObserver(handleResize);
-    resizeObserver.observe(canvas);
+      let animationFrameId: number;
+      const animate = () => {
+        animationFrameId = requestAnimationFrame(animate);
+        uniforms.u_time.value = clock.getElapsedTime();
+        renderer.render(scene, camera);
+      };
+      
+      const resizeObserver = new ResizeObserver(setSize); // Use setSize directly
+      resizeObserver.observe(canvasContainer);
 
+      setSize(); // Initial size setup
+      animate();
 
-    // Initial setup call
-    handleResize(); // Set initial size correctly
-    animate(); // Start the animation loop
+      const destroy = () => {
+        // console.log('Plasma: Destroying Three.js instance.');
+        cancelAnimationFrame(animationFrameId);
+        resizeObserver.disconnect();
+        geometry.dispose();
+        material.dispose();
+        renderer.dispose();
+        if (canvasElement.parentElement) {
+          canvasElement.parentElement.removeChild(canvasElement);
+        }
+        if (globalAny.__plasmaSingleton?.canvas === canvasElement) {
+          globalAny.__plasmaSingleton = null;
+        }
+      };
+      
+      globalAny.__plasmaSingleton = { canvas: canvasElement, destroy, isStatic: false };
 
-    /* ------------------------------------------------------------------
-       Store singleton so future mounts can reuse the canvas/loop          
-    ------------------------------------------------------------------ */
-    const destroy = () => {
-      cancelAnimationFrame(animationFrameId);
-      resizeObserver.disconnect();
-      geometry.dispose();
-      material.dispose();
-      renderer.dispose();
-    };
+      if (!globalAny.__plasmaBeforeUnloadListenerAttached) {
+        // console.log('Plasma: Attaching beforeunload listener.');
+        const beforeUnloadHandler = () => {
+            if (globalAny.__plasmaSingleton?.destroy) {
+                // console.log('Plasma: beforeunload - destroying singleton.');
+                globalAny.__plasmaSingleton.destroy();
+                globalAny.__plasmaSingleton = null;
+            }
+        };
+        window.addEventListener('beforeunload', beforeUnloadHandler);
+        globalAny.__plasmaBeforeUnloadListenerAttached = true;
+      }
+    }
+    // Initial call if canvas dimensions are immediately available
+    if (threeCanvas.clientWidth > 0 && threeCanvas.clientHeight > 0) {
+        // initializeThreeJS(threeCanvas, container); // Already called above
+    } else {
+        // console.warn('Plasma: Canvas dimensions zero initially. Relying on ResizeObserver or delayed call.');
+        // ResizeObserver should pick it up. Optionally, add a small timeout as a fallback.
+        setTimeout(() => {
+            if (threeCanvas.clientWidth === 0 || threeCanvas.clientHeight === 0) {
+                // console.log('Plasma: Retrying Three.js initialization after delay if still needed.');
+                // Check if already initialized by another path or if container is gone
+                if (containerRef.current && !globalAny.__plasmaSingleton?.canvas) {
+                   // initializeThreeJS(threeCanvas, containerRef.current); // Logic seems to already cover this by initial call + resize
+                }
+            }
+        }, 100);
+    }
 
-    globalAny.__plasmaSingleton = { canvas, destroy } as PlasmaSingleton;
+  }, [prefersReducedMotion, className]);
 
-    // Clean up on full page refresh/tab close only.
-    window.addEventListener('beforeunload', destroy);
-
-    // Do *not* destroy on React unmount – we keep the effect alive across
-    // route transitions. We only need to remove the event listener.
-    return () => {
-      window.removeEventListener('beforeunload', destroy);
-    };
-
-  }, [prefersReducedMotion]); // Rerun effect if motion preference changes
-
-  // Render canvas, make it cover the parent div
   return (
-    <canvas
-      ref={canvasRef}
-      className={`absolute top-0 left-0 w-full h-full z-0 ${className || ''}`}
-      style={{ // Ensure canvas fills parent
-          display: 'block', // Prevent extra space below canvas
-      }}
+    <div
+      ref={containerRef}
+      className={`plasma-container fixed inset-0 z-0 pointer-events-none ${className || ''}`}
+      style={{ display: 'block' }} // Ensure it takes up space for clientWidth/Height
     />
   );
 };
