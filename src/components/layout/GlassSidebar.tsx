@@ -46,7 +46,7 @@ export default function GlassSidebar() {
             <button
               aria-label={collapsed ? "Maximize menu" : "Minimize menu"}
               onClick={toggle}
-              className={`${collapsed ? 'self-center' : 'self-end'} bg-glass backdrop-blur-sm border border-white/20 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon mb-4`}
+              className={`${collapsed ? 'self-center' : 'self-end'} bg-glass border border-white/20 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon mb-4 shadow-[0_0_8px_2px_rgba(255,255,255,0.1)]`}
             >
               {collapsed ? (
                 <PanelLeftOpen
@@ -74,7 +74,7 @@ export default function GlassSidebar() {
           <Link
             key={key}
             href={href}
-            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/10 text-neon" : "hover:bg-white/10"}`}
+            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/10 text-neon font-semibold" : "hover:bg-white/10"}`}
             title={collapsed ? label : undefined}
           >
             <Icon className="h-[1.125em] w-[1.125em] flex-shrink-0" />

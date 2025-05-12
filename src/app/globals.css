@@ -11,7 +11,7 @@
     /* New color palette from brief */
     --lavender-bg-val: 244 100% 98%; /* #f4f6ff */
     --ink-val: 218 20% 8%; /* #0c1116 */
-    --neon-val: 184 100% 68%; /* #5ff3ff */
+    --neon-val: 184 100% 55%; /* #29f0ff - Darker Teal */
 
     --background: var(--lavender-bg-val);
     --foreground: var(--ink-val);

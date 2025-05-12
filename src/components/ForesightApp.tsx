@@ -202,10 +202,13 @@ function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
 // Renamed NotificationBellV2 to NotificationBell
 function NotificationBell({ count, onClick }: { count: number; onClick: () => void }) {
   return (
-    <div className="relative cursor-pointer" onClick={onClick}> {/* Click area */} 
-      <Bell className="h-6 w-6 text-slate-600" />
+    <div 
+      className="relative cursor-pointer rounded-full w-8 h-8 flex items-center justify-center bg-glass border border-white/20 shadow-[0_0_8px_2px_rgba(255,255,255,0.1)]" 
+      onClick={onClick}
+    > {/* Click area with new styling */}
+      <Bell className="h-5 w-5 text-slate-600" /> {/* Slightly smaller icon to fit */} 
       {count > 0 && (
-        <div className="absolute -top-1 -right-1 w-5 h-5"> {/* Positioning container for badge & pulse */} 
+        <div className="absolute top-0 right-0 w-5 h-5"> {/* Adjusted positioning container */} 
           <div 
             className="absolute inset-0 bg-red-600 text-white text-xs rounded-full flex items-center justify-center z-10"
           >
