@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {process.env.ENABLE_PLASMA_BG === 'true' && <PlasmaBackground />}
+        <PlasmaBackground />
         <GlassHeader />
         <div className="flex min-h-[calc(100vh-4rem)] pt-16"> {/* fill viewport height minus header */}
           <GlassSidebar />
