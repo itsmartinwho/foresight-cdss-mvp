@@ -43,7 +43,7 @@ export default function PlasmaBackground() {
           data[i] = 180; // red channel (cyan bias)
           data[i + 1] = v; // greenish shift
           data[i + 2] = 255; // blue bias
-          data[i + 3] = 10; // alpha ≈ 4 % (10/255)
+          data[i + 3] = 25; // alpha ≈ 10 % (25/255)
         }
       }
       ctx.putImageData(imgData, 0, 0);
@@ -86,8 +86,8 @@ export default function PlasmaBackground() {
           inset: 0,
           zIndex: -1,
           pointerEvents: "none",
-          mixBlendMode: "screen", // keeps brightness subtle
-          filter: "blur(60px)", // softens shapes
+          mixBlendMode: "overlay", // stronger blend for visibility
+          filter: "blur(40px)", // reduced blur for sharper effect
         }}
         className="motion-reduce:hidden"
       />
