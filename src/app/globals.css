@@ -11,7 +11,7 @@
     /* New color palette from brief */
     --lavender-bg-val: 244 100% 98%; /* #f4f6ff */
     --ink-val: 218 20% 8%; /* #0c1116 */
-    --neon-val: 184 100% 55%; /* #29f0ff - Darker Teal */
+    --neon-val: 184 100% 45%; /* #1bcad6 - Even Darker Teal */
 
     --background: var(--lavender-bg-val);
     --foreground: var(--ink-val);
@@ -184,6 +184,14 @@
   /* Specular flash for route transitions (Brief §11.1 / User §10) */
   .specular-flash {
     background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 60%);
+  }
+
+  /* Blurred circle background for icon buttons */
+  .blurred-circle-bg {
+    position: relative;
+    background: radial-gradient(circle, rgba(255,255,255,0.85) 55%, rgba(255,255,255,0.25) 80%, rgba(255,255,255,0) 100%);
+    /* The center is solid, the edge fades out */
+    overflow: visible;
   }
 }
 

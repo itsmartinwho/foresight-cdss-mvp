@@ -203,7 +203,7 @@ function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
 function NotificationBell({ count, onClick }: { count: number; onClick: () => void }) {
   return (
     <div 
-      className="relative cursor-pointer rounded-full w-8 h-8 flex items-center justify-center bg-glass border border-white/20 shadow-[0_0_8px_2px_rgba(255,255,255,0.1)]" 
+      className="relative cursor-pointer blurred-circle-bg rounded-full w-8 h-8 flex items-center justify-center" 
       onClick={onClick}
     > {/* Click area with new styling */}
       <Bell className="h-5 w-5 text-slate-600" /> {/* Slightly smaller icon to fit */} 
