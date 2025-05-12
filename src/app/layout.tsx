@@ -6,6 +6,7 @@ import MotionWrapper from '../components/MotionWrapper';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
 import dynamic from 'next/dynamic';
+import PlasmaBackground from '../components/PlasmaBackground';
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -17,7 +18,6 @@ export const metadata: Metadata = {
 };
 
 const IridescentBg = dynamic(() => import('../components/IridescentCanvas'));
-const PlasmaBackground = dynamic(() => import('../components/PlasmaBackground'), { ssr: false });
 
 export default function RootLayout({
   children,
