@@ -180,7 +180,6 @@ interface PlasmaSingleton {
   destroy: () => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 const globalAny = globalThis as any;
 // Attach to window so that Fast Refresh in dev does not duplicate instances
 if (!globalAny.__plasmaSingleton) {
