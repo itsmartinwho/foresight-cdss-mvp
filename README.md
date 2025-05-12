@@ -116,3 +116,9 @@ There is no live data pipeline or backend integration in this MVP prototype.
 
 ## Support
 For questions regarding this prototype, please refer to the project's GitHub repository and issues.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Build Optimisation](docs/BUILD_OPTIMIZATION.md)
+- [Plasma Background Effect](docs/PLASMA_EFFECT.md)
