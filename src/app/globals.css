@@ -197,11 +197,12 @@
     position: relative;
     background: radial-gradient(
       circle,
-      rgba(255,255,255,0.15) 55%, /* Solid inner circle matching original bg-glass */
-      rgba(255,255,255,0.12) 65%,
-      rgba(255,255,255,0.08) 75%, 
-      rgba(255,255,255,0.04) 85%,
-      rgba(255,255,255,0) 100%
+      rgba(255,255,255,0.15) 35%, /* Solid inner circle matching original bg-glass */
+      rgba(255,255,255,0.12) 45%,
+      rgba(255,255,255,0.09) 55%, 
+      rgba(255,255,255,0.06) 65%,
+      rgba(255,255,255,0.03) 75%,
+      rgba(255,255,255,0) 85%
     );
     overflow: visible;
   }
@@ -211,11 +212,12 @@
     position: relative;
     background: radial-gradient(
       circle,
-      rgba(255,255,255,0.95) 55%, /* Solid white inner circle */
-      rgba(255,255,255,0.8) 65%,
-      rgba(255,255,255,0.5) 75%,
+      rgba(255,255,255,0.95) 35%, /* Solid white inner circle */
+      rgba(255,255,255,0.85) 45%,
+      rgba(255,255,255,0.7) 55%,
+      rgba(255,255,255,0.4) 70%,
       rgba(255,255,255,0.2) 85%,
-      rgba(255,255,255,0) 100%
+      rgba(255,255,255,0) 90%
     );
     overflow: visible;
   }

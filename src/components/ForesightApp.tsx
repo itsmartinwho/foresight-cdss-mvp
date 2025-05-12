@@ -395,12 +395,10 @@ function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patie
       </Card>
       
       <div className="fixed bottom-6 right-6 z-40">
-        <div className="bg-white p-2 rounded-full shadow-lg">
-          <NotificationBell 
-            count={highPriorityAlertsCount} 
-            onClick={() => setIsAlertPanelOpen(true)} 
-          />
-        </div>
+        <NotificationBell 
+          count={highPriorityAlertsCount} 
+          onClick={() => setIsAlertPanelOpen(true)} 
+        />
       </div>
       
       <AlertSidePanel
