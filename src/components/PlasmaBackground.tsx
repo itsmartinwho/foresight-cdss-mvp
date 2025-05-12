@@ -156,10 +156,10 @@ const fragmentShader = `
     color = clamp(color, 0.0, 1.0);
 
     // Define base colors (adjust these for desired palette)
-    vec3 color1 = vec3(0.0, 0.1, 0.2); // Dark blue/purple
-    vec3 color2 = vec3(0.1, 0.4, 0.7); // Mid cyan/blue
-    vec3 color3 = vec3(0.8, 0.2, 0.5); // Magenta/pink
-    vec3 color4 = vec3(1.0, 0.7, 0.3); // Orange/Yellow highlight (used less)
+    vec3 color1 = vec3(0.0, 0.3, 0.5); // Brighter blue/purple
+    vec3 color2 = vec3(0.2, 0.6, 0.9); // Brighter cyan/blue
+    vec3 color3 = vec3(0.9, 0.3, 0.7); // Brighter magenta/pink
+    vec3 color4 = vec3(1.0, 0.8, 0.4); // Brighter orange/yellow highlight
 
     // Blend colors based on noise value components (example blending)
     // This part requires significant tweaking to get the filament look
@@ -173,7 +173,7 @@ const fragmentShader = `
     float vignette = smoothstep(0.8, 0.2, length(vUv - 0.5));
     finalColor *= vignette * 0.8 + 0.2; // Apply vignette
 
-    gl_FragColor = vec4(finalColor, 1.0); // Output final color
+    gl_FragColor = vec4(finalColor, 0.3); // Output with 30% opacity for subtlety
   }
 `;
 
@@ -318,7 +318,7 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className }) => {
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute top-0 left-0 w-full h-full -z-5 ${className || ''}`}
+      className={`absolute top-0 left-0 w-full h-full z-0 ${className || ''}`}
       style={{ // Ensure canvas fills parent
           display: 'block', // Prevent extra space below canvas
       }}
