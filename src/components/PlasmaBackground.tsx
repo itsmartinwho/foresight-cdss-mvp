@@ -29,25 +29,9 @@ export default function PlasmaBackground() {
 
     const draw = () => {
       const { width: w, height: h } = canvas;
-      const imgData = ctx.createImageData(w, h);
-      const data = imgData.data;
-
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const i = (y * w + x) * 4;
-          const v =
-            128 +
-            128 *
-              Math.sin(x / 27 + frame / 340) *
-              Math.sin(y / 31 + frame / 410);
-          data[i] = 180; // red channel (cyan bias)
-          data[i + 1] = v; // greenish shift
-          data[i + 2] = 255; // blue bias
-          data[i + 3] = 25; // alpha ≈ 10 % (25/255)
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      frame++;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,0,0,1)"; // Solid red, fully opaque
+      ctx.fillRect(0, 0, w, h);
     };
 
     // --- Animation loop ----------------------------------------------------
