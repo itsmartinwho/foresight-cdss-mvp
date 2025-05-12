@@ -35,15 +35,16 @@ export default function PlasmaBackground() {
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const i = (y * w + x) * 4;
+          // Vibrant plasma: magenta/cyan
           const v =
             128 +
             128 *
-              Math.sin(x / 27 + frame / 340) *
-              Math.sin(y / 31 + frame / 410);
-          data[i] = 180; // red channel (cyan bias)
-          data[i + 1] = v; // greenish shift
-          data[i + 2] = 255; // blue bias
-          data[i + 3] = 50; // alpha ≈ 20 % (50/255)
+              Math.sin(x / 18 + frame / 120) *
+              Math.sin(y / 21 + frame / 150);
+          data[i] = v; // red channel
+          data[i + 1] = 255 - v; // green channel
+          data[i + 2] = 255; // blue channel
+          data[i + 3] = 120; // alpha ≈ 47 % (120/255)
         }
       }
       ctx.putImageData(imgData, 0, 0);
@@ -86,8 +87,7 @@ export default function PlasmaBackground() {
           inset: 0,
           zIndex: 0,
           pointerEvents: "none",
-          mixBlendMode: "soft-light", // more visible on light backgrounds
-          filter: "blur(24px)", // subtle but not invisible
+          mixBlendMode: "normal", // no blend mode for debug
         }}
         className="motion-reduce:hidden"
       />
