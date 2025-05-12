@@ -189,8 +189,8 @@
   /* Blurred circle background for icon buttons */
   .blurred-circle-bg {
     position: relative;
-    background: radial-gradient(circle, rgba(255,255,255,0.85) 55%, rgba(255,255,255,0.25) 80%, rgba(255,255,255,0) 100%);
-    /* The center is solid, the edge fades out */
+    background: radial-gradient(circle, rgba(255,255,255,0.95) 45%, rgba(255,255,255,0.25) 70%, rgba(255,255,255,0) 100%);
+    /* Strong, smooth, wide radial fade for blurred/faded edge */
     overflow: visible;
   }
 }
