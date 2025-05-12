@@ -583,8 +583,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
               <span>Gender: {patient.gender || 'N/A'}</span>
             </div>
             <button
-              onClick={() => {
-                const newAd = patientDataService.createNewAdmission(patient.id);
+              onClick={async () => {
+                const newAd = await patientDataService.createNewAdmission(patient.id);
                 // Update local state so UI reflects new consultation immediately
                 setDetailedPatientData((prev: any) => {
                   if (!prev) return prev;

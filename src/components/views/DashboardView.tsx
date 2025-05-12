@@ -160,12 +160,12 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
               <TableBody className="mobile-card:block sm:table-row-group">
                 {upcomingAppointments.map(({ patient: p, visit }) => (
                   <TableRow
-                    key={`${p.id}_${visit.id}`}
+                    key={`upcoming_dashboard_${p.id}_${visit.id}`}
                     className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
                   >
                     <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
                       <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
-                      {new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}
+                      {visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
                     </TableCell>
                     <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
                       <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>

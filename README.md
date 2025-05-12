@@ -122,3 +122,29 @@ For questions regarding this prototype, please refer to the project's GitHub rep
 - [Architecture](docs/architecture.md)
 - [Build Optimisation](docs/BUILD_OPTIMIZATION.md)
 - [Plasma Background Effect](docs/PLASMA_EFFECT.md)
+
+## Database (Supabase)
+
+This prototype can optionally fetch data from a managed Postgres instance provided by Supabase. To enable it:
+
+1. Create a project in Supabase and apply the schema in `scripts/schema.sql` via the SQL editor.
+2. Copy your project URL and **anon/public** API key into a local environment file `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL="https://<project-ref>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<your–anon–key>"
+```
+
+3. Seed the database with the bundled mock dataset:
+
+```bash
+pnpm migrate:data
+```
+
+4. Start the dev server with the feature flag turned on:
+
+```bash
+NEXT_PUBLIC_USE_SUPABASE=true pnpm dev
+```
+
+If the flag is omitted the app will continue to read from local TSV files, ensuring a safe fallback.

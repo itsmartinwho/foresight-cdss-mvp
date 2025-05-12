@@ -132,14 +132,14 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
                 </TableRow>
               )}
               {sortedRows.upcoming.map(({ patient, visit }) => (
-                <TableRow key={`upcoming_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
+                <TableRow key={`upcoming_${patient?.id}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
                       <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
                     )}
                     {displayName(patient)}
                   </TableCell>
-                  <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
+                  <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
                   <TableCell>{visit.reason ?? "—"}</TableCell>
                 </TableRow>
               ))}
@@ -152,14 +152,14 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
                 </TableRow>
               )}
               {sortedRows.past.map(({ patient, visit }) => (
-                <TableRow key={`past_${visit.id}_${patient?.id ?? 'no-patient'}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
+                <TableRow key={`past_${patient?.id}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
                       <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
                     )}
                     {displayName(patient)}
                   </TableCell>
-                  <TableCell>{new Date(visit.scheduledStart).toLocaleString()}</TableCell>
+                  <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
                   <TableCell>{visit.reason ?? "—"}</TableCell>
                 </TableRow>
               ))}
