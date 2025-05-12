@@ -12,8 +12,12 @@ export default function MotionWrapper({ children }: MotionWrapperProps) {
   const pathname = usePathname();
 
   return (
-    <AnimatePresence mode="wait">
-      {children}
+    <AnimatePresence mode="wait" initial={false}>
+      {
+        React.isValidElement(children)
+          ? React.cloneElement(children, { key: pathname })
+          : children
+      }
     </AnimatePresence>
   );
 } 
