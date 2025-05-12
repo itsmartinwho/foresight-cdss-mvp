@@ -84,7 +84,7 @@ export default function PlasmaBackground() {
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: -1,
+          zIndex: 0,
           pointerEvents: "none",
           mixBlendMode: "overlay", // stronger blend for visibility
           filter: "blur(40px)", // reduced blur for sharper effect
