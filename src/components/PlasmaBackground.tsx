@@ -318,7 +318,7 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className }) => {
   return (
     <canvas
       ref={canvasRef}
-      className={`absolute top-0 left-0 w-full h-full -z-10 ${className || ''}`}
+      className={`absolute top-0 left-0 w-full h-full -z-5 ${className || ''}`}
       style={{ // Ensure canvas fills parent
           display: 'block', // Prevent extra space below canvas
       }}
