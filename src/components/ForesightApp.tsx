@@ -1191,24 +1191,6 @@ function ForesightApp() {
   return (
     <>
       {currentView}
-      {/* Global notification bell for all screens. It could also be part of RootLayout if always visible */}
-      {/* For now, keeping it here to manage its state alongside ForesightApp's logic */}
-      {activeView !== "dashboard" && (
-         <div className="fixed bottom-6 right-6 z-40">
-           <div className="bg-white p-2 rounded-full shadow-lg">
-             <NotificationBell 
-                count={highPriorityAlertsCount} 
-                onClick={() => setIsAlertPanelOpen(true)} 
-             />
-           </div>
-         </div>
-      )}
-      <AlertSidePanel
-        isOpen={isAlertPanelOpen}
-        onClose={() => setIsAlertPanelOpen(false)}
-        alerts={complexCaseAlerts}
-        onAlertClick={handleAlertClick} // Alert clicks from panel also navigate
-      />
     </>
   );
 }
