@@ -31,7 +31,7 @@ export default function RootLayout({
         <GlassHeader />
         <div className="flex min-h-[calc(100vh-4rem)] pt-16"> {/* fill viewport height minus header */}
           <GlassSidebar />
-          <main className="flex-1 overflow-y-auto bg-background relative">
+          <main className="flex-1 overflow-y-auto bg-background/80 backdrop-blur-md relative">
             <MotionWrapper>{children}</MotionWrapper>
           </main>
         </div>

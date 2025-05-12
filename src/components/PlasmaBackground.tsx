@@ -169,6 +169,24 @@ interface PlasmaBackgroundProps {
   className?: string;
 }
 
+// Maintain a single shared instance across component mounts so that the heavy
+// Three.js scene is created just once per session. The instance keeps the
+// canvas element and a destroy method we can call on a *hard* page refresh
+// (beforeunload) but we intentionally keep it alive when navigating between
+// screens so the animation never restarts.
+
+interface PlasmaSingleton {
+  canvas: HTMLCanvasElement;
+  destroy: () => void;
+}
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+const globalAny = globalThis as any;
+// Attach to window so that Fast Refresh in dev does not duplicate instances
+if (!globalAny.__plasmaSingleton) {
+  globalAny.__plasmaSingleton = null as PlasmaSingleton | null;
+}
+
 const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -189,6 +207,26 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className }) => {
 
 
   useEffect(() => {
+    // If a singleton already exists, reuse its canvas to avoid re-starting the
+    // animation. We simply swap the DOM node reference so Tailwind classes /
+    // z-index continue to apply correctly.
+
+    const existing: PlasmaSingleton | null = globalAny.__plasmaSingleton;
+    if (existing) {
+      const placeholder = canvasRef.current;
+      if (placeholder && placeholder !== existing.canvas) {
+        // Copy runtime classes from placeholder (important for dev where class
+        // names might be added dynamically by Tailwind's JIT) then replace.
+        existing.canvas.className = `${placeholder.className}`;
+        placeholder.replaceWith(existing.canvas);
+        // Make sure ref points to the actual canvas used by Three.js.
+        canvasRef.current = existing.canvas;
+      }
+
+      // Nothing else to do – Three.js render loop is already ticking.
+      return;
+    }
+
     if (prefersReducedMotion) {
         // Reduced motion fallback: Render a static gradient or image
         const canvas = canvasRef.current;
@@ -286,17 +324,26 @@ const PlasmaBackground: React.FC<PlasmaBackgroundProps> = ({ className }) => {
     handleResize(); // Set initial size correctly
     animate(); // Start the animation loop
 
-    // --- Cleanup ---
+    /* ------------------------------------------------------------------
+       Store singleton so future mounts can reuse the canvas/loop          
+    ------------------------------------------------------------------ */
+    const destroy = () => {
+      cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
+      geometry.dispose();
+      material.dispose();
+      renderer.dispose();
+    };
+
+    globalAny.__plasmaSingleton = { canvas, destroy } as PlasmaSingleton;
+
+    // Clean up on full page refresh/tab close only.
+    window.addEventListener('beforeunload', destroy);
+
+    // Do *not* destroy on React unmount – we keep the effect alive across
+    // route transitions. We only need to remove the event listener.
     return () => {
-        cancelAnimationFrame(animationFrameId);
-        resizeObserver.disconnect(); // Disconnect observer
-        // Dispose Three.js objects
-        geometry.dispose();
-        material.dispose();
-        renderer.dispose();
-        // Potentially remove mesh from scene if needed, though disposing renderer is usually sufficient
-        // scene.remove(mesh);
-        console.log("PlasmaBackground cleaned up");
+      window.removeEventListener('beforeunload', destroy);
     };
 
   }, [prefersReducedMotion]); // Rerun effect if motion preference changes

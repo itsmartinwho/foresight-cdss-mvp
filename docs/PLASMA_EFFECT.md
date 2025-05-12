@@ -61,7 +61,9 @@ When `window.matchMedia('(prefers-reduced-motion: reduce)')` is **true**:
 
 ## 5  Adding or Editing Pages
 
-All pages inherit the background stack from `src/app/layout.tsx`; no extra work is required. **Do not** add local opaque backgrounds if you want the plasma to show through—keeping backgrounds glassy (`bg-glass`, low-alpha colours, or none) is the contract.
+All pages inherit the background stack from `src/app/layout.tsx`. The `PlasmaBackground` component now initialises the Three.js scene **only once per browser session** and re-uses that instance across route transitions. Avoid adding additional `PlasmaBackground` mounts – the singleton takes care of persistence.
+
+**Do not** add local opaque backgrounds if you want the plasma to show through—keeping backgrounds glassy (`bg-glass`, low-alpha colours, or none) is the contract.
 
 ---
 
