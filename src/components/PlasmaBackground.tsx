@@ -114,7 +114,7 @@ const fragmentShader = `
   const float COLOR_PHASE_R = 0.0;
   const float COLOR_PHASE_G = 1.0; // Phase shifts create color variation
   const float COLOR_PHASE_B = 2.0;
-  const float BRIGHTNESS = 1.0; // Overall brightness (raised to make effect visible)
+  const float BRIGHTNESS = 1.15; // Overall brightness (15% boost)
   const float CONTRAST = 0.4; // Contrast adjustment
 
   void main() {
@@ -157,10 +157,10 @@ const fragmentShader = `
 
 
     // Subtle vignette effect
-    float vignette = smoothstep(0.9, 0.3, length(vUv - 0.5));
+    float vignette = smoothstep(0.93, 0.35, length(vUv - 0.5));
     finalColor *= vignette * 0.8 + 0.2; // Apply vignette
 
-    gl_FragColor = vec4(finalColor, 0.5); // Output with 50% opacity for visibility
+    gl_FragColor = vec4(finalColor, 0.575); // 15% more opacity
   }
 `;
 
