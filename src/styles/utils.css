@@ -1,5 +1,5 @@
 .glass {
-  background: hsla(var(--surface-1) / .22);
+  background: hsla(var(--surface-1) / .12);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   border: 1px solid hsla(var(--surface-1) / .35);
@@ -17,7 +17,7 @@
 
 /* Convenience alias used in existing code */
 .bg-glass {
-  background: hsla(var(--surface-1) / .22);
+  background: hsla(var(--surface-1) / .12);
 }
 
 .row-hover:hover {

@@ -157,7 +157,7 @@ const fragmentShader = `
 
 
     // Subtle vignette effect
-    float vignette = smoothstep(0.8, 0.2, length(vUv - 0.5));
+    float vignette = smoothstep(0.9, 0.3, length(vUv - 0.5));
     finalColor *= vignette * 0.8 + 0.2; // Apply vignette
 
     gl_FragColor = vec4(finalColor, 0.5); // Output with 50% opacity for visibility
