@@ -74,6 +74,7 @@ All pages inherit the background stack from `src/app/layout.tsx`. The `PlasmaBac
 | Plasma invisible, shader compile errors in console | GLSL syntax error after edits | Ensure fragment shader compiles (WebGL 1 only supports GLSL 1.0). |
 | Plasma visible but too strong | Lower global alpha in `gl_FragColor` or tweak `BRIGHTNESS / CONTRAST`. |
 | Plasma covers UI | Someone raised its `z-index` or added an opaque element above; keep plasma at `z-0`. |
+| Plasma animation restarts on navigation / White flicker on page transition | The singleton implementation aims to prevent this, but the issue is intermittently observed and under investigation. The flicker might also be related to page transition effects. | Further investigation needed. |
 
 ---
 
