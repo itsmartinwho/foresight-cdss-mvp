@@ -70,8 +70,7 @@ export default function PlasmaBackground() {
           inset: 0,
           zIndex: 0,
           pointerEvents: "none",
-          mixBlendMode: "overlay", // stronger blend for visibility
-          filter: "blur(40px)", // reduced blur for sharper effect
+          mixBlendMode: "normal", // no blend mode for diagnostic
         }}
         className="motion-reduce:hidden"
       />
