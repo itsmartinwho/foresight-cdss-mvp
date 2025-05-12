@@ -441,9 +441,6 @@ class PatientDataService {
       const patientAdmissions = this.admissions[patient.id] || [];
       patientAdmissions.forEach((visit) => {
         if (visit.scheduledStart && new Date(visit.scheduledStart) > now) {
-          if (['1','2','3'].includes(patient.id)) {
-            this.debugMessages.push(`PRINT_DEBUG SERVICE (getUpcoming): Found upcoming for demo patient ${patient.id}: Visit ${visit.id}, Date ${visit.scheduledStart}, Patient Name: ${patient.name}, Photo: ${patient.photo}`);
-          }
           upcoming.push({ patient, visit });
         }
       });

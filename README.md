@@ -2,16 +2,18 @@
 
 ## Overview
 
-Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and a refactored frontend architecture. It uses mock data to simulate functionalities like patient dashboards, lists, and workspaces. The system is designed to eventually assist healthcare providers with diagnostic planning, treatment recommendations, and complex case identification for autoimmune and oncology conditions by integrating ambient voice transcription, clinical data analysis, AI diagnostic assistance, and automated documentation.
+Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and a refactored frontend architecture. It uses a Supabase backend (PostgreSQL) to manage and serve patient data, simulating functionalities like patient dashboards, lists, and workspaces. The system is designed to eventually assist healthcare providers with diagnostic planning, treatment recommendations, and complex case identification for autoimmune and oncology conditions by integrating ambient voice transcription, clinical data analysis, AI diagnostic assistance, and automated documentation.
 
-**Note:** This is currently a prototype and does not connect to live backend services or perform real clinical analysis. The data displayed is mock data for demonstration purposes.
+**Note:** This is currently a prototype. While it connects to a real Supabase database instance for data, it does not yet perform live clinical analysis beyond what's available in the seeded dataset.
 
 ## Features (Current Prototype Highlights)
 
+*   **Supabase Integration:** Patient and admission data is managed in a PostgreSQL database hosted on Supabase.
+*   **Dynamic Data Loading:** The application fetches data from Supabase at runtime.
 *   **Modular UI Components:** Demonstrates a component-based architecture with reusable UI elements for:
     *   Dashboard Overview
     *   Patient List & Search
-    *   Individual Patient Workspace (Demographics, Admissions, Diagnoses, Labs - using mock data)
+    *   Individual Patient Workspace (Demographics, Admissions, etc., using data from Supabase)
     *   Alerts, Analytics, and Settings screens (placeholders or basic views)
 *   **Client-Side Routing:** Utilizes Next.js for routing, with a central `ForesightApp.tsx` component managing view rendering.
 *   **Glassmorphism UI:** Features a modern "glassmorphism" visual style for header and sidebar.
@@ -33,6 +35,7 @@ The long-term vision for Foresight CDSS includes:
 ### Prerequisites
 - Node.js (version specified in `.nvmrc` if available, otherwise LTS recommended, e.g., 18.x or 20.x)
 - pnpm (Package manager. If not installed, run `npm install -g pnpm`)
+- Supabase Account (for setting up the database if you want to run your own instance)
 
 ### Installation & Setup
 1.  Clone the repository:
@@ -44,19 +47,35 @@ The long-term vision for Foresight CDSS includes:
     ```bash
     pnpm install
     ```
+3.  **Configure Supabase:**
+    *   Create a project in Supabase ([supabase.com](https://supabase.com/)).
+    *   In the Supabase SQL Editor, run the schema definition found in `scripts/schema.sql` to create the necessary tables (`patients`, `visits`, `transcripts`).
+    *   In your local project, create a file named `.env.local` in the root directory.
+    *   Add your Supabase project URL and **anon (public)** API key to this file:
+        ```env
+        NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+        ```
+    *   Replace `your-project-ref` and `your-anon-key` with your actual Supabase credentials.
+    *   **Seed the database** with the mock dataset (originally from TSV files, now adapted for SQL). Run the migration script:
+        ```bash
+        pnpm migrate:data
+        ```
+        This script reads data (originally from `docs/archived-data/`) and populates your Supabase tables.
 
 ### Running the Development Server
-To start the Next.js development server:
+To start the Next.js development server, ensure the `NEXT_PUBLIC_USE_SUPABASE` environment variable is set to `true` (this is the default behavior now for development and production).
 ```bash
 pnpm run dev
 ```
-Open your browser and navigate to `http://localhost:3000`.
+The application will connect to your configured Supabase instance. Open your browser and navigate to `http://localhost:3000`.
 
 ### Building the Project
 To create a production build:
 ```bash
 pnpm run build
 ```
+The build will also expect Supabase environment variables to be available if it needs to prerender pages with data.
 
 ### Running Storybook
 To explore UI components in isolation using Storybook:
@@ -74,11 +93,11 @@ This will launch the Playwright test runner. Ensure the development server (`pnp
 
 ## Usage Guide (Prototype)
 
-The application currently uses mock data loaded from `public/data/`.
+The application now primarily uses data from a Supabase PostgreSQL database.
 
-*   **Dashboard:** Provides a landing page.
-*   **Patient List:** (`/patients`) Displays a list of mock patients.
-*   **Patient Workspace:** (Accessed by clicking a patient) Shows tabs for Demographics, Admissions, Diagnoses, and Labs using mock data.
+*   **Dashboard:** Provides a landing page with upcoming appointments.
+*   **Patient List:** (`/patients`) Displays a list of patients from the Supabase database.
+*   **Patient Workspace:** (Accessed by clicking a patient) Shows tabs for Demographics, Admissions, Diagnoses, and Labs using data fetched from Supabase for the selected patient.
 *   **Other sections:** Alerts, Analytics, Settings are placeholders or have minimal functionality in the prototype.
 
 ## Technical Architecture (Current Frontend)
@@ -86,33 +105,22 @@ The application currently uses mock data loaded from `public/data/`.
 *   **Framework:** Next.js (App Router paradigm)
 *   **Language:** TypeScript
 *   **Styling:** Tailwind CSS, CSS Modules. Features a "glassmorphism" theme.
-*   **State Management:** React Context and local component state (e.g., within `ForesightApp.tsx` for global UI states like active patient).
+*   **State Management:** React Context and local component state.
 *   **Component Structure:**
     *   Global Layout: `src/app/layout.tsx` renders `GlassHeader` and `GlassSidebar`.
     *   View Components: Located in `src/components/views/` (e.g., `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`).
-    *   Routing Logic: `src/app/ForesightApp.tsx` acts as a client-side router, determining which view component to render based on the URL pathname.
+    *   Routing Logic: `src/app/ForesightApp.tsx` acts as a client-side router.
     *   Page Entry Points: Files like `src/app/page.tsx`, `src/app/patients/page.tsx` primarily render `<ForesightApp />`.
+*   **Data Fetching:** Data is primarily fetched from Supabase using a service layer (`src/lib/supabaseDataService.ts`). A feature flag (`NEXT_PUBLIC_USE_SUPABASE`) controls this; it defaults to `true`. A fallback to an older, local file-based data service (`src/lib/patientDataService.ts`) exists if the flag is explicitly set to `false`, though this mode is deprecated.
 *   **Testing:**
     *   **Storybook:** For UI component development and visualization.
     *   **Playwright:** For end-to-end testing.
-*   **Linting/Formatting:** ESLint, Prettier (assumed, common for Next.js projects).
+*   **Linting/Formatting:** ESLint, Prettier.
 
-### Data Model (Mock Data Structure)
-The prototype uses mock data primarily from TSV and TXT files in `public/data/100-patients/`:
-- `Enriched_Patients.tsv`: Patient demographic information.
-- `Enriched_Admissions.tsv`: Admission records.
-- `AdmissionsDiagnosesCorePopulatedTable.txt`: Diagnoses linked to admissions.
-- `LabsCorePopulatedTable.txt`: Laboratory test results.
+### Data Model & Source
+The primary data source is a PostgreSQL database managed by **Supabase**. The schema includes tables for `patients`, `visits`, and `transcripts`.
 
-## Data Pipeline (Mock Data Source)
-
-The application currently loads static mock data files at runtime. These are located in:
-- `public/data/100-patients/Enriched_Patients.tsv`
-- `public/data/100-patients/Enriched_Admissions.tsv`
-- `public/data/100-patients/AdmissionsDiagnosesCorePopulatedTable.txt`
-- `public/data/100-patients/LabsCorePopulatedTable.txt`
-
-There is no live data pipeline or backend integration in this MVP prototype.
+The original mock data, previously stored in TSV/TXT files, has been migrated to this Supabase instance. These original flat files (`Enriched_Patients.tsv`, `Enriched_Admissions.tsv`, etc.) are now archived in `docs/archived-data/` for historical reference. The migration script `scripts/migratePatients.ts` was used to populate the Supabase database from these files.
 
 ## Support
 For questions regarding this prototype, please refer to the project's GitHub repository and issues.
@@ -122,29 +130,26 @@ For questions regarding this prototype, please refer to the project's GitHub rep
 - [Architecture](docs/architecture.md)
 - [Build Optimisation](docs/BUILD_OPTIMIZATION.md)
 - [Plasma Background Effect](docs/PLASMA_EFFECT.md)
+- **Archived Data Files:** Original TSV/TXT data sources are located in `docs/archived-data/`.
 
-## Database (Supabase)
+## Database (Supabase) - Primary Data Source
 
-This prototype can optionally fetch data from a managed Postgres instance provided by Supabase. To enable it:
+This application uses a managed Postgres instance provided by Supabase as its primary data source.
 
-1. Create a project in Supabase and apply the schema in `scripts/schema.sql` via the SQL editor.
-2. Copy your project URL and **anon/public** API key into a local environment file `.env.local`:
+**Setup:**
+1.  **Supabase Project:** Ensure you have a Supabase project created.
+2.  **Schema:** The database schema is defined in `scripts/schema.sql`. This should be applied to your Supabase project via its SQL editor.
+3.  **Environment Variables:** Configure your local environment by creating a `.env.local` file in the project root with your Supabase URL and anon key:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+    NEXT_PUBLIC_USE_SUPABASE="true"
+    ```
+    Setting `NEXT_PUBLIC_USE_SUPABASE="true"` ensures the application uses Supabase. This is the default and recommended mode.
+4.  **Data Seeding:** Populate the database using the migration script:
+    ```bash
+    pnpm migrate:data
+    ```
+    This script will read the (now archived) TSV data and insert it into your Supabase tables.
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL="https://<project-ref>.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="<your–anon–key>"
-```
-
-3. Seed the database with the bundled mock dataset:
-
-```bash
-pnpm migrate:data
-```
-
-4. Start the dev server with the feature flag turned on:
-
-```bash
-NEXT_PUBLIC_USE_SUPABASE=true pnpm dev
-```
-
-If the flag is omitted the app will continue to read from local TSV files, ensuring a safe fallback.
+The application is configured to use Supabase by default. The older mechanism of reading from local TSV files (controlled by setting `NEXT_PUBLIC_USE_SUPABASE="false"`) is deprecated but available as a fallback for specific local debugging if needed. The data for this fallback was originally in `public/data/100-patients/` and has now been moved to `docs/archived-data/`.
