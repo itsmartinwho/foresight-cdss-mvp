@@ -29,9 +29,25 @@ export default function PlasmaBackground() {
 
     const draw = () => {
       const { width: w, height: h } = canvas;
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "rgba(255,0,0,1)"; // Solid red, fully opaque
-      ctx.fillRect(0, 0, w, h);
+      const imgData = ctx.createImageData(w, h);
+      const data = imgData.data;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const v =
+            128 +
+            128 *
+              Math.sin(x / 27 + frame / 340) *
+              Math.sin(y / 31 + frame / 410);
+          data[i] = 180; // red channel (cyan bias)
+          data[i + 1] = v; // greenish shift
+          data[i + 2] = 255; // blue bias
+          data[i + 3] = 50; // alpha ≈ 20 % (50/255)
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      frame++;
     };
 
     // --- Animation loop ----------------------------------------------------
@@ -70,7 +86,8 @@ export default function PlasmaBackground() {
           inset: 0,
           zIndex: 0,
           pointerEvents: "none",
-          mixBlendMode: "normal", // no blend mode for diagnostic
+          mixBlendMode: "soft-light", // more visible on light backgrounds
+          filter: "blur(24px)", // subtle but not invisible
         }}
         className="motion-reduce:hidden"
       />
