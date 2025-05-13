@@ -14,18 +14,27 @@ class SupabaseDataService {
   private admissionsByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite admission keys
 
   private parseAlerts(patientId: string, alertsJsonField: any): ComplexCaseAlert[] {
-    if (alertsJsonField && typeof alertsJsonField === 'string') {
+    if (alertsJsonField && typeof alertsJsonField === 'string' && alertsJsonField.trim().length > 0 && alertsJsonField.trim() !== '[]') {
       try {
         let potentialAlerts = JSON.parse(alertsJsonField);
         if (typeof potentialAlerts === 'string') {
           potentialAlerts = JSON.parse(potentialAlerts);
         }
         if (Array.isArray(potentialAlerts)) {
-          return potentialAlerts.filter((al: any) => al && typeof al.id === 'string' && typeof al.msg === 'string');
+          const validAlerts = potentialAlerts.filter((al: any) => al && typeof al.id === 'string' && typeof al.msg === 'string');
+          if (validAlerts.length > 0) {
+            console.log(`SupabaseDataService: Successfully parsed ${validAlerts.length} alerts for patient ${patientId}.`);
+          }
+          return validAlerts;
+        } else {
+          console.warn(`SupabaseDataService: Parsed alertsJSON for patient ${patientId}, but result was not an array:`, potentialAlerts);
         }
       } catch (e) {
-        console.warn(`Failed to parse alertsJSON for patient ${patientId}:`, e);
+        console.warn(`SupabaseDataService: Failed to parse alertsJSON for patient ${patientId}. Error: ${e instanceof Error ? e.message : String(e)}. Raw data: `, alertsJsonField);
       }
+    } else if (alertsJsonField) {
+      // Log if it exists but is empty or just '[]'
+      // console.log(`SupabaseDataService: alertsJSON field present but empty/default for patient ${patientId}.`);
     }
     return [];
   }
@@ -97,23 +106,44 @@ class SupabaseDataService {
 
     visitRows?.forEach((row) => {
       const ed = row.extra_data || {}; // ed for extra_data
-      const patientPublicId = ed.PatientID; 
+      const patientPublicId = ed.PatientID;
       if (!patientPublicId || !this.patients[patientPublicId]) {
-        console.warn(`Skipping visit ${row.admission_id} as its patient ${patientPublicId} was not found in loaded patients.`);
+        console.warn(`SupabaseDataService: Skipping visit ${row.admission_id} as its patient ${patientPublicId} was not found or PatientID missing in extra_data.`);
         return;
       }
 
-      // Ensure dates are valid ISO strings or empty strings
-      const scheduledStart = ed.ScheduledStartDateTime
-        ? new Date(ed.ScheduledStartDateTime).toISOString()
-        : row.started_at
-        ? new Date(row.started_at).toISOString()
-        : '';
-      const scheduledEnd = ed.ScheduledEndDateTime
-        ? new Date(ed.ScheduledEndDateTime).toISOString()
-        : row.discharge_time
-        ? new Date(row.discharge_time).toISOString()
-        : '';
+      let scheduledStart = '';
+      let scheduledEnd = '';
+
+      if (ed.ScheduledStartDateTime && typeof ed.ScheduledStartDateTime === 'string') {
+        try {
+          scheduledStart = new Date(ed.ScheduledStartDateTime).toISOString();
+        } catch (e) {
+          console.warn(`SupabaseDataService: Invalid ScheduledStartDateTime format in extra_data for visit ${row.admission_id}, patient ${patientPublicId}: ${ed.ScheduledStartDateTime}`);
+        }
+      }
+      if (!scheduledStart && row.started_at) {
+        try {
+          scheduledStart = new Date(row.started_at).toISOString();
+        } catch (e) {
+          console.warn(`SupabaseDataService: Invalid started_at format in row for visit ${row.admission_id}, patient ${patientPublicId}: ${row.started_at}`);
+        }
+      }
+
+      if (ed.ScheduledEndDateTime && typeof ed.ScheduledEndDateTime === 'string') {
+        try {
+          scheduledEnd = new Date(ed.ScheduledEndDateTime).toISOString();
+        } catch (e) {
+          console.warn(`SupabaseDataService: Invalid ScheduledEndDateTime format in extra_data for visit ${row.admission_id}, patient ${patientPublicId}: ${ed.ScheduledEndDateTime}`);
+        }
+      }
+      if (!scheduledEnd && row.discharge_time) {
+        try {
+          scheduledEnd = new Date(row.discharge_time).toISOString();
+        } catch (e) {
+          console.warn(`SupabaseDataService: Invalid discharge_time format in row for visit ${row.admission_id}, patient ${patientPublicId}: ${row.discharge_time}`);
+        }
+      }
 
       const compositeKey = `${patientPublicId}_${row.admission_id}`; // Ensure uniqueness across patients
       const admission: Admission = {
@@ -182,27 +212,44 @@ class SupabaseDataService {
   }
 
   getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
-    if (!this.isLoaded) console.warn("getUpcomingConsultations called before data loaded");
+    if (!this.isLoaded) console.warn("SupabaseDataService: getUpcomingConsultations called before data loaded");
     const upcoming: { patient: Patient; visit: Admission }[] = [];
     const now = new Date();
+    const nowTime = now.getTime();
+    console.log(`SupabaseDataService: getUpcomingConsultations called at ${now.toISOString()}. Found ${Object.keys(this.admissions).length} total admissions.`);
 
     Object.values(this.admissions).forEach(ad => {
-      if (ad.scheduledStart) { // Ensure there IS a scheduledStart string
+      if (ad.scheduledStart && typeof ad.scheduledStart === 'string') {
         try {
-          const startDate = new Date(ad.scheduledStart); // Parse the ISO string
-          if (startDate instanceof Date && !isNaN(startDate.getTime()) && startDate > now) { // Check if valid date and in future
-            const patient = this.patients[ad.patientId];
-            if (patient) {
-              upcoming.push({ patient, visit: ad });
+          const startDate = new Date(ad.scheduledStart);
+          const startTime = startDate.getTime();
+
+          if (startDate instanceof Date && !isNaN(startTime)) {
+            const isInFuture = startTime > nowTime;
+            if (Math.abs(startTime - nowTime) < 86400000 * 30 || isInFuture) {
+              console.log(`SupabaseDataService: Checking visit ${ad.id}. Scheduled: ${ad.scheduledStart} (${startDate.toISOString()}). Is in future? ${isInFuture}. Now: ${now.toISOString()}`);
             }
+
+            if (isInFuture) {
+              const patient = this.patients[ad.patientId];
+              if (patient) {
+                upcoming.push({ patient, visit: ad });
+              } else {
+                 console.warn(`SupabaseDataService: Found upcoming visit ${ad.id} but patient ${ad.patientId} not found in cache.`);
+              }
+            }
+          } else {
+             console.warn(`SupabaseDataService: Invalid date object after parsing scheduledStart for admission ${ad.id}. Original string: ${ad.scheduledStart}`);
           }
         } catch (e) {
-            // This catch might not be strictly necessary if new Date() doesn't throw for all invalid strings
-            // but handles malformed ISO strings that new Date() might error on.
-            console.warn(`Invalid date format encountered in getUpcomingConsultations for admission ${ad.id}: ${ad.scheduledStart}`, e)
+            console.warn(`SupabaseDataService: Error processing date for admission ${ad.id}. Original string: ${ad.scheduledStart}. Error: ${e instanceof Error ? e.message : String(e)}`);
         }
+      } else {
+         // Log if scheduledStart is missing or not a string
+         // console.log(`SupabaseDataService: Skipping visit ${ad.id} due to missing or non-string scheduledStart:`, ad.scheduledStart);
       }
     });
+    console.log(`SupabaseDataService: Found ${upcoming.length} upcoming consultations.`);
     return upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
   }
 
