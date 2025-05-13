@@ -15,42 +15,58 @@ class SupabaseDataService {
 
   private parseAlerts(patientId: string, alertsJsonField: any): ComplexCaseAlert[] {
     if (alertsJsonField && typeof alertsJsonField === 'string' && alertsJsonField.trim().length > 0 && alertsJsonField.trim() !== '[]') {
+      let jsonStringToParse = alertsJsonField;
       try {
-        let potentialAlerts = JSON.parse(alertsJsonField);
+        // First attempt to parse, in case it's a string that IS valid JSON (e.g., already processed or correctly stored)
+        let potentialAlerts = JSON.parse(jsonStringToParse);
+
+        // If the result of the first parse is STILL a string, it means it was double-stringified.
+        // This inner string is the one that likely contains '''' instead of ''.
         if (typeof potentialAlerts === 'string') {
-          potentialAlerts = JSON.parse(potentialAlerts);
+          jsonStringToParse = potentialAlerts.replace(/""/g, '"'); // Replace '''' with ''.
+          potentialAlerts = JSON.parse(jsonStringToParse); // Parse again
         }
+
         if (Array.isArray(potentialAlerts)) {
           const validAlerts = potentialAlerts.filter((al: any) => al && typeof al.id === 'string' && typeof al.msg === 'string');
           if (validAlerts.length > 0) {
-            console.log(`SupabaseDataService: Successfully parsed ${validAlerts.length} alerts for patient ${patientId}.`);
+            // console.log(`SupabaseDataService: Successfully parsed ${validAlerts.length} alerts for patient ${patientId}.`);
           }
           return validAlerts;
         } else {
           console.warn(`SupabaseDataService: Parsed alertsJSON for patient ${patientId}, but result was not an array:`, potentialAlerts);
         }
       } catch (e) {
-        console.warn(`SupabaseDataService: Failed to parse alertsJSON for patient ${patientId}. Error: ${e instanceof Error ? e.message : String(e)}. Raw data: `, alertsJsonField);
+        console.warn(`SupabaseDataService: Failed to parse alertsJSON for patient ${patientId}. Error: ${e instanceof Error ? e.message : String(e)}. Original string: `, alertsJsonField, 'Attempted to parse:', jsonStringToParse);
       }
     } else if (alertsJsonField) {
-      // Log if it exists but is empty or just '[]'
       // console.log(`SupabaseDataService: alertsJSON field present but empty/default for patient ${patientId}.`);
     }
     return [];
   }
 
   private parseTreatments(admissionId: string, treatmentsJsonField: any): Treatment[] | undefined {
-    if (treatmentsJsonField && typeof treatmentsJsonField === 'string') {
+    if (treatmentsJsonField && typeof treatmentsJsonField === 'string' && treatmentsJsonField.trim().length > 0 && treatmentsJsonField.trim() !== '[]') {
+      let jsonStringToParse = treatmentsJsonField;
       try {
-        let potentialTreatments = JSON.parse(treatmentsJsonField);
+        let potentialTreatments = JSON.parse(jsonStringToParse);
+
         if (typeof potentialTreatments === 'string') {
-          potentialTreatments = JSON.parse(potentialTreatments);
+          jsonStringToParse = potentialTreatments.replace(/""/g, '"');
+          potentialTreatments = JSON.parse(jsonStringToParse);
         }
+
         if (Array.isArray(potentialTreatments)) {
-          return potentialTreatments.filter((tr: any) => tr && typeof tr.drug === 'string');
+          const validTreatments = potentialTreatments.filter((tr: any) => tr && typeof tr.drug === 'string');
+           if (validTreatments.length > 0) {
+            // console.log(`SupabaseDataService: Successfully parsed ${validTreatments.length} treatments for admission ${admissionId}.`);
+          }
+          return validTreatments.length > 0 ? validTreatments : undefined;
+        } else {
+          console.warn(`SupabaseDataService: Parsed treatmentsJSON for admission ${admissionId}, but result was not an array:`, potentialTreatments);
         }
       } catch (e) {
-        console.warn(`Failed to parse treatmentsJSON for admission ${admissionId}:`, e);
+        console.warn(`SupabaseDataService: Failed to parse treatmentsJSON for admission ${admissionId}. Error: ${e instanceof Error ? e.message : String(e)}. Original string:`, treatmentsJsonField, 'Attempted to parse:', jsonStringToParse);
       }
     }
     return undefined;
