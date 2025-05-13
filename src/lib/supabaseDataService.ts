@@ -104,8 +104,16 @@ class SupabaseDataService {
       }
 
       // Ensure dates are valid ISO strings or empty strings
-      const scheduledStart = row.started_at ? new Date(row.started_at).toISOString() : '';
-      const scheduledEnd = row.discharge_time ? new Date(row.discharge_time).toISOString() : '';
+      const scheduledStart = ed.ScheduledStartDateTime
+        ? new Date(ed.ScheduledStartDateTime).toISOString()
+        : row.started_at
+        ? new Date(row.started_at).toISOString()
+        : '';
+      const scheduledEnd = ed.ScheduledEndDateTime
+        ? new Date(ed.ScheduledEndDateTime).toISOString()
+        : row.discharge_time
+        ? new Date(row.discharge_time).toISOString()
+        : '';
 
       const compositeKey = `${patientPublicId}_${row.admission_id}`; // Ensure uniqueness across patients
       const admission: Admission = {
