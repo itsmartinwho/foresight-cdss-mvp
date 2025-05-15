@@ -1,161 +1,149 @@
 import * as dotenv from 'dotenv';
 import path from 'path';
+import { readFileSync } from 'fs';
+import { getSupabaseClient } from '../src/lib/supabaseClient'; // Adjusted path if necessary
 
-// Resolve the project root and the .env.local file path
+// Load environment variables
 const projectRoot = path.resolve(__dirname, '..');
 const envPath = path.join(projectRoot, '.env.local');
+dotenv.config({ path: envPath });
 
-console.log(`Attempting to load .env.local from: ${envPath}`);
-
-const dotenvResult = dotenv.config({ path: envPath, debug: (process.env.DEBUG === 'true') });
-
-if (dotenvResult.error) {
-  console.error('Error loading .env.local:', dotenvResult.error);
-  console.log('__dirname for migratePatients.ts:', __dirname);
-  process.exit(1); // Exit if .env.local couldn't be loaded
-}
-
-if (!dotenvResult.parsed || Object.keys(dotenvResult.parsed).length === 0) {
-  console.error('.env.local file was found, but it is empty or could not be parsed.');
-  console.log('Parsed content (if any):', dotenvResult.parsed);
-  process.exit(1);
-}
-
-console.log('Dotenv parsed content:', dotenvResult.parsed);
-console.log('Script ENV VARS after dotenv.config:', {
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-});
-
-// Now import supabaseClient AFTER attempting to load .env.local
-import { getSupabaseClient } from '../src/lib/supabaseClient';
-import { readFileSync } from 'fs';
-
-// Initialize the client *after* env vars are loaded
 const supabase = getSupabaseClient();
 
-interface PatientRow {
-  PatientID: string;
-  PatientGender: string;
-  PatientDateOfBirth: string;
-  firstName: string;
-  lastName: string;
-  name: string;
-  photo: string;
-  [key: string]: any;
-}
+const DATA_DIR = path.join(__dirname, '..', 'docs', 'archived-data');
 
-interface AdmissionRow {
-  AdmissionID: string;
-  PatientID: string;
-  AdmissionType: string;
-  AdmissionStart: string;
-  AdmissionEnd: string;
-  [key: string]: any;
-}
+// Helper to parse problematic JSON strings (alertsJSON, treatmentsJSON)
+function cleanAndParseJson(jsonString: string | undefined | null, fieldName: string, recordId: string): any[] | undefined {
+  if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '' || jsonString.trim() === '[]') {
+    return fieldName === 'alerts' ? [] : undefined;
+  }
+  let cleanedString = jsonString;
+  try {
+    // Handle if it's already a string representation of a JSON string (double-stringified)
+    // e.g., "\"[{\\\"id\\\": ...}]\""
+    if (cleanedString.startsWith('"') && cleanedString.endsWith('"')) {
+      cleanedString = JSON.parse(cleanedString); // First unwrap
+    }
+    // Now, cleanedString should be like "[{\"id\": ...}]" or "[{id: ...}]" if malformed
+    // Replace \"\" with \" for internal quotes if they exist
+    cleanedString = cleanedString.replace(/""/g, '"');
 
-const DATA_DIR = path.join(__dirname, '..', 'public', 'data', '100-patients');
+    const parsed = JSON.parse(cleanedString);
+    return Array.isArray(parsed) ? parsed : (fieldName === 'alerts' ? [] : undefined);
+  } catch (e) {
+    console.warn(`Migration: Error parsing ${fieldName} for record ${recordId}. Raw: '${jsonString}', Cleaned: '${cleanedString}'. Error: ${e}`);
+    return fieldName === 'alerts' ? [] : undefined;
+  }
+}
 
 function parseTSV(content: string): Record<string, string>[] {
-  const lines = content.trim().split(/\n/);
-  const header = lines.shift()?.split('\t') || [];
+  const lines = content.trim().split(/\r?\n/); // Handles both LF and CRLF
+  if (lines.length === 0) return [];
+  const header = lines.shift()!.split('\t').map(h => h.trim().replace(/\uFEFF/g, '')); // Strip BOM
   return lines.map((line) => {
-    const cols = line.split('\t');
-    return header.reduce<Record<string, string>>((acc, col, idx) => {
-      acc[col] = cols[idx] ?? '';
-      return acc;
-    }, {});
+    const values = line.split('\t');
+    const rowObject: Record<string, string> = {};
+    header.forEach((colName, index) => {
+      rowObject[colName] = values[index] !== undefined ? values[index].trim() : '';
+    });
+    return rowObject;
   });
 }
 
 async function migrate() {
-  console.log('Starting migration to Supabase...');
+  console.log('Starting migration to Supabase with unbundled schema...');
+
+  // 1. Read and Parse TSV Data
   const patientsPath = path.join(DATA_DIR, 'Enriched_Patients.tsv');
   const admissionsPath = path.join(DATA_DIR, 'Enriched_Admissions.tsv');
 
   const patientsTSV = readFileSync(patientsPath, 'utf-8');
   const admissionsTSV = readFileSync(admissionsPath, 'utf-8');
 
-  const patients: PatientRow[] = parseTSV(patientsTSV) as PatientRow[];
-  const admissions: AdmissionRow[] = parseTSV(admissionsTSV) as AdmissionRow[];
+  const patientRows = parseTSV(patientsTSV);
+  const admissionRows = parseTSV(admissionsTSV);
+  console.log(`Parsed ${patientRows.length} patient rows, ${admissionRows.length} admission rows.`);
 
-  console.log(`Parsed ${patients.length} patients, ${admissions.length} admissions`);
+  // 2. Upsert Patients
+  const patientSupabaseIdMap: Record<string, string> = {}; // Maps original PatientID to Supabase internal UUID
 
-  // Insert patients first
-  for (const p of patients) {
-    // Create a copy of the original row object for extra_data
-    const extraData = { ...p };
-    // Remove fields that are now top-level columns to avoid redundancy, if desired
-    // delete extraData.PatientID;
-    // delete extraData.name; 
-    // delete extraData.PatientGender;
-    // delete extraData.PatientDateOfBirth;
-    // delete extraData.photo;
+  for (const p of patientRows) {
+    const alertsArray = cleanAndParseJson(p.alertsJSON, 'alerts', p.PatientID) || [];
+    const patientDataForSupabase = {
+      patient_id: p.PatientID,
+      name: p.name,
+      first_name: p.firstName,
+      last_name: p.lastName,
+      gender: p.PatientGender,
+      dob: p.PatientDateOfBirth && p.PatientDateOfBirth.trim() !== '' ? new Date(p.PatientDateOfBirth).toISOString().split('T')[0] : null,
+      photo_url: p.photo,
+      race: p.PatientRace,
+      marital_status: p.PatientMaritalStatus,
+      language: p.PatientLanguage,
+      poverty_percentage: p.PatientPopulationPercentageBelowPoverty ? parseFloat(p.PatientPopulationPercentageBelowPoverty) : null,
+      alerts: alertsArray, // Already parsed array
+      primary_diagnosis_description: p.PrimaryDiagnosis, // Assuming a column named PrimaryDiagnosis in TSV
+      general_diagnosis_details: p.Diagnosis,       // Assuming a column named Diagnosis in TSV
+      next_appointment_date: p.NextAppointmentDate && p.NextAppointmentDate.trim() !== '' ? new Date(p.NextAppointmentDate).toISOString() : null,
+      patient_level_reason: p.PatientReason,      // Assuming a column named PatientReason in TSV
+      extra_data: { ...p } // Store all original fields in extra_data for now, can be pruned later
+    };
 
-    const { error } = await supabase.from('patients').upsert(
-      {
-        patient_id: p.PatientID, // Original TSV PatientID
-        name: p.name,
-        gender: p.PatientGender,
-        dob: p.PatientDateOfBirth ? new Date(p.PatientDateOfBirth).toISOString() : null,
-        photo_url: p.photo,
-        extra_data: extraData, // Store the full original row
-      },
-      {
-        onConflict: 'patient_id', // Conflict on the original PatientID
-        ignoreDuplicates: false, // Ensure updates happen
-      },
-    );
+    const { data: upsertedPatient, error } = await supabase
+      .from('patients')
+      .upsert(patientDataForSupabase, { onConflict: 'patient_id', ignoreDuplicates: false })
+      .select('id, patient_id') // Select Supabase internal ID and original patient_id
+      .single();
 
     if (error) {
-      console.error('Error inserting patient', p.PatientID, error.message);
+      console.error(`Error upserting patient ${p.PatientID}:`, error.message, 'Data:', patientDataForSupabase);
+    } else if (upsertedPatient) {
+      patientSupabaseIdMap[upsertedPatient.patient_id] = upsertedPatient.id; // Map original ID to Supabase UUID
     }
   }
+  console.log(`Upserted ${Object.keys(patientSupabaseIdMap).length} patients and mapped their Supabase IDs.`);
 
-  // Map patientID to internal UUID id from DB for FK use
-  const patientMap: Record<string, string> = {};
-  const { data: dbPatients } = await supabase.from('patients').select('id, patient_id');
-  dbPatients?.forEach((row) => {
-    patientMap[row.patient_id] = row.id;
-  });
-
-  // Insert admissions
-  for (const ad of admissions) {
-    const patientUuid = patientMap[ad.PatientID];
-    if (!patientUuid) {
-      console.warn(`Skipping admission ${ad.AdmissionID}; patient ${ad.PatientID} not found in DB map`);
+  // 3. Upsert Admissions/Visits
+  for (const ad of admissionRows) {
+    const patientSupabaseUUID = patientSupabaseIdMap[ad.PatientID];
+    if (!patientSupabaseUUID) {
+      console.warn(`Skipping admission ${ad.AdmissionID}; Patient ${ad.PatientID} not found in Supabase ID map.`);
       continue;
     }
-    
-    // Store all original admission columns in extra_data
-    const admissionExtraData = { ...ad }; 
 
-    const { error } = await supabase.from('visits').upsert(
-      {
-        admission_id: ad.AdmissionID, // Use the original AdmissionID from TSV
-        patient_id: patientUuid,      // FK to patients table internal UUID
-        admission_type: ad.AdmissionType,
-        started_at: ad.AdmissionStart ? new Date(ad.AdmissionStart).toISOString() : null,
-        discharge_time: ad.AdmissionEnd ? new Date(ad.AdmissionEnd).toISOString() : null,
-        // We don't have a separate transcript column in the TSV, it might be in extra_data 
-        // transcript: ad.transcript, // Pull from extra_data if it exists there
-        extra_data: admissionExtraData, // Store the full original row
-      },
-      {
-        onConflict: 'admission_id', // Conflict on the original AdmissionID
-        ignoreDuplicates: false, // Ensure updates happen
-      },
-    );
+    const treatmentsArray = cleanAndParseJson(ad.treatmentsJSON, 'treatments', ad.AdmissionID);
+    
+    const admissionDataForSupabase = {
+      admission_id: ad.AdmissionID,
+      patient_supabase_id: patientSupabaseUUID,
+      admission_type: ad.AdmissionType,
+      scheduled_start_datetime: ad.ScheduledStartDateTime && ad.ScheduledStartDateTime.trim() !== '' ? new Date(ad.ScheduledStartDateTime).toISOString() : null,
+      scheduled_end_datetime: ad.ScheduledEndDateTime && ad.ScheduledEndDateTime.trim() !== '' ? new Date(ad.ScheduledEndDateTime).toISOString() : null,
+      actual_start_datetime: ad.ActualStartDateTime && ad.ActualStartDateTime.trim() !== '' ? new Date(ad.ActualStartDateTime).toISOString() : null,
+      actual_end_datetime: ad.ActualEndDateTime && ad.ActualEndDateTime.trim() !== '' ? new Date(ad.ActualEndDateTime).toISOString() : null,
+      reason_for_visit: ad.ReasonForVisit || ad.EncounterReason, // Fallback if one is empty
+      transcript: ad.transcript, // Assuming transcript is a direct column in TSV
+      soap_note: ad.soapNote,   // Assuming soapNote is a direct column in TSV
+      treatments: treatmentsArray, // Already parsed array
+      prior_auth_justification: ad.priorAuthJustification,
+      insurance_status: ad.InsuranceStatus,
+      extra_data: { ...ad } // Store all original fields for now
+    };
+
+    const { error } = await supabase
+      .from('visits')
+      .upsert(admissionDataForSupabase, { onConflict: 'patient_supabase_id,admission_id', ignoreDuplicates: false });
 
     if (error) {
-      console.error('Error inserting admission', ad.AdmissionID, error.message);
+      console.error(`Error upserting admission ${ad.AdmissionID} for patient ${ad.PatientID}:`, error.message, 'Data:', admissionDataForSupabase);
     }
   }
+  console.log('Finished upserting admissions.');
 
   console.log('Migration finished.');
 }
 
 migrate().catch((e) => {
-  console.error(e);
+  console.error('Migration script failed:', e);
   process.exit(1);
 }); 
