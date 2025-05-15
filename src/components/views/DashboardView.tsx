@@ -191,7 +191,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
                       <Button
                         size="sm"
                         onClick={() => onStartConsult(p)}
-                        className="gap-1 w-[140px] text-step--1 bg-primary hover:bg-primary/90 text-primary-foreground h-[40px]"
+                        className="gap-1 whitespace-nowrap"
                       >
                         <PlayCircle className="h-[1em] w-[1em]" /> Start
                       </Button>
