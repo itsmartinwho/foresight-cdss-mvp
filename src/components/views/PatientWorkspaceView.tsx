@@ -9,6 +9,7 @@ import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types"; // Added Treatment
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"; // For renderDetailTable
 import { Input } from "@/components/ui/input"; // <--- ADD THIS LINE
+import { useSearchParams } from 'next/navigation';
 
 // Helper: renderDetailTable (copied from ForesightApp.tsx, approx lines 66-105)
 function renderDetailTable(title: string, dataArray: any[], headers: string[], columnAccessors?: string[]) {
@@ -356,6 +357,8 @@ function PriorAuthTab({ patient: currentPatientInfo, allAdmissions }: { patient:
   const [selectedAdmissionState, setSelectedAdmissionState] = useState<Admission | null>(null);
   const [isLoadingPA, setIsLoadingPA] = useState(true); // Renamed to avoid conflict
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     if (allAdmissions && allAdmissions.length > 0) {
       const sortedAdmissions = [...allAdmissions].sort((a, b) =>
@@ -498,6 +501,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   const [error, setError] = useState<string | null>(null);
   const [selectedAdmissionForConsultation, setSelectedAdmissionForConsultation] = useState<Admission | null>(null);
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -514,7 +519,15 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         const data = patientDataService.getPatientData(initialPatient.id);
         if (data) {
           setDetailedPatientData(data);
-          if (data.admissions && data.admissions.length > 0) {
+          const paramAd = searchParams?.get('ad');
+          if (paramAd) {
+            const found = data.admissions.find((a: any) => a.admission.id === paramAd)?.admission || null;
+            if (found) {
+              setSelectedAdmissionForConsultation(found);
+            } else if (data.admissions && data.admissions.length > 0) {
+              setSelectedAdmissionForConsultation(data.admissions[0]?.admission || null);
+            }
+          } else if (data.admissions && data.admissions.length > 0) {
             setSelectedAdmissionForConsultation(data.admissions[0]?.admission || null);
           }
         } else {
@@ -528,7 +541,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
       }
     };
     loadData();
-  }, [initialPatient]);
+  }, [initialPatient, searchParams]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button

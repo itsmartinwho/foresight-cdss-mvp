@@ -60,6 +60,21 @@ class PatientDataService {
   private allLabResultsByAdmission: Record<string, LabResult[]> = {};
   private isLoaded = false;
 
+  /** Simple change notification */
+  private changeSubscribers: Array<() => void> = [];
+
+  subscribe(cb: () => void) {
+    if (!this.changeSubscribers.includes(cb)) {
+      this.changeSubscribers.push(cb);
+    }
+  }
+
+  private emitChange() {
+    this.changeSubscribers.forEach(fn => {
+      try { fn(); } catch (_) {}
+    });
+  }
+
   /**
    * Load patient data from the provided data files
    */
@@ -505,7 +520,37 @@ class PatientDataService {
       this.admissions[patientId] = [];
     }
     this.admissions[patientId].unshift(newAdmission); // place newest first
+    this.emitChange();
     return newAdmission;
+  }
+
+  /** Create new patient in-memory (non-Supabase fallback) */
+  createNewPatient(input: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string }): Patient {
+    const newId = `p-${Date.now()}`;
+    const patient: Patient = {
+      id: newId,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      name: `${input.firstName} ${input.lastName}`.trim(),
+      gender: input.gender,
+      dateOfBirth: input.dateOfBirth,
+    };
+    this.patients[newId] = patient;
+    this.admissions[newId] = [];
+    this.emitChange();
+    return patient;
+  }
+
+  createNewPatientWithAdmission(
+    patientInput: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string },
+    admissionInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }
+  ): { patient: Patient; admission: Admission } {
+    const patient = this.createNewPatient(patientInput);
+    const admission = this.createNewAdmission(patient.id);
+    if (admissionInput?.reason) admission.reason = admissionInput.reason;
+    if (admissionInput?.scheduledStart) admission.scheduledStart = admissionInput.scheduledStart;
+    if (admissionInput?.scheduledEnd) admission.scheduledEnd = admissionInput.scheduledEnd;
+    return { patient, admission };
   }
 
   // Methods like searchPatients, hasAutoimmuneDiagnosis, hasOncologyDiagnosis would continue

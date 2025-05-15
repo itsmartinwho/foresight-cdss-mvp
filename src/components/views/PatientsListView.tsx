@@ -5,6 +5,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission } from "@/lib/types";
 import { ArrowUp, ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import NewConsultationModal from '../modals/NewConsultationModal';
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate';
@@ -19,6 +21,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
   const [pastRowsData, setPastRowsData] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [showNewConsultModal, setShowNewConsultModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -94,9 +97,14 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
   return (
     <div className="p-6">
       <Card className="bg-glass glass-dense backdrop-blur-lg">
-        <CardHeader>
-          <CardTitle className="text-step-1">Consultations</CardTitle>
-          <CardDescription className="text-step-0 text-muted-foreground/80">Click a patient to open the workspace</CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <CardTitle className="text-step-1">Consultations</CardTitle>
+            <CardDescription className="text-step-0 text-muted-foreground/80">Click a patient to open the workspace</CardDescription>
+          </div>
+          <Button size="sm" onClick={() => setShowNewConsultModal(true)} className="gap-1 whitespace-nowrap">
+            + New Consultation
+          </Button>
         </CardHeader>
         <CardContent>
           <Table className="text-step-0">
@@ -167,6 +175,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
           </Table>
         </CardContent>
       </Card>
+      <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
     </div>
   );
 } 

@@ -6,6 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { PlayCircle, Bell, X } from "lucide-react";
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
+import NewConsultationModal from '../modals/NewConsultationModal';
 
 // Copied types and components from ForesightApp.tsx that DashboardView depends on
 type UpcomingEntry = { patient: Patient; visit: Admission };
@@ -104,6 +105,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
+  const [showNewConsultModal, setShowNewConsultModal] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -140,11 +142,16 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   return (
     <div className="p-6 relative">
       <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg">
-        <CardHeader>
-          <CardTitle className="text-step-1">Upcoming Appointments</CardTitle>
-          <CardDescription className="text-step-0 text-muted-foreground/80">
-            Select a patient to start consultation
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <CardTitle className="text-step-1">Upcoming Appointments</CardTitle>
+            <CardDescription className="text-step-0 text-muted-foreground/80">
+              Select a patient to start consultation
+            </CardDescription>
+          </div>
+          <Button size="sm" onClick={() => setShowNewConsultModal(true)} className="gap-1 whitespace-nowrap">
+            + New Consultation
+          </Button>
         </CardHeader>
         <CardContent>
           {upcomingAppointments.length > 0 ? (
@@ -214,6 +221,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
           onAlertClick={onAlertClick}
         />
       )}
+      <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
     </div>
   );
 } 

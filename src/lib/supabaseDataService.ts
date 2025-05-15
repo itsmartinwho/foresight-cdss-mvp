@@ -13,6 +13,8 @@ class SupabaseDataService {
   private patients: Record<string, Patient> = {}; // key = original PatientID (e.g., "1", "FB2ABB...")
   private admissions: Record<string, Admission> = {}; // key = composite `${patientId}_${originalAdmissionID}`
   private admissionsByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite admission keys
+  /** Simple pub-sub so UI layers can refresh after data-mutating calls */
+  private changeSubscribers: Array<() => void> = [];
 
   async loadPatientData(): Promise<void> {
     if (this.isLoaded || this.isLoading) {
@@ -262,7 +264,10 @@ class SupabaseDataService {
     }
   }
 
-  async createNewAdmission(patientId: string): Promise<Admission> {
+  async createNewAdmission(
+    patientId: string,
+    opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }
+  ): Promise<Admission> {
     if (!this.patients[patientId]) {
       console.error(`SupabaseDataService (Prod Debug): Cannot create admission. Patient with original ID ${patientId} not found in local cache. Potential race condition or data not loaded.`);
       // Attempt to load data if not loaded, or re-throw if critical path expects patient to be there.
@@ -294,21 +299,24 @@ class SupabaseDataService {
 
     const now = new Date();
     const nowIso = now.toISOString();
-    const newOriginalAdmissionId = crypto.randomUUID(); 
+    const scheduledStartIso = opts?.scheduledStart ?? nowIso;
+    const scheduledEndIso = opts?.scheduledEnd ?? null;
+
+    const newOriginalAdmissionId = crypto.randomUUID();
 
     const newDbVisit = {
       admission_id: newOriginalAdmissionId, 
       patient_supabase_id: internalSupabasePatientUUID,
       admission_type: 'consultation',
-      scheduled_start_datetime: nowIso, 
-      actual_start_datetime: nowIso,
-      reason_for_visit: 'New Consultation',
+      scheduled_start_datetime: scheduledStartIso,
+      actual_start_datetime: scheduledStartIso === nowIso ? nowIso : null,
+      reason_for_visit: opts?.reason ?? null,
       transcript: '', 
       soap_note: null,
       treatments: null, 
       prior_auth_justification: null,
       insurance_status: null, 
-      scheduled_end_datetime: null,
+      scheduled_end_datetime: scheduledEndIso,
       actual_end_datetime: null,
       extra_data: { 
         PatientID: patientId, 
@@ -349,7 +357,83 @@ class SupabaseDataService {
     }
     this.admissionsByPatient[patientId].push(newAdmissionCompositeId);
     console.log(`SupabaseDataService (Prod Debug): Created and cached new admission ${newAdmissionCompositeId} for patient ${patientId}`);
+    this.emitChange();
     return newAdmission;
+  }
+
+  subscribe(cb: () => void) {
+    if (!this.changeSubscribers.includes(cb)) {
+      this.changeSubscribers.push(cb);
+    }
+  }
+
+  private emitChange() {
+    this.changeSubscribers.forEach((fn) => {
+      try {
+        fn();
+      } catch (_) {}
+    });
+  }
+
+  /**
+   * Create a brand-new patient and cache it.
+   */
+  async createNewPatient(input: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string }): Promise<Patient> {
+    const newPublicId = crypto.randomUUID();
+    const name = `${input.firstName} ${input.lastName}`.trim();
+
+    const { data: inserted, error } = await this.supabase
+      .from('patients')
+      .insert({
+        patient_id: newPublicId,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        name,
+        gender: input.gender ?? null,
+        dob: input.dateOfBirth ?? null,
+        extra_data: { createdByType: 'application' },
+      })
+      .select('*')
+      .single();
+
+    if (error || !inserted) {
+      console.error('SupabaseDataService: Error inserting patient', error?.message);
+      throw error || new Error('Failed to create patient');
+    }
+
+    const patient: Patient = {
+      id: inserted.patient_id,
+      name,
+      firstName: inserted.first_name,
+      lastName: inserted.last_name,
+      gender: inserted.gender ?? undefined,
+      dateOfBirth: inserted.dob ?? undefined,
+      photo: inserted.photo_url ?? undefined,
+      race: inserted.race ?? undefined,
+      maritalStatus: inserted.marital_status ?? undefined,
+      language: inserted.language ?? undefined,
+      povertyPercentage: inserted.poverty_percentage ?? undefined,
+      primaryDiagnosis: inserted.primary_diagnosis_description ?? undefined,
+      diagnosis: inserted.general_diagnosis_details ?? undefined,
+      nextAppointment: inserted.next_appointment_date ?? undefined,
+      reason: inserted.patient_level_reason ?? undefined,
+      alerts: inserted.alerts ?? [],
+    };
+
+    this.patients[patient.id] = patient;
+    this.admissionsByPatient[patient.id] = [];
+    this.emitChange();
+    return patient;
+  }
+
+  /** Convenience helper – used by UI when doctor adds a new patient and immediately starts consult */
+  async createNewPatientWithAdmission(
+    patientInput: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string },
+    admissionInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }
+  ): Promise<{ patient: Patient; admission: Admission }> {
+    const patient = await this.createNewPatient(patientInput);
+    const admission = await this.createNewAdmission(patient.id, admissionInput);
+    return { patient, admission };
   }
 }
 
