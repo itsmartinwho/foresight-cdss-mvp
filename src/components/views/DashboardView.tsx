@@ -99,7 +99,6 @@ function AlertSidePanel({ isOpen, onClose, alerts, onAlertClick }: { isOpen: boo
   );
 }
 
-// Original Dashboard function from ForesightApp.tsx
 export default function DashboardView({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patient) => void; onAlertClick: (patientId: string) => void }) {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingEntry[]>([]);
   const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
