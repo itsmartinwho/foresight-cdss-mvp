@@ -15,24 +15,40 @@ class SupabaseDataService {
 
   async loadPatientData(): Promise<void> {
     if (this.isLoaded) {
-      console.log('SupabaseDataService: Data already loaded. Skipping.');
+      console.log('SupabaseDataService (Prod Debug): Data already loaded. Skipping.');
       return;
     }
-    console.log('SupabaseDataService: Loading patient data with new unbundled schema...');
+    console.log('SupabaseDataService (Prod Debug): Starting loadPatientData...');
+    this.isLoaded = false; // Ensure we attempt to load if called again before full success
+    this.patients = {}; // Clear previous state
+    this.admissions = {};
+    this.admissionsByPatient = {};
 
     // 1. Fetch Patients
-    const { data: patientRows, error: pErr } = await this.supabase.from('patients').select('*');
-    if (pErr) {
-      console.error('SupabaseDataService: Error fetching patients:', pErr);
-      throw pErr;
+    let patientRows = null;
+    try {
+      const { data, error: pErr } = await this.supabase.from('patients').select('*');
+      if (pErr) {
+        console.error('SupabaseDataService (Prod Debug): Error fetching patients:', pErr);
+        throw pErr;
+      }
+      patientRows = data;
+    } catch (error) {
+      console.error('SupabaseDataService (Prod Debug): Exception during patient fetch:', error);
+      this.isLoaded = false; // Mark as not loaded on error
+      return; // Stop further execution if patients can't be fetched
     }
+    
+    if (!patientRows) {
+        console.error('SupabaseDataService (Prod Debug): patientRows is null after fetch. Cannot proceed.');
+        this.isLoaded = false;
+        return;
+    }
+    console.log(`SupabaseDataService (Prod Debug): Fetched ${patientRows.length} raw patient rows from Supabase.`);
 
-    this.patients = {};
-    this.admissionsByPatient = {}; // Reset for fresh load
-
-    patientRows?.forEach((row) => {
+    patientRows.forEach((row) => {
       const patient: Patient = {
-        id: row.patient_id, // Original PatientID from TSV, stored in patient_id column
+        id: row.patient_id,
         name: row.name,
         firstName: row.first_name,
         lastName: row.last_name,
@@ -43,34 +59,49 @@ class SupabaseDataService {
         maritalStatus: row.marital_status,
         language: row.language,
         povertyPercentage: row.poverty_percentage !== null ? Number(row.poverty_percentage) : undefined,
-        alerts: row.alerts || [], // Expecting Supabase to return JSONB as parsed array
+        alerts: row.alerts || [],
         primaryDiagnosis: row.primary_diagnosis_description,
         diagnosis: row.general_diagnosis_details,
         nextAppointment: row.next_appointment_date ? new Date(row.next_appointment_date).toISOString() : undefined,
         reason: row.patient_level_reason,
       };
       this.patients[patient.id] = patient;
-      this.admissionsByPatient[patient.id] = []; // Initialize for this patient
+      this.admissionsByPatient[patient.id] = []; 
     });
-    console.log(`SupabaseDataService: Loaded ${Object.keys(this.patients).length} patients.`);
+    console.log(`SupabaseDataService (Prod Debug): Processed and cached ${Object.keys(this.patients).length} patients.`);
 
     // 2. Fetch Visits
-    const { data: visitRows, error: vErr } = await this.supabase.from('visits').select('*');
-    if (vErr) {
-      console.error('SupabaseDataService: Error fetching visits:', vErr);
-      throw vErr;
+    let visitRows = null;
+    try {
+        const { data, error: vErr } = await this.supabase.from('visits').select('*');
+        if (vErr) {
+            console.error('SupabaseDataService (Prod Debug): Error fetching visits:', vErr);
+            throw vErr;
+        }
+        visitRows = data;
+    } catch (error) {
+        console.error('SupabaseDataService (Prod Debug): Exception during visits fetch:', error);
+        this.isLoaded = false; // Mark as not loaded on error
+        return; 
     }
-    this.admissions = {}; // Reset for fresh load
 
-    visitRows?.forEach((row) => {
-      // The patient_id in visits table from migration script refers to the original PatientID (text)
-      // For FK, the migration script maps original PatientID to patients.id (UUID) and stores it in visits.patient_supabase_id
-      // However, our `extra_data` in visits *still* contains the original `PatientID`.
-      // We need to find the patient from our `this.patients` map using the original PatientID from `extra_data`.
+    if (!visitRows) {
+        console.error('SupabaseDataService (Prod Debug): visitRows is null after fetch. Cannot proceed with visits.');
+        this.isLoaded = true; // Patients might be loaded, but visits are not.
+        return;
+    }
+    console.log(`SupabaseDataService (Prod Debug): Fetched ${visitRows.length} raw visit rows from Supabase.`);
+
+    let visitsProcessed = 0;
+    visitRows.forEach((row) => {
       const originalPatientIDFromVisitExtraData = row.extra_data?.PatientID;
       
-      if (!originalPatientIDFromVisitExtraData || !this.patients[originalPatientIDFromVisitExtraData]) {
-        console.warn(`SupabaseDataService: Skipping visit ${row.admission_id}. Patient by original ID '${originalPatientIDFromVisitExtraData}' not found in loaded patients cache. Visit extra_data:`, row.extra_data);
+      if (!originalPatientIDFromVisitExtraData) {
+        console.warn(`SupabaseDataService (Prod Debug): Skipping visit ${row.admission_id} due to missing PatientID in extra_data. Visit extra_data:`, row.extra_data);
+        return;
+      }
+      if (!this.patients[originalPatientIDFromVisitExtraData]) {
+        console.warn(`SupabaseDataService (Prod Debug): Skipping visit ${row.admission_id}. Patient by original ID '${originalPatientIDFromVisitExtraData}' not found in loaded patients cache (this.patients keys: ${Object.keys(this.patients).slice(0,10).join(', ')}...). Visit extra_data:`, row.extra_data);
         return;
       }
 
@@ -78,8 +109,8 @@ class SupabaseDataService {
       const compositeKey = `${patientPublicId}_${row.admission_id}`;
 
       const admission: Admission = {
-        id: compositeKey, // Composite key for UI and internal caching
-        patientId: patientPublicId, // Original PatientID
+        id: compositeKey, 
+        patientId: patientPublicId, 
         scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
         scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
         actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
@@ -87,67 +118,74 @@ class SupabaseDataService {
         reason: row.reason_for_visit,
         transcript: row.transcript,
         soapNote: row.soap_note,
-        treatments: row.treatments || undefined, // Expecting Supabase to return JSONB as parsed array or null
+        treatments: row.treatments || undefined, 
         priorAuthJustification: row.prior_auth_justification,
-        // insuranceStatus: row.insurance_status, // Assuming this field is in your Admission type and visits table
       };
       this.admissions[compositeKey] = admission;
+      // Ensure this.admissionsByPatient[patientPublicId] exists (it should from patient processing step)
       if (this.admissionsByPatient[patientPublicId]) {
         this.admissionsByPatient[patientPublicId].push(compositeKey);
       } else {
-        // This case should ideally not happen if patients are processed first and admissionsByPatient is initialized
-        console.warn(`SupabaseDataService: Encountered visit for patient ${patientPublicId} before patient was initialized in admissionsByPatient map. Visit ID: ${row.admission_id}`);
+        console.warn(`SupabaseDataService (Prod Debug): Array for patient ${patientPublicId} not initialized in admissionsByPatient. Creating it now for visit ${compositeKey}. This indicates an issue in patient loading.`);
         this.admissionsByPatient[patientPublicId] = [compositeKey];
       }
+      visitsProcessed++;
     });
-    console.log(`SupabaseDataService: Loaded ${Object.keys(this.admissions).length} admissions.`);
+    console.log(`SupabaseDataService (Prod Debug): Processed and cached ${visitsProcessed} visits. Total in cache: ${Object.keys(this.admissions).length}.`);
 
     this.isLoaded = true;
+    console.log('SupabaseDataService (Prod Debug): loadPatientData completed successfully.');
   }
 
   getAllPatients(): Patient[] {
+    // console.log('SupabaseDataService (Prod Debug): getAllPatients called. isLoaded:', this.isLoaded, 'Count:', Object.keys(this.patients).length);
     if (!this.isLoaded) console.warn("SupabaseDataService: getAllPatients called before data loaded. Call loadPatientData() first.");
     return Object.values(this.patients);
   }
 
   getPatient(patientId: string): Patient | null {
+    // console.log(`SupabaseDataService (Prod Debug): getPatient called for ${patientId}. isLoaded:`, this.isLoaded);
     if (!this.isLoaded) console.warn("SupabaseDataService: getPatient called before data loaded. Call loadPatientData() first.");
     return this.patients[patientId] ?? null;
   }
 
   getPatientAdmissions(patientId: string): Admission[] {
+    // console.log(`SupabaseDataService (Prod Debug): getPatientAdmissions called for ${patientId}. isLoaded:`, this.isLoaded);
     if (!this.isLoaded) console.warn("SupabaseDataService: getPatientAdmissions called before data loaded. Call loadPatientData() first.");
     const admissionKeys = this.admissionsByPatient[patientId] || [];
     return admissionKeys.map(key => this.admissions[key]).filter(Boolean) as Admission[];
   }
 
   getPatientData(patientId: string): any | null {
+    // console.log(`SupabaseDataService (Prod Debug): getPatientData called for ${patientId}. isLoaded:`, this.isLoaded);
     if (!this.isLoaded) {
        console.warn("SupabaseDataService: getPatientData called before data loaded. Call loadPatientData() first.");
-       return null; // Or trigger loadPatientData if appropriate for your app flow
+       return null; 
     }
     const patient = this.getPatient(patientId);
     if (!patient) {
-        console.warn(`SupabaseDataService: getPatientData - Patient ${patientId} not found in cache.`);
+        console.warn(`SupabaseDataService (Prod Debug): getPatientData - Patient ${patientId} not found in cache.`);
         return null;
     }
 
     const patientAdmissions = this.getPatientAdmissions(patientId);
     const admissionDetails = patientAdmissions.map(admission => ({
       admission,
-      diagnoses: [] as Diagnosis[], // Placeholder - to be populated if diagnoses are moved to separate table or field
-      labResults: [] as LabResult[], // Placeholder
+      diagnoses: [] as Diagnosis[], 
+      labResults: [] as LabResult[], 
     }));
     return { patient, admissions: admissionDetails };
   }
 
   getAllAdmissions(): { patient: Patient | null; admission: Admission }[] {
+    // console.log('SupabaseDataService (Prod Debug): getAllAdmissions called. isLoaded:', this.isLoaded, 'Count:', Object.keys(this.admissions).length);
     if (!this.isLoaded) console.warn("SupabaseDataService: getAllAdmissions called before data loaded. Call loadPatientData() first.");
     const allAds: { patient: Patient | null; admission: Admission }[] = [];
     Object.values(this.admissions).forEach(admission => {
       const patient = this.patients[admission.patientId] ?? null;
       if (!patient) {
-         console.warn(`SupabaseDataService: getAllAdmissions - Patient ${admission.patientId} for admission ${admission.id} not found in cache.`);
+         // This might be noisy if some admissions genuinely don't have linked patients due to data issues
+         // console.warn(`SupabaseDataService (Prod Debug): getAllAdmissions - Patient ${admission.patientId} for admission ${admission.id} not found in cache.`);
       }
       allAds.push({ patient, admission });
     });
@@ -155,41 +193,36 @@ class SupabaseDataService {
   }
 
   getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
+    // console.log('SupabaseDataService (Prod Debug): getUpcomingConsultations called. isLoaded:', this.isLoaded, 'Count:', Object.keys(this.admissions).length);
     if (!this.isLoaded) console.warn("SupabaseDataService: getUpcomingConsultations called before data loaded. Call loadPatientData() first.");
     const upcoming: { patient: Patient; visit: Admission }[] = [];
     const now = new Date();
     const nowTime = now.getTime();
-    // console.log(`SupabaseDataService: getUpcomingConsultations called at ${now.toISOString()}. Found ${Object.keys(this.admissions).length} total admissions.`);
 
     Object.values(this.admissions).forEach(ad => {
       if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
         try {
           const startDate = new Date(ad.scheduledStart);
           const startTime = startDate.getTime();
-          if (startDate instanceof Date && !isNaN(startTime)) {
+          if (startDate instanceof Date && !isNaN(startTime)) { 
             const isInFuture = startTime > nowTime;
-            // if (Math.abs(startTime - nowTime) < 86400000 * 30 || isInFuture) { // Log dates within 30 days or in future
-            //    console.log(`SupabaseDataService: Checking visit ${ad.id}. Scheduled: ${ad.scheduledStart} (${startDate.toISOString()}). Is in future? ${isInFuture}. Now: ${now.toISOString()}`);
-            // }
             if (isInFuture) {
               const patient = this.patients[ad.patientId];
               if (patient) {
                 upcoming.push({ patient, visit: ad });
               } else {
-                 console.warn(`SupabaseDataService: Found upcoming visit ${ad.id} but patient ${ad.patientId} not found in cache.`);
+                 console.warn(`SupabaseDataService (Prod Debug): Found upcoming visit ${ad.id} but patient ${ad.patientId} not found in cache.`);
               }
             }
           } else {
-             console.warn(`SupabaseDataService: Invalid date object after parsing scheduledStart for admission ${ad.id}. Original string: ${ad.scheduledStart}`);
+             console.warn(`SupabaseDataService (Prod Debug): Invalid date object after parsing scheduledStart for admission ${ad.id}. Original string: ${ad.scheduledStart}`);
           }
         } catch (e) {
-            console.warn(`SupabaseDataService: Error processing date for admission ${ad.id}. Original string: ${ad.scheduledStart}. Error: ${e instanceof Error ? e.message : String(e)}`);
+            console.warn(`SupabaseDataService (Prod Debug): Error processing date for admission ${ad.id}. Original string: ${ad.scheduledStart}. Error: ${e instanceof Error ? e.message : String(e)}`);
         }
-      } else {
-        // console.log(`SupabaseDataService: Skipping visit ${ad.id} due to missing, empty or non-string scheduledStart:`, ad.scheduledStart);
       }
     });
-    // console.log(`SupabaseDataService: Found ${upcoming.length} upcoming consultations.`);
+    // console.log(`SupabaseDataService (Prod Debug): Found ${upcoming.length} upcoming consultations.`);
     return upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
   }
 
@@ -200,47 +233,45 @@ class SupabaseDataService {
       .update({ transcript: transcript })
       .eq('admission_id', originalAdmissionId);
     if (error) {
-      console.error('SupabaseDataService: Error updating transcript in DB:', error.message);
+      console.error('SupabaseDataService (Prod Debug): Error updating transcript in DB:', error.message);
       throw error;
     }
     if (this.admissions[admissionCompositeId]) {
       this.admissions[admissionCompositeId].transcript = transcript;
     } else {
-      console.warn(`SupabaseDataService: updateAdmissionTranscript - Admission with composite ID ${admissionCompositeId} not found in local cache to update.`);
+      console.warn(`SupabaseDataService (Prod Debug): updateAdmissionTranscript - Admission with composite ID ${admissionCompositeId} not found in local cache to update.`);
     }
   }
 
   async createNewAdmission(patientId: string): Promise<Admission> {
     if (!this.patients[patientId]) {
-      console.error(`SupabaseDataService: Cannot create admission. Patient with original ID ${patientId} not found in local cache.`);
+      console.error(`SupabaseDataService (Prod Debug): Cannot create admission. Patient with original ID ${patientId} not found in local cache.`);
       throw new Error(`Patient with original ID ${patientId} not found. Data may not be fully loaded.`);
     }
     
     const { data: patientDBRecord, error: patientFetchError } = await this.supabase
         .from('patients')
-        .select('id') // This is the Supabase internal UUID
-        .eq('patient_id', patientId) // patientId is the original TSV PatientID
+        .select('id') 
+        .eq('patient_id', patientId) 
         .single();
 
     if (patientFetchError || !patientDBRecord) {
-        console.error('SupabaseDataService: Failed to fetch patient internal UUID from DB for new admission:', patientFetchError);
+        console.error('SupabaseDataService (Prod Debug): Failed to fetch patient internal UUID from DB for new admission:', patientFetchError);
         throw new Error('Could not find patient in database to create new admission.');
     }
     const internalSupabasePatientUUID = patientDBRecord.id;
 
     const now = new Date();
     const nowIso = now.toISOString();
-    // Use a UUID for the new admission_id to ensure uniqueness, rather than just 'NEW_...'
     const newOriginalAdmissionId = crypto.randomUUID(); 
 
     const newDbVisit = {
       admission_id: newOriginalAdmissionId, 
       patient_supabase_id: internalSupabasePatientUUID,
       admission_type: 'consultation',
-      scheduled_start_datetime: nowIso, // For a new consult, scheduled and actual can be same initially
+      scheduled_start_datetime: nowIso, 
       actual_start_datetime: nowIso,
       reason_for_visit: 'New Consultation',
-      // Populate other new dedicated columns with defaults or nulls
       transcript: '', 
       soap_note: null,
       treatments: null, 
@@ -248,7 +279,7 @@ class SupabaseDataService {
       insurance_status: null, 
       scheduled_end_datetime: null,
       actual_end_datetime: null,
-      extra_data: { // Minimal extra_data, primarily for back-reference if needed
+      extra_data: { 
         PatientID: patientId, 
         AdmissionID: newOriginalAdmissionId,
         CreatedByType: 'application' 
@@ -258,15 +289,14 @@ class SupabaseDataService {
     const { data: insertedVisitData, error: insertError } = await this.supabase
       .from('visits')
       .insert(newDbVisit)
-      .select('*') // Select all columns of the newly inserted visit
+      .select('*') 
       .single();
 
     if (insertError || !insertedVisitData) {
-      console.error('SupabaseDataService: Error inserting new admission to DB:', insertError?.message);
+      console.error('SupabaseDataService (Prod Debug): Error inserting new admission to DB:', insertError?.message);
       throw insertError || new Error('Failed to insert new admission or retrieve it post-insertion.');
     }
 
-    // Construct the Admission object for the cache and UI using data from insertedVisitData
     const newAdmissionCompositeId = `${patientId}_${insertedVisitData.admission_id}`;
     const newAdmission: Admission = {
       id: newAdmissionCompositeId,
@@ -280,16 +310,14 @@ class SupabaseDataService {
       soapNote: insertedVisitData.soap_note,
       treatments: insertedVisitData.treatments || undefined,
       priorAuthJustification: insertedVisitData.prior_auth_justification,
-      // insuranceStatus: insertedVisitData.insurance_status, 
     };
 
-    // Update local cache
     this.admissions[newAdmissionCompositeId] = newAdmission;
     if (!this.admissionsByPatient[patientId]) {
       this.admissionsByPatient[patientId] = [];
     }
     this.admissionsByPatient[patientId].push(newAdmissionCompositeId);
-    console.log(`SupabaseDataService: Created and cached new admission ${newAdmissionCompositeId} for patient ${patientId}`);
+    console.log(`SupabaseDataService (Prod Debug): Created and cached new admission ${newAdmissionCompositeId} for patient ${patientId}`);
     return newAdmission;
   }
 }
