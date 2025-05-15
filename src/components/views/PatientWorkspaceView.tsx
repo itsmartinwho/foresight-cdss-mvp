@@ -56,11 +56,24 @@ function renderDetailTable(title: string, dataArray: any[], headers: string[], c
 
 // Helper: AllDataView (copied from ForesightApp.tsx, approx lines 107-154)
 function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
+  const [, forceRerender] = React.useReducer(x => x + 1, 0); // simple rerender trigger
+
   if (!detailedPatientData) return <p className="p-4 text-muted-foreground">No detailed data available.</p>;
   const { patient, admissions } = detailedPatientData;
 
+  const deletedAdmissions = (admissions || []).filter((a: any) => a.admission.isDeleted);
+
+  const handleRestore = (ad: Admission) => {
+    if (patientDataService.restoreAdmission(patient.id, ad.id)) forceRerender();
+  };
+
+  const handlePermanentDelete = (ad: Admission) => {
+    if (patientDataService.permanentlyDeleteAdmission(patient.id, ad.id)) forceRerender();
+  };
+
   return (
     <div className="p-4 space-y-4">
+      {/* Demographics */}
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader><CardTitle className="text-step-1">Patient Demographics</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-1">
@@ -71,8 +84,9 @@ function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
         </CardContent>
       </Card>
 
+      {/* Active Admissions History */}
       <h3 className="text-lg font-semibold mt-4 text-step-1">Admissions History</h3>
-      {admissions.map((admMockWrapper: any, index: number) => {
+      {admissions.filter((a:any)=> !a.admission.isDeleted).map((admMockWrapper: any, index: number) => {
         const adm: Admission = admMockWrapper.admission;
         const diagnoses: Diagnosis[] = admMockWrapper.diagnoses || [];
         const labResults: LabResult[] = admMockWrapper.labResults || [];
@@ -95,7 +109,27 @@ function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
           </Card>
         );
       })}
-       {admissions.length === 0 && <p className="text-muted-foreground">No admission history for this patient.</p>}
+      {admissions.filter((a:any)=> !a.admission.isDeleted).length === 0 && <p className="text-muted-foreground">No admission history for this patient.</p>}
+
+      {/* Deleted Items Section */}
+      <h3 className="text-lg font-semibold mt-8 text-red-500">Deleted Items</h3>
+      {deletedAdmissions.length === 0 && <p className="text-muted-foreground">No deleted items.</p>}
+
+      {deletedAdmissions.map((admWrapper:any,index:number)=>{
+        const adm: Admission = admWrapper.admission;
+        return (
+          <Card key={adm.id || index} className="mt-2 bg-destructive/10 border-destructive/30 hover:bg-destructive/20 transition">
+            <CardHeader>
+              <CardTitle className="text-step-0">Consultation • {new Date(adm.scheduledStart).toLocaleString()}</CardTitle>
+              <CardDescription className="text-xs">Deleted at {adm.deletedAt ? new Date(adm.deletedAt).toLocaleString() : '—'}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={()=>handleRestore(adm)}>Restore</Button>
+              <Button variant="destructive" size="sm" onClick={()=>handlePermanentDelete(adm)}>Delete permanently</Button>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -598,10 +632,12 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
             if (found) {
               setSelectedAdmissionForConsultation(found);
             } else if (data.admissions && data.admissions.length > 0) {
-              setSelectedAdmissionForConsultation(data.admissions[0]?.admission || null);
+              const firstActive = data.admissions.find((a:any)=> !a.admission.isDeleted)?.admission || null;
+              setSelectedAdmissionForConsultation(firstActive);
             }
           } else if (data.admissions && data.admissions.length > 0) {
-            setSelectedAdmissionForConsultation(data.admissions[0]?.admission || null);
+            const firstActive = data.admissions.find((a:any)=> !a.admission.isDeleted)?.admission || null;
+            setSelectedAdmissionForConsultation(firstActive);
           }
         } else {
           setError(`Patient data not found for ${initialPatient.name || initialPatient.id}`);
@@ -645,6 +681,11 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   }
 
   const { patient, admissions: patientAdmissionDetails } = detailedPatientData;
+
+  // Derive active (non-deleted) admissions for UI display
+  const activeAdmissionDetails = React.useMemo(() => {
+    return (patientAdmissionDetails || []).filter((ad: any) => !ad.admission.isDeleted);
+  }, [patientAdmissionDetails]);
 
   const handleDeleteInitiate = () => {
     if (selectedAdmissionForConsultation) {
@@ -802,7 +843,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
               disabled={showDeleteConfirmation}
             >
               <option value="" disabled>-- Select a consultation --</option>
-              {patientAdmissionDetails.map((adDetail: any) => (
+              {activeAdmissionDetails.map((adDetail: any) => (
                 <option key={adDetail.admission.id} value={adDetail.admission.id}>
                   {new Date(adDetail.admission.scheduledStart).toLocaleString()} - {adDetail.admission.reason || 'N/A'}
                 </option>
@@ -868,7 +909,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         {activeTab === "consult" &&
           <ConsultationTab
             patient={patient}
-            allAdmissions={patientAdmissionDetails}
+            allAdmissions={activeAdmissionDetails}
             selectedAdmission={selectedAdmissionForConsultation}
             onSelectAdmission={setSelectedAdmissionForConsultation}
             isStartingNewConsultation={isStartingNewConsultation}
@@ -878,12 +919,12 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
             onNewConsultationDateChange={setNewConsultationDate}
             onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
           />}
-        {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allAdmissions={patientAdmissionDetails} />}
-        {activeTab === "treatment" && <TreatmentTab patient={patient} allAdmissions={patientAdmissionDetails} />}
-        {activeTab === "labs" && <LabsTab patient={patient} allAdmissions={patientAdmissionDetails} />}
-        {activeTab === "prior" && <PriorAuthTab patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allAdmissions={activeAdmissionDetails} />}
+        {activeTab === "treatment" && <TreatmentTab patient={patient} allAdmissions={activeAdmissionDetails} />}
+        {activeTab === "labs" && <LabsTab patient={patient} allAdmissions={activeAdmissionDetails} />}
+        {activeTab === "prior" && <PriorAuthTab patient={patient} allAdmissions={activeAdmissionDetails} />}
         {activeTab === "trials" && <TrialsTab patient={patient} />}
-        {activeTab === "history" && <HistoryTab patient={patient} allAdmissions={patientAdmissionDetails} />}
+        {activeTab === "history" && <HistoryTab patient={patient} allAdmissions={activeAdmissionDetails} />}
         {activeTab === "allData" && <AllDataView detailedPatientData={detailedPatientData} />}
       </ScrollArea>
     </div>
