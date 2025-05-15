@@ -3,13 +3,15 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, ChevronLeft } from "lucide-react";
+import { Users, ChevronLeft, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types"; // Added Treatment
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"; // For renderDetailTable
 import { Input } from "@/components/ui/input"; // <--- ADD THIS LINE
 import { useSearchParams } from 'next/navigation';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 // Helper: renderDetailTable (copied from ForesightApp.tsx, approx lines 66-105)
 function renderDetailTable(title: string, dataArray: any[], headers: string[], columnAccessors?: string[]) {
@@ -114,9 +116,31 @@ function SeverityBadge({ severity }: { severity: string }) {
 }
 
 // Consultation Tab (copied from ForesightApp.tsx, approx lines 544-608)
-function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAdmission }: { patient: Patient; allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }>; selectedAdmission: Admission | null; onSelectAdmission: (admission: Admission | null) => void; }) {
+function ConsultationTab({
+  patient,
+  allAdmissions,
+  selectedAdmission,
+  onSelectAdmission,
+  isStartingNewConsultation,
+  newConsultationReason,
+  onNewConsultationReasonChange,
+  newConsultationDate,
+  onNewConsultationDateChange,
+  onStartTranscriptionForNewConsult,
+}: {
+  patient: Patient;
+  allAdmissions: Array<{ admission: Admission; diagnoses: Diagnosis[]; labResults: LabResult[] }>;
+  selectedAdmission: Admission | null;
+  onSelectAdmission: (admission: Admission | null) => void;
+  isStartingNewConsultation?: boolean;
+  newConsultationReason?: string;
+  onNewConsultationReasonChange?: (reason: string) => void;
+  newConsultationDate?: Date | null;
+  onNewConsultationDateChange?: (date: Date | null) => void;
+  onStartTranscriptionForNewConsult?: () => Promise<Admission | null>; // Returns the new admission or null
+}) {
   const availableAdmissions = allAdmissions.map(ad => ad.admission);
-  const currentDetailedAdmission = allAdmissions.find(ad => ad.admission.id === selectedAdmission?.id)?.admission;
+  const currentDetailedAdmission = !isStartingNewConsultation ? allAdmissions.find(ad => ad.admission.id === selectedAdmission?.id)?.admission : null;
 
   // NEW STATE FOR LIVE TRANSCRIPTION
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -132,6 +156,23 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
       alert('Deepgram API key not configured');
       return;
     }
+
+    let currentAdmissionToUse = selectedAdmission;
+
+    if (isStartingNewConsultation && onStartTranscriptionForNewConsult) {
+      const newAdmission = await onStartTranscriptionForNewConsult();
+      if (!newAdmission) {
+        alert("Failed to create new consultation entry. Cannot start transcription.");
+        return;
+      }
+      currentAdmissionToUse = newAdmission;
+    }
+    
+    if (!currentAdmissionToUse) {
+        alert("No active consultation selected. Cannot start transcription.");
+        return;
+    }
+
     // Reset live transcript for a fresh run – user can still undo via browser undo if needed.
     setLiveTranscript('');
     try {
@@ -198,16 +239,43 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
     setIsTranscribing(false);
     setIsPaused(false);
     // Persist transcript to patient data service
-    if (patient && selectedAdmission) {
-      patientDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, liveTranscript);
+    // Ensure we use the correct admission ID, especially after a new one is created.
+    const admissionToSaveTo = isStartingNewConsultation ? selectedAdmission : currentDetailedAdmission;
+
+    if (patient && admissionToSaveTo) {
+      patientDataService.updateAdmissionTranscript(patient.id, admissionToSaveTo.id, liveTranscript);
+    } else if (patient && selectedAdmission) { // Fallback for safety, though above should cover
+        patientDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, liveTranscript);
     }
   };
 
-  const displayTranscript = currentDetailedAdmission?.transcript || liveTranscript;
+  const displayTranscript = isStartingNewConsultation ? liveTranscript : (currentDetailedAdmission?.transcript || liveTranscript);
 
   return (
     <div className="p-6 grid lg:grid-cols-3 gap-6">
-      {selectedAdmission && (
+      {isStartingNewConsultation ? (
+        <div className="lg:col-span-3 space-y-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Reason for visit</label>
+            <Input
+              placeholder="E.g., joint pain, generalized inflammation"
+              className="placeholder:text-muted-foreground text-step--1"
+              value={newConsultationReason}
+              onChange={(e) => onNewConsultationReasonChange?.(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Date and time</label>
+            <DatePicker
+              selected={newConsultationDate}
+              onChange={(d) => onNewConsultationDateChange?.(d)}
+              showTimeSelect
+              dateFormat="Pp"
+              className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 border-border"
+            />
+          </div>
+        </div>
+      ) : selectedAdmission && (
         <div className="lg:col-span-3 bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-sm rounded-md px-4 py-2 mb-4">
           <span className="font-semibold">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} &nbsp;—&nbsp; {selectedAdmission.reason || 'N/A'}
         </div>
@@ -500,6 +568,11 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAdmissionForConsultation, setSelectedAdmissionForConsultation] = useState<Admission | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [visitToDeleteId, setVisitToDeleteId] = useState<string | null>(null);
+  const [isStartingNewConsultation, setIsStartingNewConsultation] = useState(false);
+  const [newConsultationReason, setNewConsultationReason] = useState('');
+  const [newConsultationDate, setNewConsultationDate] = useState<Date | null>(new Date());
 
   const searchParams = useSearchParams();
 
@@ -560,7 +633,10 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   if (error || !detailedPatientData) {
     return (
       <div className="p-6">
-        <Button size="sm" variant="ghost" onClick={onBack} className="text-step-0">
+        <Button size="sm" variant="ghost" onClick={() => {
+          setIsStartingNewConsultation(false); // Reset state if going back
+          onBack();
+        }} className="text-step-0">
           ← Patients
         </Button>
         <p className="text-red-500 mt-4">Error: {error || "Detailed patient data could not be loaded."}</p>
@@ -569,6 +645,99 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   }
 
   const { patient, admissions: patientAdmissionDetails } = detailedPatientData;
+
+  const handleDeleteInitiate = () => {
+    if (selectedAdmissionForConsultation) {
+      setVisitToDeleteId(selectedAdmissionForConsultation.id);
+      setShowDeleteConfirmation(true);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (visitToDeleteId && patient?.id) {
+      console.log(`Attempting to delete visit: ${visitToDeleteId} for patient: ${patient.id}`);
+      const success = patientDataService.markAdmissionAsDeleted(patient.id, visitToDeleteId);
+      
+      if (success) {
+        // Re-fetch or update data to reflect the change
+        // For now, we'll manually filter the local state as an optimistic update.
+        // A more robust solution might involve re-calling loadData or a dedicated refresh function.
+        const updatedAdmissions = patientAdmissionDetails.filter(
+          (adDetail: any) => adDetail.admission.id !== visitToDeleteId
+        );
+        // We also need to update the raw detailedPatientData.admissions to ensure consistency
+        // if other parts of the component rely on it directly before a full re-fetch.
+        setDetailedPatientData((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            admissions: prev.admissions.map((adWrapper: any) => {
+                if (adWrapper.admission.id === visitToDeleteId) {
+                    return { 
+                        ...adWrapper, 
+                        admission: { 
+                            ...adWrapper.admission, 
+                            isDeleted: true, 
+                            deletedAt: new Date().toISOString() 
+                        }
+                    };
+                }
+                return adWrapper;
+            })
+          };
+        });
+
+        // After marking as deleted, we should filter it out from the *displayed* list 
+        // in the dropdown, or adjust the dropdown to not show deleted items.
+        // The current filter on updatedAdmissions already achieves this for the dropdown's source.
+
+        // Select a new visit if the current one was deleted
+        if (selectedAdmissionForConsultation?.id === visitToDeleteId) {
+          const nonDeletedAdmissions = updatedAdmissions.filter((adDetail: any) => !adDetail.admission.isDeleted);
+          if (nonDeletedAdmissions.length > 0) {
+            setSelectedAdmissionForConsultation(nonDeletedAdmissions[0].admission);
+          } else {
+            setSelectedAdmissionForConsultation(null);
+          }
+        }
+        console.log(`Visit ${visitToDeleteId} successfully marked as deleted.`);
+      } else {
+        console.error(`Failed to mark visit ${visitToDeleteId} as deleted.`);
+        // Optionally, show an error message to the user
+      }
+      
+      setShowDeleteConfirmation(false);
+      setVisitToDeleteId(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmation(false);
+    setVisitToDeleteId(null);
+  };
+
+  const handleFinalizeNewConsultation = async (): Promise<Admission | null> => {
+    if (!patient?.id) return null;
+    try {
+      const newAd = await patientDataService.createNewAdmission(patient.id, {
+        reason: newConsultationReason || undefined,
+        scheduledStart: newConsultationDate ? newConsultationDate.toISOString() : new Date().toISOString(),
+      });
+      setDetailedPatientData((prev: any) => {
+        if (!prev) return prev;
+        const newAdmissionsList = [{ admission: newAd, diagnoses: [], labResults: [] }, ...(prev.admissions || [])];
+        return { ...prev, admissions: newAdmissionsList };
+      });
+      setSelectedAdmissionForConsultation(newAd);
+      setIsStartingNewConsultation(false); // Transition out of "starting new" mode
+      setActiveTab('consult'); // Ensure consult tab is active
+      return newAd;
+    } catch (e) {
+      console.error("Failed to finalize new consultation", e);
+      setError("Failed to create new consultation visit.");
+      return null;
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -597,41 +766,87 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
             </div>
             <button
               onClick={async () => {
-                const newAd = await patientDataService.createNewAdmission(patient.id);
-                setDetailedPatientData((prev: any) => {
-                  if (!prev) return prev;
-                  return { ...prev, admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...prev.admissions] };
-                });
-                setSelectedAdmissionForConsultation(newAd);
-                setActiveTab('consult');
+                if (isStartingNewConsultation) {
+                  setIsStartingNewConsultation(false);
+                  if (patientAdmissionDetails && patientAdmissionDetails.length > 0) {
+                    setSelectedAdmissionForConsultation(patientAdmissionDetails[0]?.admission || null);
+                  } else {
+                    setSelectedAdmissionForConsultation(null);
+                  }
+                } else {
+                  setIsStartingNewConsultation(true);
+                  setNewConsultationReason('');
+                  setNewConsultationDate(new Date());
+                  setSelectedAdmissionForConsultation(null);
+                  setActiveTab('consult');
+                }
               }}
               className="ml-6 inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
             >
-              + New Consultation
+              {isStartingNewConsultation ? "Cancel New Consultation" : "+ New Consultation"}
             </button>
           </div>
         </div>
-        <div className="ml-auto flex-shrink-0">
-          <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
-          <select
-            id="consultation-select-main"
-            className="block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm"
-            value={selectedAdmissionForConsultation?.id || ""}
-            onChange={(e) => {
-              const admissionId = e.target.value;
-              const selected = patientAdmissionDetails.find((ad: any) => ad.admission.id === admissionId)?.admission || null;
-              setSelectedAdmissionForConsultation(selected);
-            }}
-          >
-            <option value="" disabled>-- Select a consultation --</option>
-            {patientAdmissionDetails.map((adDetail: any) => (
-              <option key={adDetail.admission.id} value={adDetail.admission.id}>
-                {new Date(adDetail.admission.scheduledStart).toLocaleString()} - {adDetail.admission.reason || 'N/A'}
-              </option>
-            ))}
-          </select>
+        <div className="ml-auto flex-shrink-0 flex items-center gap-2">
+          <div>
+            <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
+            <select
+              id="consultation-select-main"
+              className="block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm"
+              value={selectedAdmissionForConsultation?.id || ""}
+              onChange={(e) => {
+                const admissionId = e.target.value;
+                const selected = patientAdmissionDetails.find((ad: any) => ad.admission.id === admissionId)?.admission || null;
+                setSelectedAdmissionForConsultation(selected);
+              }}
+              disabled={showDeleteConfirmation}
+            >
+              <option value="" disabled>-- Select a consultation --</option>
+              {patientAdmissionDetails.map((adDetail: any) => (
+                <option key={adDetail.admission.id} value={adDetail.admission.id}>
+                  {new Date(adDetail.admission.scheduledStart).toLocaleString()} - {adDetail.admission.reason || 'N/A'}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedAdmissionForConsultation && !showDeleteConfirmation && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 h-8 w-8 mt-4"
+              onClick={handleDeleteInitiate}
+              aria-label="Delete selected visit"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
+
+      {showDeleteConfirmation && visitToDeleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="p-6 bg-background shadow-xl max-w-sm">
+            <CardHeader>
+              <CardTitle>Confirm Deletion</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Are you sure you want to delete this visit? <br />
+                Scheduled: {
+                  new Date(
+                    patientAdmissionDetails.find((ad:any) => ad.admission.id === visitToDeleteId)?.admission.scheduledStart
+                  ).toLocaleString()
+                }
+                <br />
+                Reason: {patientAdmissionDetails.find((ad:any) => ad.admission.id === visitToDeleteId)?.admission.reason || 'N/A'}
+              </p>
+            </CardContent>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={handleDeleteCancel}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDeleteConfirm}>Delete</Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <div className="bg-background/70 backdrop-blur-sm border-b px-4 py-1 flex gap-2 sticky top-[calc(2.5rem+3rem)] z-20 overflow-x-auto shadow-sm">
         {[
@@ -656,6 +871,12 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
             allAdmissions={patientAdmissionDetails}
             selectedAdmission={selectedAdmissionForConsultation}
             onSelectAdmission={setSelectedAdmissionForConsultation}
+            isStartingNewConsultation={isStartingNewConsultation}
+            newConsultationReason={newConsultationReason}
+            onNewConsultationReasonChange={setNewConsultationReason}
+            newConsultationDate={newConsultationDate}
+            onNewConsultationDateChange={setNewConsultationDate}
+            onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
           />}
         {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allAdmissions={patientAdmissionDetails} />}
         {activeTab === "treatment" && <TreatmentTab patient={patient} allAdmissions={patientAdmissionDetails} />}
