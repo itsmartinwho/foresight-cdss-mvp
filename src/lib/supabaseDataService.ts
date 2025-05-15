@@ -50,6 +50,9 @@ class SupabaseDataService {
     console.log(`SupabaseDataService (Prod Debug): Fetched ${patientRows.length} raw patient rows from Supabase.`);
 
     patientRows.forEach((row) => {
+      console.log(`SupabaseDataService (Prod Debug): Processing patient row: ${row.patient_id}`, row);
+      const rawAlertsData = row.alerts ?? row.alerts_json ?? row.extra_data?.alerts ?? row.extra_data?.alertsJSON;
+      console.log(`SupabaseDataService (Prod Debug): Raw alerts data for patient ${row.patient_id}:`, rawAlertsData);
       const patient: Patient = {
         id: row.patient_id,
         name: row.name,
@@ -74,6 +77,7 @@ class SupabaseDataService {
               }
               s = s.replace(/""/g, '"');
               const parsed = JSON.parse(s);
+              console.log(`SupabaseDataService (Prod Debug): Parsed alerts from string for patient ${row.patient_id}:`, parsed);
               return Array.isArray(parsed) ? parsed as ComplexCaseAlert[] : [];
             }
           } catch (e) {
@@ -86,6 +90,7 @@ class SupabaseDataService {
         nextAppointment: row.next_appointment_date ? new Date(row.next_appointment_date).toISOString() : undefined,
         reason: row.patient_level_reason,
       };
+      console.log(`SupabaseDataService (Prod Debug): Processed patient object for ${patient.id}:`, patient);
       this.patients[patient.id] = patient;
       this.admissionsByPatient[patient.id] = []; 
     });

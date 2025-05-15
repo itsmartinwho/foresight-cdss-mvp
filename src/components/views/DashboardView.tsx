@@ -125,6 +125,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
         }
       });
       setComplexCaseAlertsForDisplay(collectedAlerts);
+      console.log('DashboardView (Prod Debug): Alerts for display in DashboardView:', collectedAlerts);
       setIsLoading(false);
     };
     loadDashboardData();
@@ -133,6 +134,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   const highPriorityAlertsCount = complexCaseAlertsForDisplay.filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
   ).length;
+  console.log('DashboardView (Prod Debug): High priority alerts count in DashboardView:', highPriorityAlertsCount);
 
   if (isLoading) {
     return <div className="p-6 text-center text-muted-foreground">Loading dashboard...</div>;

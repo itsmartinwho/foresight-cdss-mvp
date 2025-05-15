@@ -1131,6 +1131,7 @@ function ForesightApp() {
             }
         });
         setComplexCaseAlerts(collectedAlerts);
+        console.log('ForesightApp (Prod Debug): Global alerts loaded in ForesightApp:', collectedAlerts);
     };
     loadGlobalAlerts();
   }, []); // Runs once on mount, or add dependencies if it should re-run
@@ -1156,6 +1157,7 @@ function ForesightApp() {
   const highPriorityAlertsCount = complexCaseAlerts.filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
   ).length;
+  console.log('ForesightApp (Prod Debug): High priority alerts count in ForesightApp:', highPriorityAlertsCount);
 
   let currentView;
   switch (activeView) {

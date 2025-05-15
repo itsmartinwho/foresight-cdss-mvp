@@ -68,6 +68,7 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
         }
       });
       setAllAlerts(alertsWithPatientNames);
+      console.log('AlertsScreenView (Prod Debug): All alerts with patient names in AlertsScreenView:', alertsWithPatientNames);
       setIsLoading(false);
     };
     loadAlertData();
@@ -84,6 +85,8 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
       return likelihoodB - likelihoodA;
     }
   });
+
+  console.log('AlertsScreenView (Prod Debug): Sorted alerts in AlertsScreenView:', sortedAlerts);
 
   const highPriorityAlertsCount = allAlerts.filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
