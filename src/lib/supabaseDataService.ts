@@ -9,39 +9,40 @@ import { Patient, Admission, Diagnosis, LabResult, ComplexCaseAlert, Treatment }
 class SupabaseDataService {
   private supabase = getSupabaseClient();
   private isLoaded = false;
+  private isLoading = false; // New flag to prevent concurrent loads
   private patients: Record<string, Patient> = {}; // key = original PatientID (e.g., "1", "FB2ABB...")
   private admissions: Record<string, Admission> = {}; // key = composite `${patientId}_${originalAdmissionID}`
   private admissionsByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite admission keys
 
   async loadPatientData(): Promise<void> {
-    if (this.isLoaded) {
-      console.log('SupabaseDataService (Prod Debug): Data already loaded. Skipping.');
+    if (this.isLoaded || this.isLoading) {
+      console.log(`SupabaseDataService (Prod Debug): Skipping load. isLoaded: ${this.isLoaded}, isLoading: ${this.isLoading}`);
       return;
     }
+    this.isLoading = true;
     console.log('SupabaseDataService (Prod Debug): Starting loadPatientData...');
-    this.isLoaded = false; // Ensure we attempt to load if called again before full success
     this.patients = {}; // Clear previous state
     this.admissions = {};
     this.admissionsByPatient = {};
 
-    // 1. Fetch Patients
     let patientRows = null;
     try {
       const { data, error: pErr } = await this.supabase.from('patients').select('*');
       if (pErr) {
         console.error('SupabaseDataService (Prod Debug): Error fetching patients:', pErr);
+        this.isLoading = false;
         throw pErr;
       }
       patientRows = data;
     } catch (error) {
       console.error('SupabaseDataService (Prod Debug): Exception during patient fetch:', error);
-      this.isLoaded = false; // Mark as not loaded on error
-      return; // Stop further execution if patients can't be fetched
+      this.isLoading = false; 
+      return; 
     }
     
     if (!patientRows) {
         console.error('SupabaseDataService (Prod Debug): patientRows is null after fetch. Cannot proceed.');
-        this.isLoaded = false;
+        this.isLoading = false;
         return;
     }
     console.log(`SupabaseDataService (Prod Debug): Fetched ${patientRows.length} raw patient rows from Supabase.`);
@@ -70,27 +71,35 @@ class SupabaseDataService {
     });
     console.log(`SupabaseDataService (Prod Debug): Processed and cached ${Object.keys(this.patients).length} patients.`);
 
-    // 2. Fetch Visits
     let visitRows = null;
+    let totalVisitsAvailable = 0;
     try {
-        const { data, error: vErr } = await this.supabase.from('visits').select('*');
+        console.log('SupabaseDataService (Prod Debug): Attempting to fetch ALL visits with count...');
+        const { data, error: vErr, count } = await this.supabase
+            .from('visits')
+            .select('*', { count: 'exact' }); 
+
         if (vErr) {
             console.error('SupabaseDataService (Prod Debug): Error fetching visits:', vErr);
+            this.isLoading = false;
             throw vErr;
         }
         visitRows = data;
+        totalVisitsAvailable = count ?? 0;
+        console.log(`SupabaseDataService (Prod Debug): Fetched ${visitRows ? visitRows.length : 0} raw visit rows. Total available according to Supabase: ${totalVisitsAvailable}`);
     } catch (error) {
         console.error('SupabaseDataService (Prod Debug): Exception during visits fetch:', error);
-        this.isLoaded = false; // Mark as not loaded on error
+        this.isLoading = false; 
         return; 
     }
 
     if (!visitRows) {
         console.error('SupabaseDataService (Prod Debug): visitRows is null after fetch. Cannot proceed with visits.');
-        this.isLoaded = true; // Patients might be loaded, but visits are not.
+        // Patients are loaded, but visits are not. Consider if isLoaded should be true.
+        // For now, if visits fail, we consider the load incomplete for consistent state.
+        this.isLoading = false;
         return;
     }
-    console.log(`SupabaseDataService (Prod Debug): Fetched ${visitRows.length} raw visit rows from Supabase.`);
 
     let visitsProcessed = 0;
     visitRows.forEach((row) => {
@@ -101,7 +110,7 @@ class SupabaseDataService {
         return;
       }
       if (!this.patients[originalPatientIDFromVisitExtraData]) {
-        console.warn(`SupabaseDataService (Prod Debug): Skipping visit ${row.admission_id}. Patient by original ID '${originalPatientIDFromVisitExtraData}' not found in loaded patients cache (this.patients keys: ${Object.keys(this.patients).slice(0,10).join(', ')}...). Visit extra_data:`, row.extra_data);
+        console.warn(`SupabaseDataService (Prod Debug): Skipping visit ${row.admission_id}. Patient by original ID '${originalPatientIDFromVisitExtraData}' not found in loaded patients cache. Visit extra_data:`, row.extra_data);
         return;
       }
 
@@ -122,7 +131,6 @@ class SupabaseDataService {
         priorAuthJustification: row.prior_auth_justification,
       };
       this.admissions[compositeKey] = admission;
-      // Ensure this.admissionsByPatient[patientPublicId] exists (it should from patient processing step)
       if (this.admissionsByPatient[patientPublicId]) {
         this.admissionsByPatient[patientPublicId].push(compositeKey);
       } else {
@@ -134,37 +142,46 @@ class SupabaseDataService {
     console.log(`SupabaseDataService (Prod Debug): Processed and cached ${visitsProcessed} visits. Total in cache: ${Object.keys(this.admissions).length}.`);
 
     this.isLoaded = true;
+    this.isLoading = false;
     console.log('SupabaseDataService (Prod Debug): loadPatientData completed successfully.');
   }
 
   getAllPatients(): Patient[] {
-    // console.log('SupabaseDataService (Prod Debug): getAllPatients called. isLoaded:', this.isLoaded, 'Count:', Object.keys(this.patients).length);
-    if (!this.isLoaded) console.warn("SupabaseDataService: getAllPatients called before data loaded. Call loadPatientData() first.");
+    // console.log('SupabaseDataService (Prod Debug): getAllPatients called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.patients).length);
+    if (!this.isLoaded && !this.isLoading) {
+        // Optionally trigger load or warn. For now, just warn vigorously if data isn't ready.
+        console.error("SupabaseDataService: getAllPatients called when data not loaded and not currently loading. THIS IS A BUG in component logic or data flow.");
+    }
     return Object.values(this.patients);
   }
 
   getPatient(patientId: string): Patient | null {
-    // console.log(`SupabaseDataService (Prod Debug): getPatient called for ${patientId}. isLoaded:`, this.isLoaded);
-    if (!this.isLoaded) console.warn("SupabaseDataService: getPatient called before data loaded. Call loadPatientData() first.");
+    // console.log(`SupabaseDataService (Prod Debug): getPatient called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
+    if (!this.isLoaded && !this.isLoading) {
+        console.error(`SupabaseDataService: getPatient(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);
+    }
     return this.patients[patientId] ?? null;
   }
 
   getPatientAdmissions(patientId: string): Admission[] {
-    // console.log(`SupabaseDataService (Prod Debug): getPatientAdmissions called for ${patientId}. isLoaded:`, this.isLoaded);
-    if (!this.isLoaded) console.warn("SupabaseDataService: getPatientAdmissions called before data loaded. Call loadPatientData() first.");
+    // console.log(`SupabaseDataService (Prod Debug): getPatientAdmissions called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
+     if (!this.isLoaded && !this.isLoading) {
+        console.error(`SupabaseDataService: getPatientAdmissions(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);
+    }
     const admissionKeys = this.admissionsByPatient[patientId] || [];
     return admissionKeys.map(key => this.admissions[key]).filter(Boolean) as Admission[];
   }
 
   getPatientData(patientId: string): any | null {
-    // console.log(`SupabaseDataService (Prod Debug): getPatientData called for ${patientId}. isLoaded:`, this.isLoaded);
-    if (!this.isLoaded) {
-       console.warn("SupabaseDataService: getPatientData called before data loaded. Call loadPatientData() first.");
+    // console.log(`SupabaseDataService (Prod Debug): getPatientData called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
+    if (!this.isLoaded && !this.isLoading) {
+       console.error(`SupabaseDataService: getPatientData(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);
        return null; 
     }
     const patient = this.getPatient(patientId);
     if (!patient) {
-        console.warn(`SupabaseDataService (Prod Debug): getPatientData - Patient ${patientId} not found in cache.`);
+        // Warning already in getPatient if not loaded. This is if loaded but patient specifically not found.
+        console.warn(`SupabaseDataService (Prod Debug): getPatientData - Patient ${patientId} not found in cache (after load attempt).`);
         return null;
     }
 
@@ -178,23 +195,26 @@ class SupabaseDataService {
   }
 
   getAllAdmissions(): { patient: Patient | null; admission: Admission }[] {
-    // console.log('SupabaseDataService (Prod Debug): getAllAdmissions called. isLoaded:', this.isLoaded, 'Count:', Object.keys(this.admissions).length);
-    if (!this.isLoaded) console.warn("SupabaseDataService: getAllAdmissions called before data loaded. Call loadPatientData() first.");
+    // console.log('SupabaseDataService (Prod Debug): getAllAdmissions called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.admissions).length);
+    if (!this.isLoaded && !this.isLoading) {
+        console.error("SupabaseDataService: getAllAdmissions called when data not loaded and not currently loading. THIS IS A BUG.");
+    }
     const allAds: { patient: Patient | null; admission: Admission }[] = [];
     Object.values(this.admissions).forEach(admission => {
       const patient = this.patients[admission.patientId] ?? null;
-      if (!patient) {
-         // This might be noisy if some admissions genuinely don't have linked patients due to data issues
-         // console.warn(`SupabaseDataService (Prod Debug): getAllAdmissions - Patient ${admission.patientId} for admission ${admission.id} not found in cache.`);
-      }
+      // if (!patient) { // This warning can be very noisy if some admissions don't have patients due to data issues
+      //    console.warn(`SupabaseDataService (Prod Debug): getAllAdmissions - Patient ${admission.patientId} for admission ${admission.id} not found in cache.`);
+      // }
       allAds.push({ patient, admission });
     });
     return allAds;
   }
 
   getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
-    // console.log('SupabaseDataService (Prod Debug): getUpcomingConsultations called. isLoaded:', this.isLoaded, 'Count:', Object.keys(this.admissions).length);
-    if (!this.isLoaded) console.warn("SupabaseDataService: getUpcomingConsultations called before data loaded. Call loadPatientData() first.");
+    // console.log('SupabaseDataService (Prod Debug): getUpcomingConsultations called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.admissions).length);
+    if (!this.isLoaded && !this.isLoading) {
+        console.error("SupabaseDataService: getUpcomingConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
+    }
     const upcoming: { patient: Patient; visit: Admission }[] = [];
     const now = new Date();
     const nowTime = now.getTime();
@@ -222,7 +242,6 @@ class SupabaseDataService {
         }
       }
     });
-    // console.log(`SupabaseDataService (Prod Debug): Found ${upcoming.length} upcoming consultations.`);
     return upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
   }
 
@@ -245,8 +264,20 @@ class SupabaseDataService {
 
   async createNewAdmission(patientId: string): Promise<Admission> {
     if (!this.patients[patientId]) {
-      console.error(`SupabaseDataService (Prod Debug): Cannot create admission. Patient with original ID ${patientId} not found in local cache.`);
-      throw new Error(`Patient with original ID ${patientId} not found. Data may not be fully loaded.`);
+      console.error(`SupabaseDataService (Prod Debug): Cannot create admission. Patient with original ID ${patientId} not found in local cache. Potential race condition or data not loaded.`);
+      // Attempt to load data if not loaded, or re-throw if critical path expects patient to be there.
+      if (!this.isLoaded && !this.isLoading) {
+        console.warn('SupabaseDataService (Prod Debug): createNewAdmission called before initial data load. Attempting load now...');
+        await this.loadPatientData();
+        // Check again after load attempt
+        if (!this.patients[patientId]) {
+          throw new Error(`Patient with original ID ${patientId} still not found after reload attempt.`);
+        }
+      } else if (this.isLoading) {
+        throw new Error (`Data is currently loading. Cannot create new admission for patient ${patientId} yet.`);
+      } else {
+         throw new Error(`Patient with original ID ${patientId} not found. Data may not be fully loaded.`);
+      }
     }
     
     const { data: patientDBRecord, error: patientFetchError } = await this.supabase
