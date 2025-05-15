@@ -104,7 +104,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
           </div>
           <button
             onClick={() => setShowNewConsultModal(true)}
-            className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none w-[140px] h-[40px] flex items-center justify-center"
+            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
           >
             + New Consultation
           </button>
