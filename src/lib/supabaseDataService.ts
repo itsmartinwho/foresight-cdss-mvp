@@ -51,8 +51,27 @@ class SupabaseDataService {
 
     patientRows.forEach((row) => {
       console.log(`SupabaseDataService (Prod Debug): Processing patient row: ${row.patient_id}`, row);
-      const rawAlertsData = row.alerts ?? row.alerts_json ?? row.extra_data?.alerts ?? row.extra_data?.alertsJSON;
-      console.log(`SupabaseDataService (Prod Debug): Raw alerts data for patient ${row.patient_id}:`, rawAlertsData);
+      // Gather possible alert sources
+      const candidateSources = [
+        { key: 'alerts', value: row.alerts },
+        { key: 'alerts_json', value: row.alerts_json },
+        { key: 'alertsJSON', value: (row as any).alertsJSON },
+        { key: 'extra_data.alerts', value: row.extra_data?.alerts },
+        { key: 'extra_data.alertsJSON', value: row.extra_data?.alertsJSON },
+      ];
+      // Pick first candidate that appears to have meaningful data (non-empty array or non-empty string)
+      let chosenRawAlerts: any = undefined;
+      let chosenKey = '';
+      for (const c of candidateSources) {
+        if (c.value === undefined || c.value === null) continue;
+        if (Array.isArray(c.value) && c.value.length === 0) continue; // skip empty array
+        if (typeof c.value === 'string' && c.value.trim().length === 0) continue; // skip empty string
+        chosenRawAlerts = c.value;
+        chosenKey = c.key;
+        break;
+      }
+      console.log(`SupabaseDataService (Prod Debug): Chosen alerts source for patient ${row.patient_id}: ${chosenKey}`, chosenRawAlerts);
+      const rawAlertsData = chosenRawAlerts;
       const patient: Patient = {
         id: row.patient_id,
         name: row.name,
@@ -66,7 +85,15 @@ class SupabaseDataService {
         language: row.language,
         povertyPercentage: row.poverty_percentage !== null ? Number(row.poverty_percentage) : undefined,
         alerts: (() => {
-          const src = row.alerts ?? row.alerts_json ?? row.extra_data?.alerts ?? row.extra_data?.alertsJSON;
+          const srcCandidates = [row.alerts, row.alerts_json, (row as any).alertsJSON, row.extra_data?.alerts, row.extra_data?.alertsJSON];
+          let src: any = undefined;
+          for (const val of srcCandidates) {
+            if (val === undefined || val === null) continue;
+            if (Array.isArray(val) && val.length === 0) continue;
+            if (typeof val === 'string' && val.trim().length === 0) continue;
+            src = val;
+            break;
+          }
           if (!src) return [];
           try {
             if (Array.isArray(src)) return src as ComplexCaseAlert[];
