@@ -400,6 +400,24 @@ class SupabaseDataService {
     const admission = await this.createNewAdmission(patient.id, admissionInput);
     return { patient, admission };
   }
+
+  // ------------------------------------------------------------------
+  // Soft delete & restore stubs (not yet implemented for Supabase)
+  // ------------------------------------------------------------------
+  markAdmissionAsDeleted(patientId: string, admissionId: string): boolean {
+    console.warn('SupabaseDataService: markAdmissionAsDeleted is not implemented.');
+    return false;
+  }
+
+  restoreAdmission(patientId: string, admissionId: string): boolean {
+    console.warn('SupabaseDataService: restoreAdmission is not implemented.');
+    return false;
+  }
+
+  permanentlyDeleteAdmission(patientId: string, admissionId: string): boolean {
+    console.warn('SupabaseDataService: permanentlyDeleteAdmission is not implemented.');
+    return false;
+  }
 }
 
 // Export as singleton consistent with legacy implementation
