@@ -550,7 +550,48 @@ class PatientDataService {
     if (admissionInput?.reason) admission.reason = admissionInput.reason;
     if (admissionInput?.scheduledStart) admission.scheduledStart = admissionInput.scheduledStart;
     if (admissionInput?.scheduledEnd) admission.scheduledEnd = admissionInput.scheduledEnd;
+    this.emitChange(); // ensure change is emitted after this combined operation
     return { patient, admission };
+  }
+
+  markAdmissionAsDeleted(patientId: string, admissionId: string): boolean {
+    const patientAdmissions = this.admissions[patientId];
+    if (!patientAdmissions) return false;
+
+    const admissionIndex = patientAdmissions.findIndex(ad => ad.id === admissionId);
+    if (admissionIndex === -1) return false;
+
+    patientAdmissions[admissionIndex].isDeleted = true;
+    patientAdmissions[admissionIndex].deletedAt = new Date().toISOString();
+    this.emitChange();
+    return true;
+  }
+
+  restoreAdmission(patientId: string, admissionId: string): boolean {
+    const patientAdmissions = this.admissions[patientId];
+    if (!patientAdmissions) return false;
+
+    const admissionIndex = patientAdmissions.findIndex(ad => ad.id === admissionId && ad.isDeleted);
+    if (admissionIndex === -1) return false;
+
+    patientAdmissions[admissionIndex].isDeleted = false;
+    patientAdmissions[admissionIndex].deletedAt = undefined;
+    this.emitChange();
+    return true;
+  }
+
+  permanentlyDeleteAdmission(patientId: string, admissionId: string): boolean {
+    const patientAdmissions = this.admissions[patientId];
+    if (!patientAdmissions) return false;
+
+    const initialLength = patientAdmissions.length;
+    this.admissions[patientId] = patientAdmissions.filter(ad => ad.id !== admissionId || !ad.isDeleted);
+    
+    if (this.admissions[patientId].length < initialLength) {
+      this.emitChange();
+      return true;
+    }
+    return false;
   }
 
   // Methods like searchPatients, hasAutoimmuneDiagnosis, hasOncologyDiagnosis would continue

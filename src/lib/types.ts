@@ -37,6 +37,8 @@ export interface Admission {
   soapNote?: string;
   treatments?: Treatment[];
   priorAuthJustification?: string; // Ensured this field is present
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface Diagnosis {
@@ -233,4 +235,8 @@ export interface CopilotSuggestion {
 export interface Consultation {
   dateTime: string; // ISO string
   reason?: string;
+}
+
+export interface PatientAdmissionDetails {
+  // ... existing code ...
 }
