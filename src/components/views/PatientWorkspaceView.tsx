@@ -261,7 +261,7 @@ function ConsultationTab({ patient, allAdmissions, selectedAdmission, onSelectAd
           </div>
         ) : (
           <div className="absolute bottom-2 right-4">
-            <button onClick={startTranscription} className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white px-4 py-1 text-xs font-medium rounded-full shadow hover:brightness-110 transition">
+            <button onClick={startTranscription} className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none w-[140px] h-[40px] flex items-center justify-center">
               Start transcription
             </button>
           </div>
@@ -605,7 +605,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
                 setSelectedAdmissionForConsultation(newAd);
                 setActiveTab('consult');
               }}
-              className="ml-6 inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+              className="ml-6 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none w-[140px] h-[40px] flex items-center justify-center"
             >
               + New Consultation
             </button>

@@ -10,6 +10,7 @@ import type { Patient } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { X } from 'lucide-react';
 
 interface Props {
   /** Controls open state from parent */
@@ -117,31 +118,43 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
           <TabsContent value="existing">
             <div className="space-y-4">
               <label className="font-semibold text-step--1 flex items-center">
-                Select patient<span className="text-destructive ml-1">*</span>{errors.selectedPatient && <span className="text-destructive text-xs ml-2">Required field</span>}
+                Select patient <span className="text-destructive">*</span>{errors.selectedPatient && <span className="text-destructive text-xs ml-2">Required field</span>}
               </label>
-              <div className="border rounded-md overflow-hidden">
-                <div className="border-b p-1">
-                  <Input
-                    placeholder="Search patient by name or ID..."
-                    className="placeholder:text-muted-foreground text-step--1"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+              {selectedPatient ? (
+                <div className="border rounded-md px-3 py-2 flex justify-between items-center bg-muted/20">
+                  <span>{selectedPatient.name || `${selectedPatient.firstName ?? ''} ${selectedPatient.lastName ?? ''}`.trim() || selectedPatient.id}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={() => setSelectedPatient(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="max-h-40 overflow-y-auto">
-                  {filteredPatients.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => setSelectedPatient(p)}
-                      className={`px-3 py-2 cursor-pointer hover:bg-muted/50 ${
-                        selectedPatient?.id === p.id ? 'bg-muted' : ''
-                      }`}
-                    >
-                      {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
-                    </div>
-                  ))}
+              ) : (
+                <div className="border rounded-md overflow-hidden">
+                  <div className="border-b p-1">
+                    <Input
+                      placeholder="Search patient by name or ID..."
+                      className="placeholder:text-muted-foreground text-step--1"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="max-h-40 overflow-y-auto">
+                    {filteredPatients.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => setSelectedPatient(p)}
+                        className="px-3 py-2 cursor-pointer hover:bg-muted/50"
+                      >
+                        {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               {/* Reason */}
               <div>
                 <label className="font-semibold text-step--1">Reason for visit</label>
@@ -170,31 +183,52 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
           <TabsContent value="new">
             <div className="space-y-3">
               <p className="font-semibold text-step--1">Patient info</p>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Input placeholder="*First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold text-step--1">First name <span className="text-destructive">*</span></label>
+                  <Input
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="mt-1"
+                  />
                   {errors.firstName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
-                <div className="flex-1">
-                  <Input placeholder="*Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <div>
+                  <label className="font-semibold text-step--1">Last name <span className="text-destructive">*</span></label>
+                  <Input
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1"
+                  />
                   {errors.lastName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <div className="flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold text-step--1">Gender <span className="text-destructive">*</span></label>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md bg-background"
+                    className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
                   >
-                    <option value="">*Gender</option>
+                    <option value="" disabled>Select gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
                   {errors.gender && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
-                <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+                <div>
+                  <label className="font-semibold text-step--1">Date of Birth</label>
+                  <Input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
               </div>
               {/* Reason */}
               <div>
