@@ -102,9 +102,12 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
             <CardTitle className="text-step-1">Consultations</CardTitle>
             <CardDescription className="text-step-0 text-muted-foreground/80">Click a patient to open the workspace</CardDescription>
           </div>
-          <Button size="sm" onClick={() => setShowNewConsultModal(true)} className="gap-1 whitespace-nowrap">
+          <button
+            onClick={() => setShowNewConsultModal(true)}
+            className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+          >
             + New Consultation
-          </Button>
+          </button>
         </CardHeader>
         <CardContent>
           <Table className="text-step-0">

@@ -48,11 +48,13 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "@supabase/supabase-js": "^2.42.3",
     "caniuse-lite": "1.0.30001281",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
-    "date-fns": "^4.1.0",
+    "date-fns": "^3.6.0",
+    "dotenv": "^10.0.0",
     "embla-carousel-react": "^8.5.2",
     "framer-motion": "^12.10.5",
     "input-otp": "^1.4.2",
@@ -60,6 +62,7 @@
     "next": "15.1.4",
     "next-themes": "^0.4.4",
     "react": "^19.0.0",
+    "react-datepicker": "4.8.0",
     "react-day-picker": "8.10.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
@@ -68,11 +71,9 @@
     "sonner": "^1.7.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^1.1.2",
     "three": "^0.164.0",
-    "zod": "^3.24.1",
-    "@supabase/supabase-js": "^2.42.3",
-    "dotenv": "^10.0.0"
+    "vaul": "^1.1.2",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3",
@@ -98,11 +99,11 @@
     "postcss": "^8",
     "storybook": "^8.6.12",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.1",
+    "tsx": "^4.7.0",
     "turbo": "^2.3.3",
     "typescript": "^5",
-    "wrangler": "^3.102.0",
-    "ts-node": "^10.9.1",
-    "tsx": "^4.7.0"
+    "wrangler": "^3.102.0"
   },
   "packageManager": "pnpm@10.0.0-rc.2+sha512.b6e59b96f90ca92449ac2f6dca9b430880448fc97d21f0fa9200e3d5ddb5289ad535255400554f7f3486e2d60058492161aaa9b58828e81f50c096718be9d156",
   "eslintConfig": {
@@ -122,7 +123,10 @@
     },
     "overrides": [
       {
-        "files": ["src/stories/**/*.{ts,tsx,js,jsx}", "src/stories/**/*.css"],
+        "files": [
+          "src/stories/**/*.{ts,tsx,js,jsx}",
+          "src/stories/**/*.css"
+        ],
         "rules": {
           "no-restricted-syntax": "off"
         }

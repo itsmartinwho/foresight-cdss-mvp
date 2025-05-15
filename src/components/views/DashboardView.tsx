@@ -149,9 +149,12 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
               Select a patient to start consultation
             </CardDescription>
           </div>
-          <Button size="sm" onClick={() => setShowNewConsultModal(true)} className="gap-1 whitespace-nowrap">
+          <button
+            onClick={() => setShowNewConsultModal(true)}
+            className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+          >
             + New Consultation
-          </Button>
+          </button>
         </CardHeader>
         <CardContent>
           {upcomingAppointments.length > 0 ? (

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { patientDataService } from '@/lib/patientDataService';
 import type { Patient } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 interface Props {
   /** Controls open state from parent */
@@ -32,12 +34,11 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
 
   // Shared fields
   const [reason, setReason] = useState('');
-  const [scheduledStart, setScheduledStart] = useState(() => {
-    // default to now in local datetime-local format
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // local
-    return now.toISOString().slice(0, 16);
-  });
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(new Date());
+
+  // Validation
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [shake, setShake] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -61,18 +62,34 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   });
 
   const handleCreate = async () => {
+    // reset errors
+    const newErrors: Record<string, boolean> = {};
+    if (tab === 'existing') {
+      if (!selectedPatient) newErrors.selectedPatient = true;
+    } else {
+      if (!firstName.trim()) newErrors.firstName = true;
+      if (!lastName.trim()) newErrors.lastName = true;
+      if (!gender) newErrors.gender = true;
+    }
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      // trigger shake animation
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
+      return;
+    }
     try {
       if (tab === 'existing') {
         if (!selectedPatient) return;
         const ad = await patientDataService.createNewAdmission(selectedPatient.id, {
           reason: reason || undefined,
-          scheduledStart: new Date(scheduledStart).toISOString(),
+          scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
         });
         router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
       } else {
         const { patient, admission } = await patientDataService.createNewPatientWithAdmission(
           { firstName, lastName, gender, dateOfBirth: dob || undefined },
-          { reason: reason || undefined, scheduledStart: new Date(scheduledStart).toISOString() }
+          { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined }
         );
         router.push(`/patients/${patient.id}?ad=${admission.id}`);
       }
@@ -86,7 +103,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden trigger; open controlled externally */}</DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className={`max-w-lg ${shake ? 'animate-shake' : ''}`}>
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
         </DialogHeader>
@@ -99,23 +116,52 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
           {/* Existing patient tab */}
           <TabsContent value="existing">
             <div className="space-y-4">
-              <Input
-                placeholder="Search patient by name or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <div className="max-h-40 overflow-y-auto border rounded-md">
-                {filteredPatients.map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => setSelectedPatient(p)}
-                    className={`px-3 py-2 cursor-pointer hover:bg-muted/50 ${
-                      selectedPatient?.id === p.id ? 'bg-muted' : ''
-                    }`}
-                  >
-                    {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
-                  </div>
-                ))}
+              <label className="font-semibold text-step--1 flex items-center">
+                Select patient<span className="text-destructive ml-1">*</span>{errors.selectedPatient && <span className="text-destructive text-xs ml-2">Required field</span>}
+              </label>
+              <div className="border rounded-md overflow-hidden">
+                <div className="border-b p-1">
+                  <Input
+                    placeholder="Search patient by name or ID..."
+                    className="placeholder:text-muted-foreground text-step--1"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {filteredPatients.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => setSelectedPatient(p)}
+                      className={`px-3 py-2 cursor-pointer hover:bg-muted/50 ${
+                        selectedPatient?.id === p.id ? 'bg-muted' : ''
+                      }`}
+                    >
+                      {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Reason */}
+              <div>
+                <label className="font-semibold text-step--1">Reason for visit</label>
+                <Input
+                  placeholder="E.g., joint pain, generalized inflammation"
+                  className="placeholder:text-muted-foreground text-step--1 mt-1"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </div>
+              {/* Date time */}
+              <div>
+                <label className="font-semibold text-step--1">Date and time</label>
+                <DatePicker
+                  selected={scheduledDate}
+                  onChange={(d) => setScheduledDate(d)}
+                  showTimeSelect
+                  dateFormat="Pp"
+                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
+                />
               </div>
             </div>
           </TabsContent>
@@ -123,39 +169,64 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
           {/* New patient tab */}
           <TabsContent value="new">
             <div className="space-y-3">
+              <p className="font-semibold text-step--1">Patient info</p>
               <div className="flex gap-2">
-                <Input placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                <Input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <div className="flex-1">
+                  <Input placeholder="*First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  {errors.firstName && <span className="text-destructive text-xs ml-1">Required field</span>}
+                </div>
+                <div className="flex-1">
+                  <Input placeholder="*Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  {errors.lastName && <span className="text-destructive text-xs ml-1">Required field</span>}
+                </div>
               </div>
               <div className="flex gap-2">
-                <Input placeholder="Gender" value={gender} onChange={(e) => setGender(e.target.value)} />
+                <div className="flex-1">
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md bg-background"
+                  >
+                    <option value="">*Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {errors.gender && <span className="text-destructive text-xs ml-1">Required field</span>}
+                </div>
                 <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+              </div>
+              {/* Reason */}
+              <div>
+                <label className="font-semibold text-step--1">Reason for visit</label>
+                <Input
+                  placeholder="E.g., joint pain, generalized inflammation"
+                  className="placeholder:text-muted-foreground text-step--1 mt-1"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </div>
+              {/* Date time */}
+              <div>
+                <label className="font-semibold text-step--1">Date and time</label>
+                <DatePicker
+                  selected={scheduledDate}
+                  onChange={(d) => setScheduledDate(d)}
+                  showTimeSelect
+                  dateFormat="Pp"
+                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
+                />
               </div>
             </div>
           </TabsContent>
         </Tabs>
 
-        {/* shared fields */}
-        <div className="space-y-3 mt-4">
-          <Input
-            placeholder="E.g., joint pain, generalized inflammation"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-          <Input
-            type="datetime-local"
-            value={scheduledStart}
-            onChange={(e) => setScheduledStart(e.target.value)}
-          />
-        </div>
-
+        {/* shared fields now handled inside tabs */}
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={
-            tab === 'existing' ? !selectedPatient : !firstName.trim() || !lastName.trim()
-          }>
+          <Button onClick={handleCreate} className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none">
             Start Consultation
           </Button>
         </div>

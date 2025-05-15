@@ -598,20 +598,16 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
             <button
               onClick={async () => {
                 const newAd = await patientDataService.createNewAdmission(patient.id);
-                // Update local state so UI reflects new consultation immediately
                 setDetailedPatientData((prev: any) => {
                   if (!prev) return prev;
-                  return {
-                    ...prev,
-                    admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...prev.admissions],
-                  };
+                  return { ...prev, admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...prev.admissions] };
                 });
                 setSelectedAdmissionForConsultation(newAd);
                 setActiveTab('consult');
               }}
               className="ml-6 inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
             >
-              Start new consultation
+              + New Consultation
             </button>
           </div>
         </div>
