@@ -402,21 +402,56 @@ class SupabaseDataService {
   }
 
   // ------------------------------------------------------------------
-  // Soft delete & restore stubs (not yet implemented for Supabase)
+  // Soft delete helpers (in-memory updates; DB persistence TBD)
   // ------------------------------------------------------------------
+  /**
+   * Mark an admission as deleted (soft delete).
+   * Returns true if admission exists and was marked deleted.
+   */
   markAdmissionAsDeleted(patientId: string, admissionId: string): boolean {
-    console.warn('SupabaseDataService: markAdmissionAsDeleted is not implemented.');
-    return false;
+    const ad = this.admissions[admissionId];
+    if (!ad || ad.patientId !== patientId) return false;
+    if (ad.isDeleted) return true; // already deleted
+
+    // Update in-memory cache
+    (ad as Admission).isDeleted = true;
+    (ad as Admission).deletedAt = new Date().toISOString();
+
+    // Ideally persist to DB. If visits table has "is_deleted" column, update here.
+    // This is skipped for now to keep prototype simple.
+
+    this.emitChange();
+    return true;
   }
 
+  /** Restore a previously soft-deleted admission */
   restoreAdmission(patientId: string, admissionId: string): boolean {
-    console.warn('SupabaseDataService: restoreAdmission is not implemented.');
-    return false;
+    const ad = this.admissions[admissionId];
+    if (!ad || ad.patientId !== patientId) return false;
+    if (!ad.isDeleted) return true; // already active
+
+    delete (ad as any).isDeleted;
+    delete (ad as any).deletedAt;
+
+    this.emitChange();
+    return true;
   }
 
+  /** Permanently remove an admission from cache (DB removal TBD) */
   permanentlyDeleteAdmission(patientId: string, admissionId: string): boolean {
-    console.warn('SupabaseDataService: permanentlyDeleteAdmission is not implemented.');
-    return false;
+    const ad = this.admissions[admissionId];
+    if (!ad || ad.patientId !== patientId) return false;
+
+    // Remove from master map
+    delete this.admissions[admissionId];
+
+    // Remove from per-patient list
+    if (this.admissionsByPatient[patientId]) {
+      this.admissionsByPatient[patientId] = this.admissionsByPatient[patientId].filter(key => key !== admissionId);
+    }
+
+    this.emitChange();
+    return true;
   }
 }
 

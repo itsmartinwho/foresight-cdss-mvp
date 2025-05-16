@@ -7,6 +7,7 @@ import type { Patient, Admission } from "@/lib/types";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
+import { useRouter } from 'next/navigation';
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate';
@@ -22,6 +23,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const load = async () => {
@@ -143,7 +145,11 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
                 </TableRow>
               )}
               {sortedRows.upcoming.map(({ patient, visit }) => (
-                <TableRow key={`upcoming_${patient?.id}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
+                <TableRow key={`upcoming_${patient?.id}_${visit.id}`} onClick={() => {
+                    if (patient) {
+                      router.push(`/patients/${patient.id}?ad=${visit.id}`);
+                    }
+                  }} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
                       <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
@@ -163,7 +169,11 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
                 </TableRow>
               )}
               {sortedRows.past.map(({ patient, visit }) => (
-                <TableRow key={`past_${patient?.id}_${visit.id}`} onClick={() => patient && onSelect(patient)} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
+                <TableRow key={`past_${patient?.id}_${visit.id}`} onClick={() => {
+                    if (patient) {
+                      router.push(`/patients/${patient.id}?ad=${visit.id}`);
+                    }
+                  }} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
                       <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />

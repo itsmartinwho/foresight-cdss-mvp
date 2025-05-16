@@ -501,17 +501,17 @@ class PatientDataService {
    * Create a new admission (consultation) for a patient and return it so the UI can select it.
    * This is an in-memory helper – in a real app you would persist to a backend.
    */
-  createNewAdmission(patientId: string): Admission {
+  createNewAdmission(patientId: string, opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }): Admission {
     const newId = `new-${Date.now()}`;
     const nowIso = new Date().toISOString();
     const newAdmission: Admission = {
       id: newId,
       patientId,
-      scheduledStart: nowIso,
-      scheduledEnd: '',
+      scheduledStart: opts?.scheduledStart ?? nowIso,
+      scheduledEnd: opts?.scheduledEnd ?? '',
       actualStart: undefined,
       actualEnd: undefined,
-      reason: undefined,
+      reason: opts?.reason ?? undefined,
       transcript: undefined,
       soapNote: undefined,
     } as Admission;

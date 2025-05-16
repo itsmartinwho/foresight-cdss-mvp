@@ -727,7 +727,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
           setSelectedAdmissionForConsultation(sorted[0].admission);
         } else {
           // No remaining visits, create a blank new consultation for this patient
-          const newAd = patientDataService.createNewAdmission(patientId);
+          const maybePromise = patientDataService.createNewAdmission(patientId);
+          const newAd = (maybePromise instanceof Promise) ? await maybePromise : (maybePromise as Admission);
           setDetailedPatientData((prev: any) => {
             if (!prev) return prev;
             return {
@@ -735,7 +736,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
               admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...(prev.admissions || [])],
             };
           });
-          setSelectedAdmissionForConsultation(newAd as Admission);
+          setSelectedAdmissionForConsultation(newAd);
         }
       }
       setShowDeleteConfirmation(false);
