@@ -7,6 +7,7 @@ import { PlayCircle, Bell, X } from "lucide-react";
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
+import LoadingAnimation from '@/components/LoadingAnimation';
 
 // Copied types and components from ForesightApp.tsx that DashboardView depends on
 type UpcomingEntry = { patient: Patient; visit: Admission };
@@ -137,11 +138,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   console.log('DashboardView (Prod Debug): High priority alerts count in DashboardView:', highPriorityAlertsCount);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <img src="/load-animation-small-quick.gif" alt="Loading dashboard..." />
-      </div>
-    );
+    return <LoadingAnimation />;
   }
 
   return (
