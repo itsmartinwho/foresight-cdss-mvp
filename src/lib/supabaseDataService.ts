@@ -190,7 +190,6 @@ class SupabaseDataService {
           treatments: row.treatments || undefined, 
           priorAuthJustification: row.prior_auth_justification,
           isDeleted: !!row.is_deleted, // Ensure this mapping is correct
-          deletedAt: row.deleted_at ? new Date(row.deleted_at).toISOString() : undefined, // Ensure this mapping
         };
         this.admissions[compositeKey] = admission;
         if (this.admissionsByPatient[patientPublicId]) {
@@ -353,7 +352,6 @@ class SupabaseDataService {
         actual_start_datetime: null,
         actual_end_datetime: null,
         is_deleted: false,
-        deleted_at: null,
         extra_data: { PatientID: patientId },
       },
     ]);
@@ -456,20 +454,18 @@ class SupabaseDataService {
 
     // Update in-memory cache first for immediate UI feedback
     (ad as Admission).isDeleted = true;
-    (ad as Admission).deletedAt = new Date().toISOString();
 
     // Persist to DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    const deletedAt = new Date().toISOString();
     this.supabase.from('visits')
-      .update({ is_deleted: true, deleted_at: deletedAt })
+      .update({ is_deleted: true })
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error, data }) => {
         if (error) {
           console.error('SupabaseDataService: update by admission_id failed', JSON.stringify(error, null, 2));
           // Attempt alternative column
           const { error: err2 } = await this.supabase.from('visits')
-            .update({ is_deleted: true, deleted_at: deletedAt })
+            .update({ is_deleted: true })
             .eq('id', originalAdmissionId);
           if (err2) {
             console.error('SupabaseDataService: update by id failed', JSON.stringify(err2, null,2));
@@ -488,18 +484,17 @@ class SupabaseDataService {
     if (!ad.isDeleted) return true; // already active
 
     delete (ad as any).isDeleted;
-    delete (ad as any).deletedAt;
 
     // Persist to DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
     this.supabase.from('visits')
-      .update({ is_deleted: false, deleted_at: null })
+      .update({ is_deleted: false })
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
           console.error('SupabaseDataService: restore update admission_id failed', JSON.stringify(error, null,2));
           const { error: err2 } = await this.supabase.from('visits')
-            .update({ is_deleted: false, deleted_at: null })
+            .update({ is_deleted: false })
             .eq('id', originalAdmissionId);
           if (err2) {
             console.error('SupabaseDataService: restore update id failed', JSON.stringify(err2, null,2));
