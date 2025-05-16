@@ -137,7 +137,11 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   console.log('DashboardView (Prod Debug): High priority alerts count in DashboardView:', highPriorityAlertsCount);
 
   if (isLoading) {
-    return <div className="p-6 text-center text-muted-foreground">Loading dashboard...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <img src="/load-animation-small-quick.gif" alt="Loading dashboard..." />
+      </div>
+    );
   }
 
   return (
