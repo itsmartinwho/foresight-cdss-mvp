@@ -330,40 +330,52 @@ class SupabaseDataService {
     patientId: string,
     opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }
   ): Promise<Admission> {
+    // Ensure patient exists (reload on demand)
     if (!this.patients[patientId]) {
-      console.error(`SupabaseDataService (Prod Debug): Cannot create admission. Patient with original ID ${patientId} not found in local cache. Potential race condition or data not loaded.`);
-      // Attempt to load data if not loaded, or re-throw if critical path expects patient to be there.
       if (!this.isLoaded && !this.isLoading) {
-        console.warn('SupabaseDataService (Prod Debug): createNewAdmission called before initial data load. Attempting load now...');
         await this.loadPatientData();
-        // Check again after load attempt
-        if (!this.patients[patientId]) {
-          throw new Error(`Patient with original ID ${patientId} still not found after reload attempt.`);
-        }
-      } else if (this.isLoading) {
-        throw new Error(`Data is currently loading. Cannot create new admission for patient ${patientId} yet.`);
-      } else {
-        throw new Error(`Patient with original ID ${patientId} not found. Data may not be fully loaded.`);
+      }
+      if (!this.patients[patientId]) {
+        throw new Error(`Patient with original ID ${patientId} not found in cache; cannot create admission.`);
       }
     }
 
-    // Very minimal in-memory fallback implementation so that the UI can continue to operate
     const newAdmissionId = crypto.randomUUID();
-    const compositeId = `${patientId}_${newAdmissionId}`;
     const nowIso = new Date().toISOString();
+
+    // Insert into DB
+    const { error: insertErr } = await this.supabase.from('visits').insert([
+      {
+        admission_id: newAdmissionId,
+        reason_for_visit: opts?.reason ?? null,
+        scheduled_start_datetime: opts?.scheduledStart ?? nowIso,
+        scheduled_end_datetime: opts?.scheduledEnd ?? null,
+        actual_start_datetime: null,
+        actual_end_datetime: null,
+        is_deleted: false,
+        deleted_at: null,
+        extra_data: { PatientID: patientId },
+      },
+    ]);
+
+    if (insertErr) {
+      console.error('SupabaseDataService: Failed to insert new admission into DB', insertErr);
+      throw insertErr;
+    }
+
+    // Build local cache record
+    const compositeId = `${patientId}_${newAdmissionId}`;
     const admission: Admission = {
       id: compositeId,
       patientId,
       scheduledStart: opts?.scheduledStart ?? nowIso,
-      scheduledEnd: opts?.scheduledEnd ?? nowIso,
-      actualStart: undefined,
-      actualEnd: undefined,
+      scheduledEnd: opts?.scheduledEnd ?? '',
       reason: opts?.reason ?? undefined,
     } as Admission;
 
     this.admissions[compositeId] = admission;
     if (!this.admissionsByPatient[patientId]) this.admissionsByPatient[patientId] = [];
-    this.admissionsByPatient[patientId].push(compositeId);
+    this.admissionsByPatient[patientId].unshift(compositeId);
     this.emitChange();
     return admission;
   }
@@ -389,6 +401,23 @@ class SupabaseDataService {
 
   async createNewPatient(input: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string }): Promise<Patient> {
     const newId = crypto.randomUUID();
+
+    const { error: insertErr } = await this.supabase.from('patients').insert([
+      {
+        patient_id: newId,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        gender: input.gender ?? null,
+        dob: input.dateOfBirth ?? null,
+        name: `${input.firstName} ${input.lastName}`.trim(),
+      },
+    ]);
+
+    if (insertErr) {
+      console.error('SupabaseDataService: Failed to insert new patient', insertErr);
+      throw insertErr;
+    }
+
     const patient: Patient = {
       id: newId,
       firstName: input.firstName,
@@ -429,18 +458,23 @@ class SupabaseDataService {
     (ad as Admission).isDeleted = true;
     (ad as Admission).deletedAt = new Date().toISOString();
 
-    // Persist to DB in background
+    // Persist to DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
+    const deletedAt = new Date().toISOString();
     this.supabase.from('visits')
-      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .update({ is_deleted: true, deleted_at: deletedAt })
       .eq('admission_id', originalAdmissionId)
-      .then(({ data, error }) => { 
+      .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: Failed to mark admission deleted in DB. Admission ID:', originalAdmissionId, 'Error:', error);
-        } else {
-          console.log('SupabaseDataService (Prod Debug): Successfully marked admission as deleted in DB. Admission ID:', originalAdmissionId, 'Response data:', data);
+          // Attempt alternative column
+          const { error: err2 } = await this.supabase.from('visits')
+            .update({ is_deleted: true, deleted_at: deletedAt })
+            .eq('id', originalAdmissionId);
+          if (err2) {
+            console.error('SupabaseDataService: Failed to mark admission deleted in DB with both column names', err2);
+          }
         }
-      }); // No .catch() here, error is handled in .then()
+      });
 
     this.emitChange();
     return true;
@@ -455,18 +489,21 @@ class SupabaseDataService {
     delete (ad as any).isDeleted;
     delete (ad as any).deletedAt;
 
-    // Persist to DB in background
+    // Persist to DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
     this.supabase.from('visits')
       .update({ is_deleted: false, deleted_at: null })
       .eq('admission_id', originalAdmissionId)
-      .then(({ data, error }) => { 
+      .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: Failed to restore admission in DB. Admission ID:', originalAdmissionId, 'Error:', error);
-        } else {
-          console.log('SupabaseDataService (Prod Debug): Successfully restored admission in DB. Admission ID:', originalAdmissionId, 'Response data:', data);
+          const { error: err2 } = await this.supabase.from('visits')
+            .update({ is_deleted: false, deleted_at: null })
+            .eq('id', originalAdmissionId);
+          if (err2) {
+            console.error('SupabaseDataService: Failed to restore admission with both column names', err2);
+          }
         }
-      }); // No .catch() here
+      });
 
     this.emitChange();
     return true;
@@ -483,18 +520,21 @@ class SupabaseDataService {
       this.admissionsByPatient[patientId] = this.admissionsByPatient[patientId].filter(key => key !== admissionId);
     }
 
-    // Delete from DB in background
+    // Delete from DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
     this.supabase.from('visits')
       .delete()
       .eq('admission_id', originalAdmissionId)
-      .then(({ data, error }) => { 
+      .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: Failed to permanently delete admission in DB. Admission ID:', originalAdmissionId, 'Error:', error);
-        } else {
-          console.log('SupabaseDataService (Prod Debug): Successfully permanently deleted admission in DB. Admission ID:', originalAdmissionId, 'Response data:', data);
+          const { error: err2 } = await this.supabase.from('visits')
+            .delete()
+            .eq('id', originalAdmissionId);
+          if (err2) {
+            console.error('SupabaseDataService: Failed to permanently delete admission in DB with both column names', err2);
+          }
         }
-      }); // No .catch() here
+      });
 
     this.emitChange();
     return true;
