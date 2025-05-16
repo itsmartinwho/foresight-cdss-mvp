@@ -64,7 +64,23 @@ function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
   const deletedAdmissions = (admissions || []).filter((a: any) => a.admission.isDeleted);
 
   const handleRestore = (ad: Admission) => {
-    if (patientDataService.restoreAdmission(patient.id, ad.id)) forceRerender();
+    if (patientDataService.restoreAdmission(patient.id, ad.id)) {
+      // Update local detailedPatientData.admissions wrapper to reflect restoration in UI
+      detailedPatientData.admissions = detailedPatientData.admissions.map((w: any) => {
+        if (w.admission.id === ad.id) {
+          return {
+            ...w,
+            admission: {
+              ...w.admission,
+              isDeleted: false,
+              deletedAt: undefined,
+            },
+          };
+        }
+        return w;
+      });
+      forceRerender();
+    }
   };
 
   const handlePermanentDelete = (ad: Admission) => {
