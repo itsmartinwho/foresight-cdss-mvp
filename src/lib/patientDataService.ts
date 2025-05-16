@@ -455,6 +455,7 @@ class PatientDataService {
     Object.values(this.patients).forEach(patient => {
       const patientAdmissions = this.admissions[patient.id] || [];
       patientAdmissions.forEach((visit) => {
+        if ((visit as any).isDeleted) return;
         if (visit.scheduledStart && new Date(visit.scheduledStart) > now) {
           upcoming.push({ patient, visit });
         }
@@ -473,6 +474,7 @@ class PatientDataService {
     Object.entries(this.admissions).forEach(([patientId, patientScopedAdmissions]) => {
       const patient = this.getPatient(patientId); // Should find patient from enriched list
       patientScopedAdmissions.forEach((ad) => {
+        if ((ad as any).isDeleted) return;
         list.push({ patient, admission: ad });
       });
     });

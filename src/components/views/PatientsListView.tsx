@@ -36,6 +36,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
       const past: { patient: Patient | null; visit: Admission }[] = [];
 
       patientDataService.getAllAdmissions().forEach(({ patient, admission }) => {
+        if ((admission as any).isDeleted) return; // skip soft-deleted visits
         const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
         arr.push({ patient, visit: admission });
       });

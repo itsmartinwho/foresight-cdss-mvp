@@ -253,10 +253,8 @@ class SupabaseDataService {
     }
     const allAds: { patient: Patient | null; admission: Admission }[] = [];
     Object.values(this.admissions).forEach(admission => {
+      if ((admission as any).isDeleted) return; // skip deleted
       const patient = this.patients[admission.patientId] ?? null;
-      // if (!patient) { // This warning can be very noisy if some admissions don't have patients due to data issues
-      //    console.warn(`SupabaseDataService (Prod Debug): getAllAdmissions - Patient ${admission.patientId} for admission ${admission.id} not found in cache.`);
-      // }
       allAds.push({ patient, admission });
     });
     return allAds;
@@ -272,6 +270,7 @@ class SupabaseDataService {
     const nowTime = now.getTime();
 
     Object.values(this.admissions).forEach(ad => {
+      if ((ad as any).isDeleted) return;
       if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
         try {
           const startDate = new Date(ad.scheduledStart);

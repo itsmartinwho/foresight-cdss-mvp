@@ -68,7 +68,12 @@ function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
   };
 
   const handlePermanentDelete = (ad: Admission) => {
-    if (patientDataService.permanentlyDeleteAdmission(patient.id, ad.id)) forceRerender();
+    if (patientDataService.permanentlyDeleteAdmission(patient.id, ad.id)) {
+      // Remove from local detailed data to reflect immediately
+      const idx = detailedPatientData.admissions.findIndex((w:any)=> w.admission.id === ad.id);
+      if (idx >= 0) detailedPatientData.admissions.splice(idx,1);
+      forceRerender();
+    }
   };
 
   return (
