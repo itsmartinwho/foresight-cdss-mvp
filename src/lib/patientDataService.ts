@@ -596,6 +596,11 @@ class PatientDataService {
     return false;
   }
 
+  unsubscribe(cb: () => void) {
+    this.changeSubscribers = this.changeSubscribers.filter(sub => sub !== cb);
+    // console.log("PatientDataService (Prod Debug): Unsubscribed a callback. Total subscribers:", this.changeSubscribers.length);
+  }
+
   // Methods like searchPatients, hasAutoimmuneDiagnosis, hasOncologyDiagnosis would continue
   // to work on the unified this.patients and this.admissions data.
   // ... (other methods from original file can be re-added if needed, e.g., lab results, specific diagnoses)

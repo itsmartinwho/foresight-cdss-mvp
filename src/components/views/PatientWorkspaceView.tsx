@@ -55,40 +55,41 @@ function renderDetailTable(title: string, dataArray: any[], headers: string[], c
 }
 
 // Helper: AllDataView (copied from ForesightApp.tsx, approx lines 107-154)
-function AllDataView({ detailedPatientData }: { detailedPatientData: any }) {
-  const [, forceRerender] = React.useReducer(x => x + 1, 0); // simple rerender trigger
-
+function AllDataView({ detailedPatientData, setDetailedPatientData }: { detailedPatientData: any; setDetailedPatientData: React.Dispatch<React.SetStateAction<any | null>> }) {
   if (!detailedPatientData) return <p className="p-4 text-muted-foreground">No detailed data available.</p>;
   const { patient, admissions } = detailedPatientData;
 
   const deletedAdmissions = (admissions || []).filter((a: any) => a.admission.isDeleted);
 
   const handleRestore = (ad: Admission) => {
-    if (patientDataService.restoreAdmission(patient.id, ad.id)) {
-      // Update local detailedPatientData.admissions wrapper to reflect restoration in UI
-      detailedPatientData.admissions = detailedPatientData.admissions.map((w: any) => {
-        if (w.admission.id === ad.id) {
-          return {
-            ...w,
-            admission: {
-              ...w.admission,
-              isDeleted: false,
-              deletedAt: undefined,
-            },
-          };
-        }
-        return w;
+    if (patient && patientDataService.restoreAdmission(patient.id, ad.id)) {
+      setDetailedPatientData((prevData: any) => {
+        if (!prevData) return prevData;
+        const newAdmissions = prevData.admissions.map((w: any) => {
+          if (w.admission.id === ad.id) {
+            return {
+              ...w,
+              admission: {
+                ...w.admission,
+                isDeleted: false,
+                deletedAt: undefined,
+              },
+            };
+          }
+          return w;
+        });
+        return { ...prevData, admissions: newAdmissions };
       });
-      forceRerender();
     }
   };
 
   const handlePermanentDelete = (ad: Admission) => {
-    if (patientDataService.permanentlyDeleteAdmission(patient.id, ad.id)) {
-      // Remove from local detailed data to reflect immediately
-      const idx = detailedPatientData.admissions.findIndex((w:any)=> w.admission.id === ad.id);
-      if (idx >= 0) detailedPatientData.admissions.splice(idx,1);
-      forceRerender();
+    if (patient && patientDataService.permanentlyDeleteAdmission(patient.id, ad.id)) {
+      setDetailedPatientData((prevData: any) => {
+        if (!prevData) return prevData;
+        const newAdmissions = prevData.admissions.filter((w: any) => w.admission.id !== ad.id);
+        return { ...prevData, admissions: newAdmissions };
+      });
     }
   };
 
@@ -631,7 +632,6 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
 
   const searchParams = useSearchParams();
 
-  // Always define activeAdmissionDetails at the top
   const activeAdmissionDetails = React.useMemo(() => {
     if (!detailedPatientData?.admissions) return [];
     return detailedPatientData.admissions.filter((ad: any) => !ad.admission.isDeleted);
@@ -650,24 +650,19 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
       }
       setIsLoading(true);
       try {
-        // Ensure data is loaded (handles Supabase async case)
         await patientDataService.loadPatientData();
-
         const data = patientDataService.getPatientData(initialPatient.id);
         if (data) {
           setDetailedPatientData(data);
           const paramAd = searchParams?.get('ad');
+          const admissionsToSearch = data.admissions || [];
+          const firstActiveNonDeleted = admissionsToSearch.find((a:any)=> !a.admission.isDeleted)?.admission || null;
+
           if (paramAd) {
-            const found = data.admissions.find((a: any) => a.admission.id === paramAd)?.admission || null;
-            if (found) {
-              setSelectedAdmissionForConsultation(found);
-            } else if (data.admissions && data.admissions.length > 0) {
-              const firstActive = data.admissions.find((a:any)=> !a.admission.isDeleted)?.admission || null;
-              setSelectedAdmissionForConsultation(firstActive);
-            }
-          } else if (data.admissions && data.admissions.length > 0) {
-            const firstActive = data.admissions.find((a:any)=> !a.admission.isDeleted)?.admission || null;
-            setSelectedAdmissionForConsultation(firstActive);
+            const found = admissionsToSearch.find((a: any) => a.admission.id === paramAd && !a.admission.isDeleted)?.admission || null;
+            setSelectedAdmissionForConsultation(found || firstActiveNonDeleted);
+          } else {
+            setSelectedAdmissionForConsultation(firstActiveNonDeleted);
           }
         } else {
           setError(`Patient data not found for ${initialPatient.name || initialPatient.id}`);
@@ -681,6 +676,16 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
     };
     loadData();
   }, [initialPatient, searchParams]);
+
+  useEffect(() => {
+    const cb = () => {
+      loadData(); 
+    };
+    patientDataService.subscribe(cb);
+    return () => {
+      patientDataService.unsubscribe(cb);
+    };
+  }, [loadData]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
@@ -700,7 +705,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
     return (
       <div className="p-6">
         <Button size="sm" variant="ghost" onClick={() => {
-          setIsStartingNewConsultation(false); // Reset state if going back
+          setIsStartingNewConsultation(false);
           onBack();
         }} className="text-step-0">
           ← Patients
@@ -720,44 +725,42 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   };
 
   const handleDeleteConfirm = async () => {
-    if (visitToDeleteId && detailedPatientData?.patient?.id) {
-      const patientId = detailedPatientData.patient.id;
-      const success = patientDataService.markAdmissionAsDeleted(patientId, visitToDeleteId);
-      if (success) {
-        setDetailedPatientData((prev: any) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            admissions: prev.admissions.map((adWrapper: any) => {
-              if (adWrapper.admission.id === visitToDeleteId) {
-                return {
-                  ...adWrapper,
-                  admission: {
-                    ...adWrapper.admission,
-                    isDeleted: true,
-                    deletedAt: new Date().toISOString(),
-                  },
-                };
-              }
-              return adWrapper;
-            }),
-          };
+    if (visitToDeleteId && patient?.id) {
+      const patientId = patient.id;
+      if (patientDataService.markAdmissionAsDeleted(patientId, visitToDeleteId)) {
+        setDetailedPatientData((prevData: any) => {
+          if (!prevData) return prevData;
+          const newAdmissions = prevData.admissions.map((adWrapper: any) => {
+            if (adWrapper.admission.id === visitToDeleteId) {
+              return {
+                ...adWrapper,
+                admission: { ...adWrapper.admission, isDeleted: true, deletedAt: new Date().toISOString() },
+              };
+            }
+            return adWrapper;
+          });
+          return { ...prevData, admissions: newAdmissions };
         });
-        // Find the next most recent active admission
-        const remaining = activeAdmissionDetails.filter((ad: any) => ad.admission.id !== visitToDeleteId);
-        if (remaining.length > 0) {
-          // Sort by scheduledStart descending (most recent first)
-          const sorted = [...remaining].sort((a, b) => new Date(b.admission.scheduledStart).getTime() - new Date(a.admission.scheduledStart).getTime());
-          setSelectedAdmissionForConsultation(sorted[0].admission);
+
+        const updatedActiveAdmissions = (detailedPatientData?.admissions || [])
+          .map(adWrapper => adWrapper.admission)
+          .filter((adm: Admission) => adm.id !== visitToDeleteId && !adm.isDeleted);
+
+        if (updatedActiveAdmissions.length > 0) {
+          const sortedActive = [...updatedActiveAdmissions].sort((a, b) => 
+            new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime()
+          );
+          setSelectedAdmissionForConsultation(sortedActive[0]);
         } else {
-          // No remaining visits, create a blank new consultation for this patient
           const maybePromise = patientDataService.createNewAdmission(patientId);
           const newAd = (maybePromise instanceof Promise) ? await maybePromise : (maybePromise as Admission);
-          setDetailedPatientData((prev: any) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...(prev.admissions || [])],
+          
+          setDetailedPatientData((prevData: any) => {
+            const baseAdmissions = prevData ? prevData.admissions.filter((w:any) => w.admission.id !== visitToDeleteId) : [];
+            return { 
+              ...prevData, 
+              patient: prevData ? prevData.patient : patient,
+              admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...baseAdmissions]
             };
           });
           setSelectedAdmissionForConsultation(newAd);
@@ -786,8 +789,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         return { ...prev, admissions: newAdmissionsList };
       });
       setSelectedAdmissionForConsultation(newAd);
-      setIsStartingNewConsultation(false); // Transition out of "starting new" mode
-      setActiveTab('consult'); // Ensure consult tab is active
+      setIsStartingNewConsultation(false);
+      setActiveTab('consult');
       return newAd;
     } catch (e) {
       console.error("Failed to finalize new consultation", e);
@@ -941,7 +944,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         {activeTab === "prior" && <PriorAuthTab patient={patient} allAdmissions={activeAdmissionDetails} />}
         {activeTab === "trials" && <TrialsTab patient={patient} />}
         {activeTab === "history" && <HistoryTab patient={patient} allAdmissions={activeAdmissionDetails} />}
-        {activeTab === "allData" && <AllDataView detailedPatientData={detailedPatientData} />}
+        {activeTab === "allData" && <AllDataView detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />}
       </ScrollArea>
     </div>
   );

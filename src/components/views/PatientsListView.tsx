@@ -28,9 +28,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      if (patientDataService.getAllPatients().length === 0) { // Avoid re-fetching if already loaded
-        await patientDataService.loadPatientData();
-      }
+      await patientDataService.loadPatientData();
       const now = new Date();
       const upcoming: { patient: Patient | null; visit: Admission }[] = [];
       const past: { patient: Patient | null; visit: Admission }[] = [];
@@ -49,6 +47,36 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
       setIsLoading(false);
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    const cb = () => {
+      const load = async () => {
+        setIsLoading(true);
+        await patientDataService.loadPatientData();
+        const now = new Date();
+        const upcoming: { patient: Patient | null; visit: Admission }[] = [];
+        const past: { patient: Patient | null; visit: Admission }[] = [];
+
+        patientDataService.getAllAdmissions().forEach(({ patient, admission }) => {
+          if ((admission as any).isDeleted) return;
+          const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
+          arr.push({ patient, visit: admission });
+        });
+
+        upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+        past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
+
+        setUpcomingRowsData(upcoming);
+        setPastRowsData(past);
+        setIsLoading(false);
+      };
+      load();
+    };
+    patientDataService.subscribe(cb);
+    return () => {
+      patientDataService.unsubscribe(cb);
+    };
   }, []);
 
   const displayName = useCallback((p: Patient | null) => {
