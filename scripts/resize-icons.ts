@@ -22,10 +22,9 @@ async function main() {
     .resize(180, 180, { fit: 'contain' })
     .toFile(path.join(imagesDir, 'foresight-icon.png'));
 
-  // Backup and resize word logo to height 24px
-  const originalWordLogo = path.join(imagesDir, 'word-logo.png');
-  await fs.copyFile(originalWordLogo, path.join(imagesDir, 'word-logo.original.png'));
-  await sharp(path.join(imagesDir, 'word-logo.original.png'))
+  // Resize word logo from full version to height 24px
+  const fullWordLogo = path.join(imagesDir, 'word-logo-full.png');
+  await sharp(fullWordLogo)
     .trim()
     .resize({ height: 24, fit: 'contain' })
     .png()
