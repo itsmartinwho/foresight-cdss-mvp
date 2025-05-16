@@ -22,6 +22,14 @@ async function main() {
     .resize(180, 180, { fit: 'contain' })
     .toFile(path.join(imagesDir, 'foresight-icon.png'));
 
+  // Backup and resize word logo to height 24px
+  const originalWordLogo = path.join(imagesDir, 'word-logo.png');
+  await fs.copyFile(originalWordLogo, path.join(imagesDir, 'word-logo.original.png'));
+  await sharp(path.join(imagesDir, 'word-logo.original.png'))
+    .resize({ height: 24, fit: 'contain' })
+    .png()
+    .toFile(path.join(imagesDir, 'word-logo.png'));
+
   // Generate favicon.ico with multiple sizes
   const sizes = [16, 32, 48, 64, 128];
   const buffers = await Promise.all(
