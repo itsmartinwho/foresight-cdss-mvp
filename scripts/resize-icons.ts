@@ -26,6 +26,7 @@ async function main() {
   const originalWordLogo = path.join(imagesDir, 'word-logo.png');
   await fs.copyFile(originalWordLogo, path.join(imagesDir, 'word-logo.original.png'));
   await sharp(path.join(imagesDir, 'word-logo.original.png'))
+    .trim()
     .resize({ height: 24, fit: 'contain' })
     .png()
     .toFile(path.join(imagesDir, 'word-logo.png'));
