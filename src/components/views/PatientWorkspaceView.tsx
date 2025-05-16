@@ -650,6 +650,9 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
       }
       setIsLoading(true);
       try {
+        // Ensure data is loaded (handles Supabase async case)
+        await patientDataService.loadPatientData();
+
         const data = patientDataService.getPatientData(initialPatient.id);
         if (data) {
           setDetailedPatientData(data);
