@@ -466,13 +466,13 @@ class SupabaseDataService {
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error, data }) => {
         if (error) {
-          console.error('SupabaseDataService: update by admission_id failed', { error });
+          console.error('SupabaseDataService: update by admission_id failed', JSON.stringify(error, null, 2));
           // Attempt alternative column
           const { error: err2 } = await this.supabase.from('visits')
             .update({ is_deleted: true, deleted_at: deletedAt })
             .eq('id', originalAdmissionId);
           if (err2) {
-            console.error('SupabaseDataService: update by id failed', { err2 });
+            console.error('SupabaseDataService: update by id failed', JSON.stringify(err2, null,2));
           }
         }
       });
@@ -497,12 +497,12 @@ class SupabaseDataService {
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: restore update admission_id failed', { error });
+          console.error('SupabaseDataService: restore update admission_id failed', JSON.stringify(error, null,2));
           const { error: err2 } = await this.supabase.from('visits')
             .update({ is_deleted: false, deleted_at: null })
             .eq('id', originalAdmissionId);
           if (err2) {
-            console.error('SupabaseDataService: restore update id failed', { err2 });
+            console.error('SupabaseDataService: restore update id failed', JSON.stringify(err2, null,2));
           }
         }
       });
@@ -529,12 +529,12 @@ class SupabaseDataService {
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: delete admission_id failed', { error });
+          console.error('SupabaseDataService: delete admission_id failed', JSON.stringify(error, null,2));
           const { error: err2 } = await this.supabase.from('visits')
             .delete()
             .eq('id', originalAdmissionId);
           if (err2) {
-            console.error('SupabaseDataService: delete id failed', { err2 });
+            console.error('SupabaseDataService: delete id failed', JSON.stringify(err2, null,2));
           }
         }
       });
