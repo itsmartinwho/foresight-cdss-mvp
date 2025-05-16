@@ -63,6 +63,57 @@ class PatientDataService {
   /** Simple change notification */
   private changeSubscribers: Array<() => void> = [];
 
+  private storageKeyDeletedAdmissions = 'deletedAdmissions';
+
+  /**
+   * Read persisted list of deleted admissions from localStorage (client-side only)
+   */
+  private readDeletedAdmissionsFromStorage(): Array<{ patientId: string; admissionId: string }> {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(this.storageKeyDeletedAdmissions);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (item) => item && typeof item.patientId === 'string' && typeof item.admissionId === 'string',
+        );
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /**
+   * Persist the supplied list of deleted admissions into localStorage (client-side only)
+   */
+  private saveDeletedAdmissionsToStorage(
+    list: Array<{ patientId: string; admissionId: string }>,
+  ): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(this.storageKeyDeletedAdmissions, JSON.stringify(list));
+    } catch (_) {}
+  }
+
+  /**
+   * After loading raw data, apply the soft-deletion flags that were persisted previously.
+   */
+  private applySoftDeletionsFromStorage(): void {
+    const persisted = this.readDeletedAdmissionsFromStorage();
+    if (persisted.length === 0) return;
+
+    persisted.forEach(({ patientId, admissionId }) => {
+      const patientAdmissions = this.admissions[patientId];
+      if (!patientAdmissions) return;
+      const ad = patientAdmissions.find((a) => a.id === admissionId);
+      if (!ad) return;
+      (ad as any).isDeleted = true;
+      (ad as any).deletedAt = (ad as any).deletedAt || new Date().toISOString();
+    });
+  }
+
   subscribe(cb: () => void) {
     if (!this.changeSubscribers.includes(cb)) {
       this.changeSubscribers.push(cb);
@@ -388,6 +439,9 @@ class PatientDataService {
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): Finished Labs Processing. this.allLabResultsByAdmission key count: ${Object.keys(this.allLabResultsByAdmission).length}`);
     
     this.debugMessages.push(`PRINT_DEBUG SERVICE (PRD): processRawData finished. Final patient count: ${Object.keys(this.patients).length}`);
+
+    // Apply any persisted soft deletions after fully populating admissions
+    this.applySoftDeletionsFromStorage();
   }
 
   /**
@@ -560,11 +614,22 @@ class PatientDataService {
     const patientAdmissions = this.admissions[patientId];
     if (!patientAdmissions) return false;
 
-    const admissionIndex = patientAdmissions.findIndex(ad => ad.id === admissionId);
+    const admissionIndex = patientAdmissions.findIndex((ad) => ad.id === admissionId);
     if (admissionIndex === -1) return false;
 
     patientAdmissions[admissionIndex].isDeleted = true;
     patientAdmissions[admissionIndex].deletedAt = new Date().toISOString();
+
+    // Persist in localStorage
+    const persisted = this.readDeletedAdmissionsFromStorage();
+    const keyExists = persisted.some(
+      (rec) => rec.patientId === patientId && rec.admissionId === admissionId,
+    );
+    if (!keyExists) {
+      persisted.push({ patientId, admissionId });
+      this.saveDeletedAdmissionsToStorage(persisted);
+    }
+
     this.emitChange();
     return true;
   }
@@ -573,11 +638,23 @@ class PatientDataService {
     const patientAdmissions = this.admissions[patientId];
     if (!patientAdmissions) return false;
 
-    const admissionIndex = patientAdmissions.findIndex(ad => ad.id === admissionId && ad.isDeleted);
+    const admissionIndex = patientAdmissions.findIndex(
+      (ad) => ad.id === admissionId && ad.isDeleted,
+    );
     if (admissionIndex === -1) return false;
 
     patientAdmissions[admissionIndex].isDeleted = false;
     patientAdmissions[admissionIndex].deletedAt = undefined;
+
+    // Remove from persisted list
+    const persisted = this.readDeletedAdmissionsFromStorage();
+    const newList = persisted.filter(
+      (rec) => !(rec.patientId === patientId && rec.admissionId === admissionId),
+    );
+    if (newList.length !== persisted.length) {
+      this.saveDeletedAdmissionsToStorage(newList);
+    }
+
     this.emitChange();
     return true;
   }
@@ -587,8 +664,19 @@ class PatientDataService {
     if (!patientAdmissions) return false;
 
     const initialLength = patientAdmissions.length;
-    this.admissions[patientId] = patientAdmissions.filter(ad => ad.id !== admissionId || !ad.isDeleted);
-    
+    this.admissions[patientId] = patientAdmissions.filter(
+      (ad) => ad.id !== admissionId || !ad.isDeleted,
+    );
+
+    // Remove from persisted list as it is now gone forever
+    const persisted = this.readDeletedAdmissionsFromStorage();
+    const newList = persisted.filter(
+      (rec) => !(rec.patientId === patientId && rec.admissionId === admissionId),
+    );
+    if (newList.length !== persisted.length) {
+      this.saveDeletedAdmissionsToStorage(newList);
+    }
+
     if (this.admissions[patientId].length < initialLength) {
       this.emitChange();
       return true;
