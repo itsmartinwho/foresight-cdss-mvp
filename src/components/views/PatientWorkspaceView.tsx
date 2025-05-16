@@ -610,6 +610,12 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
 
   const searchParams = useSearchParams();
 
+  // Always define activeAdmissionDetails at the top
+  const activeAdmissionDetails = React.useMemo(() => {
+    if (!detailedPatientData?.admissions) return [];
+    return detailedPatientData.admissions.filter((ad: any) => !ad.admission.isDeleted);
+  }, [detailedPatientData]);
+
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -682,11 +688,6 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
 
   const { patient, admissions: patientAdmissionDetails } = detailedPatientData;
 
-  // Derive active (non-deleted) admissions for UI display
-  const activeAdmissionDetails = React.useMemo(() => {
-    return (patientAdmissionDetails || []).filter((ad: any) => !ad.admission.isDeleted);
-  }, [patientAdmissionDetails]);
-
   const handleDeleteInitiate = () => {
     if (selectedAdmissionForConsultation) {
       setVisitToDeleteId(selectedAdmissionForConsultation.id);
@@ -695,58 +696,48 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   };
 
   const handleDeleteConfirm = async () => {
-    if (visitToDeleteId && patient?.id) {
-      console.log(`Attempting to delete visit: ${visitToDeleteId} for patient: ${patient.id}`);
-      const success = patientDataService.markAdmissionAsDeleted(patient.id, visitToDeleteId);
-      
+    if (visitToDeleteId && detailedPatientData?.patient?.id) {
+      const patientId = detailedPatientData.patient.id;
+      const success = patientDataService.markAdmissionAsDeleted(patientId, visitToDeleteId);
       if (success) {
-        // Re-fetch or update data to reflect the change
-        // For now, we'll manually filter the local state as an optimistic update.
-        // A more robust solution might involve re-calling loadData or a dedicated refresh function.
-        const updatedAdmissions = patientAdmissionDetails.filter(
-          (adDetail: any) => adDetail.admission.id !== visitToDeleteId
-        );
-        // We also need to update the raw detailedPatientData.admissions to ensure consistency
-        // if other parts of the component rely on it directly before a full re-fetch.
         setDetailedPatientData((prev: any) => {
           if (!prev) return prev;
           return {
             ...prev,
             admissions: prev.admissions.map((adWrapper: any) => {
-                if (adWrapper.admission.id === visitToDeleteId) {
-                    return { 
-                        ...adWrapper, 
-                        admission: { 
-                            ...adWrapper.admission, 
-                            isDeleted: true, 
-                            deletedAt: new Date().toISOString() 
-                        }
-                    };
-                }
-                return adWrapper;
-            })
+              if (adWrapper.admission.id === visitToDeleteId) {
+                return {
+                  ...adWrapper,
+                  admission: {
+                    ...adWrapper.admission,
+                    isDeleted: true,
+                    deletedAt: new Date().toISOString(),
+                  },
+                };
+              }
+              return adWrapper;
+            }),
           };
         });
-
-        // After marking as deleted, we should filter it out from the *displayed* list 
-        // in the dropdown, or adjust the dropdown to not show deleted items.
-        // The current filter on updatedAdmissions already achieves this for the dropdown's source.
-
-        // Select a new visit if the current one was deleted
-        if (selectedAdmissionForConsultation?.id === visitToDeleteId) {
-          const nonDeletedAdmissions = updatedAdmissions.filter((adDetail: any) => !adDetail.admission.isDeleted);
-          if (nonDeletedAdmissions.length > 0) {
-            setSelectedAdmissionForConsultation(nonDeletedAdmissions[0].admission);
-          } else {
-            setSelectedAdmissionForConsultation(null);
-          }
+        // Find the next most recent active admission
+        const remaining = activeAdmissionDetails.filter((ad: any) => ad.admission.id !== visitToDeleteId);
+        if (remaining.length > 0) {
+          // Sort by scheduledStart descending (most recent first)
+          const sorted = [...remaining].sort((a, b) => new Date(b.admission.scheduledStart).getTime() - new Date(a.admission.scheduledStart).getTime());
+          setSelectedAdmissionForConsultation(sorted[0].admission);
+        } else {
+          // No remaining visits, create a blank new consultation for this patient
+          const newAd = patientDataService.createNewAdmission(patientId);
+          setDetailedPatientData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...(prev.admissions || [])],
+            };
+          });
+          setSelectedAdmissionForConsultation(newAd as Admission);
         }
-        console.log(`Visit ${visitToDeleteId} successfully marked as deleted.`);
-      } else {
-        console.error(`Failed to mark visit ${visitToDeleteId} as deleted.`);
-        // Optionally, show an error message to the user
       }
-      
       setShowDeleteConfirmation(false);
       setVisitToDeleteId(null);
     }

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { patientDataService } from "@/lib/patientDataService";
@@ -48,11 +48,11 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
     load();
   }, []);
 
-  const displayName = (p: Patient | null) => {
+  const displayName = useCallback((p: Patient | null) => {
     if (p?.name) return p.name;
     if (p?.firstName || p?.lastName) return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
     return p?.id || "Unknown Patient";
-  };
+  }, []);
 
   const requestSort = (key: SortableKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
