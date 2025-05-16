@@ -212,10 +212,10 @@ class SupabaseDataService {
   }
 
   getAllPatients(): Patient[] {
-    // console.log('SupabaseDataService (Prod Debug): getAllPatients called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.patients).length);
     if (!this.isLoaded && !this.isLoading) {
-        // Optionally trigger load or warn. For now, just warn vigorously if data isn't ready.
-        console.error("SupabaseDataService: getAllPatients called when data not loaded and not currently loading. THIS IS A BUG in component logic or data flow.");
+        // Kick off a background load; return empty array for now.
+        this.loadPatientData().catch(() => {/* error already logged inside */});
+        return [];
     }
     return Object.values(this.patients);
   }
@@ -229,9 +229,9 @@ class SupabaseDataService {
   }
 
   getPatientAdmissions(patientId: string): Admission[] {
-    // console.log(`SupabaseDataService (Prod Debug): getPatientAdmissions called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
-     if (!this.isLoaded && !this.isLoading) {
-        console.error(`SupabaseDataService: getPatientAdmissions(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);
+    if (!this.isLoaded && !this.isLoading) {
+        this.loadPatientData().catch(() => {/* handled elsewhere */});
+        return [];
     }
     const admissionKeys = this.admissionsByPatient[patientId] || [];
     return admissionKeys.map(key => this.admissions[key]).filter(Boolean) as Admission[];

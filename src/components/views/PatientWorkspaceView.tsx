@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -641,45 +641,56 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!initialPatient?.id) {
-        setError("No patient ID provided.");
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      try {
-        await patientDataService.loadPatientData();
-        const data = patientDataService.getPatientData(initialPatient.id);
-        if (data) {
-          setDetailedPatientData(data);
-          const paramAd = searchParams?.get('ad');
-          const admissionsToSearch = data.admissions || [];
-          const firstActiveNonDeleted = admissionsToSearch.find((a:any)=> !a.admission.isDeleted)?.admission || null;
+  // --------------------------------------------
+  // Shared async helper to (re)load detailed patient data
+  // Hoisted with useCallback so it can be referenced safely
+  // across multiple useEffect hooks without redefining.
+  // --------------------------------------------
+  const loadData = useCallback(async () => {
+    if (!initialPatient?.id) {
+      setError("No patient ID provided.");
+      setIsLoading(false);
+      return;
+    }
 
-          if (paramAd) {
-            const found = admissionsToSearch.find((a: any) => a.admission.id === paramAd && !a.admission.isDeleted)?.admission || null;
-            setSelectedAdmissionForConsultation(found || firstActiveNonDeleted);
-          } else {
-            setSelectedAdmissionForConsultation(firstActiveNonDeleted);
-          }
+    setIsLoading(true);
+    try {
+      await patientDataService.loadPatientData();
+      const data = patientDataService.getPatientData(initialPatient.id);
+      if (data) {
+        setDetailedPatientData(data);
+
+        // Determine which admission should be selected
+        const paramAd = searchParams?.get('ad');
+        const admissionsToSearch = data.admissions || [];
+        const firstActiveNonDeleted = admissionsToSearch.find((a: any) => !a.admission.isDeleted)?.admission || null;
+
+        if (paramAd) {
+          const found = admissionsToSearch.find((a: any) => a.admission.id === paramAd && !a.admission.isDeleted)?.admission || null;
+          setSelectedAdmissionForConsultation(found || firstActiveNonDeleted);
         } else {
-          setError(`Patient data not found for ${initialPatient.name || initialPatient.id}`);
+          setSelectedAdmissionForConsultation(firstActiveNonDeleted);
         }
-      } catch (err: any) {
-        console.error("Error loading detailed patient data:", err);
-        setError(err.message || "Failed to load detailed patient data.");
-      } finally {
-        setIsLoading(false);
+      } else {
+        setError(`Patient data not found for ${initialPatient.name || initialPatient.id}`);
       }
-    };
-    loadData();
+    } catch (err: any) {
+      console.error("Error loading detailed patient data:", err);
+      setError(err.message || "Failed to load detailed patient data.");
+    } finally {
+      setIsLoading(false);
+    }
   }, [initialPatient, searchParams]);
 
+  // Initial data load & whenever patient or query params change
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Listen for data-service change events and refresh accordingly
   useEffect(() => {
     const cb = () => {
-      loadData(); 
+      loadData();
     };
     patientDataService.subscribe(cb);
     return () => {
