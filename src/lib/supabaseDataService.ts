@@ -464,14 +464,15 @@ class SupabaseDataService {
     this.supabase.from('visits')
       .update({ is_deleted: true, deleted_at: deletedAt })
       .eq('admission_id', originalAdmissionId)
-      .then(async ({ error }) => {
+      .then(async ({ error, data }) => {
         if (error) {
+          console.error('SupabaseDataService: update by admission_id failed', { error });
           // Attempt alternative column
           const { error: err2 } = await this.supabase.from('visits')
             .update({ is_deleted: true, deleted_at: deletedAt })
             .eq('id', originalAdmissionId);
           if (err2) {
-            console.error('SupabaseDataService: Failed to mark admission deleted in DB with both column names', err2);
+            console.error('SupabaseDataService: update by id failed', { err2 });
           }
         }
       });
@@ -496,11 +497,12 @@ class SupabaseDataService {
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
+          console.error('SupabaseDataService: restore update admission_id failed', { error });
           const { error: err2 } = await this.supabase.from('visits')
             .update({ is_deleted: false, deleted_at: null })
             .eq('id', originalAdmissionId);
           if (err2) {
-            console.error('SupabaseDataService: Failed to restore admission with both column names', err2);
+            console.error('SupabaseDataService: restore update id failed', { err2 });
           }
         }
       });
@@ -527,11 +529,12 @@ class SupabaseDataService {
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
+          console.error('SupabaseDataService: delete admission_id failed', { error });
           const { error: err2 } = await this.supabase.from('visits')
             .delete()
             .eq('id', originalAdmissionId);
           if (err2) {
-            console.error('SupabaseDataService: Failed to permanently delete admission in DB with both column names', err2);
+            console.error('SupabaseDataService: delete id failed', { err2 });
           }
         }
       });
