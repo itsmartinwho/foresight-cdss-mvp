@@ -2,10 +2,11 @@
 
 import ForesightApp from '@/components/ForesightApp';
 import React from 'react';
+import LoadingAnimation from '@/components/LoadingAnimation';
 
 export default function AdvisorPage() {
   return (
-    <React.Suspense fallback={<div>Loading Advisor...</div>}>
+    <React.Suspense fallback={<LoadingAnimation />}>
       <ForesightApp />
     </React.Suspense>
   );

@@ -1,5 +1,6 @@
 // Removed 'use client';
 
+import React from 'react';
 import './globals.css';
 import { Metadata } from 'next';
 import MotionWrapper from '../components/MotionWrapper';
@@ -26,6 +27,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preload the loading animation GIF so it appears instantly on subsequent route changes */}
+        <link rel="preload" as="image" href="/load-animation-small-quick.gif" />
+      </head>
       <body>
         <PlasmaBackground />
         <GlassHeader />
