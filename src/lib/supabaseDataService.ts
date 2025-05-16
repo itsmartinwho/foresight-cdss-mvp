@@ -181,6 +181,8 @@ class SupabaseDataService {
         soapNote: row.soap_note,
         treatments: row.treatments || undefined, 
         priorAuthJustification: row.prior_auth_justification,
+        isDeleted: !!row.is_deleted,
+        deletedAt: row.deleted_at ? new Date(row.deleted_at).toISOString() : undefined,
       };
       this.admissions[compositeKey] = admission;
       if (this.admissionsByPatient[patientPublicId]) {
@@ -412,12 +414,20 @@ class SupabaseDataService {
     if (!ad || ad.patientId !== patientId) return false;
     if (ad.isDeleted) return true; // already deleted
 
-    // Update in-memory cache
+    // Update in-memory cache first for immediate UI feedback
     (ad as Admission).isDeleted = true;
     (ad as Admission).deletedAt = new Date().toISOString();
 
-    // Ideally persist to DB. If visits table has "is_deleted" column, update here.
-    // This is skipped for now to keep prototype simple.
+    // Persist to DB in background
+    const originalAdmissionId = admissionId.split('_').slice(-1)[0];
+    this.supabase.from('visits')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .eq('admission_id', originalAdmissionId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('SupabaseDataService: Failed to mark admission deleted in DB', error);
+        }
+      });
 
     this.emitChange();
     return true;
@@ -432,6 +442,17 @@ class SupabaseDataService {
     delete (ad as any).isDeleted;
     delete (ad as any).deletedAt;
 
+    // Persist to DB in background
+    const originalAdmissionId = admissionId.split('_').slice(-1)[0];
+    this.supabase.from('visits')
+      .update({ is_deleted: false, deleted_at: null })
+      .eq('admission_id', originalAdmissionId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('SupabaseDataService: Failed to restore admission in DB', error);
+        }
+      });
+
     this.emitChange();
     return true;
   }
@@ -441,13 +462,22 @@ class SupabaseDataService {
     const ad = this.admissions[admissionId];
     if (!ad || ad.patientId !== patientId) return false;
 
-    // Remove from master map
+    // Remove from in-memory maps first for immediate UI update
     delete this.admissions[admissionId];
-
-    // Remove from per-patient list
     if (this.admissionsByPatient[patientId]) {
       this.admissionsByPatient[patientId] = this.admissionsByPatient[patientId].filter(key => key !== admissionId);
     }
+
+    // Delete from DB in background
+    const originalAdmissionId = admissionId.split('_').slice(-1)[0];
+    this.supabase.from('visits')
+      .delete()
+      .eq('admission_id', originalAdmissionId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('SupabaseDataService: Failed to permanently delete admission in DB', error);
+        }
+      });
 
     this.emitChange();
     return true;
