@@ -694,7 +694,5 @@ class PatientDataService {
   // ... (other methods from original file can be re-added if needed, e.g., lab results, specific diagnoses)
 }
 
-// Decide which implementation to expose based on compile-time env flag
-const useSupabase = process.env.NEXT_PUBLIC_USE_SUPABASE === 'true';
-
-export const patientDataService = useSupabase ? supabaseDataService : new PatientDataService();
+// Always use Supabase for persistence in the database
+export const patientDataService = supabaseDataService;
