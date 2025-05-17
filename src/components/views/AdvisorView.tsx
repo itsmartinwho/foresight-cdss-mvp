@@ -93,7 +93,7 @@ export default function AdvisorView() {
         },
         body: JSON.stringify({
           messages: updatedMessages,
-          model: opts?.thinkHarder ? "gpt-3.5-turbo" : "gpt-4o-mini", // fallback names
+          model: opts?.thinkHarder ? "gpt-3.5-turbo" : "gpt-4.1",
           includeNewPapers: !!opts?.includeNewPapers,
           thinkHarder: !!opts?.thinkHarder,
         }),

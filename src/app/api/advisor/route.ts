@@ -5,7 +5,7 @@ const systemPrompt = `You are Foresight, a medical advisor helping US physicians
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages = [], model = "gpt-4o-mini" } = await req.json();
+    const { messages = [], model = "gpt-4.1" } = await req.json();
 
     const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
 

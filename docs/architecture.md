@@ -54,7 +54,9 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   `AlertsScreenView.tsx`
     *   `AnalyticsScreenView.tsx`
     *   `SettingsScreenView.tsx`
+    *   `AdvisorView.tsx` – chat interface powering the **Foresight Advisor** AI medical assistant accessed via `/advisor`.
 *   View components are responsible for fetching or receiving their specific data (currently from mock sources, often passed down from `ForesightApp.tsx` or loaded directly if view-specific) and rendering the appropriate UI.
+    *   The Advisor chat calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
 
 ### 4. UI Components (`src/components/ui/`, `src/components/layout/`)
 

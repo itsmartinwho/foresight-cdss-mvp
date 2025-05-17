@@ -29,6 +29,7 @@ The long-term vision for Foresight CDSS includes:
 *   **Complex Case Alerting:** Passive scanning for potential complex conditions (autoimmune, oncology) and clinical trial eligibility.
 *   **Documentation Automation:** Generation of prior authorization requests and specialist referral letters.
 *   **Clinical Chatbot:** AI-powered assistant for general medical questions.
+*   **Foresight Advisor (NEW):** Dedicated `/advisor` tab offering an AI medical advisor chat powered by GPT-4.1 with citations, follow-up questions, voice dictation and playback, and optional recent-paper search.
 
 ## Getting Started
 
@@ -99,6 +100,7 @@ The application now primarily uses data from a Supabase PostgreSQL database.
 *   **Patient List:** (`/patients`) Displays a list of patients from the Supabase database.
 *   **Patient Workspace:** (Accessed by clicking a patient) Shows tabs for Demographics, Admissions, Diagnoses, and Labs using data fetched from Supabase for the selected patient.
 *   **Other sections:** Alerts, Analytics, Settings are placeholders or have minimal functionality in the prototype.
+*   **Foresight Advisor:** (`/advisor`) AI-powered chat where clinicians can ask questions, optionally include recent papers, dictate via voice, and listen to answers.
 
 ## Technical Architecture (Current Frontend)
 
