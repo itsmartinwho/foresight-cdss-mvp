@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen, Zap } from "lucide-react";
 import React from "react";
@@ -13,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import QuickSearch from "@/components/ui/QuickSearch";
 
 export default function GlassSidebar() {
   const pathname = usePathname();
@@ -107,10 +107,10 @@ export default function GlassSidebar() {
       })}
       <Separator className="my-4" />
       {!collapsed && (
-      <Input
-        placeholder="Quick search (⌘K)"
-        className="text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-      />)}
+        <QuickSearch
+          inputClassName="text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+        />
+      )}
     </div>
   );
 }

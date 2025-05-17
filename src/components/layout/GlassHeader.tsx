@@ -1,8 +1,8 @@
 'use client';
 
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import QuickSearch from "@/components/ui/QuickSearch";
 
 export default function GlassHeader() {
   return (
@@ -14,9 +14,9 @@ export default function GlassHeader() {
         </Link>
       </div>
       <div className="flex items-center gap-4">
-        <Input
-          placeholder="Global search…"
-          className="h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+        <QuickSearch
+          className="w-64"
+          inputClassName="h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
         />
         <Popover>
           <PopoverTrigger asChild>
