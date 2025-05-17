@@ -9,6 +9,8 @@ import {
   Mic,
   Send,
   Waves,
+  BookOpen,
+  Sparkles,
 } from "lucide-react";
 
 interface ChatMessage {
@@ -22,6 +24,7 @@ export default function AdvisorView() {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [dictating, setDictating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -112,17 +115,19 @@ export default function AdvisorView() {
   return (
     <div className="flex flex-col h-full p-6 space-y-4">
       <h1 className="text-2xl font-medium">Ask Foresight</h1>
-      <div className="flex flex-col flex-1 border border-border rounded-xl bg-glass backdrop-blur-sm overflow-hidden">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
+
+      {/* Chat container */}
+      <div className="relative flex flex-col flex-1 border border-border rounded-xl bg-glass backdrop-blur-sm overflow-hidden">
+        <ScrollArea className="flex-1 p-6 overflow-y-auto" ref={scrollRef}>
+          <div className="space-y-6 pb-32"> {/* padding bottom so last msg not hidden under input */}
             {messages.length === 0 && (
-              <p className="text-muted-foreground text-sm">Start the conversation by asking a medical question.</p>
+              <p className="text-muted-foreground text-base">Start the conversation by asking a medical question.</p>
             )}
             {messages.map((msg, idx) => (
               <div
                 key={idx}
                 className={cn(
-                  "max-w-xl px-4 py-2 rounded-lg whitespace-pre-wrap text-sm",
+                  "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-base",
                   msg.role === "user"
                     ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
                     : "mr-auto bg-[rgba(255,255,255,0.07)] backdrop-blur-md"
@@ -133,69 +138,112 @@ export default function AdvisorView() {
             ))}
           </div>
         </ScrollArea>
-        {/* Input bar */}
-        <div className="border-t border-border p-3 flex items-center gap-2 bg-[rgba(255,255,255,0.04)] backdrop-blur-md">
-          {/* Left pill buttons */}
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="rounded-full text-[0.7rem] uppercase"
-              onClick={() => handleSend({ includeNewPapers: true })}
-              disabled={isSending}
-            >
-              Include new papers
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="rounded-full text-[0.7rem] uppercase"
-              onClick={() => handleSend({ thinkHarder: true })}
-              disabled={isSending}
-            >
-              Think harder
-            </Button>
-          </div>
-          {/* Input */}
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything"
-            className="flex-1 text-sm"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-          {/* Right icons */}
-          <div className="flex items-center gap-2 pl-1">
-            <Button size="icon" variant="ghost" disabled>
-              {/* Combo icon */}
-              <div className="relative">
-                <ImageIcon className="h-4 w-4 absolute -left-1 top-0" />
-                <FileText className="h-4 w-4 absolute left-1 top-0" />
-              </div>
-            </Button>
-            {typeof window !== "undefined" && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
-              <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
-                <Mic className="h-4 w-4" />
+
+        {/* Sticky glass input footer */}
+        <div className="sticky bottom-0 left-0 right-0 w-full px-4 pb-4">{/* extra px for side padding inside rounded container */}
+          <div className="relative flex items-center bg-[rgba(255,255,255,0.06)] backdrop-blur-md rounded-full border border-border shadow-sm">
+            {/* LEFT pill buttons inside input */}
+            <div className="flex gap-2 pl-4">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
+                onClick={() => handleSend({ includeNewPapers: true })}
+                disabled={isSending}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Papers
               </Button>
-            )}
-            {typeof window !== "undefined" && window.speechSynthesis && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
+                onClick={() => handleSend({ thinkHarder: true })}
+                disabled={isSending}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Think
+              </Button>
+            </div>
+
+            {/* Actual text input */}
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask anything"
+              className="flex-1 mx-2 h-12 bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-muted-foreground text-base pl-2"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+
+            {/* RIGHT icons */}
+            <div className="flex items-center gap-2 pr-4">
+              {/* Upload button */}
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => speak(messages.filter((m) => m.role === "assistant").slice(-1)[0]?.content || "")}
-                disabled={!messages.some((m) => m.role === "assistant")}
+                onClick={() => fileInputRef.current?.click()}
               >
-                <Waves className="h-4 w-4" />
+                <div className="relative">
+                  <ImageIcon className="h-4 w-4 absolute -left-1 top-0" />
+                  <FileText className="h-4 w-4 absolute left-1 top-0" />
+                </div>
               </Button>
-            )}
-            <Button size="icon" onClick={() => handleSend()} disabled={isSending || !input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf,application/msword,text/plain"
+                multiple={false}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  // For now we just append a placeholder to messages; server-side handling TBD
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "user", content: `[Uploaded ${file.name}]` },
+                  ]);
+                  e.target.value = ""; // reset
+                }}
+              />
+
+              {/* Dictation */}
+              {typeof window !== "undefined" &&
+                ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
+                  <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                )}
+              {/* Speech synthesis */}
+              {typeof window !== "undefined" && window.speechSynthesis && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() =>
+                    speak(
+                      messages.filter((m) => m.role === "assistant").slice(-1)[0]?.content || ""
+                    )
+                  }
+                  disabled={!messages.some((m) => m.role === "assistant")}
+                >
+                  <Waves className="h-4 w-4" />
+                </Button>
+              )}
+
+              {/* SEND */}
+              <Button
+                size="icon"
+                onClick={() => handleSend()}
+                disabled={isSending || !input.trim()}
+                className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

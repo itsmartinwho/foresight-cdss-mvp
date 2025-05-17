@@ -10,7 +10,11 @@ export default function GlassHeader() {
       <div className="flex items-center gap-2">
         <Link href="/" className="flex items-center gap-2">
           <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-6 w-6 py-0.5" />
-          <img src="/images/word-logo.png" alt="Foresight Logo" className="h-6 py-0.5 translate-y-[3px]" />
+          <img
+            src="/images/word-logo-full.png"
+            alt="Foresight Logo"
+            className="h-6 py-0.5 translate-y-[3px]"
+          />
         </Link>
       </div>
       <div className="flex items-center gap-4">
