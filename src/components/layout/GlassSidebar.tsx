@@ -12,6 +12,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 export default function GlassSidebar() {
   const pathname = usePathname();
@@ -59,6 +61,37 @@ export default function GlassSidebar() {
         </Tooltip>
       </TooltipProvider>
       
+      <Link
+        href="/advisor"
+        aria-label="Open Advisor chat"
+        className={cn(
+          "group relative flex items-center gap-3 h-12 w-full px-3 rounded-xl",
+          "bg-gradient-to-br from-teal-300/25 via-cyan-300/20 to-violet-300/25",
+          "border border-white/20 backdrop-blur-lg",
+          "shadow-[inset_0_0_2px_rgba(255,255,255,0.35)] transition-all duration-150",
+          pathname.startsWith("/advisor")
+            ? "ring-2 ring-teal-300/60 shadow-md brightness-110"
+            : "hover:brightness-110 hover:scale-[1.05]"
+        )}
+      >
+        <Image
+          src="/foresight-icon.png"
+          alt="Advisor"
+          width={24}
+          height={24}
+          className="drop-shadow-[0_0_4px_rgba(173,216,230,0.9)]"
+        />
+        {!collapsed && (
+          <span
+            className={cn(
+              "font-semibold text-sm bg-gradient-to-r from-white via-sky-100 to-white bg-clip-text text-transparent",
+              !pathname.startsWith("/advisor") && "sheen"
+            )}
+          >
+            Advisor
+          </span>
+        )}
+      </Link>
       {items.map(({ key, label, icon: Icon }) => {
         const href = `/${key === "dashboard" ? "" : key}`;
         const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));

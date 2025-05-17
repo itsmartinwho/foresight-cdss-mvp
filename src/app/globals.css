@@ -221,6 +221,17 @@
     );
     overflow: visible;
   }
+
+  /* Advisor Tab metallic sheen animation */
+  @keyframes sheen {
+    0% { background-position: -150% 0; }
+    100% { background-position: 150% 0; }
+  }
+  .sheen {
+    background-size: 200% 100%;
+    animation: sheen 4s linear infinite;
+    animation-delay: 1s;
+  }
 }
 
 /* Safari fallback for backdrop-filter (Brief §14.3 / User §12) */
