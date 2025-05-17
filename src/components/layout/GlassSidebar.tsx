@@ -66,14 +66,20 @@ export default function GlassSidebar() {
           <Link
             href="/advisor"
             aria-label="Open Advisor chat"
-            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-4 rounded-md px-3 py-2 transition-colors ${isAdvisorActive ? 'bg-neon/10' : 'hover:bg-white/10'}`}
+            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isAdvisorActive ? 'bg-neon/10' : 'hover:bg-white/10'}`}
             title={collapsed ? 'Advisor' : undefined}
           >
-            <Zap className="h-[1.125em] w-[1.125em] flex-shrink-0" />
+            <Zap
+              strokeWidth={1.5}
+              className={cn(
+                "h-[1.125em] w-[1.125em] flex-shrink-0 bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent",
+                !isAdvisorActive && 'sheen'
+              )}
+            />
             {!collapsed && (
               <span
                 className={cn(
-                  "truncate bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent",
+                  "truncate bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium",
                   !isAdvisorActive && 'sheen',
                   isAdvisorActive && 'font-semibold'
                 )}
