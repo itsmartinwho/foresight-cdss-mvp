@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Home, Users, BarChart3, BellRing, Settings as Cog, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import React from "react";
 import {
   Tooltip,
@@ -34,9 +34,7 @@ export default function GlassSidebar() {
   const items = [
     { key: "dashboard", label: "Dashboard", icon: Home },
     { key: "patients", label: "Patients", icon: Users },
-    { key: "analytics", label: "Analytics", icon: BarChart3 },
     { key: "alerts", label: "Alerts", icon: BellRing },
-    { key: "settings", label: "Settings", icon: Cog },
   ];
   return (
     <div className={`min-h-[calc(100svh-4rem)] ${collapsed ? 'w-[4.5rem]' : 'w-56'} bg-glass backdrop-blur-lg border-r border-[rgba(255,255,255,0.12)] shadow-card flex flex-col p-3 hidden lg:flex rounded-tr-card transition-all duration-300 ease-in-out overflow-hidden`}>
@@ -49,15 +47,9 @@ export default function GlassSidebar() {
               className={`${collapsed ? 'self-center' : 'self-end'} sidebar-button-bg rounded-full w-8 h-8 flex items-center justify-center mb-4`}
             >
               {collapsed ? (
-                <PanelLeftOpen
-                  strokeWidth={1.5}
-                  className="h-5 w-5 text-purple-500"
-                />
+                <PanelLeftOpen strokeWidth={1.5} className="h-5 w-5 text-purple-500" />
               ) : (
-                <PanelLeftClose
-                  strokeWidth={1.5}
-                  className="h-5 w-5 text-purple-500"
-                />
+                <PanelLeftClose strokeWidth={1.5} className="h-5 w-5 text-purple-500" />
               )}
             </button>
           </TooltipTrigger>
@@ -90,4 +82,4 @@ export default function GlassSidebar() {
       />)}
     </div>
   );
-} 
+}
