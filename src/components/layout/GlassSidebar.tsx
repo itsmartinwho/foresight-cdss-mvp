@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen, Zap } from "lucide-react";
 import React from "react";
 import {
   Tooltip,
@@ -12,7 +12,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export default function GlassSidebar() {
@@ -61,37 +60,30 @@ export default function GlassSidebar() {
         </Tooltip>
       </TooltipProvider>
       
-      <Link
-        href="/advisor"
-        aria-label="Open Advisor chat"
-        className={cn(
-          "group relative flex items-center gap-3 h-12 w-full px-3 rounded-xl",
-          "bg-gradient-to-br from-teal-300/25 via-cyan-300/20 to-violet-300/25",
-          "border border-white/20 backdrop-blur-lg",
-          "shadow-[inset_0_0_2px_rgba(255,255,255,0.35)] transition-all duration-150",
-          pathname.startsWith("/advisor")
-            ? "ring-2 ring-teal-300/60 shadow-md brightness-110"
-            : "hover:brightness-110 hover:scale-[1.05]"
-        )}
-      >
-        <Image
-          src="/foresight-icon.png"
-          alt="Advisor"
-          width={24}
-          height={24}
-          className="drop-shadow-[0_0_4px_rgba(173,216,230,0.9)]"
-        />
-        {!collapsed && (
-          <span
-            className={cn(
-              "font-semibold text-sm bg-gradient-to-r from-white via-sky-100 to-white bg-clip-text text-transparent",
-              !pathname.startsWith("/advisor") && "sheen"
-            )}
+      {(() => {
+        const isAdvisorActive = pathname.startsWith("/advisor");
+        return (
+          <Link
+            href="/advisor"
+            aria-label="Open Advisor chat"
+            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-4 rounded-md px-3 py-2 transition-colors ${isAdvisorActive ? 'bg-neon/10' : 'hover:bg-white/10'}`}
+            title={collapsed ? 'Advisor' : undefined}
           >
-            Advisor
-          </span>
-        )}
-      </Link>
+            <Zap className="h-[1.125em] w-[1.125em] flex-shrink-0" />
+            {!collapsed && (
+              <span
+                className={cn(
+                  "truncate bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent",
+                  !isAdvisorActive && 'sheen',
+                  isAdvisorActive && 'font-semibold'
+                )}
+              >
+                Advisor
+              </span>
+            )}
+          </Link>
+        );
+      })()}
       {items.map(({ key, label, icon: Icon }) => {
         const href = `/${key === "dashboard" ? "" : key}`;
         const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
