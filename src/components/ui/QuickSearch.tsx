@@ -4,6 +4,7 @@ import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Diagnosis, Treatment } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { createPortal } from "react-dom";
 
 type MatchKind =
   | "name"
@@ -24,6 +25,10 @@ interface QuickSearchProps {
   className?: string;
   /** Additional className passed to the underlying Input */
   inputClassName?: string;
+  /** Optional dropdown class override (e.g., for sidebar) */
+  dropdownClassName?: string;
+  /** Render dropdown in a portal to avoid clipping (e.g., inside sidebar) */
+  portal?: boolean;
 }
 
 /**
@@ -34,12 +39,13 @@ interface QuickSearchProps {
  * Future iterations can switch the query source to the dedicated Supabase RPC
  * without changing the component surface.
  */
-export default function QuickSearch({ className, inputClassName }: QuickSearchProps) {
+export default function QuickSearch({ className, inputClassName, dropdownClassName, portal }: QuickSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
 
   // Debounce the query input ~300 ms
   useEffect(() => {
@@ -154,8 +160,30 @@ export default function QuickSearch({ className, inputClassName }: QuickSearchPr
 
       setResults(matches);
       setIsOpen(true);
+      // compute dropdown position if portal mode
+      if (portal && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setPortalStyle({
+          position: "fixed",
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+          zIndex: 9999,
+        });
+      }
     }, 300);
     return () => clearTimeout(handler);
+  }, [query]);
+
+  // Recompute when data service emits changes
+  useEffect(() => {
+    const cb = () => {
+      if (query.trim().length >= 3) {
+        setQuery((q) => q + ""); // trigger debounce effect
+      }
+    };
+    patientDataService.subscribe(cb);
+    return () => patientDataService.unsubscribe(cb);
   }, [query]);
 
   // Close dropdown when clicking outside
@@ -195,42 +223,114 @@ export default function QuickSearch({ className, inputClassName }: QuickSearchPr
         }}
       />
       {isOpen && (
-        <div className="absolute left-0 mt-1 w-full min-w-[22rem] max-h-80 overflow-auto z-50 rounded-md bg-glass backdrop-blur-lg border border-[rgba(255,255,255,0.12)] shadow-card animate-fade-in-down">
-          {results.length === 0 && query.trim().length >= 3 && (
-            <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
-          )}
-          {results.map((r, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSelect(r)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
-            >
-              {r.patient.photo ? (
-                <img
-                  src={r.patient.photo}
-                  alt={r.patient.name}
-                  className="h-6 w-6 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
-                  {(r.patient.firstName?.[0] || "").toUpperCase()}
-                  {(r.patient.lastName?.[0] || "").toUpperCase()}
-                </div>
-              )}
-              <span className="truncate flex-1 text-left">
-                {r.patient.name || r.patient.id}
-                {r.kind !== "name" && r.snippet && (
-                  <>
-                    {" "}
-                    <span className="opacity-60">&gt; {r.snippet}</span>
-                  </>
+        (!portal ? (
+          <div
+            className={cn(
+              "absolute left-0 mt-1 min-w-[26rem] max-h-80 overflow-auto z-50 rounded-xl bg-[rgba(255,255,255,0.3)] backdrop-blur-md border border-white/20 shadow-lg animate-fade-in-down",
+              dropdownClassName
+            )}
+          >
+            {results.length === 0 && query.trim().length >= 3 && (
+              <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
+            )}
+            {results.map((r, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelect(r)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+              >
+                {r.patient.photo ? (
+                  <img
+                    src={r.patient.photo}
+                    alt={r.patient.name}
+                    className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
+                    {(r.patient.firstName?.[0] || "").toUpperCase()}
+                    {(r.patient.lastName?.[0] || "").toUpperCase()}
+                  </div>
                 )}
-              </span>
-            </button>
-          ))}
-        </div>
+                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
+                  {r.patient.name || r.patient.id}
+                  {r.kind !== "name" && r.snippet && (
+                    <>
+                      {" "}
+                      <span className="opacity-60">
+                        &gt; {highlightSnippet(r.snippet, query.trim().toLowerCase())}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : createPortal(
+          <div
+            style={portalStyle || {}}
+            className={cn(
+              "min-w-[26rem] max-h-80 overflow-auto rounded-xl bg-[rgba(255,255,255,0.3)] backdrop-blur-md border border-white/20 shadow-lg animate-fade-in-down",
+              dropdownClassName
+            )}
+          >
+            {results.length === 0 && query.trim().length >= 3 && (
+              <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
+            )}
+            {results.map((r, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelect(r)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+              >
+                {r.patient.photo ? (
+                  <img
+                    src={r.patient.photo}
+                    alt={r.patient.name}
+                    className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
+                    {(r.patient.firstName?.[0] || "").toUpperCase()}
+                    {(r.patient.lastName?.[0] || "").toUpperCase()}
+                  </div>
+                )}
+                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
+                  {r.patient.name || r.patient.id}
+                  {r.kind !== "name" && r.snippet && (
+                    <>
+                      {" "}
+                      <span className="opacity-60">
+                        &gt; {highlightSnippet(r.snippet, query.trim().toLowerCase())}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>, document.body)
+        )
       )}
     </div>
+  );
+}
+
+// helper to bold the search term within snippet
+function highlightSnippet(snippet: string, term: string) {
+  const regex = new RegExp(`(${term})`, "ig");
+  const parts = snippet.split(regex);
+  return (
+    <>
+      {parts.map((part, idx) =>
+        regex.test(part) ? (
+          <span key={idx} className="font-semibold text-foreground">
+            {part}
+          </span>
+        ) : (
+          <span key={idx}>{part}</span>
+        )
+      )}
+    </>
   );
 } 
