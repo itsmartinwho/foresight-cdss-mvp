@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import OpenAI from "openai";
 
 const systemPrompt = `You are Foresight, a medical advisor helping US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations, then list 3 relevant follow-up questions.`;
@@ -9,18 +9,38 @@ export async function POST(req: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
 
-    const completion = await openai.chat.completions.create({
+    const responseStream = await openai.chat.completions.create({
       model,
+      stream: true,
       messages: [
         { role: "system", content: systemPrompt },
         ...messages,
       ],
     });
 
-    const assistant = completion.choices[0]?.message?.content || "";
-    return NextResponse.json({ assistant });
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of responseStream) {
+          const token = chunk.choices?.[0]?.delta?.content || "";
+          controller.enqueue(encoder.encode(token));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+      },
+    });
   } catch (error: any) {
     console.error("/api/advisor error", error);
-    return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
+    return new Response(JSON.stringify({ error: error.message || "Unknown error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 } 

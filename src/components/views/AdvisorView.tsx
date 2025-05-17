@@ -10,6 +10,7 @@ import {
   Send,
   BookOpen,
   Sparkles,
+  Waves,
 } from "lucide-react";
 
 interface ChatMessage {
@@ -24,6 +25,9 @@ export default function AdvisorView() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [includePapers, setIncludePapers] = useState(false);
+  const [thinkMode, setThinkMode] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -67,43 +71,54 @@ export default function AdvisorView() {
   };
 
   const speak = (text: string) => {
+    if (!voiceMode) return;
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSend = async (opts?: { includeNewPapers?: boolean; thinkHarder?: boolean }) => {
+  const handleSend = async () => {
     if (!input.trim()) return;
-    const userContent = opts?.includeNewPapers
-      ? `${input.trim()}\n\nInclude recent peer-reviewed medical papers.`
-      : input.trim();
 
-    const updatedMessages: ChatMessage[] = [
-      ...messages,
-      { role: "user", content: userContent },
-    ];
-    setMessages(updatedMessages);
+    let content = input.trim();
+    if (includePapers) content += "\n\nInclude recent peer-reviewed medical papers.";
+
+    const updatedMessages: ChatMessage[] = [...messages, { role: "user", content }];
+
+    // Add placeholder assistant msg for streaming
+    setMessages([...updatedMessages, { role: "assistant", content: "" }]);
     setInput("");
     setIsSending(true);
 
     try {
       const res = await fetch("/api/advisor", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: updatedMessages,
-          model: opts?.thinkHarder ? "gpt-3.5-turbo" : "gpt-4.1",
-          includeNewPapers: !!opts?.includeNewPapers,
-          thinkHarder: !!opts?.thinkHarder,
+          model: thinkMode ? "gpt-3.5-turbo" : "gpt-4.1",
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.assistant }]);
-      speak(data.assistant);
+
+      if (!res.ok || !res.body) throw new Error(await res.text());
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      let assistantText = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        assistantText += decoder.decode(value);
+        setMessages((prev) => {
+          const cloned = [...prev];
+          cloned[cloned.length - 1] = { role: "assistant", content: assistantText };
+          return cloned;
+        });
+      }
+
+      if (voiceMode && assistantText) speak(assistantText);
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,17 +126,25 @@ export default function AdvisorView() {
     }
   };
 
+  // ESC key exits voice mode
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setVoiceMode(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
   return (
     <div className="flex flex-col h-full p-6 space-y-4">
-      <h1 className="text-2xl font-medium">Ask Foresight</h1>
+      {!messages.some((m) => m.role === "user") && (
+        <h1 className="text-2xl font-medium self-center">Ask Foresight</h1>
+      )}
 
       {/* Chat container */}
       <div className="relative flex flex-col flex-1 border border-border rounded-xl bg-glass backdrop-blur-sm overflow-hidden">
         <ScrollArea className="flex-1 p-6 overflow-y-auto" ref={scrollRef}>
           <div className="space-y-6 pb-44"> {/* extra bottom padding to allow for floating input */}
-            {messages.length === 0 && (
-              <p className="text-muted-foreground text-sm">Start the conversation by asking a medical question.</p>
-            )}
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -145,11 +168,15 @@ export default function AdvisorView() {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything"
+              placeholder={includePapers
+                ? "Ask anything, we'll look for recent research papers in the area"
+                : thinkMode
+                ? "Reasoning mode selected for your harder medical queries"
+                : "Ask anything"}
               rows={1}
               className="resize-none bg-transparent border-0 focus:outline-none focus:ring-0 placeholder:text-muted-foreground text-base"
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSend();
                 }
@@ -161,20 +188,18 @@ export default function AdvisorView() {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant={includePapers ? "default" : "secondary"}
                   className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
-                  onClick={() => handleSend({ includeNewPapers: true })}
-                  disabled={isSending || !input.trim()}
+                  onClick={() => setIncludePapers((v) => !v)}
                 >
                   <BookOpen className="h-3.5 w-3.5" />
                   Papers
                 </Button>
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant={thinkMode ? "default" : "secondary"}
                   className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
-                  onClick={() => handleSend({ thinkHarder: true })}
-                  disabled={isSending || !input.trim()}
+                  onClick={() => setThinkMode((v) => !v)}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   Think
@@ -211,13 +236,18 @@ export default function AdvisorView() {
                   }}
                 />
 
-                {/* Dictation */}
-                {typeof window !== "undefined" &&
+                {/* Dictation (only visible when not in voice mode) */}
+                {!voiceMode && typeof window !== "undefined" &&
                   ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
                     <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
                       <Mic className="h-4 w-4" />
                     </Button>
                   )}
+
+                {/* Voice mode button */}
+                <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)}>
+                  <Waves className="h-4 w-4" />
+                </Button>
 
                 {/* Send */}
                 <Button
@@ -233,6 +263,17 @@ export default function AdvisorView() {
           </div>
         </div>
       </div>
+
+      {/* Voice mode overlay */}
+      {voiceMode && (
+        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.6)] backdrop-blur-sm flex flex-col items-center justify-center text-center px-6">
+          <div className="animate-pulse mb-6">
+            <Waves className="h-16 w-16 text-teal-300" />
+          </div>
+          <p className="text-lg mb-4">Ask your question aloud</p>
+          <Button variant="secondary" onClick={() => setVoiceMode(false)}>✕ Exit voice mode</Button>
+        </div>
+      )}
     </div>
   );
 } 

@@ -13,7 +13,7 @@ export default function GlassHeader() {
           <img
             src="/images/word-logo.png"
             alt="Foresight Logo"
-            className="h-6 py-0.5 translate-y-[3px]"
+            className="h-8 translate-y-[3px]"
           />
         </Link>
       </div>
