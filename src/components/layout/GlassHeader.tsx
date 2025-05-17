@@ -16,6 +16,7 @@ export default function GlassHeader() {
       <div className="flex items-center gap-4">
         <QuickSearch
           className="w-64"
+          portal
           inputClassName="h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
         />
         <Popover>

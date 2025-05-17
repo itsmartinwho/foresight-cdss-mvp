@@ -47,6 +47,12 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
 
+  const calcWidth = (rect: DOMRect) => {
+    const base = rect.width;
+    const desired = Math.max(base, 280);
+    return Math.min(desired, 520); // cap width
+  };
+
   // Debounce the query input ~300 ms
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -163,11 +169,17 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
       // compute dropdown position if portal mode
       if (portal && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
+        let width = calcWidth(rect);
+        let left = rect.left;
+        const margin = 8;
+        if (left + width + margin > window.innerWidth) {
+          left = Math.max(margin, window.innerWidth - width - margin);
+        }
         setPortalStyle({
           position: "fixed",
           top: rect.bottom + 4,
-          left: rect.left,
-          width: rect.width,
+          left,
+          width,
           zIndex: 9999,
         });
       }
@@ -211,6 +223,41 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
     setIsOpen(false);
   };
 
+  function renderRow(r: SearchResult, idx: number) {
+    return (
+      <button
+        key={idx}
+        type="button"
+        onClick={() => handleSelect(r)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+      >
+        {r.patient.photo ? (
+          <img
+            src={r.patient.photo}
+            alt={r.patient.name}
+            className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
+            {(r.patient.firstName?.[0] || "").toUpperCase()}
+            {(r.patient.lastName?.[0] || "").toUpperCase()}
+          </div>
+        )}
+        <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
+          {r.patient.name || r.patient.id}
+          {r.kind !== "name" && r.snippet && (
+            <>
+              {" "}
+              <span className="opacity-60">
+                &gt; {highlightSnippet(r.snippet, query.trim().toLowerCase())}
+              </span>
+            </>
+          )}
+        </span>
+      </button>
+    );
+  }
+
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <Input
@@ -226,89 +273,27 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
         (!portal ? (
           <div
             className={cn(
-              "absolute left-0 mt-1 min-w-[26rem] max-h-80 overflow-auto z-50 rounded-xl bg-[rgba(255,255,255,0.3)] backdrop-blur-md border border-white/20 shadow-lg animate-fade-in-down",
+              "absolute left-0 mt-1 max-h-80 overflow-auto z-50 rounded-xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 shadow-lg animate-fade-in-down",
               dropdownClassName
             )}
           >
             {results.length === 0 && query.trim().length >= 3 && (
               <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
             )}
-            {results.map((r, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelect(r)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
-              >
-                {r.patient.photo ? (
-                  <img
-                    src={r.patient.photo}
-                    alt={r.patient.name}
-                    className="h-6 w-6 rounded-full object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
-                    {(r.patient.firstName?.[0] || "").toUpperCase()}
-                    {(r.patient.lastName?.[0] || "").toUpperCase()}
-                  </div>
-                )}
-                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
-                  {r.patient.name || r.patient.id}
-                  {r.kind !== "name" && r.snippet && (
-                    <>
-                      {" "}
-                      <span className="opacity-60">
-                        &gt; {highlightSnippet(r.snippet, query.trim().toLowerCase())}
-                      </span>
-                    </>
-                  )}
-                </span>
-              </button>
-            ))}
+            {results.map((r, idx) => renderRow(r, idx))}
           </div>
         ) : createPortal(
           <div
             style={portalStyle || {}}
             className={cn(
-              "min-w-[26rem] max-h-80 overflow-auto rounded-xl bg-[rgba(255,255,255,0.3)] backdrop-blur-md border border-white/20 shadow-lg animate-fade-in-down",
+              "min-w-[26rem] max-h-80 overflow-auto rounded-xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 shadow-lg animate-fade-in-down",
               dropdownClassName
             )}
           >
             {results.length === 0 && query.trim().length >= 3 && (
               <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
             )}
-            {results.map((r, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelect(r)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
-              >
-                {r.patient.photo ? (
-                  <img
-                    src={r.patient.photo}
-                    alt={r.patient.name}
-                    className="h-6 w-6 rounded-full object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
-                    {(r.patient.firstName?.[0] || "").toUpperCase()}
-                    {(r.patient.lastName?.[0] || "").toUpperCase()}
-                  </div>
-                )}
-                <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
-                  {r.patient.name || r.patient.id}
-                  {r.kind !== "name" && r.snippet && (
-                    <>
-                      {" "}
-                      <span className="opacity-60">
-                        &gt; {highlightSnippet(r.snippet, query.trim().toLowerCase())}
-                      </span>
-                    </>
-                  )}
-                </span>
-              </button>
-            ))}
+            {results.map((r, idx) => renderRow(r, idx))}
           </div>, document.body)
         )
       )}
