@@ -45,6 +45,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
 
   const calcWidth = (rect: DOMRect) => {
@@ -169,17 +170,27 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
       // compute dropdown position if portal mode
       if (portal && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        let width = calcWidth(rect);
-        let left = rect.left;
-        const margin = 8;
-        if (left + width + margin > window.innerWidth) {
-          left = Math.max(margin, window.innerWidth - width - margin);
+        
+        const dropdownEffectiveWidth = calcWidth(rect); // Width determined by JS logic
+
+        // Align right edge of dropdown with right edge of input container
+        let newLeft = rect.right - dropdownEffectiveWidth; 
+        
+        const margin = 8; // Screen edge margin
+
+        // Ensure it doesn't go off-screen to the left
+        newLeft = Math.max(margin, newLeft);
+
+        // Ensure it doesn't go off-screen to the right
+        if (newLeft + dropdownEffectiveWidth + margin > window.innerWidth) {
+          newLeft = window.innerWidth - dropdownEffectiveWidth - margin;
         }
+        
         setPortalStyle({
           position: "fixed",
           top: rect.bottom + 4,
-          left,
-          width,
+          left: newLeft,
+          width: dropdownEffectiveWidth, // Set the width directly
           zIndex: 9999,
         });
       }
@@ -203,7 +214,9 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
     const handleClick = (e: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(e.target as Node) &&
+        dropdownRef.current && // Check dropdown ref
+        !dropdownRef.current.contains(e.target as Node) // If click is also outside dropdown
       ) {
         setIsOpen(false);
       }
@@ -272,6 +285,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
       {isOpen && (
         (!portal ? (
           <div
+            ref={dropdownRef}
             className={cn(
               "absolute left-0 mt-1 max-h-80 overflow-auto z-50 rounded-xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 shadow-lg animate-fade-in-down",
               dropdownClassName
@@ -284,9 +298,10 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
           </div>
         ) : createPortal(
           <div
+            ref={dropdownRef}
             style={portalStyle || {}}
             className={cn(
-              "min-w-[26rem] max-h-80 overflow-auto rounded-xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 shadow-lg animate-fade-in-down",
+              "max-h-80 overflow-auto rounded-xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 shadow-lg animate-fade-in-down",
               dropdownClassName
             )}
           >
