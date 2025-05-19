@@ -112,6 +112,7 @@ The chat input/footer in the Advisor tab is implemented as a floating, glassmorp
 
 - The input/footer is rendered using a React portal (`createPortal`) directly into `document.body`.
 - This ensures that its `position: fixed` styling is never affected by any parent stacking context, transforms, or layout containers in the React tree.
+- Crucially, the main application layout in `src/app/layout.tsx` has been configured so that its primary content area (which hosts `AdvisorView`) does not scroll. This is essential for the `position: fixed` element to remain genuinely stationary relative to the viewport, as the viewport itself won't be scrollable due to expanding page content.
 - The chat area itself includes extra bottom padding (`pb-44`) to prevent the last message from being hidden behind the floating input.
 - The input/footer uses the same input and placeholder styling conventions as described above, ensuring consistency with the rest of the application.
 

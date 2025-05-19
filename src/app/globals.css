@@ -330,3 +330,15 @@
 .react-datepicker__time {
   z-index: 61 !important; /* Higher than modal content (50) and calendar popper (60) */
 }
+
+/* Force select placeholder vs. selected styling */
+select[value=""] {
+  /* Unselected placeholder state */
+  color: var(--placeholder-color) !important;
+  opacity: var(--placeholder-opacity) !important;
+}
+select[value]:not([value=""]) {
+  /* Selected value state - use standard input text styling */
+  color: hsl(var(--foreground)) !important;
+  opacity: 1 !important;
+}
