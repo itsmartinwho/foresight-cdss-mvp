@@ -158,6 +158,9 @@
 }
 
 @layer utilities {
+  /* Utility class for elements (e.g., select, custom inputs) that need placeholder-style text */
+  .placeholder-like { @apply text-slate-400 opacity-60; }
+
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {
     content: "";

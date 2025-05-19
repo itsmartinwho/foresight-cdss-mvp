@@ -12,6 +12,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { X } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Props {
   /** Controls open state from parent */
@@ -138,7 +139,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <div className="border-b p-1">
                     <Input
                       placeholder="Search patient by name or ID..."
-                      className="text-step--1"
+                      className=""
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -161,7 +162,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="text-step--1 mt-1"
+                  className="mt-1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -175,7 +176,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   onChange={(d) => setScheduledDate(d)}
                   showTimeSelect
                   dateFormat="Pp"
-                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !scheduledDate && 'placeholder-like')}
                 />
               </div>
             </div>
@@ -213,7 +214,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
+                    className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-base", !gender && 'placeholder-like')}
                   >
                     <option value="" disabled>Select gender</option>
                     <option value="Male">Male</option>
@@ -237,7 +238,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="text-step--1 mt-1"
+                  className="mt-1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -251,7 +252,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   onChange={(d) => setScheduledDate(d)}
                   showTimeSelect
                   dateFormat="Pp"
-                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !scheduledDate && 'placeholder-like')}
                 />
               </div>
             </div>
