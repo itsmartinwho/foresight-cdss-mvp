@@ -154,6 +154,8 @@
 @layer utilities {
   /* Placeholder instruction text utility */
   .placeholder-explanation { @apply placeholder:text-slate-400 placeholder:opacity-60; }
+  /* Styles text content to look like a placeholder */
+  .text-as-placeholder { @apply text-slate-400 opacity-60; }
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {
     content: "";

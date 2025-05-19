@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { X } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 interface Props {
   /** Controls open state from parent */
@@ -36,6 +37,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   // Shared fields
   const [reason, setReason] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(new Date());
+  const [isScheduledDateManuallySet, setIsScheduledDateManuallySet] = useState(false);
 
   // Validation
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -170,10 +172,10 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Date and time</label>
                 <DatePicker
                   selected={scheduledDate}
-                  onChange={(d) => setScheduledDate(d)}
+                  onChange={(d) => { setScheduledDate(d); setIsScheduledDateManuallySet(true); }}
                   showTimeSelect
                   dateFormat="Pp"
-                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
+                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1", !isScheduledDateManuallySet && "text-as-placeholder")}
                 />
               </div>
             </div>
@@ -211,7 +213,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
+                    className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1", !gender && "text-as-placeholder")}
                   >
                     <option value="" disabled>Select gender</option>
                     <option value="Male">Male</option>
@@ -226,7 +228,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     type="date"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 placeholder-explanation"
                   />
                 </div>
               </div>
@@ -245,10 +247,10 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Date and time</label>
                 <DatePicker
                   selected={scheduledDate}
-                  onChange={(d) => setScheduledDate(d)}
+                  onChange={(d) => { setScheduledDate(d); setIsScheduledDateManuallySet(true); }}
                   showTimeSelect
                   dateFormat="Pp"
-                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
+                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1", !isScheduledDateManuallySet && "text-as-placeholder")}
                 />
               </div>
             </div>
