@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { X } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { format } from 'date-fns';
 
 interface Props {
   /** Controls open state from parent */
@@ -36,8 +36,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
 
   // Shared fields
   const [reason, setReason] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(new Date());
-  const [isScheduledDateManuallySet, setIsScheduledDateManuallySet] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
 
   // Validation
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -139,7 +138,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <div className="border-b p-1">
                     <Input
                       placeholder="Search patient by name or ID..."
-                      className="placeholder-explanation text-step--1"
+                      className="text-step--1"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -162,7 +161,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="placeholder-explanation text-step--1 mt-1"
+                  className="text-step--1 mt-1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -171,11 +170,12 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
               <div>
                 <label className="font-semibold text-step--1">Date and time</label>
                 <DatePicker
+                  placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => { setScheduledDate(d); setIsScheduledDateManuallySet(true); }}
+                  onChange={(d) => setScheduledDate(d)}
                   showTimeSelect
                   dateFormat="Pp"
-                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1", !isScheduledDateManuallySet && "text-as-placeholder")}
+                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </div>
@@ -192,7 +192,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     placeholder="First name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="mt-1 placeholder-explanation"
+                    className="mt-1"
                   />
                   {errors.firstName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
@@ -202,7 +202,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     placeholder="Last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="mt-1 placeholder-explanation"
+                    className="mt-1"
                   />
                   {errors.lastName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
@@ -213,7 +213,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1", !gender && "text-as-placeholder")}
+                    className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1"
                   >
                     <option value="" disabled>Select gender</option>
                     <option value="Male">Male</option>
@@ -228,7 +228,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     type="date"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
-                    className="mt-1 placeholder-explanation"
+                    className="mt-1"
                   />
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="placeholder-explanation text-step--1 mt-1"
+                  className="text-step--1 mt-1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -246,11 +246,12 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
               <div>
                 <label className="font-semibold text-step--1">Date and time</label>
                 <DatePicker
+                  placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => { setScheduledDate(d); setIsScheduledDateManuallySet(true); }}
+                  onChange={(d) => setScheduledDate(d)}
                   showTimeSelect
                   dateFormat="Pp"
-                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1", !isScheduledDateManuallySet && "text-as-placeholder")}
+                  className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </div>

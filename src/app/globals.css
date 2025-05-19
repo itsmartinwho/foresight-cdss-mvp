@@ -127,6 +127,12 @@
   .text-step-1  { font-size: var(--step-1);  line-height: 1.25; font-weight: 500; }
   .text-step-2  { font-size: var(--step-2);  line-height: 1.25; font-weight: 600; }
   .text-step-3  { font-size: var(--step-3);  line-height: 1.25; font-weight: 600; }
+
+  /* Global placeholder text styling */
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-slate-400 opacity-60;
+  }
 }
 
 /* Custom scrollbar to match new aesthetic */
@@ -152,10 +158,6 @@
 }
 
 @layer utilities {
-  /* Placeholder instruction text utility */
-  .placeholder-explanation { @apply placeholder:text-slate-400 placeholder:opacity-60; }
-  /* Styles text content to look like a placeholder */
-  .text-as-placeholder { @apply text-slate-400 opacity-60; }
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {
     content: "";

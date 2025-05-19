@@ -174,7 +174,7 @@ export default function AdvisorView() {
                 ? "Reasoning mode selected for your harder medical queries"
                 : "Ask anything"}
               rows={1}
-              className="resize-none bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-explanation text-base"
+              className="resize-none bg-transparent border-0 focus:outline-none focus:ring-0 text-base"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
