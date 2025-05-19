@@ -160,105 +160,105 @@ export default function AdvisorView() {
             ))}
           </div>
         </ScrollArea>
+      </div>
 
-        {/* Fixed glass input footer overlay */}
-        <div className="fixed inset-x-0 bottom-4 flex justify-center px-6 pointer-events-none">
-          <div className="w-full max-w-3xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 rounded-xl p-4 flex flex-col gap-3 pointer-events-auto shadow-lg">
-            {/* Textarea input */}
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={includePapers
-                ? "Ask anything, we'll look for recent research papers in the area"
-                : thinkMode
-                ? "Reasoning mode selected for your harder medical queries"
-                : "Ask anything"}
-              rows={1}
-              className="resize-none bg-transparent border-0 focus:outline-none focus:ring-0 text-base"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
+      {/* Fixed glass input footer overlay */}
+      <div className="fixed inset-x-0 bottom-4 flex justify-center px-6 pointer-events-none">
+        <div className="w-full max-w-3xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 rounded-xl p-4 flex flex-col gap-3 pointer-events-auto shadow-lg">
+          {/* Textarea input */}
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={includePapers
+              ? "Ask anything, we'll look for recent research papers in the area"
+              : thinkMode
+              ? "Reasoning mode selected for your harder medical queries"
+              : "Ask anything"}
+            rows={1}
+            className="resize-none bg-transparent border-0 focus:outline-none focus:ring-0 text-base"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
 
-            {/* Action row */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={includePapers ? "default" : "secondary"}
-                  className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
-                  onClick={() => setIncludePapers((v) => !v)}
-                >
-                  <BookOpen className="h-3.5 w-3.5" />
-                  Papers
-                </Button>
-                <Button
-                  size="sm"
-                  variant={thinkMode ? "default" : "secondary"}
-                  className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
-                  onClick={() => setThinkMode((v) => !v)}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Think
-                </Button>
-              </div>
+          {/* Action row */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={includePapers ? "default" : "secondary"}
+                className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
+                onClick={() => setIncludePapers((v) => !v)}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Papers
+              </Button>
+              <Button
+                size="sm"
+                variant={thinkMode ? "default" : "secondary"}
+                className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
+                onClick={() => setThinkMode((v) => !v)}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Think
+              </Button>
+            </div>
 
-              <div className="flex items-center gap-2">
-                {/* Upload */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <span className="flex items-center text-foreground text-xs">
-                    <ImageIcon className="h-[14px] w-[14px]" />
-                    <span className="mx-[2px]">/</span>
-                    <FileText className="h-[14px] w-[14px]" />
-                  </span>
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,application/pdf,application/msword,text/plain"
-                  multiple={false}
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: "user", content: `[Uploaded ${file.name}]` },
-                    ]);
-                    e.target.value = "";
-                  }}
-                />
+            <div className="flex items-center gap-2">
+              {/* Upload */}
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span className="flex items-center text-foreground text-xs">
+                  <ImageIcon className="h-[14px] w-[14px]" />
+                  <span className="mx-[2px]">/</span>
+                  <FileText className="h-[14px] w-[14px]" />
+                </span>
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf,application/msword,text/plain"
+                multiple={false}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "user", content: `[Uploaded ${file.name}]` },
+                  ]);
+                  e.target.value = "";
+                }}
+              />
 
-                {/* Dictation (only visible when not in voice mode) */}
-                {!voiceMode && typeof window !== "undefined" &&
-                  ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
-                    <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
-                      <Mic className="h-4 w-4" />
-                    </Button>
-                  )}
+              {/* Dictation (only visible when not in voice mode) */}
+              {!voiceMode && typeof window !== "undefined" &&
+                ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
+                  <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                )}
 
-                {/* Voice mode button */}
-                <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)}>
-                  <Waves className="h-4 w-4" />
-                </Button>
+              {/* Voice mode button */}
+              <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)}>
+                <Waves className="h-4 w-4" />
+              </Button>
 
-                {/* Send */}
-                <Button
-                  size="icon"
-                  onClick={() => handleSend()}
-                  disabled={isSending || !input.trim()}
-                  className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+              {/* Send */}
+              <Button
+                size="icon"
+                onClick={() => handleSend()}
+                disabled={isSending || !input.trim()}
+                className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
