@@ -62,7 +62,21 @@ These are primarily defined in `src/app/globals.css` and leveraged by Tailwind C
       {/* ...other options... */}
     </select>
     ```
-*   **Global CSS for Unselected State (fallback/base):** `globals.css` also contains a rule for `select:not([value])` to apply placeholder styles, which complements the `cn` approach.
+*   **Global CSS for Unselected/Selected State (robust, attribute-based):**
+    In addition to the `cn` approach, the following rules in `globals.css` ensure robust styling for native selects:
+    ```css
+    select[value=""] {
+      /* Unselected placeholder state */
+      color: var(--placeholder-color) !important;
+      opacity: var(--placeholder-opacity) !important;
+    }
+    select[value]:not([value=""]) {
+      /* Selected value state - use standard input text styling */
+      color: hsl(var(--foreground)) !important;
+      opacity: 1 !important;
+    }
+    ```
+    This ensures that even if utility classes are overridden or missed, the select will always show placeholder styling when empty and user input styling when a value is selected.
 
 ### 3. Custom Date/Time Picker (`StyledDatePicker` wrapping `react-datepicker`)
 *   The `StyledDatePicker` component is located in `src/components/modals/NewConsultationModal.tsx`.
