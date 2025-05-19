@@ -18,7 +18,7 @@ const analyticsData: any[] = [
 // AnalyticsView function from ForesightApp.tsx (approx. lines 979-1011)
 export default function AnalyticsScreenView() {
   return (
-    <ContentSurface>
+    <ContentSurface fullBleed className="p-6">
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle className="text-step-1">Usage Analytics (Mock)</CardTitle>

@@ -98,7 +98,7 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
   }
 
   return (
-    <ContentSurface>
+    <ContentSurface fullBleed className="p-6">
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">

@@ -144,7 +144,7 @@ export default function AdvisorView() {
 
   return (
     <>
-      <ContentSurface className="flex flex-col flex-1 space-y-4 overflow-hidden">
+      <ContentSurface fullBleed className="flex flex-col flex-1 p-6 space-y-4 overflow-hidden">
         {!messages.some((m) => m.role === "user") && (
           <h1 className="text-2xl font-medium self-center">Ask Foresight</h1>
         )}

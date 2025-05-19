@@ -143,7 +143,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   }
 
   return (
-    <ContentSurface className="relative">
+    <ContentSurface fullBleed className="p-6 relative">
       <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
