@@ -25,7 +25,7 @@ const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ value, onClick, on
   // The input's own text (the selected date) should use text-step--1.
   // The placeholder text will be styled by global ::placeholder rules.
   const inputClassName = cn(
-    "w-full px-3 py-2 border rounded-md bg-background text-step--1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+    "w-full px-3 py-2 border rounded-md bg-background text-step--1 font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
     className // Allow overriding via prop
   );
 
@@ -183,7 +183,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                       <div
                         key={p.id}
                         onClick={() => setSelectedPatient(p)}
-                        className="px-3 py-2 cursor-pointer hover:bg-muted/50"
+                        className="px-3 py-2 cursor-pointer hover:bg-muted/50 text-step--1 text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]"
                       >
                         {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
                       </div>

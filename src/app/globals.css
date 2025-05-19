@@ -139,6 +139,7 @@
     opacity: var(--placeholder-opacity) !important;
     font-size: var(--step--1) !important;
     font-weight: 300 !important;
+    font-family: inherit !important; /* Ensure font family matches input */
   }
 
   /* Directly target react-datepicker input and select placeholder */
@@ -148,6 +149,7 @@
     opacity: var(--placeholder-opacity) !important;
     font-size: var(--step--1) !important;
     font-weight: 300 !important;
+    font-family: inherit !important; /* Ensure font family matches input */
   }
 
   /* Force color on react-datepicker input with a placeholder attribute but empty value */
@@ -157,6 +159,7 @@
     opacity: var(--placeholder-opacity) !important;
     font-size: var(--step--1) !important;
     font-weight: 300 !important;
+    font-family: inherit !important; /* Ensure font family matches input */
   }
 
   /* Force select with empty value to use placeholder color */
@@ -164,6 +167,9 @@
   select[value=""] {
     color: var(--placeholder-color) !important;
     opacity: var(--placeholder-opacity) !important;
+    font-size: var(--step--1) !important; /* Added font size */
+    font-weight: 300 !important; /* Added font weight */
+    font-family: inherit !important; /* Ensure font family matches select */
   }
 }
 
