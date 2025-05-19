@@ -225,7 +225,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
                   className={cn(
                     "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
-                    !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground"
+                    !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                   )}
                 >
                   <option value="" disabled>Select duration</option>
@@ -270,8 +270,8 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     className={cn(
-                      "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1",
-                      !gender ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground"
+                      "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+                      !gender ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                     )}
                   >
                     <option value="" disabled className="text-muted-foreground">
@@ -331,7 +331,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
                   className={cn(
                     "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
-                    !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground"
+                    !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                   )}
                 >
                   <option value="" disabled>Select duration</option>
