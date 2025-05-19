@@ -72,6 +72,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   // Shared fields
   const [reason, setReason] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
 
   // Validation
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -158,7 +159,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
               </label>
               {selectedPatient ? (
                 <div className="border rounded-md px-3 py-2 flex justify-between items-center bg-muted/20">
-                  <span>{selectedPatient.name || `${selectedPatient.firstName ?? ''} ${selectedPatient.lastName ?? ''}`.trim() || selectedPatient.id}</span>
+                  <span className="text-step--1">{selectedPatient.name || `${selectedPatient.firstName ?? ''} ${selectedPatient.lastName ?? ''}`.trim() || selectedPatient.id}</span>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -212,7 +213,26 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   timeInputLabel="Time:"
                   dateFormat="MM/dd/yyyy, h:mm aa"
                   className="mt-1"
+                  timeIntervals={1}
+                  popperClassName="z-[60]"
                 />
+              </div>
+              {/* Duration selection */}
+              <div>
+                <label className="font-semibold text-step--1">Duration</label>
+                <select
+                  value={duration || ''}
+                  onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
+                  className={cn(
+                    "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+                    !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground"
+                  )}
+                >
+                  <option value="" disabled>Select duration</option>
+                  {Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(minutes => (
+                    <option key={minutes} value={minutes}>{minutes} min</option>
+                  ))}
+                </select>
               </div>
             </div>
           </TabsContent>
@@ -265,7 +285,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <div>
                   <label className="font-semibold text-step--1">Date of Birth</label>
                   <StyledDatePicker
-                    placeholderText="DD/MM/YYYY"
+                    placeholderText="dd/mm/yyyy"
                     selected={dob}
                     onChange={(d: Date | null) => setDob(d)}
                     dateFormat="dd/MM/yyyy"
@@ -274,6 +294,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     showMonthDropdown
                     dropdownMode="select"
                     maxDate={new Date()}
+                    popperClassName="z-[60]"
                   />
                 </div>
               </div>
@@ -298,7 +319,26 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   timeInputLabel="Time:"
                   dateFormat="MM/dd/yyyy, h:mm aa"
                   className="mt-1"
+                  timeIntervals={1}
+                  popperClassName="z-[60]"
                 />
+              </div>
+              {/* Duration selection - New Patient tab */}
+              <div>
+                <label className="font-semibold text-step--1">Duration</label>
+                <select
+                  value={duration || ''}
+                  onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
+                  className={cn(
+                    "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+                    !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground"
+                  )}
+                >
+                  <option value="" disabled>Select duration</option>
+                  {Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(minutes => (
+                    <option key={minutes} value={minutes}>{minutes} min</option>
+                  ))}
+                </select>
               </div>
             </div>
           </TabsContent>
