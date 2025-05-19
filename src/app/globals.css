@@ -283,6 +283,13 @@
     animation: sheen 4s linear infinite;
     animation-delay: 1s;
   }
+
+  /* Lighter placeholder for sidebar and navbar search inputs */
+  .sidebar-search-input::placeholder,
+  .navbar-search-input::placeholder {
+    color: #fff !important;
+    opacity: 0.85 !important;
+  }
 }
 
 /* Safari fallback for backdrop-filter (Brief §14.3 / User §12) */
