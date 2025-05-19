@@ -102,4 +102,19 @@ When adding new input fields, selects, or custom components that require placeho
 4.  **Custom Components:** If building new custom input components, ensure their internal structure allows for easy application of these classes and respects the placeholder styling strategy.
 5.  **Z-index:** Be mindful of z-index for any components that render popups or overlays, especially within modals. Dialogs are often `z-50`. Adjust as needed.
 
-By following these guidelines, we can maintain a consistent and predictable user interface for form elements throughout the application. 
+By following these guidelines, we can maintain a consistent and predictable user interface for form elements throughout the application.
+
+## Advisor Chat Input/Footer (Fixed to Viewport)
+
+The chat input/footer in the Advisor tab is implemented as a floating, glassmorphic input bar that is always anchored to the bottom of the browser viewport, regardless of chat content or scroll position.
+
+**Implementation Details:**
+
+- The input/footer is rendered using a React portal (`createPortal`) directly into `document.body`.
+- This ensures that its `position: fixed` styling is never affected by any parent stacking context, transforms, or layout containers in the React tree.
+- The chat area itself includes extra bottom padding (`pb-44`) to prevent the last message from being hidden behind the floating input.
+- The input/footer uses the same input and placeholder styling conventions as described above, ensuring consistency with the rest of the application.
+
+**Why use a portal?**
+
+In complex layouts (especially with glassmorphism, backdrop filters, or transforms), CSS `position: fixed` can be scoped to the nearest ancestor with a transform or filter. By rendering the input/footer outside the main React tree (at the document body level), we guarantee it is always fixed to the viewport, providing a robust and predictable user experience. 
