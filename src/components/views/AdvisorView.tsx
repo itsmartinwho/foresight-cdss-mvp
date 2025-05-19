@@ -143,7 +143,7 @@ export default function AdvisorView() {
 
   return (
     <>
-      <div className="flex flex-col h-full p-6 space-y-4">
+      <div className="flex flex-col h-full p-6 space-y-4 overflow-hidden">
         {!messages.some((m) => m.role === "user") && (
           <h1 className="text-2xl font-medium self-center">Ask Foresight</h1>
         )}
@@ -182,7 +182,14 @@ export default function AdvisorView() {
       </div>
       {mounted && createPortal(
         <>
-          <div className="fixed inset-x-0 bottom-4 flex justify-center px-6 pointer-events-none">
+          <div
+            className="fixed bottom-4 flex justify-center px-6 pointer-events-none"
+            style={{
+              left: 'var(--actual-sidebar-width, 0rem)',
+              width: 'calc(100% - var(--actual-sidebar-width, 0rem))',
+              transition: 'left 0.3s ease-in-out, width 0.3s ease-in-out',
+            }}
+          >
             <div className="w-full max-w-3xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 rounded-xl p-4 flex flex-col gap-3 pointer-events-auto shadow-lg">
               {/* Textarea input */}
               <Textarea

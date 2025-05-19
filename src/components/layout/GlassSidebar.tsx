@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen, Zap } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import QuickSearch from "@/components/ui/QuickSearch";
+
+const SIDEBAR_EXPANDED_WIDTH_REM = 14;
+const SIDEBAR_COLLAPSED_WIDTH_REM = 4.5;
 
 export default function GlassSidebar() {
   const pathname = usePathname();
@@ -31,6 +34,35 @@ export default function GlassSidebar() {
       return !c;
     });
   };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const lgMediaQuery = window.matchMedia("(min-width: 1024px)");
+
+    const updateSidebarStyling = () => {
+      if (lgMediaQuery.matches) {
+        const currentSidebarWidth = collapsed
+          ? `${SIDEBAR_COLLAPSED_WIDTH_REM}rem`
+          : `${SIDEBAR_EXPANDED_WIDTH_REM}rem`;
+        root.style.setProperty("--actual-sidebar-width", currentSidebarWidth);
+        root.classList.remove("no-lg-sidebar");
+        root.classList.toggle("lg-sidebar-collapsed", collapsed);
+        root.classList.toggle("lg-sidebar-expanded", !collapsed);
+      } else {
+        root.style.setProperty("--actual-sidebar-width", "0rem");
+        root.classList.add("no-lg-sidebar");
+        root.classList.remove("lg-sidebar-collapsed", "lg-sidebar-expanded");
+      }
+    };
+
+    updateSidebarStyling();
+
+    lgMediaQuery.addEventListener("change", updateSidebarStyling);
+
+    return () => {
+      lgMediaQuery.removeEventListener("change", updateSidebarStyling);
+    };
+  }, [collapsed]);
 
   const items = [
     { key: "dashboard", label: "Dashboard", icon: Home },
