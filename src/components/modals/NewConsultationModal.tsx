@@ -20,27 +20,34 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
-// Custom DatePicker wrapper component with forced placeholder styling
-const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ selected, onChange, ...props }, ref) => {
-  // Force placeholder appearance when no date is selected
-  const customPlaceholderStyle = !selected ? {
-    color: 'var(--placeholder-color)',
-    opacity: 0.6,
-  } : {};
+// Custom DatePicker wrapper component
+const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ value, onClick, onChange, placeholderText, className, selected, ...props }, ref) => {
+  // The input's own text (the selected date) should use text-step--1.
+  // The placeholder text will be styled by global ::placeholder rules.
+  const inputClassName = cn(
+    "w-full px-3 py-2 border rounded-md bg-background text-step--1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+    className // Allow overriding via prop
+  );
+
+  // If react-datepicker sets the value to the placeholderText when !selected,
+  // we might need to style it. However, it usually uses a real placeholder attribute.
+  const textStyle = selected ? {} : { 
+    // Only apply if value itself is the placeholder, otherwise let ::placeholder handle it
+    // This is a safety net, ideally not needed if placeholder attribute is used.
+    // color: !value || value === placeholderText ? 'var(--placeholder-color)' : 'inherit',
+    // opacity: !value || value === placeholderText ? 'var(--placeholder-opacity)' : 1,
+  };
 
   return (
-    <div className="react-datepicker-wrapper" style={{ width: '100%' }}>
+    // className from props is now applied to the input directly via inputClassName merge
+    <div className="react-datepicker-wrapper" style={{ width: '100%' }}> 
       <DatePicker
         ref={ref}
         selected={selected}
         onChange={onChange}
+        placeholderText={placeholderText}
         {...props}
-        customInput={
-          <input
-            className="w-full px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            style={customPlaceholderStyle}
-          />
-        }
+        customInput={<input value={value} onClick={onClick} onChange={onChange} placeholder={placeholderText} className={inputClassName} style={textStyle} />}
       />
     </div>
   );
@@ -60,7 +67,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [gender, setGender] = useState('');
-  const [dob, setDob] = useState('');
+  const [dob, setDob] = useState<Date | null>(null);
 
   // Shared fields
   const [reason, setReason] = useState('');
@@ -118,7 +125,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
         router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
       } else {
         const { patient, admission } = await patientDataService.createNewPatientWithAdmission(
-          { firstName, lastName, gender, dateOfBirth: dob || undefined },
+          { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
           { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined }
         );
         router.push(`/patients/${patient.id}?ad=${admission.id}`);
@@ -166,7 +173,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <div className="border-b p-1">
                     <Input
                       placeholder="Search patient by name or ID..."
-                      className=""
+                      className="text-step--1"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -189,7 +196,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="mt-1"
+                  className="mt-1 text-step--1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -200,9 +207,10 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <StyledDatePicker
                   placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => setScheduledDate(d)}
+                  onChange={(d: Date | null) => setScheduledDate(d)}
                   showTimeSelect
-                  dateFormat="Pp"
+                  timeInputLabel="Time:"
+                  dateFormat="MM/dd/yyyy, h:mm aa"
                   className="mt-1"
                 />
               </div>
@@ -220,7 +228,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     placeholder="First name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 text-step--1"
                   />
                   {errors.firstName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
@@ -230,7 +238,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     placeholder="Last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 text-step--1"
                   />
                   {errors.lastName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
@@ -241,23 +249,31 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border rounded-md bg-background"
-                    style={!gender ? { color: 'var(--placeholder-color)', opacity: 0.6 } : {}}
+                    className={cn(
+                      "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1",
+                      !gender ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground"
+                    )}
                   >
-                    <option value="" disabled className="placeholder-like">Select gender</option>
+                    <option value="" disabled className="text-muted-foreground">
+                      Select gender
+                    </option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
-                  {errors.gender && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
                 <div>
                   <label className="font-semibold text-step--1">Date of Birth</label>
-                  <Input
-                    type="date"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
+                  <StyledDatePicker
+                    placeholderText="DD/MM/YYYY"
+                    selected={dob}
+                    onChange={(d: Date | null) => setDob(d)}
+                    dateFormat="dd/MM/yyyy"
                     className="mt-1"
+                    showYearDropdown
+                    showMonthDropdown
+                    dropdownMode="select"
+                    maxDate={new Date()}
                   />
                 </div>
               </div>
@@ -266,7 +282,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="mt-1"
+                  className="mt-1 text-step--1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -277,9 +293,10 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <StyledDatePicker
                   placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => setScheduledDate(d)}
+                  onChange={(d: Date | null) => setScheduledDate(d)}
                   showTimeSelect
-                  dateFormat="Pp"
+                  timeInputLabel="Time:"
+                  dateFormat="MM/dd/yyyy, h:mm aa"
                   className="mt-1"
                 />
               </div>
