@@ -38,6 +38,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   // Shared fields
   const [reason, setReason] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [isDateTouched, setIsDateTouched] = useState(false);
 
   // Validation
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -173,10 +174,10 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <DatePicker
                   placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => setScheduledDate(d)}
+                  onChange={(d) => { setScheduledDate(d); setIsDateTouched(true); }}
                   showTimeSelect
                   dateFormat="Pp"
-                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !scheduledDate && 'placeholder-like')}
+                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !isDateTouched && 'placeholder-like')}
                 />
               </div>
             </div>
@@ -214,9 +215,9 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-base", !gender && 'placeholder-like')}
+                    className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background", !gender && 'placeholder-like')}
                   >
-                    <option value="" disabled>Select gender</option>
+                    <option value="" disabled className="placeholder-like">Select gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
@@ -249,10 +250,10 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <DatePicker
                   placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => setScheduledDate(d)}
+                  onChange={(d) => { setScheduledDate(d); setIsDateTouched(true); }}
                   showTimeSelect
                   dateFormat="Pp"
-                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !scheduledDate && 'placeholder-like')}
+                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !isDateTouched && 'placeholder-like')}
                 />
               </div>
             </div>
