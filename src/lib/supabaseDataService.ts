@@ -327,7 +327,7 @@ class SupabaseDataService {
 
   async createNewAdmission(
     patientId: string,
-    opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }
+    opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
   ): Promise<Admission> {
     // Ensure patient exists (reload on demand)
     if (!this.patients[patientId]) {
@@ -342,13 +342,19 @@ class SupabaseDataService {
     const newAdmissionId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
 
+    // Compute start and end times based on optional duration
+    const startIso = opts?.scheduledStart ?? nowIso;
+    const endIso = opts?.duration
+      ? new Date(new Date(startIso).getTime() + opts.duration * 60000).toISOString()
+      : opts?.scheduledEnd ?? null;
+
     // Insert into DB
     const { error: insertErr } = await this.supabase.from('visits').insert([
       {
         admission_id: newAdmissionId,
         reason_for_visit: opts?.reason ?? null,
-        scheduled_start_datetime: opts?.scheduledStart ?? nowIso,
-        scheduled_end_datetime: opts?.scheduledEnd ?? null,
+        scheduled_start_datetime: startIso,
+        scheduled_end_datetime: endIso,
         actual_start_datetime: null,
         actual_end_datetime: null,
         is_deleted: false,
@@ -366,8 +372,8 @@ class SupabaseDataService {
     const admission: Admission = {
       id: compositeId,
       patientId,
-      scheduledStart: opts?.scheduledStart ?? nowIso,
-      scheduledEnd: opts?.scheduledEnd ?? '',
+      scheduledStart: startIso,
+      scheduledEnd: endIso ?? '',
       reason: opts?.reason ?? undefined,
     } as Admission;
 
@@ -433,7 +439,7 @@ class SupabaseDataService {
 
   async createNewPatientWithAdmission(
     patientInput: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string },
-    admissionInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string }
+    admissionInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
   ): Promise<{ patient: Patient; admission: Admission }> {
     const patient = await this.createNewPatient(patientInput);
     const admission = await this.createNewAdmission(patient.id, admissionInput);

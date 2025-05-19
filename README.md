@@ -17,6 +17,7 @@ Foresight CDSS is a browser-based clinical decision support system prototype. Th
     *   Alerts, Analytics, and Settings screens (placeholders or basic views)
 *   **Client-Side Routing:** Utilizes Next.js for routing, with a central `ForesightApp.tsx` component managing view rendering.
 *   **Glassmorphism UI:** Features a modern "glassmorphism" visual style for header and sidebar.
+*   **Consultation Duration:** Optional duration field for new consultations; automatically sets the scheduled end time based on the selected start time.
 *   **Responsive Layout:** Basic responsive design for different screen sizes.
 
 ## Target State Features (Vision)
@@ -97,6 +98,7 @@ This will launch the Playwright test runner. Ensure the development server (`pnp
 The application now primarily uses data from a Supabase PostgreSQL database.
 
 *   **Dashboard:** Provides a landing page with upcoming appointments.
+*   **Consultation Duration:** When starting a new consultation, users can specify an optional duration which automatically determines the appointment's end time.
 *   **Patient List:** (`/patients`) Displays a list of patients from the Supabase database.
 *   **Patient Workspace:** (Accessed by clicking a patient) Shows tabs for Demographics, Admissions, Diagnoses, and Labs using data fetched from Supabase for the selected patient.
 *   **Other sections:** Alerts, Analytics, Settings are placeholders or have minimal functionality in the prototype.
@@ -154,4 +156,4 @@ This application uses a managed Postgres instance provided by Supabase as its pr
     ```
     This script will read the (now archived) TSV data and insert it into your Supabase tables.
 
-The application is configured to use Supabase by default. The older mechanism of reading from local TSV files (controlled by setting `NEXT_PUBLIC_USE_SUPABASE="false"`) is deprecated but available as a fallback for specific local debugging if needed. The data for this fallback was originally in `public/data/100-patients/` and has now been moved to `docs/archived-data/`.
+The application is configured to use Supabase by default. The older mechanism of reading from local TSV files (controlled by setting `
