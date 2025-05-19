@@ -215,6 +215,9 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   className="mt-1"
                   timeIntervals={1}
                   popperClassName="z-[60]"
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
                 />
               </div>
               {/* Duration selection */}
@@ -321,6 +324,9 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   className="mt-1"
                   timeIntervals={1}
                   popperClassName="z-[60]"
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
                 />
               </div>
               {/* Duration selection - New Patient tab */}

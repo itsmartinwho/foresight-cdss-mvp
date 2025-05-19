@@ -1,0 +1,91 @@
+# Frontend Styling Guide: Input and Placeholder Consistency
+
+This guide outlines the strategy and conventions used in the Foresight CDSS project to ensure consistent styling for input fields, their placeholder text, and selected values, particularly within modals and forms.
+
+## Core Principle
+
+The primary goal is to have a uniform visual language for user interactions:
+1.  **Placeholder State:** When a field is empty or unselected, its placeholder text (or the field itself if it's a select) should appear "paler" (medium gray, slightly transparent), use a standard smaller font size, and a light font weight.
+2.  **User Input State:** Once a user types into an input or selects a value from a dropdown, the text should switch to the standard input text style: darker (default foreground color) and fully opaque, using the same standard smaller font size.
+
+## Key CSS Variables and Tailwind Setup
+
+These are primarily defined in `src/app/globals.css` and leveraged by Tailwind CSS.
+
+### CSS Variables (`:root` in `globals.css`)
+*   `--placeholder-color: #94a3b8;`: Defines the medium gray color (Tailwind's `slate-400`) for all placeholder text.
+*   `--placeholder-opacity: 0.6;`: Sets the opacity for placeholder text to achieve the "paler" effect.
+*   `--step--1: clamp(.75rem, .72rem + 0.15vw, .84rem);`: A fluid typography token for the standard "smaller" font size used across input fields and their placeholders.
+*   `--font-size-step--1: var(--step--1);`: An alias for `--step--1`, available for use in JavaScript or inline styles if necessary (though direct class application is preferred).
+*   `--foreground: var(--ink-val);` (where `--ink-val` is `218 20% 8%` or `#0c1116`): The standard dark color for user-inputted text.
+*   `--border: 220 20% 85%;`: Standard border color for inputs.
+*   `--background: var(--lavender-bg-val);`: Standard background for inputs (light theme).
+
+### Tailwind CSS
+*   The project uses Tailwind CSS. Global styles and utility classes are key.
+*   `font-sans`: The default application font (Inter) defined on the `body`, inherited by inputs.
+*   `.text-step--1`: A utility class defined in `globals.css` that applies `font-size: var(--step--1); line-height: 1.5; font-weight: 300;`. This is the standard class for styling the text *within* input fields and the text of selected values in dropdowns.
+
+## Styling Guidelines by Component Type
+
+### 1. Standard Text Inputs (using Shadcn/ui `<Input>` component)
+*   **Class Name:** Apply `className="text-step--1 font-sans ..."` (plus any layout classes like `mt-1`, `w-full`).
+*   **Placeholder Styling:** Handled globally by the following rule in `src/app/globals.css`:
+    ```css
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--placeholder-color) !important;
+      opacity: var(--placeholder-opacity) !important;
+      font-size: var(--step--1) !important;
+      font-weight: 300 !important;
+      font-family: inherit !important;
+    }
+    ```
+    This ensures all native placeholders get the desired look.
+
+### 2. Select Dropdowns (native `<select>` element)
+*   **Base Class Name:** Apply `className="text-step--1 font-sans ..."` (plus layout classes).
+*   **Conditional Styling for Placeholder Appearance:** Use the `cn()` utility from `@/lib/utils` to switch styles based on whether a value is selected.
+    *   **No Value Selected (Placeholder State):** Apply `text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]`. The actual font size and weight come from the base `text-step--1` class.
+    *   **Value Selected (User Input State):** Apply `text-foreground opacity-100`.
+*   **Example (from `NewConsultationModal.tsx`):**
+    ```tsx
+    <select
+      value={gender}
+      onChange={(e) => setGender(e.target.value)}
+      className={cn(
+        "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+        !gender ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
+      )}
+    >
+      <option value="" disabled className="text-muted-foreground">Select gender</option>
+      {/* ...other options... */}
+    </select>
+    ```
+*   **Global CSS for Unselected State (fallback/base):** `globals.css` also contains a rule for `select:not([value])` to apply placeholder styles, which complements the `cn` approach.
+
+### 3. Custom Date/Time Picker (`StyledDatePicker` wrapping `react-datepicker`)
+*   The `StyledDatePicker` component is located in `src/components/modals/NewConsultationModal.tsx`.
+*   **Internal Input Styling:** The `<input>` element within `StyledDatePicker` is styled with the class `text-step--1 font-sans`.
+*   **Placeholder Styling:** It uses a standard `placeholder` attribute, so its placeholder text is styled by the global `input::placeholder` rules in `globals.css`.
+*   **Selected Value:** When a date/time is selected, it appears with the `text-step--1 font-sans` styling.
+*   **Z-index for Popups:**
+    *   The main calendar popup uses `popperClassName="z-[60]"` passed as a prop to `StyledDatePicker`.
+    *   The time selection dropdown (if `showTimeSelect` is true) requires global CSS overrides for its z-index (currently set to `61` in `globals.css`):
+        ```css
+        .react-datepicker__time-container,
+        .react-datepicker__time {
+          z-index: 61 !important;
+        }
+        ```
+
+## Adding New Fields
+
+When adding new input fields, selects, or custom components that require placeholder text or similar input styling:
+1.  **Prioritize Global Styles:** Leverage the existing global `::placeholder` styles for standard inputs and date pickers where possible.
+2.  **Use Standard Classes:** Apply `text-step--1` and `font-sans` for the text of the input/selected value.
+3.  **Conditional Styling for Selects:** Follow the `cn()` pattern shown above for native `<select>` elements.
+4.  **Custom Components:** If building new custom input components, ensure their internal structure allows for easy application of these classes and respects the placeholder styling strategy.
+5.  **Z-index:** Be mindful of z-index for any components that render popups or overlays, especially within modals. Dialogs are often `z-50`. Adjust as needed.
+
+By following these guidelines, we can maintain a consistent and predictable user interface for form elements throughout the application. 

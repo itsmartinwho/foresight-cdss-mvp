@@ -163,13 +163,12 @@
   }
 
   /* Force select with empty value to use placeholder color */
-  select:not([value]),
-  select[value=""] {
+  select:not([value]) {
     color: var(--placeholder-color) !important;
     opacity: var(--placeholder-opacity) !important;
-    font-size: var(--step--1) !important; /* Added font size */
-    font-weight: 300 !important; /* Added font weight */
-    font-family: inherit !important; /* Ensure font family matches select */
+    font-size: var(--step--1) !important;
+    font-weight: 300 !important;
+    font-family: inherit !important;
   }
 }
 
@@ -324,4 +323,10 @@
 }
 .animate-shake {
   animation: shake 0.6s ease-in-out;
+}
+
+/* Custom react-datepicker z-index for time container */
+.react-datepicker__time-container,
+.react-datepicker__time {
+  z-index: 61 !important; /* Higher than modal content (50) and calendar popper (60) */
 }
