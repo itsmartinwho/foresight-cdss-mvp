@@ -1,5 +1,6 @@
 'use client';
 import React from "react";
+import ContentSurface from '@/components/layout/ContentSurface';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
@@ -17,7 +18,7 @@ const analyticsData: any[] = [
 // AnalyticsView function from ForesightApp.tsx (approx. lines 979-1011)
 export default function AnalyticsScreenView() {
   return (
-    <div className="p-6">
+    <ContentSurface>
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle className="text-step-1">Usage Analytics (Mock)</CardTitle>
@@ -45,6 +46,6 @@ export default function AnalyticsScreenView() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </ContentSurface>
   );
 } 

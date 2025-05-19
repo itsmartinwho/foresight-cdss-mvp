@@ -9,9 +9,10 @@ import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types"; // Added Treatment
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"; // For renderDetailTable
 import { Input } from "@/components/ui/input"; // <--- ADD THIS LINE
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { cn } from "@/lib/utils";
 
 // Helper: renderDetailTable (copied from ForesightApp.tsx, approx lines 66-105)
 function renderDetailTable(title: string, dataArray: any[], headers: string[], columnAccessors?: string[]) {
@@ -56,10 +57,11 @@ function renderDetailTable(title: string, dataArray: any[], headers: string[], c
 
 // Helper: AllDataView (copied from ForesightApp.tsx, approx lines 107-154)
 function AllDataView({ detailedPatientData, setDetailedPatientData }: { detailedPatientData: any; setDetailedPatientData: React.Dispatch<React.SetStateAction<any | null>> }) {
-  if (!detailedPatientData) return <p className="p-4 text-muted-foreground">No detailed data available.</p>;
+  if (!detailedPatientData) return <div className="p-6 text-center text-muted-foreground">No data loaded.</div>;
+
   const { patient, admissions } = detailedPatientData;
 
-  const deletedAdmissions = (admissions || []).filter((a: any) => a.admission.isDeleted);
+  const deletedAdmissions = (admissions || []).filter((a: { admission: Admission }) => a.admission.isDeleted);
 
   const handleRestore = (ad: Admission) => {
     if (patient && patientDataService.restoreAdmission(patient.id, ad.id)) {
@@ -182,6 +184,8 @@ function ConsultationTab({
   onNewConsultationReasonChange,
   newConsultationDate,
   onNewConsultationDateChange,
+  newConsultationDuration,
+  onNewConsultationDurationChange,
   onStartTranscriptionForNewConsult,
 }: {
   patient: Patient;
@@ -193,6 +197,8 @@ function ConsultationTab({
   onNewConsultationReasonChange?: (reason: string) => void;
   newConsultationDate?: Date | null;
   onNewConsultationDateChange?: (date: Date | null) => void;
+  newConsultationDuration?: number | null;
+  onNewConsultationDurationChange?: (duration: number | null) => void;
   onStartTranscriptionForNewConsult?: () => Promise<Admission | null>; // Returns the new admission or null
 }) {
   const availableAdmissions = allAdmissions.map(ad => ad.admission);
@@ -329,6 +335,22 @@ function ConsultationTab({
               dateFormat="Pp"
               className="w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 border-border"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Duration</label>
+            <select
+              value={newConsultationDuration || ''}
+              onChange={(e) => onNewConsultationDurationChange?.(e.target.value ? parseInt(e.target.value) : null)}
+              className={cn(
+                "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans border-border",
+                !newConsultationDuration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
+              )}
+            >
+              <option value="" disabled>Select duration</option>
+              {Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(minutes => (
+                <option key={minutes} value={minutes}>{minutes} min</option>
+              ))}
+            </select>
           </div>
         </div>
       ) : selectedAdmission && (
@@ -629,6 +651,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   const [isStartingNewConsultation, setIsStartingNewConsultation] = useState(false);
   const [newConsultationReason, setNewConsultationReason] = useState('');
   const [newConsultationDate, setNewConsultationDate] = useState<Date | null>(new Date());
+  const [newConsultationDuration, setNewConsultationDuration] = useState<number | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -793,6 +816,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
       const newAd = await patientDataService.createNewAdmission(patient.id, {
         reason: newConsultationReason || undefined,
         scheduledStart: newConsultationDate ? newConsultationDate.toISOString() : new Date().toISOString(),
+        duration: newConsultationDuration || undefined,
       });
       setDetailedPatientData((prev: any) => {
         if (!prev) return prev;
@@ -947,6 +971,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
             onNewConsultationReasonChange={setNewConsultationReason}
             newConsultationDate={newConsultationDate}
             onNewConsultationDateChange={setNewConsultationDate}
+            newConsultationDuration={newConsultationDuration}
+            onNewConsultationDurationChange={setNewConsultationDuration}
             onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
           />}
         {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allAdmissions={activeAdmissionDetails} />}

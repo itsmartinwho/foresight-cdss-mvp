@@ -8,6 +8,7 @@ import { ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';
+import ContentSurface from '@/components/layout/ContentSurface';
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate';
@@ -126,7 +127,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
   }
 
   return (
-    <div className="p-6">
+    <ContentSurface>
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
@@ -218,6 +219,6 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
         </CardContent>
       </Card>
       <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
-    </div>
+    </ContentSurface>
   );
 } 

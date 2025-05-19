@@ -122,12 +122,13 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
         const ad = await patientDataService.createNewAdmission(selectedPatient.id, {
           reason: reason || undefined,
           scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
+          duration: duration || undefined,
         });
         router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
       } else {
         const { patient, admission } = await patientDataService.createNewPatientWithAdmission(
           { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
-          { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined }
+          { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined, duration: duration || undefined }
         );
         router.push(`/patients/${patient.id}?ad=${admission.id}`);
       }

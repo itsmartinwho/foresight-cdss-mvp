@@ -118,4 +118,15 @@ The chat input/footer in the Advisor tab is implemented as a floating, glassmorp
 
 **Why use a portal?**
 
-In complex layouts (especially with glassmorphism, backdrop filters, or transforms), CSS `position: fixed` can be scoped to the nearest ancestor with a transform or filter. By rendering the input/footer outside the main React tree (at the document body level), we guarantee it is always fixed to the viewport, providing a robust and predictable user experience. 
+In complex layouts (especially with glassmorphism, backdrop filters, or transforms), CSS `position: fixed` can be scoped to the nearest ancestor with a transform or filter. By rendering the input/footer outside the main React tree (at the document body level), we guarantee it is always fixed to the viewport, providing a robust and predictable user experience.
+
+# Frontend Styling Guide: Outer Layout & Containers
+
+## ContentSurface – the single frosted-glass wrapper (2025-05 refactor)
+
+All route-level pages must render their contents inside exactly one `<ContentSurface>` component which lives at `src/components/layout/ContentSurface.tsx`.
+
+• **Default**: a frosted-glass div with `rounded-2xl`, internal padding `p-6`, and a max-width of 80 rem (≈1280 px).
+• **fullBleed**: pass `fullBleed` when the view needs the entire viewport (e.g. complex workspaces). This renders a plain flex column without glass styling.
+
+Never nest glass surfaces—`utils.css` contains a guard (`.glass .glass{background:transparent!important}`) that automatically neutralises accidental second-level surfaces. 

@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, ComplexCaseAlert } from "@/lib/types";
+import ContentSurface from '@/components/layout/ContentSurface';
 
 // Copied LikelihoodBadge and SeverityBadge from ForesightApp.tsx as they are used here
 function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
@@ -97,7 +98,7 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
   }
 
   return (
-    <div className="p-6">
+    <ContentSurface>
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
@@ -165,6 +166,6 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
           ))}
         </CardContent>
       </Card>
-    </div>
+    </ContentSurface>
   );
 } 

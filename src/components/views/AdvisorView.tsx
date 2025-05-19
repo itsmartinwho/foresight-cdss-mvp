@@ -13,6 +13,7 @@ import {
   Waves,
 } from "lucide-react";
 import { createPortal } from "react-dom";
+import ContentSurface from '@/components/layout/ContentSurface';
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -143,7 +144,7 @@ export default function AdvisorView() {
 
   return (
     <>
-      <div className="flex flex-col h-full p-6 space-y-4 overflow-hidden">
+      <ContentSurface className="flex flex-col flex-1 space-y-4 overflow-hidden">
         {!messages.some((m) => m.role === "user") && (
           <h1 className="text-2xl font-medium self-center">Ask Foresight</h1>
         )}
@@ -179,7 +180,7 @@ export default function AdvisorView() {
             <Button variant="secondary" onClick={() => setVoiceMode(false)}>✕ Exit voice mode</Button>
           </div>
         )}
-      </div>
+      </ContentSurface>
       {mounted && createPortal(
         <>
           <div

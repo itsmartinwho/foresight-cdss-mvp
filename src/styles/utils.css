@@ -20,6 +20,11 @@
   background: hsla(var(--surface-1) / .08);
 }
 
+/* Prevent nested glass surfaces picking up double opacity */
+.glass .glass {
+  background: transparent !important;
+}
+
 .row-hover:hover {
   background: hsla(var(--surface-1) / .12);
 }

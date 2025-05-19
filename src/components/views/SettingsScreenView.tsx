@@ -1,11 +1,12 @@
 'use client';
 import React from "react";
+import ContentSurface from '@/components/layout/ContentSurface';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 
 // SettingsView function from ForesightApp.tsx (approx. lines 1013-1032)
 export default function SettingsScreenView() {
   return (
-    <div className="p-6">
+    <ContentSurface>
       <Card className="bg-glass glass-dense backdrop-blur-lg">
         <CardHeader>
           <CardTitle className="text-step-1">Settings</CardTitle>
@@ -17,6 +18,6 @@ export default function SettingsScreenView() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </ContentSurface>
   );
 } 

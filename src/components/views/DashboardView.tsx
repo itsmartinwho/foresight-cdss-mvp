@@ -8,6 +8,7 @@ import { patientDataService } from "@/lib/patientDataService";
 import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import LoadingAnimation from '@/components/LoadingAnimation';
+import ContentSurface from '@/components/layout/ContentSurface';
 
 // Copied types and components from ForesightApp.tsx that DashboardView depends on
 type UpcomingEntry = { patient: Patient; visit: Admission };
@@ -142,7 +143,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   }
 
   return (
-    <div className="p-6 relative">
+    <ContentSurface className="relative">
       <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
@@ -227,6 +228,6 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
         />
       )}
       <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
-    </div>
+    </ContentSurface>
   );
 } 
