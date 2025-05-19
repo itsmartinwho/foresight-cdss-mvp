@@ -137,7 +137,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <div className="border-b p-1">
                     <Input
                       placeholder="Search patient by name or ID..."
-                      className="placeholder:text-muted-foreground text-step--1"
+                      className="placeholder-explanation text-step--1"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -160,7 +160,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="placeholder:text-muted-foreground text-step--1 mt-1"
+                  className="placeholder-explanation text-step--1 mt-1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
@@ -190,7 +190,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     placeholder="First name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 placeholder-explanation"
                   />
                   {errors.firstName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
@@ -200,7 +200,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                     placeholder="Last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="mt-1"
+                    className="mt-1 placeholder-explanation"
                   />
                   {errors.lastName && <span className="text-destructive text-xs ml-1">Required field</span>}
                 </div>
@@ -235,7 +235,7 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                 <label className="font-semibold text-step--1">Reason for visit</label>
                 <Input
                   placeholder="E.g., joint pain, generalized inflammation"
-                  className="placeholder:text-muted-foreground text-step--1 mt-1"
+                  className="placeholder-explanation text-step--1 mt-1"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />

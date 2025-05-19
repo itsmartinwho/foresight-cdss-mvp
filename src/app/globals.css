@@ -153,7 +153,7 @@
 
 @layer utilities {
   /* Placeholder instruction text utility */
-  .placeholder-explanation { @apply placeholder-gray-500/50; }
+  .placeholder-explanation { @apply placeholder:text-slate-400 placeholder:opacity-60; }
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {
     content: "";
