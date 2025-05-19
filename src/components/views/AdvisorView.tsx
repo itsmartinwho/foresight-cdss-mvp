@@ -150,7 +150,7 @@ export default function AdvisorView() {
         )}
 
         {/* Chat container */}
-        <div className="relative flex flex-col flex-1 border border-border rounded-xl bg-glass backdrop-blur-sm overflow-hidden">
+        <div className="relative flex flex-col flex-1 overflow-hidden">
           <ScrollArea className="flex-1 p-6 overflow-y-auto" ref={scrollRef}>
             <div className="space-y-6 pb-44"> {/* extra bottom padding to allow for floating input */}
               {messages.map((msg, idx) => (
@@ -160,7 +160,7 @@ export default function AdvisorView() {
                     "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
                     msg.role === "user"
                       ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
-                      : "mr-auto bg-[rgba(255,255,255,0.07)] backdrop-blur-md"
+                      : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
                   )}
                 >
                   {msg.content}
