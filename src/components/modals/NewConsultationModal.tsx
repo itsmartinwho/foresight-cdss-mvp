@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { patientDataService } from '@/lib/patientDataService';
 import type { Patient } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -18,83 +20,32 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
-interface CustomDateTimeInputProps {
-  value: Date | null;
-  onChange: (date: Date | null) => void;
-  placeholder?: string;
-}
-
-// Custom DateTime input component for complete control
-const CustomDateTimeInput = ({ value, onChange, placeholder }: CustomDateTimeInputProps) => {
-  const [dateValue, setDateValue] = useState('');
-  const [timeValue, setTimeValue] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
-  
-  // Handle date or time change and propagate to parent
-  const handleChange = (newDate, newTime) => {
-    setDateValue(newDate);
-    setTimeValue(newTime);
-    
-    // Only call parent onChange if we have both date and time
-    if (newDate && newTime) {
-      try {
-        const [year, month, day] = newDate.split('-').map(Number);
-        const [hours, minutes] = newTime.split(':').map(Number);
-        const dateObj = new Date(year, month - 1, day, hours, minutes);
-        onChange(dateObj);
-      } catch (e) {
-        console.error('Date parsing error:', e);
-      }
-    } else {
-      onChange(null);
-    }
-  };
-  
-  // Initialize from value prop if available
-  useEffect(() => {
-    if (value) {
-      const date = new Date(value);
-      setDateValue(format(date, 'yyyy-MM-dd'));
-      setTimeValue(format(date, 'HH:mm'));
-    }
-  }, [value]);
-  
-  const placeholderStyle = !value && !isFocused ? {
+// Custom DatePicker wrapper component with forced placeholder styling
+const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ selected, onChange, ...props }, ref) => {
+  // Force placeholder appearance when no date is selected
+  const customPlaceholderStyle = !selected ? {
     color: 'var(--placeholder-color)',
     opacity: 0.6,
   } : {};
-  
+
   return (
-    <div className="relative">
-      {!dateValue && !timeValue && !isFocused && (
-        <div 
-          className="absolute inset-0 flex items-center px-3 pointer-events-none"
-          style={placeholderStyle}
-        >
-          {placeholder || format(new Date(), 'Pp')}
-        </div>
-      )}
-      <div className="flex gap-2">
-        <input
-          type="date"
-          value={dateValue}
-          onChange={(e) => handleChange(e.target.value, timeValue)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          className="flex-grow px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-        <input
-          type="time"
-          value={timeValue}
-          onChange={(e) => handleChange(dateValue, e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          className="w-24 px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-      </div>
+    <div className="react-datepicker-wrapper" style={{ width: '100%' }}>
+      <DatePicker
+        ref={ref}
+        selected={selected}
+        onChange={onChange}
+        {...props}
+        customInput={
+          <input
+            className="w-full px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            style={customPlaceholderStyle}
+          />
+        }
+      />
     </div>
   );
-};
+});
+StyledDatePicker.displayName = 'StyledDatePicker';
 
 export default function NewConsultationModal({ open, onOpenChange }: Props) {
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
@@ -243,16 +194,17 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   onChange={(e) => setReason(e.target.value)}
                 />
               </div>
-              {/* Date and time */}
+              {/* Date time */}
               <div>
                 <label className="font-semibold text-step--1">Date and time</label>
-                <div className="mt-1">
-                  <CustomDateTimeInput
-                    value={scheduledDate}
-                    onChange={setScheduledDate}
-                    placeholder={format(new Date(), 'Pp')}
-                  />
-                </div>
+                <StyledDatePicker
+                  placeholderText={format(new Date(), 'Pp')}
+                  selected={scheduledDate}
+                  onChange={(d) => setScheduledDate(d)}
+                  showTimeSelect
+                  dateFormat="Pp"
+                  className="mt-1"
+                />
               </div>
             </div>
           </TabsContent>
@@ -319,16 +271,17 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   onChange={(e) => setReason(e.target.value)}
                 />
               </div>
-              {/* Date and time */}
+              {/* Date time */}
               <div>
                 <label className="font-semibold text-step--1">Date and time</label>
-                <div className="mt-1">
-                  <CustomDateTimeInput
-                    value={scheduledDate}
-                    onChange={setScheduledDate}
-                    placeholder={format(new Date(), 'Pp')}
-                  />
-                </div>
+                <StyledDatePicker
+                  placeholderText={format(new Date(), 'Pp')}
+                  selected={scheduledDate}
+                  onChange={(d) => setScheduledDate(d)}
+                  showTimeSelect
+                  dateFormat="Pp"
+                  className="mt-1"
+                />
               </div>
             </div>
           </TabsContent>
