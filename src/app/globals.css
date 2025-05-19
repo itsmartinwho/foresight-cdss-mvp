@@ -152,6 +152,8 @@
 }
 
 @layer utilities {
+  /* Placeholder instruction text utility */
+  .placeholder-explanation { @apply placeholder-gray-500/50; }
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {
     content: "";
