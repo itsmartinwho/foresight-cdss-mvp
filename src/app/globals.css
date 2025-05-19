@@ -52,6 +52,9 @@
     --step-1 : clamp(1.125rem, 1.08rem + 0.25vw, 1.25rem);
     --step-2 : clamp(1.375rem, 1.32rem + 0.30vw, 1.5rem);
     --step-3 : clamp(1.75rem, 1.68rem + 0.35vw, 2rem);
+
+    --placeholder-color: #94a3b8; /* slate-400 */
+    --placeholder-opacity: 0.6;
   }
 
   .dark {
@@ -131,7 +134,31 @@
   /* Global placeholder text styling */
   input::placeholder,
   textarea::placeholder {
-    @apply text-slate-400 opacity-60;
+    color: var(--placeholder-color) !important;
+    opacity: var(--placeholder-opacity) !important;
+    font-size: 1rem !important;
+  }
+
+  /* Directly target react-datepicker input and select placeholder */
+  .react-datepicker-wrapper input::placeholder,
+  .react-datepicker__input-container input::placeholder {
+    color: var(--placeholder-color) !important;
+    opacity: var(--placeholder-opacity) !important;
+    font-size: 1rem !important;
+  }
+
+  /* Force color on react-datepicker input with a placeholder attribute but empty value */
+  .react-datepicker__input-container input[placeholder]:not([value]),
+  .react-datepicker__input-container input[placeholder][value=""] {
+    color: var(--placeholder-color) !important;
+    opacity: var(--placeholder-opacity) !important;
+  }
+
+  /* Force select with empty value to use placeholder color */
+  select:not([value]),
+  select[value=""] {
+    color: var(--placeholder-color) !important;
+    opacity: var(--placeholder-opacity) !important;
   }
 }
 
@@ -159,7 +186,12 @@
 
 @layer utilities {
   /* Utility class for elements (e.g., select, custom inputs) that need placeholder-style text */
-  .placeholder-like { @apply text-slate-400 opacity-60 text-base; }
+  .placeholder-like {
+    color: var(--placeholder-color) !important;
+    opacity: 0.6 !important;
+    font-size: 1rem !important;
+    border: 1px dashed red !important; /* DEBUG: Remove after confirming */
+  }
 
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {

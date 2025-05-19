@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,33 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
+// Custom DatePicker wrapper component with forced placeholder styling
+const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ selected, onChange, ...props }, ref) => {
+  // Force placeholder appearance when no date is selected
+  const customPlaceholderStyle = !selected ? {
+    color: 'var(--placeholder-color)',
+    opacity: 0.6,
+  } : {};
+
+  return (
+    <div className="react-datepicker-wrapper" style={{ width: '100%' }}>
+      <DatePicker
+        ref={ref}
+        selected={selected}
+        onChange={onChange}
+        {...props}
+        customInput={
+          <input
+            className="w-full px-3 py-2 border rounded-md bg-background text-base focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            style={customPlaceholderStyle}
+          />
+        }
+      />
+    </div>
+  );
+});
+StyledDatePicker.displayName = 'StyledDatePicker';
+
 export default function NewConsultationModal({ open, onOpenChange }: Props) {
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const router = useRouter();
@@ -38,7 +65,6 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   // Shared fields
   const [reason, setReason] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
-  const [isDateTouched, setIsDateTouched] = useState(false);
 
   // Validation
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -171,13 +197,13 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
               {/* Date time */}
               <div>
                 <label className="font-semibold text-step--1">Date and time</label>
-                <DatePicker
+                <StyledDatePicker
                   placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => { setScheduledDate(d); setIsDateTouched(true); }}
+                  onChange={(d) => setScheduledDate(d)}
                   showTimeSelect
                   dateFormat="Pp"
-                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !isDateTouched && 'placeholder-like')}
+                  className="mt-1"
                 />
               </div>
             </div>
@@ -215,7 +241,8 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background", !gender && 'placeholder-like')}
+                    className="w-full mt-1 px-3 py-2 border rounded-md bg-background"
+                    style={!gender ? { color: 'var(--placeholder-color)', opacity: 0.6 } : {}}
                   >
                     <option value="" disabled className="placeholder-like">Select gender</option>
                     <option value="Male">Male</option>
@@ -247,13 +274,13 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
               {/* Date time */}
               <div>
                 <label className="font-semibold text-step--1">Date and time</label>
-                <DatePicker
+                <StyledDatePicker
                   placeholderText={format(new Date(), 'Pp')}
                   selected={scheduledDate}
-                  onChange={(d) => { setScheduledDate(d); setIsDateTouched(true); }}
+                  onChange={(d) => setScheduledDate(d)}
                   showTimeSelect
                   dateFormat="Pp"
-                  className={cn("w-full mt-1 px-3 py-2 border rounded-md bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", !isDateTouched && 'placeholder-like')}
+                  className="mt-1"
                 />
               </div>
             </div>
