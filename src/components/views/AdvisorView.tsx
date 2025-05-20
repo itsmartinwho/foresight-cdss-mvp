@@ -39,8 +39,7 @@ export default function AdvisorView() {
 
   const SCROLL_THRESHOLD = 100; // Pixels from bottom
 
-  // Handle user scrolling - Will be re-enabled in Phase 2
-  /*
+  // Re-enable user scroll effect: remove comment markers
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!scrollElement) return;
@@ -48,17 +47,13 @@ export default function AdvisorView() {
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollElement;
       const atBottom = scrollHeight - scrollTop - clientHeight <= SCROLL_THRESHOLD;
-      if (atBottom) {
-        setUserHasScrolledUp(false);
-      } else {
-        setUserHasScrolledUp(true);
-      }
+      setUserHasScrolledUp(!atBottom);
     };
 
     let timeoutId: NodeJS.Timeout | null = null;
     const debouncedHandleScroll = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleScroll, 100); 
+      timeoutId = setTimeout(handleScroll, 100);
     };
 
     scrollElement.addEventListener("scroll", debouncedHandleScroll);
@@ -67,18 +62,16 @@ export default function AdvisorView() {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
-  */
 
-  // Scroll to bottom when messages change, (debug: always scroll for now)
+  // Auto-scroll when messages change
   useEffect(() => {
     const viewport = scrollRef.current;
-    if (viewport) {
-      console.log("Attempting to scroll. Viewport:", viewport);
-      console.log("Viewport scrollHeight:", viewport.scrollHeight, "clientHeight:", viewport.clientHeight, "scrollTop:", viewport.scrollTop);
+    if (!viewport) return;
+    const lastMsg = messages[messages.length - 1];
+    if (!userHasScrolledUp || (lastMsg && lastMsg.role === "user")) {
       viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-      console.log("After scrollTo, new scrollTop should eventually be:", viewport.scrollHeight - viewport.clientHeight);
     }
-  }, [messages]); // Dependency: messages. userHasScrolledUp will be added back in Phase 2
+  }, [messages, userHasScrolledUp]);
 
   // Voice dictation setup
   const recognitionRef = useRef<any>(null);
@@ -194,8 +187,8 @@ export default function AdvisorView() {
         )}
 
         {/* Chat container */}
-        <div className="relative flex flex-col flex-1 overflow-hidden">
-          <ScrollArea className="flex-1 p-6 overflow-y-auto" ref={scrollRef}>
+        <div className="relative flex flex-col flex-1 overflow-hidden min-h-0">
+          <ScrollArea className="flex-1 min-h-0 p-6 overflow-y-auto" ref={scrollRef}>
             <div className="space-y-6 pb-44"> {/* extra bottom padding to allow for floating input */}
               {messages.map((msg, idx) => (
                 <div
