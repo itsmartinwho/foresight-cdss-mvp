@@ -96,11 +96,15 @@
   html {
     @apply antialiased; /* Smooths out the font */
     font-size: 1rem; /* Base 16px for better density */
+    height: 100svh; /* Force html to viewport height */
+    overflow: hidden; /* Prevent html from scrolling */
   }
 
   body {
     @apply bg-background text-foreground font-sans relative flex flex-col;
     min-height: 100svh; /* Safer viewport units */
+    height: 100%; /* Force body to fill html height */
+    overflow: hidden; /* Prevent body from scrolling */
     font-feature-settings: "tnum" on, "lnum" on, "ss01" on;
   }
 
