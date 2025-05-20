@@ -289,6 +289,12 @@
     color: #F0F0F0 !important; /* Light gray for sidebar and navbar placeholders */
     opacity: 0.75 !important;
   }
+
+  /* Added more specific rule for navbar */
+  nav .unified-search-input::placeholder {
+    color: #F0F0F0 !important; /* Ensure navbar also gets this style */
+    opacity: 0.75 !important;
+  }
 }
 
 /* Safari fallback for backdrop-filter (Brief §14.3 / User §12) */
