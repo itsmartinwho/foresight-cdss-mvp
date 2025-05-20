@@ -3,13 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  Image as ImageIcon,
-  FileText,
   Mic,
   Send,
   BookOpen,
   Sparkles,
   Waves,
+  Plus,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
@@ -291,19 +290,19 @@ export default function AdvisorView() {
             }}
           >
             <div
-              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-full p-4 flex flex-col gap-3 pointer-events-auto shadow-lg"
+              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-6 py-4 flex flex-col gap-3 pointer-events-auto shadow-lg"
             >
               {/* Textarea input */}
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={includePapers
-                  ? "Ask anything, we\'ll look for recent research papers in the area"
+                  ? "Ask anything, we'll look for recent research papers in the area"
                   : thinkMode
                   ? "Reasoning mode selected for your harder medical queries"
                   : "Ask anything"}
                 rows={1}
-                className="resize-none bg-transparent border-0 focus:outline-none focus:ring-0 text-base"
+                className="resize-none bg-transparent border-0 shadow-none focus:outline-none focus:ring-0 text-base px-6 py-2"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -342,11 +341,7 @@ export default function AdvisorView() {
                     variant="ghost"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <span className="flex items-center text-foreground text-xs">
-                      <ImageIcon className="h-[14px] w-[14px]" />
-                      <span className="mx-[2px]">/</span>
-                      <FileText className="h-[14px] w-[14px]" />
-                    </span>
+                    <Plus className="h-[14px] w-[14px] text-foreground" />
                   </Button>
                   <input
                     ref={fileInputRef}
