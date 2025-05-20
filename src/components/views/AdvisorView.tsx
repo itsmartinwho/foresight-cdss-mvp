@@ -298,10 +298,10 @@ export default function AdvisorView() {
         {/* Using Radix ScrollArea now -  REPLACE with native scroll div */}
         <div
           ref={scrollRef}
-          className="flex-1 min-h-0 p-6 overflow-y-auto" // Apply flex, min-height, padding, and overflow to this div
+          className="flex-1 min-h-0 p-6 overflow-y-auto"
         >
-          <div className="space-y-6 pb-44"> {/* This is the inner content div */}
-            {messages.map((msg, idx) => (
+          <div className="w-full max-w-5xl mx-auto space-y-6 pb-44"> {/* Centered to input box width */}
+            {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={cn(
@@ -311,12 +311,12 @@ export default function AdvisorView() {
               >
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-lg p-3 text-sm shadow-sm",
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
+                      ? "max-w-[66.666%] w-fit bg-primary text-primary-foreground"
                       : msg.role === "assistant"
-                      ? "bg-muted"
-                      : "hidden" // System messages are not rendered directly here anymore, or styled differently if needed
+                      ? "max-w-full w-fit bg-muted"
+                      : "hidden",
+                    "rounded-lg p-3 text-sm shadow-sm"
                   )}
                 >
                   {msg.role === "user" && typeof msg.content === 'string' && msg.content}
