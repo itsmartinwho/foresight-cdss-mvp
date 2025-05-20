@@ -131,16 +131,16 @@ All route-level pages must render their contents inside exactly one `<ContentSur
 
 Never nest glass surfaces—`utils.css` contains a guard (`.glass .glass{background:transparent!important}`) that automatically neutralises accidental second-level surfaces.
 
-## Exception: Lighter Placeholder in Sidebar and Navbar Search
+## Exception: Lighter Placeholder in Navbar Search
 
-The sidebar and top navbar use a glassmorphic/dark background, so their search input placeholders need to be much lighter for readability. To ensure both search inputs always look identical, add the shared class `unified-search-input` *and* the following Tailwind placeholder utilities to the `<Input>` components (or `inputClassName` prop for `QuickSearch`):
+The top navbar uses a glassmorphic/dark background, so its search input placeholder needs to be much lighter for readability. To ensure the search input looks identical, add the shared class `unified-search-input` *and* the following Tailwind placeholder utilities to the `<Input>` component (or `inputClassName` prop for `QuickSearch`):
 
 ```tsx
 // Example for Navbar.tsx or QuickSearch inputClassName:
 className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 ...other_classes..."
 ```
 
-This combination of the `unified-search-input` class (for semantic grouping, though its CSS ::placeholder rules are now commented out for this specific case) and direct Tailwind utilities for `placeholder:text-[#F0F0F0]` and `placeholder:opacity-75` is the most robust way to enforce the correct placeholder color (`#F0F0F0`) and opacity (`0.75`) on both the sidebar and navbar search inputs.
+This combination of the `unified-search-input` class (for semantic grouping, though its CSS ::placeholder rules are now commented out for this specific case) and direct Tailwind utilities for `placeholder:text-[#F0F0F0]` and `placeholder:opacity-75` is the most robust way to enforce the correct placeholder color (`#F0F0F0`) and opacity (`0.75`) on the navbar search input.
 
 # Foresight Frontend Styling Guide
 

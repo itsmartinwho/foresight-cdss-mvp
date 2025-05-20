@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
 import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen, Zap } from "lucide-react";
 import React, { useEffect } from "react";
 import {
@@ -12,7 +11,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import QuickSearch from "@/components/ui/QuickSearch";
 
 const SIDEBAR_EXPANDED_WIDTH_REM = 14;
 const SIDEBAR_COLLAPSED_WIDTH_REM = 4.5;
@@ -138,13 +136,6 @@ export default function GlassSidebar() {
           </Link>
         );
       })}
-      <Separator className="my-4" />
-      {!collapsed && (
-        <QuickSearch
-          inputClassName="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-          portal
-        />
-      )}
     </div>
   );
 }
