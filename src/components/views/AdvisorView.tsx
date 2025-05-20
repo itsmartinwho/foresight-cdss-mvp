@@ -251,7 +251,7 @@ export default function AdvisorView() {
               <div
                 key={idx}
                 className={cn(
-                  "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
+                  "max-w-xl w-fit px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
                   msg.role === "user"
                     ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
                     : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
