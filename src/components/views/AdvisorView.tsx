@@ -60,59 +60,40 @@ export default function AdvisorView() {
     setMounted(true);
   }, []);
 
-  const SCROLL_THRESHOLD = 100; // Pixels from bottom
+  const SCROLL_THRESHOLD = 100; // Pixels from bottom to consider "not at bottom"
 
   // Re-enable user scroll effect: remove comment markers
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!scrollElement) return;
 
-    const handleScroll = () => {
+    const handleScroll = () => { // Debounce removed for more immediate response
       const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      // If scroll position is further than SCROLL_THRESHOLD from the bottom, user has scrolled up.
       const atBottom = scrollHeight - scrollTop - clientHeight <= SCROLL_THRESHOLD;
       setUserHasScrolledUp(!atBottom);
     };
 
-    let timeoutId: NodeJS.Timeout | null = null;
-    const debouncedHandleScroll = () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleScroll, 100);
-    };
-
-    scrollElement.addEventListener("scroll", debouncedHandleScroll);
+    scrollElement.addEventListener("scroll", handleScroll);
     return () => {
-      scrollElement.removeEventListener("scroll", debouncedHandleScroll);
-      if (timeoutId) clearTimeout(timeoutId);
+      scrollElement.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, []); // scrollRef.current is stable, so empty dependency array is fine.
 
   // Auto-scroll when messages change
   useEffect(() => {
+    const viewport = scrollRef.current;
+    if (!viewport) {
+      return;
+    }
+
     const animationFrameId = requestAnimationFrame(() => {
-      const viewport = scrollRef.current;
-      if (!viewport) {
-        console.log("AdvisorView (Debug RAF): scrollRef.current is null");
-        return;
-      }
+      const lastMessage = messages[messages.length - 1];
+      const assistantIsResponding = lastMessage && lastMessage.role === "assistant";
 
-      // pridestaff-debug-log (RAF)
-      console.log("AdvisorView (Debug RAF): Auto-scroll check", {
-        scrollHeight: viewport.scrollHeight,
-        clientHeight: viewport.clientHeight,
-        scrollTop: viewport.scrollTop,
-        userHasScrolledUp,
-        messageCount: messages.length,
-        timestamp: new Date().toISOString(),
-      });
-
-      const lastMsg = messages[messages.length - 1];
-      if (!userHasScrolledUp || (lastMsg && lastMsg.role === "user")) {
-        // pridestaff-debug-log (RAF)
-        console.log("AdvisorView (Debug RAF): Attempting to scroll", {
-          targetScrollTop: viewport.scrollHeight,
-          behavior: "smooth",
-          timestamp: new Date().toISOString(),
-        });
+      // Only auto-scroll if the user hasn't manually scrolled up AND the assistant is the one "typing".
+      // Scrolling for new user messages is handled in handleSend.
+      if (!userHasScrolledUp && assistantIsResponding) {
         viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
       }
     });
@@ -120,7 +101,7 @@ export default function AdvisorView() {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [messages, userHasScrolledUp]);
+  }, [messages, userHasScrolledUp]); // Depends on messages and userHasScrolledUp state
 
   // Voice dictation setup
   const recognitionRef = useRef<any>(null);
@@ -173,19 +154,27 @@ export default function AdvisorView() {
     let content = input.trim();
     if (includePapers) content += "\n\nInclude recent peer-reviewed medical papers.";
 
-    const updatedMessages: ChatMessage[] = [...messages, { role: "user", content }];
-
-    // Add placeholder assistant msg for streaming
-    setMessages([...updatedMessages, { role: "assistant", content: "" }]);
+    const newUserMessage: ChatMessage = { role: "user", content };
+    // Add user message and a placeholder for the assistant's response
+    // Ensure the placeholder is added so the auto-scroll useEffect can pick up on assistant responding.
+    setMessages(prevMessages => [...prevMessages, newUserMessage, { role: "assistant", content: "" }]);
     setInput("");
     setIsSending(true);
+    setUserHasScrolledUp(false); // IMPORTANT: Reset scroll lock state, user wants to see new messages.
+
+    // Ensure view scrolls to the new message immediately
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      }
+    });
 
     try {
       const res = await fetch("/api/advisor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: updatedMessages,
+          messages: messages.filter(m => m.role !== 'system').concat([newUserMessage]), // Send current messages + new user message
           model: thinkMode ? "gpt-3.5-turbo" : "gpt-4.1",
         }),
       });
@@ -195,11 +184,6 @@ export default function AdvisorView() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       
-      // Make sure to reset scroll lock when assistant starts responding if user was at bottom
-      if (!userHasScrolledUp && scrollRef.current) {
-         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-      }
-
       let assistantText = "";
       while (true) {
         const { value, done } = await reader.read();
@@ -207,7 +191,13 @@ export default function AdvisorView() {
         assistantText += decoder.decode(value);
         setMessages((prev) => {
           const cloned = [...prev];
-          cloned[cloned.length - 1] = { role: "assistant", content: assistantText };
+          // Update the last message (assistant's placeholder)
+          if (cloned.length > 0 && cloned[cloned.length - 1].role === "assistant") {
+             cloned[cloned.length - 1].content = assistantText;
+          } else {
+            // This case should ideally not happen if placeholder was added correctly
+            cloned.push({ role: "assistant", content: assistantText });
+          }
           return cloned;
         });
       }
@@ -215,6 +205,15 @@ export default function AdvisorView() {
       if (voiceMode && assistantText) speak(assistantText);
     } catch (err) {
       console.error(err);
+      // On error, remove the optimistic assistant placeholder message if it's still empty,
+      // or if it was the one being streamed to.
+      setMessages(prev => {
+        const lastMsg = prev[prev.length -1];
+        if(lastMsg && lastMsg.role === 'assistant' && (lastMsg.content === "" || prev.find(m => m === lastMsg))) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
     } finally {
       setIsSending(false);
     }
