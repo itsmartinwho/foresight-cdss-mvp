@@ -141,7 +141,7 @@ The sidebar and top navbar use a glassmorphic/dark background, so their search i
 ```css
 .sidebar-search-input::placeholder,
 .navbar-search-input::placeholder {
-  color: #D2D2D2 !important; /* Light gray, 15% brighter than #CACACA */
+  color: #F0F0F0 !important; /* Light gray for sidebar and navbar placeholders */
   opacity: 0.75 !important;
 }
 ```
