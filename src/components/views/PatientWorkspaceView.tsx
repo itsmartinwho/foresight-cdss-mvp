@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, ChevronLeft, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
@@ -341,7 +340,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
           </TabBtn>
         ))}
       </div>
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {activeTab === "consult" &&
           <ConsultationTab
             patient={patient}
@@ -364,7 +363,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
         {activeTab === "trials" && <TrialsTab patient={patient} />}
         {activeTab === "history" && <HistoryTab patient={patient} allAdmissions={activeAdmissionDetails} />}
         {activeTab === "allData" && <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />}
-      </ScrollArea>
+      </div>
     </div>
   );
 } 

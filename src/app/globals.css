@@ -220,8 +220,7 @@
 }
 
 /* Firefox scrollbar styles */
-html,
-body {
+* {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--foreground) / 0.3) transparent;
 }

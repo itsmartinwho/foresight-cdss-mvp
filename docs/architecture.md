@@ -73,6 +73,25 @@ Detailed information on UI patterns, styling conventions (including glassmorphis
 Key architectural aspects related to UI include:
 *   **State Management:** Primarily uses React's built-in state (`useState`, `useReducer`) and Context API for global or shared state. `ForesightApp.tsx` is a key location for managing app-level states that affect multiple views.
 
+## UI Library Usage and Scroll Area Policy
+
+The Foresight CDSS frontend uses a **mixed approach** for UI components:
+
+- **Radix UI**: Most generic UI primitives (buttons, dialogs, tooltips, dropdowns, selects, checkboxes, etc.) in `src/components/ui/` are built on top of Radix UI primitives, following the Shadcn UI pattern. This provides robust accessibility and composability for interactive elements.
+- **Native Browser Elements**: For layout, scrolling, and most container elements, we prefer native browser elements styled with Tailwind CSS and global CSS. This includes all main content scroll areas, which use `<div className="flex-1 min-h-0 overflow-y-auto">` or similar patterns.
+- **Other Libraries**: As of this writing, no other major UI component libraries (e.g., Material UI, Ant Design, Chakra, react-custom-scrollbars, etc.) are in use. If this changes, this section should be updated.
+
+### Scroll Area Policy
+- **Default**: All scrollable content areas (e.g., main view panels, workspace content, chat logs) should use native browser scrolling. This is achieved with Tailwind classes like `overflow-y-auto` and is styled globally for consistent appearance (see `src/app/globals.css`).
+- **Radix ScrollArea**: The Radix-based `ScrollArea` component exists in `src/components/ui/scroll-area.tsx` and should **only be used when strictly necessary**—for example, if a feature requires custom scrollbars, advanced scroll event handling, or other behaviors not possible with native scroll. In these cases, document the reason for using Radix ScrollArea in the component.
+- **Consistency**: This policy avoids the complexity and styling conflicts that can arise from mixing Radix and native scroll areas unpredictably. It also ensures that global scrollbar styles apply everywhere possible.
+
+### Why This Approach?
+- **Radix UI** is excellent for accessibility and complex interactive widgets, but its custom scroll area can be difficult to style and may conflict with global scrollbar styles. Native browser scroll areas are simpler, more performant, and easier to style consistently across the app.
+- **By default, use native scroll.** Only reach for Radix ScrollArea if you have a clear, documented need.
+
+See also: [Frontend Styling Guide](docs/frontend-styling-guide.md) for implementation details and code examples.
+
 ## Backend Architecture and Data Layer
 
 The application utilizes **Supabase** as its primary backend, which provides a managed **PostgreSQL** database instance and auto-generated APIs.

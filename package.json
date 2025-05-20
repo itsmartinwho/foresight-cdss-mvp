@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    ".",
-    "worker"
+    "."
   ],
   "scripts": {
     "dev": "next dev",
@@ -17,7 +16,6 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "migrate:data": "tsx scripts/migratePatients.ts",
     "resize:icons": "tsx scripts/resize-icons.ts"
   },
   "dependencies": {

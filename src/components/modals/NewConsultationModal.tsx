@@ -13,7 +13,6 @@ import { X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PlusCircle, UserPlus, Search } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import type { Admission } from '@/lib/types';
 

@@ -188,4 +188,19 @@ This combination of the `unified-search-input` class (for semantic grouping, tho
 - Ensure scrollable containers have appropriate keyboard and screen reader support.
 - Standard accessibility practices (semantic HTML, ARIA attributes where necessary) should be followed.
 - Components should be designed to adapt to various screen sizes, primarily using Tailwind CSS's responsive prefixes (sm, md, lg, xl).
-- Use Tailwind's responsive classes for layout adjustments on different screen sizes. 
+- Use Tailwind's responsive classes for layout adjustments on different screen sizes.
+
+# UI Library Policy and Scroll Area Usage
+
+The Foresight CDSS frontend uses a **mixed approach** for UI components:
+
+- **Radix UI**: Most generic UI primitives (buttons, dialogs, tooltips, dropdowns, selects, checkboxes, etc.) in `src/components/ui/` are built on top of Radix UI primitives (following the Shadcn UI pattern). This ensures accessibility and composability for interactive elements.
+- **Native Browser Elements**: For layout, scrolling, and most container elements, we prefer native browser elements styled with Tailwind CSS and global CSS. All main content scroll areas use native browser scrolling (e.g., `<div className="flex-1 min-h-0 overflow-y-auto">`).
+- **Radix ScrollArea**: The Radix-based `ScrollArea` component exists in `src/components/ui/scroll-area.tsx` and should **only be used when strictly necessary** (e.g., for custom scrollbars or advanced scroll event handling not possible with native scroll). If you use it, document the reason in the component.
+- **Other Libraries**: As of this writing, no other major UI component libraries are in use. If this changes, update this section.
+
+**Policy:**
+- By default, use native browser scroll areas for all main content and panels. This ensures consistent styling and avoids complexity.
+- Only use Radix ScrollArea if you have a clear, documented need.
+
+See [docs/architecture.md](architecture.md#ui-library-usage-and-scroll-area-policy) for rationale and more details. 
