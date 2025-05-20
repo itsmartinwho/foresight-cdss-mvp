@@ -127,8 +127,8 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
   }
 
   return (
-    <ContentSurface fullBleed className="p-6">
-      <Card className="bg-glass glass-dense backdrop-blur-lg">
+    <ContentSurface fullBleed className="p-6 flex flex-col">
+      <Card className="bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <CardTitle className="text-step-1">Consultations</CardTitle>
@@ -141,7 +141,7 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
             + New Consultation
           </button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto">
           <Table className="text-step-0">
             <TableHeader>
               <TableRow>
