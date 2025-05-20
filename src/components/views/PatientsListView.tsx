@@ -123,37 +123,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedRows.upcoming.length > 0 && (
-                <TableRow>
-                  <TableCell colSpan={3} className="font-semibold text-sm pt-4 pb-2 text-foreground/80">{title}</TableCell>
-                </TableRow>
-              )}
-              {sortedRows.upcoming.map(({ patient, visit }) => (
-                <TableRow key={`upcoming_${patient?.id}_${visit.id}`} onClick={() => {
-                  if (patient) {
-                    router.push(`/patients/${patient.id}?ad=${visit.id}`);
-                  }
-                }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
-                  <TableCell className="flex items-center gap-2">
-                    {patient?.photo && (
-                      <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
-                    )}
-                    {displayName(patient)}
-                  </TableCell>
-                  <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                  <TableCell>{visit.reason ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-neon hover:text-neon/80 hover:bg-neon/10">
-                      View Details
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {(sortedRows.upcoming.length === 0 && sortedRows.past.length === 0) && (
-                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-4">No consultations found.</TableCell></TableRow>
-              )}
-              {sortedRows.past.map(({ patient, visit }) => (
-                <TableRow key={`past_${patient?.id}_${visit.id}`} onClick={() => {
+              {data.map(({ patient, visit }) => (
+                <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${visit.id}`} onClick={() => {
                   if (patient) {
                     router.push(`/patients/${patient.id}?ad=${visit.id}`);
                   }
@@ -198,8 +169,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           New Consultation
         </Button>
       </div>
-      {renderTable("Upcoming Consultations", upcomingRowsData)}
-      {renderTable("Past Consultations", pastRowsData)}
+      {renderTable("Upcoming Consultations", sortedRows.upcoming)}
+      {renderTable("Past Consultations", sortedRows.past)}
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}

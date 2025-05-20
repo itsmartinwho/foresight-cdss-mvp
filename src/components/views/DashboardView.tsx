@@ -55,7 +55,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
     <ContentSurface fullBleed className="p-6 flex flex-col relative">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div>
-          <h1 className="text-step-1 font-semibold">Upcoming Appointments</h1>
+          <h1 className="text-step-1 font-semibold">Upcoming Consultations</h1>
           <p className="text-step-0 text-muted-foreground/80">
             Select a patient to start consultation
           </p>
@@ -114,7 +114,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
             </TableBody>
           </Table>
         ) : (
-          <p className="text-sm text-muted-foreground">No upcoming appointments scheduled.</p>
+          <p className="text-sm text-muted-foreground">No upcoming consultations scheduled.</p>
         )}
       </div>
 
