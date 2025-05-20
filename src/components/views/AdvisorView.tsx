@@ -25,6 +25,7 @@ export default function AdvisorView() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [includePapers, setIncludePapers] = useState(false);
@@ -36,10 +37,47 @@ export default function AdvisorView() {
     setMounted(true);
   }, []);
 
-  // Scroll to bottom when messages change
+  const SCROLL_THRESHOLD = 100; // Pixels from bottom
+
+  // Handle user scrolling
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      const atBottom = scrollHeight - scrollTop - clientHeight <= SCROLL_THRESHOLD;
+      if (atBottom) {
+        setUserHasScrolledUp(false);
+      } else {
+        setUserHasScrolledUp(true);
+      }
+    };
+
+    // Debounce scroll handler
+    let timeoutId: NodeJS.Timeout | null = null;
+    const debouncedHandleScroll = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleScroll, 100); // 100ms debounce
+    };
+
+    scrollElement.addEventListener("scroll", debouncedHandleScroll);
+    return () => {
+      scrollElement.removeEventListener("scroll", debouncedHandleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
+
+  // Scroll to bottom when messages change, respecting user scroll
+  useEffect(() => {
+    if (scrollRef.current) {
+      const lastMessage = messages[messages.length - 1];
+      // Auto-scroll if user hasn't scrolled up, or if the last message is from the user
+      if (!userHasScrolledUp || (lastMessage && lastMessage.role === "user")) {
+        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      }
+    }
+  }, [messages, userHasScrolledUp]);
 
   // Voice dictation setup
   const recognitionRef = useRef<any>(null);
@@ -112,6 +150,11 @@ export default function AdvisorView() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      
+      // Make sure to reset scroll lock when assistant starts responding if user was at bottom
+      if (!userHasScrolledUp && scrollRef.current) {
+         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      }
 
       let assistantText = "";
       while (true) {
