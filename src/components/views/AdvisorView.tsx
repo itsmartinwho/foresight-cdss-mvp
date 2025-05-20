@@ -49,6 +49,7 @@ export default function AdvisorView() {
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+  const userHasScrolledUpRef = useRef(userHasScrolledUp); // Ref to hold the latest userHasScrolledUp
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [includePapers, setIncludePapers] = useState(false);
@@ -59,6 +60,11 @@ export default function AdvisorView() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Sync userHasScrolledUp state to ref
+  useEffect(() => {
+    userHasScrolledUpRef.current = userHasScrolledUp;
+  }, [userHasScrolledUp]);
 
   const SCROLL_THRESHOLD = 1; // Pixels from bottom to consider "not at bottom" - Extremely sensitive
 
@@ -107,16 +113,18 @@ export default function AdvisorView() {
       const lastMessage = messages[messages.length - 1];
       const assistantIsResponding = lastMessage && lastMessage.role === "assistant";
 
+      // Log values from both state and ref for debugging
       console.log('[AdvisorView:autoScrollEffect]', {
-        userHasScrolledUp,
+        userHasScrolledUpFromState: userHasScrolledUp, // Value from effect's closure (might be stale for this run)
+        userHasScrolledUpFromRef: userHasScrolledUpRef.current, // Current value from ref
         assistantIsResponding,
-        shouldScroll: !userHasScrolledUp && assistantIsResponding
+        shouldScrollBasedOnRef: !userHasScrolledUpRef.current && assistantIsResponding
       });
 
-      // Only auto-scroll if the user hasn't manually scrolled up AND the assistant is the one "typing".
+      // Only auto-scroll if the user hasn't manually scrolled up (checked via ref) AND the assistant is the one "typing".
       // Scrolling for new user messages is handled in handleSend.
-      if (!userHasScrolledUp && assistantIsResponding) {
-        console.log('[AdvisorView:autoScrollEffect] SCROLLING NOW (auto)');
+      if (!userHasScrolledUpRef.current && assistantIsResponding) {
+        console.log('[AdvisorView:autoScrollEffect] SCROLLING NOW (based on ref)');
         viewport.scrollTo({ top: viewport.scrollHeight, behavior: "auto" }); // Changed to 'auto' for immediacy
       }
     });
@@ -124,7 +132,7 @@ export default function AdvisorView() {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [messages, userHasScrolledUp]); // Depends on messages and userHasScrolledUp state
+  }, [messages]); // Now only depends on messages, reads userHasScrolledUp from ref
 
   // Voice dictation setup
   const recognitionRef = useRef<any>(null);
