@@ -287,8 +287,8 @@
   /* Lighter placeholder for sidebar and navbar search inputs */
   .sidebar-search-input::placeholder,
   .navbar-search-input::placeholder {
-    color: #fff !important;
-    opacity: 0.85 !important;
+    color: #CACACA !important; /* Light gray, less stark than pure white */
+    opacity: 0.75 !important; /* Adjusted for comfortable brightness */
   }
 }
 

@@ -66,7 +66,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
             <Input
               type="text"
               placeholder="Search…"
-              className="navbar-search-input h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+              className="navbar-search-input h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
             />
           </div>
           <button
@@ -96,7 +96,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
               autoFocus
               type="text"
               placeholder="Search…"
-              className="navbar-search-input h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 placeholder:text-white/60 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
+              className="navbar-search-input h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
             />
           </SheetContent>
         </Sheet>
