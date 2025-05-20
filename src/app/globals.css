@@ -46,6 +46,7 @@
 
     /* Foresight custom colors */
     --teal: 165 70% 45%; /* Added teal for user chat bubble */
+    --teal-darker: 165 70% 40.5%; /* Darker teal for user chat bubble */
 
     /* ------------------------------------------------------------------*/
     /* Fluid typography scale (Brief §4)                                 */

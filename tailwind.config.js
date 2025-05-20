@@ -71,6 +71,7 @@ module.exports = {
         "sidebar-accent-foreground": "#ffffff",
         "sidebar-foreground": "rgba(255,255,255,0.92)",
         "foresight-teal": "hsl(var(--teal) / <alpha-value>)",
+        "foresight-teal-darker": "hsl(var(--teal-darker) / <alpha-value>)",
       },
       borderRadius: {
         lg: "var(--radius)",

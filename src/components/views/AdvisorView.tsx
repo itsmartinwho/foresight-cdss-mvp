@@ -312,15 +312,19 @@ export default function AdvisorView() {
                 <div
                   className={cn(
                     msg.role === "user"
-                      ? "max-w-[66.666%] w-fit bg-foresight-teal text-white"
+                      ? "max-w-[66.666%] w-fit bg-foresight-teal-darker/70 text-white"
                       : msg.role === "assistant"
                       ? "max-w-full w-fit bg-white/90 text-gray-800"
+                      : msg.role === "system"
+                      ? "w-fit bg-gray-200/50 text-gray-700"
                       : "hidden",
                     "rounded-lg p-3 text-sm shadow-sm"
                   )}
                 >
                   {msg.role === "user" && typeof msg.content === 'string' && msg.content}
-                  {msg.role === "system" && typeof msg.content === 'string' && <div className="text-xs text-muted-foreground italic p-2 text-center w-full sheen">{msg.content}</div>}
+                  {msg.role === "system" && typeof msg.content === 'string' && 
+                    <div className="text-xs italic text-center sheen">{msg.content}</div>
+                  }
                   {msg.role === "assistant" && typeof msg.content === 'object' && (
                     <AssistantMessageRenderer assistantMessage={msg.content as AssistantMessageContent} />
                   )}
@@ -468,7 +472,16 @@ export default function AdvisorView() {
 const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent }> = ({ assistantMessage }) => {
   const handleReferenceClick = (target: string) => {
     if (target.startsWith('http://') || target.startsWith('https://')) {
-      window.open(target, '_blank');
+      let urlToOpen = target;
+      try {
+        const urlObj = new URL(target);
+        urlObj.searchParams.append('utm_source', 'foresight');
+        urlObj.searchParams.append('utm_medium', 'inline_chat_reference');
+        urlToOpen = urlObj.toString();
+      } catch (e) {
+        console.warn("Failed to append UTM codes to URL:", target, e);
+      }
+      window.open(urlToOpen, '_blank');
     } else {
       const footnoteElement = document.getElementById(`footnote-${target}`);
       footnoteElement?.scrollIntoView({ behavior: 'smooth' });
@@ -542,11 +555,39 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         <div className="mt-6 pt-4 border-t border-gray-300">
           <h4 className="text-sm font-semibold mb-2">References</h4>
           <ul className="space-y-1 list-none pl-0">
-            {Object.entries(assistantMessage.references).map(([key, value]) => (
-              <li key={key} id={`footnote-${key}`} className="text-xs text-gray-600">
-                <span className="font-medium">[{key}]</span> {value}
-              </li>
-            ))}
+            {Object.entries(assistantMessage.references).map(([key, value]) => {
+              const isExternalUrl = value.startsWith('http://') || value.startsWith('https://');
+              let urlToOpen = value;
+              if (isExternalUrl) {
+                try {
+                  const urlObj = new URL(value);
+                  urlObj.searchParams.append('utm_source', 'foresight');
+                  urlObj.searchParams.append('utm_medium', 'chat_reference');
+                  urlToOpen = urlObj.toString();
+                } catch (e) {
+                  console.warn("Failed to append UTM codes to URL:", value, e);
+                  // urlToOpen remains original value if parsing fails
+                }
+              }
+
+              return (
+                <li key={key} id={`footnote-${key}`} className="text-xs text-gray-600">
+                  <span className="font-medium">[{key}]</span> 
+                  {isExternalUrl ? (
+                    <a 
+                      href={urlToOpen} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-600 hover:underline"
+                    >
+                      {value} {/* Display original value */}
+                    </a>
+                  ) : (
+                    value
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
