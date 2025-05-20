@@ -212,11 +212,10 @@ export default function AdvisorView() {
           <h1 className="text-2xl font-medium self-center mb-4">Ask Foresight</h1>
         )}
 
-        {/* Temporary plain div for testing - now a direct child of ContentSurface */}
-        <div
-          ref={scrollRef}
-          className="flex-1 min-h-0 p-6 overflow-y-auto bg-red-500/10" // Added a light red background for visual debugging
-          data-testid="plain-scrolling-div"
+        {/* Using Radix ScrollArea now */}
+        <ScrollArea
+          className="flex-1 min-h-0 p-6" // Apply flex, min-height, and padding to the ScrollArea Root
+          ref={scrollRef} // This ref is forwarded to the Viewport by our custom ScrollArea component
         >
           <div className="space-y-6 pb-44"> {/* This is the inner content div */}
             {messages.map((msg, idx) => (
@@ -233,7 +232,7 @@ export default function AdvisorView() {
               </div>
             ))}
           </div>
-        </div>
+        </ScrollArea>
 
         {/* Voice mode overlay */}
         {voiceMode && (
