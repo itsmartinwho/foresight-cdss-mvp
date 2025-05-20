@@ -60,7 +60,7 @@ export default function AdvisorView() {
     setMounted(true);
   }, []);
 
-  const SCROLL_THRESHOLD = 10; // Pixels from bottom to consider "not at bottom" - Reduced for sensitivity
+  const SCROLL_THRESHOLD = 1; // Pixels from bottom to consider "not at bottom" - Extremely sensitive
 
   // Re-enable user scroll effect: remove comment markers
   useEffect(() => {
@@ -116,8 +116,8 @@ export default function AdvisorView() {
       // Only auto-scroll if the user hasn't manually scrolled up AND the assistant is the one "typing".
       // Scrolling for new user messages is handled in handleSend.
       if (!userHasScrolledUp && assistantIsResponding) {
-        console.log('[AdvisorView:autoScrollEffect] SCROLLING NOW');
-        viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+        console.log('[AdvisorView:autoScrollEffect] SCROLLING NOW (auto)');
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: "auto" }); // Changed to 'auto' for immediacy
       }
     });
 
