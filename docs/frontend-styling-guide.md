@@ -140,4 +140,47 @@ The sidebar and top navbar use a glassmorphic/dark background, so their search i
 className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 ...other_classes..."
 ```
 
-This combination of the `unified-search-input` class (for semantic grouping, though its CSS ::placeholder rules are now commented out for this specific case) and direct Tailwind utilities for `placeholder:text-[#F0F0F0]` and `placeholder:opacity-75` is the most robust way to enforce the correct placeholder color (`#F0F0F0`) and opacity (`0.75`) on both the sidebar and navbar search inputs. 
+This combination of the `unified-search-input` class (for semantic grouping, though its CSS ::placeholder rules are now commented out for this specific case) and direct Tailwind utilities for `placeholder:text-[#F0F0F0]` and `placeholder:opacity-75` is the most robust way to enforce the correct placeholder color (`#F0F0F0`) and opacity (`0.75`) on both the sidebar and navbar search inputs.
+
+# Foresight Frontend Styling Guide
+
+## Layout & Scrolling Patterns (2024 Refactor)
+
+### Main View Structure
+- Each main view (Dashboard, Patients, Alerts, Analytics, Settings, Advisor) is wrapped in a `ContentSurface` component.
+- The `ContentSurface` provides a frosted-glass effect and consistent padding.
+- **Do not** wrap main view content in a `Card`—this avoids extra padding, rounded corners, and background clashes at the screen edge.
+- Scrolling is handled by an inner `<div className="flex-1 min-h-0 overflow-y-auto">` placed directly inside `ContentSurface`.
+- The page itself (`html`, `body`) uses `overflow: hidden` so only the inner container scrolls.
+
+#### Example (Patients List View)
+```tsx
+<ContentSurface>
+  <h1 className="text-xl font-semibold mb-2">Patients</h1>
+  <p className="mb-4 text-muted-foreground">Browse and search all patients in the system.</p>
+  <div className="flex-1 min-h-0 overflow-y-auto">
+    {/* Table or list content here */}
+  </div>
+</ContentSurface>
+```
+
+### Full-Bleed Views
+- For views that need to opt out of the glass effect (e.g., PatientWorkspaceView), pass `fullBleed` to `ContentSurface`.
+
+### Advisor Chat
+- The chat input/footer is rendered via a React portal into `document.body` to ensure it is always anchored to the bottom of the viewport.
+- The chat area itself uses the same scrollable pattern as above.
+
+## Component Usage
+- Use Tailwind utility classes for layout, spacing, and overflow.
+- Avoid unnecessary wrapper divs—keep the DOM shallow for main views.
+- Only use `Card` for content that should be visually separated from the main background (e.g., modals, popovers, or secondary panels).
+
+## Visual Consistency
+- The frosted glass effect is achieved with `bg-glass` and `backdrop-blur` classes.
+- Main content should always align with the padding and spacing provided by `ContentSurface`.
+
+## Accessibility & Responsiveness
+- Use semantic HTML for headings and sections.
+- Ensure scrollable containers have appropriate keyboard and screen reader support.
+- Use Tailwind's responsive classes for layout adjustments on different screen sizes. 

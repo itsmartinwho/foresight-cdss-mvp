@@ -19,7 +19,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   `page.tsx`, `patients/page.tsx`, etc.: Entry points for different routes. These typically just render `<ForesightApp />` which then handles the actual content display.
 *   `src/components/`: Houses all React components.
     *   `layout/`: Components related to the overall page structure (e.g., `GlassHeader.tsx`, `GlassSidebar.tsx`).
-    *   `views/`: Components representing distinct screens or major sections of the application (e.g., `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`). `PatientWorkspaceView.tsx` further encapsulates its tabbed content and helper components.
+    *   `views/`: Components representing distinct screens or major sections of the application (e.g., `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`).
     *   `ui/`: Generic, reusable UI elements (e.g., buttons, inputs, cards) potentially from a library like `shadcn/ui` or custom-built.
 *   `src/hooks/`: Custom React hooks (if any).
 *   `src/lib/`: Utility functions, helper scripts, type definitions.
@@ -55,7 +55,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   `AnalyticsScreenView.tsx`
     *   `SettingsScreenView.tsx`
     *   `AdvisorView.tsx` – chat interface powering the **Foresight Advisor** AI medical assistant accessed via `/advisor`.
-    *   The chat input/footer is rendered via a React portal (using `createPortal`) directly into `document.body` to ensure it is always anchored to the bottom of the viewport, regardless of any parent stacking context or transforms. This avoids issues with CSS `position: fixed` being affected by ancestor elements. For this to be effective, the main application layout in `src/app/layout.tsx` is structured so that its primary content area (which hosts `AdvisorView`) does not scroll, allowing the fixed element to remain stationary relative to the viewport.
+    *   The chat input/footer is rendered via a React portal (using `createPortal`) directly into `document.body` to ensure it is always anchored to the bottom of the viewport, regardless of any parent stacking context or transforms. The chat area itself uses a scrollable `<div className="flex-1 min-h-0 overflow-y-auto">` inside `ContentSurface`, matching the pattern used in other main views. This ensures the chat area scrolls independently of the page, and the input/footer remains fixed.
 *   View components are responsible for fetching or receiving their specific data (currently from mock sources, often passed down from `ForesightApp.tsx` or loaded directly if view-specific) and rendering the appropriate UI.
     *   The Advisor chat calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
 

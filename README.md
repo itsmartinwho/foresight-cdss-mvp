@@ -109,6 +109,11 @@ The application now primarily uses data from a Supabase PostgreSQL database.
 *   **Framework:** Next.js (App Router paradigm)
 *   **Language:** TypeScript
 *   **Styling:** Tailwind CSS, CSS Modules. Features a "glassmorphism" theme.
+*   **Layout & Scrolling Pattern (2024 Refactor):**
+    *   Main views (Dashboard, Patients, Alerts, Analytics, Settings, Advisor) are wrapped in a `ContentSurface` component, which provides a frosted-glass effect and consistent padding.
+    *   Do not use a `Card` for main view wrappers—this ensures full-bleed content and avoids extra padding or rounded corners at the screen edge.
+    *   Scrolling is handled by an inner `<div className="flex-1 min-h-0 overflow-y-auto">` inside `ContentSurface`, so only the content area scrolls, not the page.
+    *   See [Frontend Styling Guide](docs/frontend-styling-guide.md) for details and code examples.
 *   **State Management:** React Context and local component state.
 *   **Component Structure:**
     *   Global Layout: `src/app/layout.tsx` renders `GlassHeader` and `GlassSidebar`.
