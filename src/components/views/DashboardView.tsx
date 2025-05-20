@@ -143,8 +143,8 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   }
 
   return (
-    <ContentSurface fullBleed className="p-6 relative">
-      <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg">
+    <ContentSurface fullBleed className="p-6 flex flex-col relative">
+      <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <CardTitle className="text-step-1">Upcoming Appointments</CardTitle>

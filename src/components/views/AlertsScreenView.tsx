@@ -98,8 +98,8 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
   }
 
   return (
-    <ContentSurface fullBleed className="p-6">
-      <Card className="bg-glass glass-dense backdrop-blur-lg">
+    <ContentSurface fullBleed className="p-6 flex flex-col">
+      <Card className="bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-step-1">Patient Alerts</CardTitle>
@@ -129,7 +129,7 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm">
+        <CardContent className="space-y-4 text-sm flex-1 overflow-y-auto">
           {sortedAlerts.length === 0 && <p className="text-muted-foreground">No active alerts for any patient.</p>}
           {sortedAlerts.map((alert) => (
             <div
