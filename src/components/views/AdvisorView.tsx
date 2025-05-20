@@ -223,50 +223,82 @@ export default function AdvisorView() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      
+      let currentAssistantMessageContent: AssistantMessageContent = { content: [], references: {} };
+
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
-          ));
-          // Final parse attempt for any remaining buffer, though ideally OpenAI JSON mode sends a single complete object.
-          try {
-            const finalJson = JSON.parse(buffer) as AssistantMessageContent;
-            setMessages(prev => prev.map(msg => 
-              msg.id === assistantMessageId ? { ...msg, content: finalJson, isStreaming: false } : msg
-            ));
-            if (voiceMode && finalJson.content.length > 0) {
-              // For voice, concatenate paragraph text for now. More sophisticated speech generation could be added.
-              const speechText = finalJson.content
-                .filter(el => el.type === 'paragraph' && el.text)
-                .map(el => (el as any).text)
-                .join(' ');
-              if (speechText) speak(speechText);
+          // Process any remaining buffer content if necessary
+          if (buffer.trim()) {
+            try {
+              const jsonObject = JSON.parse(buffer.trim()) as ContentElement | { type: "references_container", references: { [key: string]: string } };
+              if (jsonObject.type === "references_container") {
+                currentAssistantMessageContent.references = jsonObject.references;
+              } else {
+                currentAssistantMessageContent.content.push(jsonObject as ContentElement);
+              }
+              setMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId ? { ...msg, content: { ...currentAssistantMessageContent }, isStreaming: false } : msg
+              ));
+            } catch (e) {
+              console.error("Error parsing remaining buffer content:", e, "Buffer:", buffer);
+              // Fallback: update with what we have and stop streaming
+              setMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId ? { ...msg, content: { ...currentAssistantMessageContent }, isStreaming: false } : msg
+              ));
             }
-          } catch (e) {
-            // If parsing fails at the very end, it might indicate an issue with the stream or LLM response.
-            // The message might remain partially filled or show an error.
-            console.error("Final JSON parse failed:", e);
-             setMessages(prev => prev.map(msg => 
-              msg.id === assistantMessageId ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: Could not parse full response. Partial data: ${buffer}`}], references: {}}, isStreaming: false } : msg
+          } else {
+            setMessages(prev => prev.map(msg =>
+              msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
             ));
+          }
+
+          // Speak the final assembled content if voiceMode is on
+          if (voiceMode && currentAssistantMessageContent.content.length > 0) {
+            const speechText = currentAssistantMessageContent.content
+              .filter(el => el.type === 'paragraph' && el.text)
+              .map(el => (el as any).text) // Type assertion needed as 'text' is not on all ContentElement types
+              .join(' ');
+            if (speechText) speak(speechText);
           }
           break;
         }
+
         buffer += decoder.decode(value, { stream: true });
-        
-        // Try to parse the buffer progressively
-        // This is a basic approach. For very large JSON, more robust partial parsing might be needed.
-        // However, with OpenAI's JSON mode, it should ideally stream a well-formed JSON object.
-        try {
-          const parsedJson = JSON.parse(buffer) as AssistantMessageContent;
-          // If parse succeeds, it means the full JSON object has been received.
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId ? { ...msg, content: parsedJson, isStreaming: true } : msg
-          ));
-        } catch (e) {
-          // JSON is not yet complete/valid, continue accumulating
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf("\\n")) >= 0) {
+          const line = buffer.substring(0, newlineIndex).trim();
+          buffer = buffer.substring(newlineIndex + 1);
+
+          if (line) {
+            try {
+              const jsonObject = JSON.parse(line) as ContentElement | { type: "references_container", references: { [key: string]: string } };
+
+              if (jsonObject.type === "references_container") {
+                currentAssistantMessageContent.references = jsonObject.references;
+                // We might receive references at the end, so update and continue, but don't change isStreaming yet.
+              } else {
+                currentAssistantMessageContent.content.push(jsonObject as ContentElement);
+              }
+
+              // Update messages with the new piece of content
+              setMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId
+                  ? { ...msg, content: { ...currentAssistantMessageContent } } // Shallow copy current content
+                  : msg
+              ));
+
+              // Speak paragraph text as it arrives if voiceMode is on and the element is a paragraph
+              if (voiceMode && jsonObject.type === 'paragraph' && (jsonObject as any).text) {
+                 speak((jsonObject as any).text);
+              }
+
+            } catch (e) {
+              console.error("Error parsing streamed JSON object:", e, "Line:", line);
+              // If a line fails to parse, we could log it and try to continue,
+              // or decide to stop if errors are critical. For now, log and continue.
+            }
+          }
         }
       }
     } catch (err: any) {
@@ -312,13 +344,13 @@ export default function AdvisorView() {
                 <div
                   className={cn(
                     msg.role === "user"
-                      ? "max-w-[66.666%] w-fit bg-foresight-teal-darker/70 text-white"
+                      ? "max-w-[66.666%] w-fit bg-foresight-teal-darker/70 text-white p-6"
                       : msg.role === "assistant"
-                      ? "max-w-full w-fit bg-white/90 text-gray-800"
+                      ? "max-w-full w-fit bg-white/90 text-gray-800 p-6"
                       : msg.role === "system"
-                      ? "w-fit bg-gray-200/10 text-gray-700 flex justify-center items-center"
+                      ? "w-fit bg-gray-200/5 text-gray-700 flex justify-center items-center p-6"
                       : "hidden",
-                    "rounded-lg p-4 text-sm shadow-sm"
+                    "rounded-lg text-sm shadow-sm"
                   )}
                 >
                   {msg.role === "user" && typeof msg.content === 'string' && msg.content}
@@ -328,7 +360,7 @@ export default function AdvisorView() {
                         {msg.content}
                       </span>
                     ) : (
-                      <span className="italic">{msg.content}</span>
+                      <span>{msg.content}</span>
                     )
                   )}
                   {msg.role === "assistant" && typeof msg.content === 'object' && (
