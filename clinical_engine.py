@@ -1,6 +1,16 @@
 """
-Core clinical decision support engine for the Foresight CDSS
-Adapted from the Deep Research Agent's research engine
+Foresight CDSS: Standalone Prototype for Tool B (Diagnosis and Treatment Engine)
+
+This file implements a standalone, non-integrated prototype for the aspirational Tool B (Diagnosis and Treatment Engine) described in the Foresight CDSS project. It is NOT used in the live application and is not connected to the Next.js/Supabase backend or any production API routes.
+
+- This script is a conceptual sketch of the target product logic for Tool B, including diagnostic plan generation, execution, and downstream document generation (referrals, prior auth, clinical trial matching).
+- It is intended for development and prototyping only. See .cursor/rules/python.md for usage and limitations.
+
+For the authoritative, up-to-date description of the current and future AI tools, backend architecture, and integration plans, always refer to:
+    - docs/architecture.md (project-wide source of truth)
+    - .cursor/rules/python.md (detailed notes on this prototype)
+
+If the product vision or architecture for Tool B changes, update docs/architecture.md and .cursor/rules/python.md, and revise this file accordingly to avoid documentation drift.
 """
 
 import asyncio

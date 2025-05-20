@@ -1,8 +1,19 @@
 # Frontend Architecture
 
+> **Cross-reference:**
+> - This file, [../.cursor/rules/python.md](../.cursor/rules/python.md), and [../clinical_engine.py](../clinical_engine.py) must be kept in sync regarding the vision, status, and integration plans for Tool B (Diagnosis and Treatment Engine).
+> - If the product vision or prototype logic for Tool B changes, update all three to avoid documentation drift.
+
 ## Overview
 
 This document outlines the frontend architecture of the Foresight CDSS MVP prototype, focusing on the Next.js (App Router) implementation. The architecture prioritizes modularity, clear separation of concerns, and maintainability.
+
+The application features several AI-powered clinical tools:
+*   **Tool A (Advisor):** Currently implemented as an AI-powered chatbot in the "Advisor" tab, using OpenAI via the `/api/advisor` route. It provides general medical information.
+*   **Tool B (Diagnosis and Treatment Engine):** An aspirational feature. Aims to ingest patient data and consultation transcripts to produce diagnoses and treatment plans, and generate related documents (referrals, prior authorizations). Placeholder UI elements for these outputs exist. The `clinical_engine.py` script is a very early prototype for this engine's logic and is not currently integrated.
+*   **Tool C (Medical Co-pilot):** An aspirational, real-time AI assistant to provide nudges to physicians during consultations. Does not yet exist.
+*   **Tool D (Complex Conditions Alerts):** An aspirational tool to scan diagnostic outputs (from the future Tool B) and alert physicians to potential complex conditions. Placeholder UI for alerts exists, currently populated by mock data from the `patients.alerts` field in Supabase.
+*   **Tool F (Clinical Trial Matching):** An aspirational tool to find clinical trials for eligible patients. Placeholder UI for clinical trials exists, currently populated by mock data.
 
 ## Core Principles
 
@@ -10,7 +21,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   **Centralized Routing Logic:** A main application component (`ForesightApp.tsx`) handles the display of different views based on the current URL pathname.
 *   **Global Layout:** Consistent UI elements like the header and sidebar are managed at the root layout level. Starting with the May-2025 flattening refactor, each route now renders its main content inside a single `ContentSurface` component which provides a frosted-glass backdrop and consistent padding. Pages that need the full viewport (e.g. `PatientWorkspaceView`) may pass `fullBleed` to opt out of the glass wrapper.
 *   **Styling:** Tailwind CSS is the primary utility for styling, supplemented by global styles and potentially CSS Modules for component-specific styles.
-*   **Logging Strategy:** The `SupabaseDataService` uses concise `Prod Debug` logs via `console.log` for key data-loading events (e.g., load in progress, initiating sequence, fetching patients, fetching visits). Row-level verbose logs have been removed for clarity; errors and warnings remain enabled.
+*   **Logging Strategy:** The `SupabaseDataService` uses concise `Prod Debug` logs via `console.log` for key data-loading events (e.g., load in progress, initiating sequence, fetching patients, fetching visits). Row-level verbose logs have been removed for clarity; errors and warnings remain enabled. The `/api/advisor` route also includes error logging.
 
 ## Directory Structure Highlights
 
@@ -24,6 +35,10 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   `ui/`: Generic, reusable UI elements (e.g., buttons, inputs, cards) potentially from a library like `shadcn/ui` or custom-built.
 *   `src/hooks/`: Custom React hooks (if any).
 *   `src/lib/`: Utility functions, helper scripts, type definitions.
+    *   `supabaseClient.ts`: Initializes the Supabase client.
+    *   `supabaseDataService.ts`: Provides methods for interacting with Supabase.
+    *   `clinicalEngineService.ts`: **Important:** This service (`src/lib/clinicalEngineService.ts`) is a **mock/simulation service** primarily for frontend development and does **not** power the live Advisor (Tool A). Its methods simulate responses that would be expected from the future Tool B (Diagnosis and Treatment Engine) and Tool F (Clinical Trial Matching), aligning with the capabilities envisioned for `clinical_engine.py`. It is not connected to any live backend AI engine.
+    *   `alertService.ts`: Contains initial concepts for alert generation, potentially related to the future Tool D.
 *   `src/styles/`: Global stylesheets (e.g., `globals.css`).
 *   `public/`: Static assets.
 
@@ -43,15 +58,20 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   Example: If pathname is `/`, render `<DashboardView />`.
     *   Example: If pathname is `/patients`, render `<PatientsListView />`.
     *   Example: If pathname is `/patients/[id]`, render `<PatientWorkspaceView />` (passing the patient ID).
-*   Global states (like `activePatient`, `selectedPatientTab`) and their associated handlers are managed within `ForesightApp.tsx`. It also centrally fetches and processes `complexCaseAlerts` (sourced from the `alerts` field of patient data in Supabase) which are then passed down to relevant views like `DashboardView` and `AlertsScreenView`. Future enhancements might involve on-the-fly alert generation (see `src/lib/alertService.ts` for initial concepts).
+*   Global states (like `activePatient`, `selectedPatientTab`) and their associated handlers are managed within `ForesightApp.tsx`. It also centrally fetches and processes `complexCaseAlerts` (sourced from the `alerts` field of patient data in Supabase). This `alerts` data currently serves as **mock/placeholder data** for what the aspirational **Tool D (Complex Conditions Alerts)** will eventually generate more intelligently. These alerts are then passed down to relevant views like `DashboardView` and `AlertsScreenView`.
 
 ### 3. View Components (`src/components/views/`)
 
 *   These components represent the main content for different sections of the application.
     *   Examples: `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`, `AlertsScreenView.tsx`, `AnalyticsScreenView.tsx`, `SettingsScreenView.tsx`, `AdvisorView.tsx`.
 *   For detailed styling, layout, and scrolling patterns (e.g., usage of `ContentSurface`, chat input in `AdvisorView`), refer to the [Frontend Styling Guide](docs/frontend-styling-guide.md).
-*   View components are responsible for their specific UI and interactions. Data fetching is increasingly centralized or handled by dedicated services. For instance, `DashboardView` and `AlertsScreenView` now receive shared alert data as props from `ForesightApp.tsx`.
-    *   The Advisor chat calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
+*   View components are responsible for their specific UI and interactions.
+    *   `AdvisorView.tsx` implements the UI for **Tool A (Advisor)**, interacting with the `/api/advisor` backend endpoint. It includes UI elements for model switching, file uploads, dictation, and voice mode (though some of these may have buggy functionality as per user feedback).
+    *   Components like `PatientWorkspaceView.tsx` or dedicated modal/form components may contain **placeholder UI fields** for displaying outputs from the aspirational **Tool B** (e.g., diagnosis, treatment plan sections, prior authorization forms, referral forms). These fields currently hold mock data or are empty.
+    *   `AlertsScreenView.tsx` and `DashboardView.tsx` display alerts. These are currently mock alerts but represent where **Tool D** outputs would be shown.
+    *   `PatientWorkspaceView.tsx` (or a dedicated section) may contain placeholder UI for **Tool F** (Clinical Trial Matching), currently showing mock data.
+*   Data fetching is increasingly centralized or handled by dedicated services. For instance, `DashboardView` and `AlertsScreenView` now receive shared alert data as props from `ForesightApp.tsx`.
+    *   The Advisor chat (**Tool A**) calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
 
 ### 4. UI Components (`src/components/ui/`, `src/components/layout/`)
 
@@ -101,25 +121,50 @@ The application utilizes **Supabase** as its primary backend, which provides a m
 *   **Primary Database:** A PostgreSQL database hosted on Supabase.
 *   **Schema Management:** The database schema is defined in `scripts/schema.sql`. This script creates the necessary tables, columns, relationships, and helper functions/triggers. It should be applied to your Supabase project via its SQL editor to set up the database structure.
 *   **Key Tables:**
-    *   `patients`: Stores patient demographic data, alerts, primary diagnosis, and other patient-specific information. Each patient has a unique `patient_id` (original identifier) and an internal Supabase `id` (UUID).
-    *   `visits`: Contains information about patient admissions or consultations, including types, dates, reasons, and associated notes or treatments. Each visit is linked to a patient via `patient_supabase_id` and has an `admission_id`.
-    *   `transcripts`: Intended for storing detailed or versioned transcripts, linked to the `visits` table. (Currently, simpler transcript/note fields might exist directly in `visits`).
+    *   `patients`: Stores patient demographic data, **alerts (currently mock/placeholder data for the aspirational Tool D)**, primary diagnosis, and other patient-specific information. Each patient has a unique `patient_id` (original identifier) and an internal Supabase `id` (UUID).
+    *   `visits`: Contains information about patient admissions or consultations, including types, dates, reasons, and associated notes or treatments.
+    *   `transcripts`: Intended for storing detailed or versioned transcripts from consultations, which would be a key input for the aspirational **Tool B (Diagnosis and Treatment Engine)**. (Currently, simpler transcript/note fields might exist directly in `visits`).
 *   **Data Interaction:** Data is primarily fetched from and manipulated in Supabase. The application uses `src/lib/supabaseClient.ts` to create a Supabase client and `src/lib/supabaseDataService.ts` (or direct client usage in server components/API routes) for querying the database.
-*   **No Local Mock Data Files:** The system does not rely on local flat files (like TSV or JSON in the `public/` directory) for its primary data source anymore. All patient and clinical data comes from the Supabase backend.
+*   **No Local Mock Data Files:** The system does not rely on local flat files (like TSV or JSON in the `public/` directory) for its primary data source anymore. All patient and clinical data comes from the Supabase backend. The `clinical_engine.py` (prototype for Tool B) might use local files for its standalone development.
 
 ### API Layer
 *   **Supabase Auto-generated APIs:** Supabase provides RESTful and GraphQL APIs for database tables by default, which can be used for data operations.
-*   **Custom API Routes:** The Next.js application also defines custom API routes under `src/app/api/` (e.g., `/api/advisor`) for specific backend logic, such as proxying requests to third-party services (like OpenAI) or performing more complex operations not directly mapped to a simple CRUD operation on a single table.
+*   **Custom API Routes:** The Next.js application also defines custom API routes under `src/app/api/`.
+    *   `/api/advisor`: This route serves **Tool A (Advisor)**. It acts as a proxy to OpenAI, taking user messages and an optional model preference, adding a system prompt, and streaming responses back from the OpenAI Chat Completions API.
+*   **`clinical_engine.py` (Standalone Prototype for Tool B):** The Python script `clinical_engine.py` is a standalone, very early prototype exploring logic for the aspirational **Tool B (Diagnosis and Treatment Engine)**. It is **not currently integrated** into the Next.js application or called by any API route. If Tool B were to be developed further using this Python base, it would likely be containerized and exposed via its own API, or its logic would be translated to TypeScript/JavaScript and integrated into the Next.js backend.
+*   **`src/lib/clinicalEngineService.ts` (Mock Service):** As stated in the Directory Structure Highlights, this TypeScript service is a **collection of frontend mocks/simulations**. It does **not** connect to `clinical_engine.py` or any live AI backend. Its methods (e.g., `generateDiagnosticPlan`, `matchClinicalTrials`) simulate the kinds of responses and data structures that would be expected from the future Tool B and Tool F. This is useful for frontend development and UI prototyping in the absence of the actual backend logic for those features.
 
 ## Target State Considerations
 
-While the current MVP focuses on the UI shell and mock data, the architecture is designed with the following future capabilities in mind:
+The architecture is designed with the following future AI-powered capabilities in mind, building upon the existing Advisor (Tool A) and Supabase backend:
 
-*   **Data Fetching:** View components (or dedicated data-fetching hooks/components) will integrate with backend APIs or services (e.g., EHRs, transcription services, AI engines).
-*   **Real-time Updates:** Features like the clinical co-pilot and complex case alerting will require mechanisms for real-time data flow (e.g., WebSockets, server-sent events), which may influence state management and component design.
-*   **Authentication & Authorization:** Secure access to patient data and system features will necessitate an authentication layer, likely managed globally and impacting routing and data access.
+*   **Tool A (Advisor) Enhancements:**
+    *   Ability to attach specific patient information as context to the Advisor chat. This would likely involve modifying the `/api/advisor` route to accept a patient ID, fetch relevant data from Supabase, and incorporate it into the prompt sent to OpenAI.
+    *   Improving the reliability and functionality of existing UI features like model switching, paper search, file uploads, dictation, and voice mode.
 
-This architecture aims to provide a solid foundation for developing these more complex features in the future.
+*   **Tool B (Diagnosis and Treatment Engine):** This is a major aspirational feature.
+    *   **Inputs:** Pre-existing patient information (from Supabase `patients` and `visits` tables), and the transcript from the just-ended consultation (potentially from the `transcripts` table or directly from the consultation UI).
+    *   **Process:** A sophisticated clinical reasoning engine. It would first create a diagnostic plan with various workstreams, execute these in parallel (potentially involving further data lookups or sub-analyses), and then contrast, compare, verify, and synthesize the results.
+    *   **Outputs:** A structured diagnosis and treatment plan, which the physician can review, amend, and accept. Upon acceptance, it could trigger the creation of other objects like filled-out referral forms and prior authorization forms. Placeholder UI for these outputs already exists.
+    *   **Future Enhancement:** Parse novel clinical research (academic papers) from the internet to inform its diagnosis and treatment recommendations.
+    *   **Prototyping:** The `clinical_engine.py` script serves as an initial, standalone prototype for the logic of this engine. Future development might involve evolving this Python code and exposing it via an API, or re-implementing the logic in TypeScript within the Next.js backend.
+
+*   **Tool C (Medical Co-pilot):** A real-time AI assistant during live consultations.
+    *   **Functionality:** Listens to the consultation in real-time and provides discrete, high-confidence nudges (e.g., silent notifications) to the physician about questions to ask, tests to consider, etc., if it detects potential omissions.
+    *   **Technology:** Would likely require real-time audio processing, speech-to-text, and a fast, responsive AI model. Integration might involve WebSockets or similar real-time communication.
+
+*   **Tool D (Complex Conditions Alerts):** An advanced alerting system.
+    *   **Functionality:** Passively scans the outputs of the (future) Tool B (Diagnosis and Treatment Engine) to identify patterns indicative of complex conditions that might be hard for some physicians to spot (e.g., early signs of cancer, autoimmune diseases). It would only alert the physician when it has a very high degree of confidence.
+    *   **Current State:** Placeholder UI for alerts exists, and the `patients.alerts` field in Supabase is used by `ForesightApp.tsx` to display mock alert data. Tool D would replace this mock data with intelligently generated alerts.
+
+*   **Tool F (Clinical Trial Matching):** An automated tool to find relevant clinical trials.
+    *   **Functionality:** For certain diagnoses, specialties, or complex conditions (trigger to be defined), this tool will scan the internet (or dedicated clinical trial databases) for ongoing clinical trials for which a patient might be eligible.
+    *   **Current State:** Placeholder UI for clinical trials exists and may display mock data. Tool F would provide the actual matching functionality.
+
+*   **Data Fetching & Real-time Updates:** Advanced tools like Tool C and potentially Tool B (if it involves iterative updates) will require robust mechanisms for real-time data flow (e.g., WebSockets, server-sent events), influencing state management and component design.
+*   **Authentication & Authorization:** Secure access to patient data and system features will remain paramount, with existing authentication (likely Supabase Auth) being extended as needed.
+
+This architecture aims to provide a solid foundation for developing these more complex features in the future, leveraging Supabase for data management and Next.js for both frontend and API capabilities, while allowing for integration of specialized AI services or engines as needed.
 
 ## Phase 3.5: Testing and Component Documentation
 
@@ -164,4 +209,11 @@ These development dependencies do not impact the size of the production client b
 *   **Lazy Loading:** Investigate dynamic imports for heavy libraries like `recharts` to load them only on relevant pages.
 *   **Icon Optimization:** Consider migrating `lucide-react` to native imports if further optimization is needed.
 *   **Locale Stripping:** Explore options to remove unused locales from `date-fns` via webpack or Next.js configuration.
-*   **Cloudflare Worker Evaluation:** Continue to evaluate if the full Cloudflare Worker build/deployment model is essential for the project's long-term goals or if simpler deployment targets suffice. 
+*   **Cloudflare Worker Evaluation:** Continue to evaluate if the full Cloudflare Worker build/deployment model is essential for the project's long-term goals or if simpler deployment targets suffice.
+
+---
+
+> **Cross-reference:**
+> - For the standalone Tool B prototype, see [../clinical_engine.py](../clinical_engine.py).
+> - For detailed notes on the prototype and its integration, see [../.cursor/rules/python.md](../.cursor/rules/python.md).
+> - Keep this file, [../.cursor/rules/python.md](../.cursor/rules/python.md), and [../clinical_engine.py](../clinical_engine.py) in sync regarding Tool B's vision and integration plans. 
