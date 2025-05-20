@@ -66,9 +66,27 @@ export default function AdvisorView() {
   // Auto-scroll when messages change
   useEffect(() => {
     const viewport = scrollRef.current;
-    if (!viewport) return;
+    if (!viewport) {
+      console.log("AdvisorView (Debug): scrollRef.current is null");
+      return;
+    }
+    // pridestaff-debug-log
+    console.log("AdvisorView (Debug): Auto-scroll check", {
+      scrollHeight: viewport.scrollHeight,
+      clientHeight: viewport.clientHeight,
+      scrollTop: viewport.scrollTop,
+      userHasScrolledUp,
+      messageCount: messages.length,
+      timestamp: new Date().toISOString(),
+    });
     const lastMsg = messages[messages.length - 1];
     if (!userHasScrolledUp || (lastMsg && lastMsg.role === "user")) {
+      // pridestaff-debug-log
+      console.log("AdvisorView (Debug): Attempting to scroll", {
+        targetScrollTop: viewport.scrollHeight,
+        behavior: "smooth",
+        timestamp: new Date().toISOString(),
+      });
       viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
     }
   }, [messages, userHasScrolledUp]);
@@ -188,8 +206,9 @@ export default function AdvisorView() {
 
         {/* Chat container */}
         <div className="relative flex flex-col flex-1 overflow-hidden min-h-0">
-          <ScrollArea className="flex-1 min-h-0 p-6" ref={scrollRef}>
+          {/* <ScrollArea className="flex-1 min-h-0 p-6" ref={scrollRef}>
             <div className="space-y-6 pb-44"> {/* extra bottom padding to allow for floating input */}
+          {/*
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
@@ -203,9 +222,32 @@ export default function AdvisorView() {
                   {msg.content}
                 </div>
               ))}
-              {/* <div ref={bottomRef} /> // No longer using bottomRef */}
             </div>
-          </ScrollArea>
+          </ScrollArea> */}
+          {/* Temporary plain div for testing */}
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 p-6 overflow-y-auto bg-red-500/10" // Added a light red background for visual debugging
+            data-testid="plain-scrolling-div"
+          >
+            <div className="space-y-6 pb-44"> {/* This is the inner content div */}
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
+                    msg.role === "user"
+                      ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
+                      : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
+                  )}
+                >
+                  {/* pridestaff-debug-log */}
+                  {/* console.log("AdvisorView (Debug): Rendering message", idx); */}
+                  {msg.content}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Voice mode overlay */}
