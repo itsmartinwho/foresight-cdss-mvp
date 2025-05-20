@@ -302,7 +302,7 @@ export default function AdvisorView() {
                   ? "Reasoning mode selected for your harder medical queries"
                   : "Ask anything"}
                 rows={1}
-                className="resize-none bg-transparent border-0 shadow-none focus:outline-none focus:ring-0 text-base px-6 py-2"
+                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-6 py-2"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -336,11 +336,7 @@ export default function AdvisorView() {
 
                 <div className="flex items-center gap-2">
                   {/* Upload */}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                  <Button size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()}>
                     <Plus className="h-[14px] w-[14px] text-foreground" />
                   </Button>
                   <input
@@ -356,32 +352,31 @@ export default function AdvisorView() {
                         ...prev,
                         { role: "user", content: `[Uploaded ${file.name}]` },
                       ]);
-                      e.target.value = ""; // Clear the input after selection
+                      e.target.value = "";
                     }}
                   />
-
-                  {/* Dictation (only visible when not in voice mode) */}
+                  {/* Dictation (if not in voice mode) */}
                   {!voiceMode && typeof window !== "undefined" &&
                     ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
                       <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
                         <Mic className="h-4 w-4" />
                       </Button>
                     )}
-
-                  {/* Voice mode button */}
-                  <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)}>
-                    <Waves className="h-4 w-4" />
-                  </Button>
-
-                  {/* Send */}
-                  <Button
-                    size="icon"
-                    onClick={() => handleSend()}
-                    disabled={isSending || !input.trim()}
-                    className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
+                  {/* Voice or Send based on input */}
+                  {input.trim().length > 0 ? (
+                    <Button
+                      size="icon"
+                      onClick={() => handleSend()}
+                      disabled={isSending}
+                      className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)}>
+                      <Waves className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
