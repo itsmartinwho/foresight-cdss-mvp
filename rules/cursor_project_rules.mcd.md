@@ -3,6 +3,10 @@
 ## Overview
 This document establishes the rules and conventions for developing the Foresight CDSS MVP using Cursor as the primary code editor. These guidelines ensure consistency, quality, and efficient collaboration across the development team.
 
+**For current architecture, AI tool status (Tool A live, Tools B,C,D,F aspirational), styling, and specific component details, always refer to the primary documentation:**
+*   **[../docs/architecture.md](../docs/architecture.md)**
+*   **[../docs/frontend-styling-guide.md](../docs/frontend-styling-guide.md)**
+
 ## Cursor-Specific Practices
 
 ### AI Pair Programming
@@ -27,17 +31,17 @@ This document establishes the rules and conventions for developing the Foresight
 - **Debugging**: For identifying potential issues in complex code
 
 #### When Not to Use AI Assistance
-- **Security-Critical Code**: Authentication, encryption, sensitive data handling
-- **Complex Business Logic**: Core clinical decision algorithms
-- **Performance-Critical Sections**: Optimize these manually
-- **Architecture Decisions**: Discuss these with the team
+- **Security-Critical Code**: Authentication, encryption, sensitive data handling.
+- **Complex Business Logic**: Core clinical decision algorithms (especially for aspirational Tools B, C, D, F – these require deep domain expertise and team discussion).
+- **Performance-Critical Sections**: Optimize these manually.
+- **Architecture Decisions**: Major architectural choices, especially concerning the implementation of new AI tools (Tools B, C, D, F), must be discussed with the team. Refer to `docs/architecture.md` for current and target architectural states.
 
 ### Project Navigation
 
 #### File Organization
-- **Project Structure**: Follow the defined project structure in documentation
-- **File Naming**: Use consistent naming conventions (kebab-case for files, PascalCase for components)
-- **Import Organization**: Group imports logically (React, third-party, internal)
+- **Project Structure**: Follow the defined project structure in **[../docs/architecture.md](../docs/architecture.md)**.
+- **File Naming**: Use consistent naming conventions (kebab-case for files, PascalCase for components).
+- **Import Organization**: Group imports logically (React, third-party, internal).
 
 #### Cursor Workspace Features
 - **Use Workspaces**: Create dedicated workspaces for different feature areas
@@ -139,22 +143,17 @@ This document establishes the rules and conventions for developing the Foresight
 
 ## Testing Standards
 
+_Refer to [../docs/architecture.md#phase-35-testing-and-component-documentation](../docs/architecture.md#phase-35-testing-and-component-documentation) and [../docs/architecture.md#target-state-considerations](../docs/architecture.md#target-state-considerations) for specifics on current testing (Playwright for E2E including Tool A, Storybook for UI components) and future testing needs for aspirational AI tools._
+
 ### Test Organization
 
 #### Test Hierarchy
-- **Unit Tests**: Individual components and functions
-- **Integration Tests**: Component interactions
-- **E2E Tests**: Complete user flows
+- **Unit Tests**: For individual components and functions (Current: Storybook interaction tests, potentially Jest for utilities. Aspirational: Higher coverage, especially for AI logic in future tools).
+- **Integration Tests**: Component interactions and API touchpoints (Current: Basic testing for `/api/advisor`. Aspirational: More for future AI services).
+- **E2E Tests**: Complete user flows (Current: Playwright for key flows including Tool A. Aspirational: Coverage for Tools B, C, D, F as developed).
 
 #### Naming Conventions
-- **Test Files**: `[component-name].test.tsx` or `[utility-name].test.ts`
-- **Test Suites**: Descriptive of the component or function being tested
-- **Test Cases**: Clearly describe the behavior being tested
-
-#### Test Structure
-- Arrange: Set up test conditions
-- Act: Perform the action being tested
-- Assert: Verify expected outcomes
+- **Test Files**: `[component-name].test.tsx` (Jest/RTL), `*.spec.ts` (Playwright), `*.stories.tsx` (Storybook).
 
 ### Testing Best Practices
 - Test behavior, not implementation details
@@ -164,6 +163,8 @@ This document establishes the rules and conventions for developing the Foresight
 - Keep tests independent and idempotent
 
 ## Documentation Requirements
+
+_Primary project documentation, including architecture, AI tool descriptions, and styling guides, resides in the `/docs` directory (e.g., `docs/architecture.md`, `docs/frontend-styling-guide.md`). Code-level documentation should complement this._
 
 ### Code Documentation
 
@@ -180,18 +181,16 @@ This document establishes the rules and conventions for developing the Foresight
 - Side effects, if any
 
 #### Architecture Documentation
-- Component relationships
-- Data flow diagrams
-- State management patterns
-- API contracts
+- **Source of Truth:** Detailed architecture, including component relationships, data flow, state management, API contracts, and the status/design of AI tools (A, B, C, D, F) is maintained in **[../docs/architecture.md](../docs/architecture.md)**.
+- Code comments should clarify specific implementation choices within this architecture.
 
 ### Project Documentation
 
 #### Technical Documentation
-- Setup instructions
-- Development workflow
-- Testing strategy
-- Deployment process
+- Setup instructions: See `README.md` and `.cursor/rules/development_environment.md`.
+- Development workflow: General practices in this document; specific architectural patterns in `docs/architecture.md`.
+- Testing strategy: High-level in this document; specifics (Playwright, Storybook) and AI testing needs in `docs/architecture.md`.
+- Deployment process: See `docs/architecture.md` for notes on deployment considerations.
 
 #### User Documentation
 - Feature guides

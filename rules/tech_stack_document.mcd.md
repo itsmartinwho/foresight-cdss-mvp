@@ -1,136 +1,132 @@
 # Tech Stack Document for Foresight CDSS MVP
 
 ## Overview
-This document outlines the technology stack for the Foresight Clinical Decision Support System (CDSS) MVP. The stack has been carefully selected to balance development speed, performance, security, and maintainability, with special consideration for healthcare-specific requirements.
+This document outlines a comprehensive list of technologies relevant to the Foresight Clinical Decision Support System (CDSS) MVP, covering both currently implemented components and aspirational future development. 
 
-## Frontend Stack
+**For the definitive guide to the *current, implemented* tech stack, AI tool architecture (Tool A live, Tools B,C,D,F aspirational), and data layer, please refer to [../docs/architecture.md](../docs/architecture.md).**
 
-### Core Technologies
-- **React**: JavaScript library for building the user interface
-- **TypeScript**: Superset of JavaScript adding static type definitions
-- **Next.js**: React framework providing server-side rendering, routing, and development features
+Technologies listed here that are not explicitly detailed as "current" in `docs/architecture.md` should be considered **aspirational, under consideration for future tools, or general best-practice options** rather than part of the immediate, implemented MVP.
 
-### UI Components & Styling
-- **Tailwind CSS**: Utility-first CSS framework for rapid UI development
-- **Shadcn/UI**: Component library built on Radix UI primitives
-- **Framer Motion**: Library for animations and transitions
-- **React Hook Form**: Form validation and handling
-- **Zod**: Schema validation library for TypeScript
+## Frontend Stack (Current & Aspirational)
 
-### State Management
-- **React Context API**: For global state management
-- **SWR/React Query**: Data fetching, caching, and state management for API calls
-- **Zustand**: Lightweight state management (for complex state requirements)
+### Core Technologies (Current)
+- **React**: JavaScript library for building the user interface.
+- **TypeScript**: Superset of JavaScript adding static type definitions.
+- **Next.js**: React framework providing server-side rendering, App Router, API routes, and development features.
 
-### Visualization
-- **Recharts**: Composable charting library for React
-- **D3.js**: Data visualization library for complex visualizations
-- **React-pdf**: PDF generation for reports and documentation
+### UI Components & Styling (Current)
+- **Tailwind CSS**: Utility-first CSS framework for rapid UI development.
+- **Shadcn/UI**: Component library built on Radix UI primitives (for accessible base components like buttons, dialogs, etc.).
+- **Custom Components**: In `src/components/ui` and `src/components/layout`.
+- **Animation (Aspirational/If Used):** Framer Motion (If specific complex animations are needed beyond CSS/Tailwind capabilities).
+- **Form Handling (Current/Aspirational):** Standard React state/handlers. React Hook Form with Zod for validation is an aspirational pattern for more complex forms.
 
-### Testing
-- **Jest**: JavaScript testing framework
-- **React Testing Library**: Testing utilities for React components
-- **Cypress**: End-to-end testing framework
-- **MSW (Mock Service Worker)**: API mocking for tests and development
+### State Management (Current & Aspirational)
+- **React Context API / `useState` / `useReducer`**: For local and shared global state (Current primary methods, e.g., in `ForesightApp.tsx`).
+- **SWR/React Query (Aspirational):** For server state, caching if complex client-side caching beyond Supabase client/fetch is needed.
+- **Zustand (Aspirational):** Lightweight state management for very complex global state needs, if Context API becomes insufficient.
 
-## Backend Stack
+### Visualization (Current & Aspirational)
+- **Recharts (Aspirational/If Used):** Composable charting library for React (e.g., for `AnalyticsScreenView`).
+- **D3.js (Aspirational):** For highly custom/complex visualizations if Recharts is insufficient.
+- **`react-pdf` (Aspirational):** PDF generation for reports (e.g., future Tool B outputs like referral forms).
 
-### Core Technologies
-- **Node.js**: JavaScript runtime for the server
-- **Express.js**: Web application framework for Node.js
-- **TypeScript**: Type safety for backend code
+### Testing (Current & Aspirational)
+- **Playwright (Current):** For End-to-End (E2E) testing, covering critical user flows including Tool A (Advisor).
+- **Storybook (Current):** For UI component development, visual testing, and documentation of interactions.
+- **Jest & React Testing Library (Aspirational):** For broader unit/integration testing of components and utilities if not covered by Storybook interaction tests.
+- **MSW (Mock Service Worker) (Aspirational):** For API mocking in frontend tests if complex scenarios arise, especially for future AI tools.
 
-### API & Communication
-- **REST API**: Primary API architecture
-- **GraphQL** (future expansion): For complex data requirements
-- **Socket.io**: Real-time bidirectional communication (for future features)
-- **OpenAPI/Swagger**: API documentation and specification
+## Backend Stack (Current: Supabase/Next.js APIs; Aspirational: Broader Microservices/Engines)
 
-### Database & Storage
-- **PostgreSQL**: Primary relational database
-- **Prisma**: ORM for database access and migrations
-- **Redis**: In-memory data store for caching and session management
-- **S3-compatible storage**: For document and image storage
+### Core Backend Platform (Current)
+- **Supabase (PostgreSQL):** Primary managed backend providing PostgreSQL database, auto-generated REST/GraphQL APIs, authentication, and storage.
+- **Next.js API Routes (Current):** Used for custom server-side logic, e.g., `/api/advisor` for Tool A, which proxies to OpenAI.
 
-### Authentication & Security
-- **JWT**: Token-based authentication
-- **bcrypt**: Password hashing
-- **helmet**: Security middleware for Express
-- **rate-limiter-flexible**: API rate limiting
-- **CORS**: Cross-Origin Resource Sharing configuration
+### AI Tools - Specific Technologies & Prototypes
 
-### Clinical Decision Support Engine
-- **Custom rule engine**: JavaScript-based clinical rule processing
-- **ML models**: For advanced predictive features (future phases)
-- **Health Level Seven (HL7) integration**: For healthcare system interoperability
+*   **Tool A (Advisor) - Current:**
+    *   Uses **Next.js API route (`/api/advisor`)**.
+    *   Integrates with **OpenAI API** (GPT-4.1, GPT-3.5).
+*   **Tool B (Diagnosis and Treatment Engine) - Aspirational:**
+    *   **Prototype:** `clinical_engine.py` (Python, Pydantic) explores core logic.
+    *   **Potential Future Stack:** Could involve evolving the Python prototype (FastAPI/Flask containerized service), or a TypeScript/Node.js rewrite. May incorporate **Machine Learning (ML) models** for advanced predictive features. May need **NLP libraries** for processing consultation transcripts.
+*   **Tool C (Medical Co-pilot) - Aspirational:**
+    *   Likely to require **real-time audio processing**, **Speech-to-Text services**, and fast AI models. **WebSockets** or similar for real-time communication.
+*   **Tool D (Complex Conditions Alerts) - Aspirational:**
+    *   Will process outputs from Tool B. May use **ML models** for pattern recognition.
+*   **Tool F (Clinical Trial Matching) - Aspirational:**
+    *   Will involve **web scraping/API integration** with clinical trial databases.
 
-## DevOps & Infrastructure
+### Aspirational Custom Backend (If Supabase/Next.js APIs are outgrown for AI Tools)
+- **Node.js with Express.js/NestJS (Aspirational):** For building custom microservices or a more extensive backend API layer if needed for Tools B, C, D, F.
+- **TypeScript (Aspirational):** For type safety in such a custom backend.
+- **Database (Aspirational, if not solely Supabase):** PostgreSQL (as with Supabase), potentially with Prisma as ORM if a Node.js backend is built.
+- **Caching (Aspirational):** Redis for in-memory caching for a custom backend.
+- **Storage (Aspirational, if not solely Supabase):** S3-compatible storage for large files/documents generated by AI tools.
 
-### Development Environment
-- **Docker**: Containerization for consistent development environments
-- **Docker Compose**: Multi-container Docker applications
-- **ESLint**: Code linting
-- **Prettier**: Code formatting
-- **Husky**: Git hooks for pre-commit validation
+### API & Communication (General/Aspirational)
+- **REST API**: Primary architecture for Supabase and custom Next.js routes. Would be used for any future custom backend services.
+- **GraphQL (Aspirational/Future):** Supabase offers it. Could be used for complex data requirements if beneficial.
+- **OpenAPI/Swagger (Aspirational):** For documenting any future custom backend APIs.
 
-### CI/CD
-- **GitHub Actions**: Automated testing and deployment pipelines
-- **Jest**: Test runner
-- **Playwright**: Browser automation for E2E testing
+## DevOps & Infrastructure (Current & Aspirational)
 
-### Deployment & Hosting
-- **AWS/Azure/GCP**: Cloud infrastructure provider
-- **Kubernetes**: Container orchestration (for production)
-- **Terraform**: Infrastructure as code
-- **Vercel/Netlify**: Frontend hosting and preview deployments
+### Development Environment (Current)
+- **pnpm**: Package manager.
+- **ESLint**: Code linting.
+- **Prettier**: Code formatting.
+- **Docker (Aspirational/If Needed):** For containerizing future AI services (e.g., a Python-based Tool B engine).
 
-### Monitoring & Logging
-- **Prometheus**: Metrics collection
-- **Grafana**: Metrics visualization
-- **Sentry**: Error tracking
-- **Winston/Pino**: Logging
-- **OpenTelemetry**: Distributed tracing
+### CI/CD (Current & Aspirational)
+- **GitHub Actions (Current):** For automated testing and deployment pipelines (e.g., for Next.js frontend).
+
+### Deployment & Hosting (Current & Aspirational)
+- **Vercel/Netlify (Current):** For Next.js frontend hosting and preview deployments.
+- **Supabase (Current):** Hosts the PostgreSQL database and backend services.
+- **Cloud Provider (AWS/Azure/GCP) with Kubernetes/Serverless (Aspirational):** For deploying containerized AI microservices or complex backend components if developed in the future.
+- **Terraform (Aspirational):** Infrastructure as Code if managing complex cloud infrastructure.
+
+### Monitoring & Logging (Current & Aspirational)
+- **Vercel Analytics/Supabase Console (Current):** For basic monitoring of frontend and Supabase backend.
+- **Sentry (Aspirational):** For more detailed error tracking.
+- **Prometheus/Grafana, OpenTelemetry, Winston/Pino (Aspirational):** For comprehensive monitoring if custom backend services are built.
 
 ## Security & Compliance
+(General best practices apply, specific implementations depend on chosen services)
 
 ### Security Measures
-- **HTTPS**: Encrypted data transmission
-- **OWASP**: Security best practices implementation
-- **Regular security audits**: Scheduled vulnerability assessments
-- **Dependency scanning**: Automated checking for vulnerable dependencies
+- **HTTPS (Current):** Via Vercel/Supabase.
+- **OWASP Best Practices (Goal).**
+- **Dependency Scanning (Goal).**
 
 ### Healthcare Compliance
-- **HIPAA compliance**: For protected health information
-- **GDPR considerations**: For data privacy
-- **Audit logging**: For compliance requirements
-- **Data encryption**: For sensitive information
+- **HIPAA/GDPR Considerations (Goal):** Requires careful design for any system handling PHI, especially with AI tools. Data de-identification, secure data handling, audit logging are key.
+- **Audit logging (Current/Aspirational):** Supabase offers some logging. More detailed application-level audit trails for clinical decisions (especially from AI tools) would be needed.
 
 ## Third-Party Integrations
 
 ### Current Integrations
-- **Medical terminology databases**: For standardized clinical vocabularies
-- **Drug interaction databases**: For medication safety checks
-- **Medical evidence databases**: For clinical recommendation sources
+- **OpenAI API (Current):** For Tool A (Advisor).
 
-### Planned Integrations
-- **Electronic Health Record (EHR) systems**: Via FHIR or HL7
-- **Laboratory information systems**: For clinical test results
-- **Medical imaging systems**: For diagnostic imaging access
-- **Pharmacy systems**: For prescription fulfillment
+### Planned/Aspirational Integrations (especially for Tools B, F and data enrichment)
+- **Medical terminology databases** (SNOMED, ICD-10, LOINC).
+- **Drug interaction databases** (for Tool B).
+- **Medical evidence databases / Clinical guidelines** (for Tool B).
+- **Clinical trial registries** (e.g., ClinicalTrials.gov for Tool F).
+- **Electronic Health Record (EHR) systems** (via FHIR or HL7 - major future goal).
 
-## Development Tooling
+## Development Tooling (Current)
 
 ### Code Quality & Collaboration
-- **Git**: Version control
-- **GitHub/GitLab**: Repository hosting and collaboration
-- **Pull Request workflows**: Code review process
-- **Conventional Commits**: Standardized commit messages
+- **Git & GitHub**: Version control and repository hosting.
+- **Pull Request workflows**: Code review process.
+- **Conventional Commits**: Standardized commit messages.
 
 ### Documentation
-- **Storybook**: Component documentation
-- **Docusaurus/VitePress**: Technical documentation site
-- **Markdown**: Documentation format
-- **JSDoc/TSDoc**: Code documentation
+- **Markdown**: For `/docs` and other documentation files.
+- **Storybook (Current):** For UI component documentation.
+- **JSDoc/TSDoc (As needed):** For code documentation.
 
 ### Project Management
 - **Jira/Linear**: Issue tracking and project management

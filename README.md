@@ -39,7 +39,7 @@ The long-term vision for Foresight CDSS includes:
 *   **Real-time Clinical Co-pilot:** Context-aware suggestions during consultations.
 *   **Advanced Complex Case Alerting:** Passive scanning of clinical data (including transcripts) to automatically identify and generate alerts for potential complex conditions and clinical trial eligibility.
 *   **Documentation Automation:** Generation of prior authorization requests and specialist referral letters.
-*   **Clinical Chatbot:** AI-powered assistant for general medical questions (potentially integrated or expanded from the current Advisor).
+
 
 ## Getting Started
 

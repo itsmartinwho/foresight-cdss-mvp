@@ -1,21 +1,25 @@
-# Backend Structure Document for Foresight CDSS MVP
+# Backend Structure Document for Foresight CDSS MVP (Aspirational)
 
 ## Overview
-This document outlines the backend architecture for the Foresight Clinical Decision Support System (CDSS) MVP. The backend serves as the foundation for data processing, clinical logic implementation, and API services that support the frontend application.
+This document outlines a potential backend architecture for the Foresight Clinical Decision Support System (CDSS) MVP, based on Node.js/Express.
 
-## Current MVP Status (April 2024)
+**Important: This document describes an aspirational or previously considered architecture. The *current, implemented* backend architecture uses Supabase (PostgreSQL) and Next.js API Routes (e.g., for Tool A - Advisor). For the authoritative description of the current backend and AI tools, please refer to [../docs/architecture.md#backend-architecture-and-data-layer](../docs/architecture.md#backend-architecture-and-data-layer) and other relevant sections in `docs/architecture.md`.**
 
-The codebase **does not yet contain the `/backend` directory** or any Node.js/Express implementation described below. For the Minimal Viable Product we rely on:
+The Node.js/Express architecture detailed here could be a consideration for future development, particularly if the demands of advanced AI tools (like the envisioned Tools B, C, D, F) require a more custom backend solution beyond the current Next.js/Supabase stack.
 
-1. A **Python 3.9+ ClinicalEngine** (`clinical_engine.py`) that can be run as a standalone process for CDS logic.
-2. A **Next.js 15 / React 19 front-end** that mocks backend behaviour via `src/lib/*Service.ts` files.
+## Current MVP Status (Reality)
 
-The sections that follow remain the *target* architecture for the full product. They are kept for planning purposes and will be incrementally implemented. When reading, keep in mind that they are **aspirational, not currently in the repository**.
+As detailed in `docs/architecture.md`:
+*   The current system uses a **Supabase (PostgreSQL)** backend and **Next.js API Routes**.
+*   **Tool A (Advisor)** is the primary live AI feature, using the `/api/advisor` Next.js route.
+*   The Python script **`clinical_engine.py`** is an early-stage, standalone prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)** and is not integrated into the live backend.
+*   This document's Node.js/Express content is **aspirational** and not currently in the repository.
 
-## Architecture
-The Foresight CDSS backend follows a modular, service-oriented architecture organized around key clinical domains:
+## Architecture (Aspirational Node.js/Express Backend)
 
-### Core Components
+If a Node.js/Express backend were to be developed (e.g., for future advanced AI tools), it might follow a modular, service-oriented architecture organized around key clinical domains:
+
+### Core Components (Aspirational for a Node.js/Express context)
 
 #### API Layer
 - **REST API**: Primary interface for frontend communication

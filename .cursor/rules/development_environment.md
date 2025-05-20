@@ -1,6 +1,8 @@
 # Development Environment Setup
 
-This repository is a **polyglot** codebase consisting of a **Next.js 15 / React 19** front-end (TypeScript) and a standalone **Python 3.9+** Clinical Decision Support Engine (`clinical_engine.py`). The preferred package manager for the JavaScript workspace is **pnpm**.
+This repository is a **polyglot** codebase consisting of a **Next.js 15 / React 19** front-end (TypeScript) and a standalone **Python 3.9+** script, `clinical_engine.py`. The Next.js application provides the user interface and core application logic, including an AI-powered **Advisor (Tool A)**. The `clinical_engine.py` script is a separate, non-integrated utility that serves as an early-stage prototype for a future **Diagnosis and Treatment Engine (Tool B)**. The preferred package manager for the JavaScript workspace is **pnpm**.
+
+For details on the overall system architecture, including the Next.js frontend, Supabase backend, data layer, and descriptions of current and aspirational AI tools (Tools A, B, C, D, F), please refer to **[../../docs/architecture.md](../../docs/architecture.md)**.
 
 ---
 
@@ -28,7 +30,7 @@ cd foresight-cdss-mvp
 pnpm install
 ```
 
-The project uses the **latest App Router** (`src/app`) and is fully typed. ESLint/Prettier configs are inherited from `next lint` defaults.
+The project uses the **Next.js App Router** (`src/app`) and is fully typed. ESLint/Prettier configs are inherited from `next lint` defaults. For detailed frontend architecture, see [../../docs/architecture.md](../../docs/architecture.md).
 
 ---
 
@@ -38,28 +40,27 @@ The project uses the **latest App Router** (`src/app`) and is fully typed. ESLin
 pnpm run dev
 ```
 
-This boots Next.js on `http://localhost:3000` with **hot-reload**. The counter, patient list, consultation, and diagnostic advisor pages are available under their respective routes.
+This boots Next.js on `http://localhost:3000` with **hot-reload**. The main application views are served based on the routes defined in `src/app/`. Refer to `src/components/ForesightApp.tsx` and `docs/architecture.md` for routing and view details.
 
 ---
 
-## Python Component
+## Python Component (`clinical_engine.py` - Prototype for Tool B)
 
-Refer to `.cursor/rules/python.md` for a deep dive, but the TL;DR is:
+The `clinical_engine.py` script is a standalone Python utility, an early prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)**. It is **not** the backend for the Next.js application and is not currently integrated.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install pydantic>=1.10
-python clinical_engine.py  # run your own tests
-```
+For information on running and using this script independently for its prototype development, refer to [./python.md](./python.md).
 
-Currently the React app **mocks** CDSS behaviour in `src/lib/clinicalEngineService.ts`. No cross-language bridge exists yet.
+The Next.js application's backend is built on **Supabase (PostgreSQL)** and custom Next.js API routes (e.g., for the AI Advisor, Tool A). See [../../docs/architecture.md#backend-architecture-and-data-layer](../../docs/architecture.md#backend-architecture-and-data-layer) for details.
 
 ---
 
 ## Environment Variables
 
-The front-end doesn't need runtime env-vars for the MVP. If you add any, create a `.env.local` (ignored by git). The Python engine respects several vars (timeouts, etc.) – see its doc.
+The Next.js front-end currently does not require specific runtime environment variables for its core MVP functionality. If you add any, create a `.env.local` (ignored by git).
+
+The standalone Python engine (`clinical_engine.py`) respects several environment variables related to its operation (timeouts, etc.) – see its dedicated documentation in [./python.md](./python.md).
+
+For Supabase configuration (e.g., URL, anon key), these are typically managed within the Next.js application where the Supabase client is initialized (see `src/lib/supabaseClient.ts`).
 
 ---
 

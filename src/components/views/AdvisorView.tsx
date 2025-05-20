@@ -183,7 +183,7 @@ export default function AdvisorView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: messages.filter(m => m.role !== 'system').concat([newUserMessage]), // Send current messages + new user message
-          model: thinkMode ? "gpt-3.5-turbo" : "gpt-4.1",
+          model: thinkMode ? "o3-mini" : "gpt-4.1",
         }),
       });
 

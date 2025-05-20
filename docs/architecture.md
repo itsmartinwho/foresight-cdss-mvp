@@ -211,6 +211,11 @@ These development dependencies do not impact the size of the production client b
 *   **Locale Stripping:** Explore options to remove unused locales from `date-fns` via webpack or Next.js configuration.
 *   **Cloudflare Worker Evaluation:** Continue to evaluate if the full Cloudflare Worker build/deployment model is essential for the project's long-term goals or if simpler deployment targets suffice.
 
+## Advisor Tab Model Selection
+
+- The Advisor tab defaults to the `gpt-4.1` model for general queries.
+- When the user enables **Think** mode, the model switches to `o3-mini` for more advanced reasoning tasks.
+
 ---
 
 > **Cross-reference:**

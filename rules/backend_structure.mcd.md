@@ -1,15 +1,21 @@
-# Backend Structure for Foresight CDSS MVP
+# Backend Structure for Foresight CDSS MVP (Aspirational Target Architecture)
 
-## Current MVP Status (April 2024)
+## Current Implemented Backend Architecture (Source of Truth)
 
-The repository **does not yet include** the `/backend` folder or any of the Node/Express code described below. At present the system consists of:
+**The definitive guide to the *current* backend architecture, which uses Supabase (PostgreSQL) and Next.js API Routes (e.g., for Tool A - Advisor), can be found in [../docs/architecture.md#backend-architecture-and-data-layer](../docs/architecture.md#backend-architecture-and-data-layer).**
 
-1. A **Next.js 15 / React 19** front-end (fully in `src/`)
-2. A standalone **Python 3.9+ ClinicalEngine** (`clinical_engine.py`) providing core CDS logic (run manually)
+The information below describes an **aspirational target architecture** based on Node.js/Express and Prisma. This architecture could be considered in the future, especially if the backend needs for advanced AI tools (like the envisioned Tools B, C, D, F) outgrow the capabilities of the current Next.js API routes and Supabase setup. It **does not represent the current state** of the project's backend.
 
-All directory listings, examples and schemas that follow are therefore **aspirational** and remain on the roadmap. They are documented here for reference while backend work is underway.
+At present, the system consists of:
 
-## Directory Structure Overview
+1.  A **Next.js 15 / React 19** front-end (fully in `src/`).
+2.  A **Supabase (PostgreSQL)** backend providing the database and auto-generated APIs.
+3.  Custom Next.js API routes (e.g., `/api/advisor` for Tool A).
+4.  The standalone **Python 3.9+ `clinical_engine.py`** script, which is an early-stage prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)** and is **not** currently integrated.
+
+All directory listings, code examples, and schemas that follow in this document are therefore **aspirational** for a potential future Node.js/Express backend. They are documented here for reference and planning purposes for that scenario.
+
+## Directory Structure Overview (Aspirational Node.js/Express Backend)
 
 ```
 /backend

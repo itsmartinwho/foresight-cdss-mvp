@@ -1,298 +1,165 @@
 # Implementation Plan for Foresight CDSS MVP
 
 ## Project Overview
-The Foresight Clinical Decision Support System (CDSS) MVP will provide healthcare professionals with evidence-based recommendations for patient care. This implementation plan outlines the phased approach to building the MVP, including timeline, resource allocation, and key milestones.
+The Foresight Clinical Decision Support System (CDSS) MVP aims to provide healthcare professionals with AI-powered tools and evidence-based recommendations for patient care. This implementation plan outlines a phased approach, resource allocation, and key milestones, distinguishing between currently implemented features and aspirational goals.
 
-### Current MVP Reality
+### Current MVP Reality & Architecture
 
-The **frontend** (Next.js) and **Python ClinicalEngine** have been implemented, but **no dedicated backend API** or database layer exists yet. Phases that reference Express, Prisma or PostgreSQL remain future work. Any checklist items marked as incomplete are aspirational.
+**For the definitive guide to the current system architecture, AI tools, and data layer, please refer to [../docs/architecture.md](../docs/architecture.md).**
 
-## Implementation Phases
+The current application includes:
+*   A **Next.js (App Router) frontend**.
+*   A **Supabase (PostgreSQL) backend**.
+*   **Tool A (Advisor):** An AI-powered chatbot for general medical questions, accessible via the "Advisor" tab and powered by OpenAI through the `/api/advisor` route.
+*   **Placeholder UI elements** for some features of the aspirational **Tool B** (Diagnosis/Treatment: e.g., diagnosis/treatment fields, prior auth/referral forms), **Tool D** (Complex Alerts: alert displays), and **Tool F** (Clinical Trials: trial list displays). These currently show mock data or are empty.
 
-### Phase 1: Project Setup and Foundation (Weeks 1-2)
+The standalone **Python script `clinical_engine.py`** is an early-stage prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)** and is **not integrated** into the current application.
 
-#### Week 1: Environment Setup
-- **Day 1-2: Project Initialization**
-  - [ ] Create project repository
-  - [ ] Set up development environments
-  - [ ] Configure CI/CD pipeline
-  - [ ] Establish code quality tools (ESLint, Prettier)
-  - [ ] Set up project management tools
+Phases or items in the plan below that reference a Node.js/Express backend, Prisma (in that context), or AI tools beyond Tool A, represent **aspirational future work** or alternative designs. Checklist items should be interpreted against the current Next.js/Supabase stack and the AI tool descriptions provided in `docs/architecture.md`.
 
-- **Day 3-5: Architecture Implementation**
-  - [ ] Initialize frontend codebase (Next.js)
-  - [ ] Initialize backend codebase (Node.js/Express)
-  - [ ] Set up database (PostgreSQL with Prisma)
-  - [ ] Implement basic project structure
-  - [ ] Create base components library
+## Implementation Phases (Partially Implemented, Largely Aspirational for Advanced AI)
 
-#### Week 2: Core Infrastructure
-- **Day 1-3: Authentication System**
-  - [ ] Implement JWT authentication
-  - [ ] Create login/logout functionality
-  - [ ] Set up role-based access control
-  - [ ] Develop authentication middleware
+_The following phases describe a comprehensive build-out. Refer to `docs/architecture.md` for the current implementation state._
 
-- **Day 4-5: API Foundation**
-  - [ ] Design RESTful API structure
-  - [ ] Implement API error handling
-  - [ ] Set up request validation
-  - [ ] Create documentation framework
+### Phase 1: Project Setup and Foundation - Complete
+(Covered initial Next.js, Supabase setup, basic frontend components, and Tool A groundwork)
 
-### Phase 2: Patient Management Module (Weeks 3-4)
+### Phase 2: Patient Management Module - Complete
+(Covered patient data model in Supabase, CRUD APIs via Supabase, and UI for patient lists/details as per `docs/architecture.md`)
 
-#### Week 3: Patient Data Model & Backend
-- **Day 1-2: Data Modeling**
-  - [ ] Define patient data schema
-  - [ ] Create database migrations
-  - [ ] Implement data validation
+### Phase 3: Consultation Module - Partially Implemented
+(Basic consultation data (`visits` table in Supabase) and UI for history viewing are implemented. Forms for new consultation data entry may exist.)
 
-- **Day 3-5: Patient API**
-  - [ ] Develop patient CRUD endpoints
-  - [ ] Implement search and filtering
-  - [ ] Create pagination system
-  - [ ] Add data sanitization
+_Further development for comprehensive consultation management (detailed forms, multi-step flows) is aspirational and would be a prerequisite for the full vision of Tool B._
 
-#### Week 4: Patient UI Implementation
-- **Day 1-3: Patient List Views**
-  - [ ] Create patient listing page
-  - [ ] Implement search and filter UI
-  - [ ] Develop pagination controls
-  - [ ] Add sorting functionality
+### Phase 4: Clinical Decision Support AI Tools (Current: Tool A; Future: Tools B, C, D, F)
 
-- **Day 4-5: Patient Detail Views**
-  - [ ] Build patient profile page
-  - [ ] Implement edit/update functionality
-  - [ ] Create patient creation flow
-  - [ ] Add validation and error handling
+_This phase focuses on the AI-powered tools. **Tool A is the only currently operational AI tool.**_
 
-### Phase 3: Consultation Module (Weeks 5-6)
+#### Weeks 7-9 (Illustrative for initial AI dev beyond current Tool A - Aspirational Timeline)
 
-#### Week 5: Consultation Data & Backend
-- **Day 1-2: Consultation Modeling**
-  - [ ] Define consultation schema
-  - [ ] Create database relationships
-  - [ ] Implement validation rules
+*   **Tool A (Advisor) - Current & Ongoing Enhancements:**
+    *   [X] Basic AI Chatbot implemented (`/api/advisor` with OpenAI - see `docs/architecture.md`).
+    *   [ ] **Aspirational:** Enhance Tool A with patient context awareness (pass patient data to OpenAI).
+    *   [ ] **Aspirational:** Improve reliability of UI features (model switching, paper search, file uploads, voice mode).
 
-- **Day 3-5: Consultation API**
-  - [ ] Develop consultation CRUD endpoints
-  - [ ] Create consultation history API
-  - [ ] Implement filtering and search
-  - [ ] Add consultation metadata capabilities
+*   **Tool B (Diagnosis and Treatment Engine) - Aspirational (Prototype: `clinical_engine.py`):**
+    *   [ ] **Aspirational:** Develop core reasoning engine (based on `clinical_engine.py` concepts or new implementation).
+        *   Inputs: Patient data, consultation transcripts.
+        *   Process: Diagnostic workstreams, synthesis.
+        *   Outputs: Diagnosis, treatment plan.
+    *   [ ] **Aspirational:** Integrate Tool B output with UI (populate existing placeholder fields for diagnosis, treatment).
+    *   [ ] **Aspirational:** Develop generation of related documents (referral forms, prior authorization forms) from Tool B's output (populate existing placeholder UI).
+    *   [ ] **Aspirational (Further Future):** Add internet parsing for novel clinical research.
 
-#### Week 6: Consultation UI
-- **Day 1-3: Consultation Creation**
-  - [ ] Build new consultation form
-  - [ ] Implement multi-step consultation flow
-  - [ ] Create clinical data entry components
-  - [ ] Add validation and guidance
+*   **Tool C (Medical Co-pilot) - Aspirational:**
+    *   [ ] **Aspirational:** Design and develop real-time consultation monitoring for discrete nudges.
+    *   [ ] **Aspirational:** Implement high-confidence alerting mechanism.
 
-- **Day 4-5: Consultation Review**
-  - [ ] Develop consultation review interface
-  - [ ] Create consultation history view
-  - [ ] Implement consultation summary
-  - [ ] Add printing/export functionality
+*   **Tool D (Complex Conditions Alerts) - Aspirational (Placeholder UI & Mock Data Exist):**
+    *   [ ] **Aspirational:** Develop engine to scan Tool B outputs for complex conditions.
+    *   [ ] **Aspirational:** Integrate with alert display UI (replacing current mock data from `patients.alerts`).
 
-### Phase 4: Clinical Decision Support (Weeks 7-9)
+*   **Tool F (Clinical Trial Matching) - Aspirational (Placeholder UI & Mock Data Exist):**
+    *   [ ] **Aspirational:** Develop engine to scan internet/databases for clinical trials based on patient diagnosis/profile.
+    *   [ ] **Aspirational:** Integrate with clinical trial display UI (replacing current mock data).
 
-#### Week 7: CDS Engine Backend
-- **Day 1-3: Rule Engine Foundation**
-  - [ ] Design rule engine architecture
-  - [ ] Implement basic rule processing
-  - [ ] Create evidence linking system
-  - [ ] Develop confidence scoring
+#### CDS API & Integration (Reflects Current Tool A and Aspirational Tools)
+*   [X] Recommendation endpoints for Tool A (`/api/advisor`) exist.
+*   [X] Context-aware analysis for Tool A (via OpenAI prompt engineering) is in place.
+*   [ ] **Aspirational:** Develop APIs for Tool B, C, D, F if they become backend services.
+*   [ ] **Aspirational:** Structured evidence retrieval/linking for Tool B.
+*   [ ] **Aspirational:** Systematic feedback collection for all AI tools.
+*   [ ] **Aspirational:** Robust storage for AI-generated recommendations/plans (e.g., from Tool B).
 
-- **Day 4-5: CDS API**
-  - [ ] Create recommendation endpoints
-  - [ ] Implement context-aware analysis
-  - [ ] Develop evidence retrieval API
-  - [ ] Add feedback collection system
+#### CDS UI Components (Reflects Current Tool A and Placeholders for B, D, F)
+*   [X] Recommendation display for Tool A (chat bubbles in `AdvisorView.tsx`).
+*   [X] Placeholder UI for Tool B outputs (diagnosis, treatment, referral, prior auth fields).
+*   [X] Placeholder UI for Tool D alerts (`AlertsScreenView.tsx`, `DashboardView.tsx`).
+*   [X] Placeholder UI for Tool F clinical trials (in `PatientWorkspaceView.tsx` or similar).
+*   [ ] **Aspirational:** Dedicated evidence viewer for Tool B.
+*   [ ] **Aspirational:** UI for Tool C (co-pilot nudges).
 
-#### Week 8: CDS Integration
-- **Day 1-3: CDS Service Integration**
-  - [ ] Connect CDS engine to consultation flow
-  - [ ] Implement real-time recommendations
-  - [ ] Create recommendation storage
-  - [ ] Add audit logging
+### Phase 5: Testing, Refinement, and Advanced Features (Ongoing & Aspirational)
 
-- **Day 4-5: CDS UI Components**
-  - [ ] Build recommendation display cards
-  - [ ] Create evidence viewer
-  - [ ] Implement confidence indicators
-  - [ ] Develop feedback collection UI
+#### Comprehensive Testing (Ongoing for Tool A & Base App; Aspirational for Future AI)
+*   [X] Unit/Integration testing for core components & Tool A API (Storybook, basic API tests).
+*   [X] E2E tests for key flows including Tool A (Playwright).
+*   [ ] **Aspirational:** Expanded test coverage for all future AI tools (B, C, D, F) as they are developed.
 
-#### Week 9: Advanced CDS Features
-- **Day 1-3: CDS Refinement**
-  - [ ] Enhance rule processing
-  - [ ] Implement clinical guideline integration
-  - [ ] Add reference linking
-  - [ ] Create explanation generation
+#### Performance Optimization (Ongoing)
+*   [X] Frontend optimization (rendering, bundle size - ongoing).
+*   [X] Backend optimization (Supabase queries, `/api/advisor` response times - ongoing).
+*   [ ] **Aspirational:** Performance optimization for computationally intensive AI tools (B, C, D, F).
 
-- **Day 4-5: CDS Visualization**
-  - [ ] Develop risk visualization components
-  - [ ] Create treatment comparison views
-  - [ ] Implement outcome prediction displays
-  - [ ] Add trend visualization
+#### Final Refinement & Documentation (Ongoing)
+*   [X] User/Technical Documentation (This suite of docs, `docs/architecture.md` is key).
+*   [ ] **Aspirational:** Address usability issues specific to new AI tools as they are developed.
 
-### Phase 5: Testing and Refinement (Weeks 10-12)
+## Resource Allocation (Aspirational - Adjusted for AI Focus)
 
-#### Week 10: Comprehensive Testing
-- **Day 1-2: Unit and Integration Testing**
-  - [ ] Complete test coverage for core components
-  - [ ] Test API endpoints
-  - [ ] Validate data flows
-  - [ ] Verify authentication/authorization
-
-- **Day 3-5: End-to-End Testing**
-  - [ ] Create E2E test scenarios
-  - [ ] Test complete user journeys
-  - [ ] Validate cross-browser compatibility
-  - [ ] Test responsive design
-
-#### Week 11: Performance Optimization
-- **Day 1-2: Frontend Optimization**
-  - [ ] Optimize component rendering
-  - [ ] Implement lazy loading
-  - [ ] Improve bundle size
-  - [ ] Enhance response times
-
-- **Day 3-5: Backend Optimization**
-  - [ ] Optimize database queries
-  - [ ] Implement caching
-  - [ ] Enhance API response times
-  - [ ] Add monitoring and profiling
-
-#### Week 12: Final Refinement
-- **Day 1-3: User Feedback Implementation**
-  - [ ] Address usability issues
-  - [ ] Refine UI/UX based on feedback
-  - [ ] Improve error messaging
-  - [ ] Enhance accessibility
-
-- **Day 4-5: Documentation and Deployment**
-  - [ ] Complete user documentation
-  - [ ] Finalize API documentation
-  - [ ] Prepare deployment checklist
-  - [ ] Create release plan
-
-## Resource Allocation
+_The following is a general guideline, actual needs will depend on the complexity and implementation choices for AI tools B, C, D, F._
 
 ### Development Team
-- **Frontend Developer (1.0 FTE)**: UI implementation, component development, state management
-- **Backend Developer (1.0 FTE)**: API development, database management, business logic
-- **Full-Stack Developer (0.5 FTE)**: Cross-functional support, integration assistance
-- **UX Designer (0.5 FTE)**: Interface design, usability testing, UI refinement
+*   **Frontend Developer (1.0 FTE)**
+*   **Backend/AI Developer (1.0 - 2.0 FTE)**: Focus on developing Tools B, C, D, F, potentially with Python/ML skills if `clinical_engine.py` is evolved, or full-stack TS if re-implemented.
+*   **Full-Stack Developer (0.5 FTE)**
+*   **UX Designer (0.5 FTE)**: Crucial for designing interactions with new AI tools.
 
 ### Additional Resources
-- **Clinical Subject Matter Expert (0.25 FTE)**: Clinical validation, requirements verification
-- **QA Engineer (0.5 FTE)**: Testing, quality assurance, bug tracking
-- **DevOps Engineer (0.25 FTE)**: CI/CD pipeline, deployment, infrastructure
+*   **Clinical Subject Matter Expert (0.5 FTE)**: Essential for validating all AI tools.
+*   **QA Engineer (0.5 FTE)**: Focus on testing AI tool outputs and complex workflows.
+*   **DevOps Engineer (0.25 FTE)**
 
-## Key Milestones
+## Key Milestones (Revised for AI Tooling Roadmap)
 
-1. **Project Foundation Complete** (End of Week 2)
-   - Development environment set up
-   - Core architecture implemented
-   - Authentication system functional
+1.  **MVP with Tool A (Advisor) Established:** (Largely Achieved)
+    *   Core platform (Next.js/Supabase) functional.
+    *   Tool A (Advisor) operational for general medical questions.
+    *   Placeholder UI for future AI tools (B, D, F) in place.
 
-2. **Patient Management Module Complete** (End of Week 4)
-   - Patient CRUD functionality working
-   - Search and filtering operational
-   - Patient UI fully implemented
+2.  **Tool B (Diagnosis/Treatment Engine) - Initial Version:** (Aspirational)
+    *   Core reasoning engine developed (e.g., evolving `clinical_engine.py` or new build).
+    *   Integration with patient data and consultation transcripts.
+    *   Output of diagnosis/treatment plans to existing placeholder UI.
+    *   Generation of referral/prior-auth documents (initial version).
 
-3. **Consultation Module Complete** (End of Week 6)
-   - Consultation creation and review working
-   - Clinical data entry functional
-   - Consultation history viewable
+3.  **Tool D & F (Alerts & Trials) - Initial Integration:** (Aspirational)
+    *   Tool D generates basic complex condition alerts from Tool B's output, replacing mock data.
+    *   Tool F provides initial clinical trial matching, replacing mock data.
 
-4. **Clinical Decision Support Basic Functionality** (End of Week 8)
-   - Rule engine processing recommendations
-   - Recommendations displaying in UI
-   - Evidence linking functional
+4.  **Tool C (Medical Co-pilot) - Proof of Concept:** (Aspirational)
+    *   Basic real-time nudges demonstrated in a simulated consultation environment.
 
-5. **MVP Feature Complete** (End of Week 10)
-   - All core features implemented
-   - End-to-end workflows functional
-   - Integration testing complete
+5.  **Advanced AI Capabilities & Refinement:** (Further Aspirational)
+    *   Tool B incorporates internet-based research.
+    *   Tools C, D, F achieve higher sophistication and broader coverage.
+    *   Comprehensive testing and user feedback cycles completed for all AI tools.
 
-6. **MVP Ready for Deployment** (End of Week 12)
-   - All critical bugs resolved
-   - Performance optimized
-   - Documentation complete
+## Risk Management (Adjusted for AI Focus)
 
-## Risk Management
+*   **AI Model Accuracy & Reliability (Tools A, B, C, D, F):** High Impact. Mitigation: Rigorous testing, clinical validation, clear communication of confidence levels, human oversight (physician amends output).
+*   **Data Privacy & Security for AI Training/Operation:** High Impact. Mitigation: Adherence to HIPAA/GDPR, de-identification where possible, secure infrastructure.
+*   **Complexity of AI Development (esp. Tools B, C):** High Impact. Mitigation: Phased approach, clear requirements, expert AI/ML resources if needed.
+*   **Integration of Multiple AI Systems:** Medium Impact. Mitigation: Modular design, well-defined APIs/interfaces between tools.
+*   (Other risks like clinical validation delays, scope creep, usability remain relevant).
 
-### Identified Risks
+## Quality Assurance (Adjusted for AI Focus)
 
-1. **Clinical Validation Delays**
-   - **Probability**: Medium
-   - **Impact**: High
-   - **Mitigation**: Early and continuous engagement with clinical experts; incremental validation approach
-
-2. **Technical Integration Challenges**
-   - **Probability**: Medium
-   - **Impact**: Medium
-   - **Mitigation**: Comprehensive API design; modular architecture; interface contracts
-
-3. **Performance Issues with Complex Rules**
-   - **Probability**: Medium
-   - **Impact**: High
-   - **Mitigation**: Performance testing early; optimization strategy; caching implementation
-
-4. **Scope Creep**
-   - **Probability**: High
-   - **Impact**: High
-   - **Mitigation**: Strict backlog prioritization; clear MVP definition; change control process
-
-5. **Usability Challenges**
-   - **Probability**: Medium
-   - **Impact**: High
-   - **Mitigation**: Early usability testing; iterative design; clinical workflow alignment
-
-## Quality Assurance
-
-### Testing Strategy
-- **Unit Testing**: All components and services tested in isolation
-- **Integration Testing**: API endpoints and service interactions
-- **End-to-End Testing**: Complete user workflows
-- **Performance Testing**: Response times and system under load
-- **Usability Testing**: Clinical user feedback sessions
-
-### Quality Metrics
-- Code coverage > 80%
-- UI response time < 300ms
-- API response time < 500ms
-- Zero critical or high security vulnerabilities
-- WCAG 2.1 AA accessibility compliance
+*   **Testing Strategy:** Must include validation of AI outputs against clinical expertise, testing for bias, and robustness to varied inputs for all AI tools.
+*   **Quality Metrics:** Metrics specific to AI performance (e.g., precision/recall for Tool D, relevance for Tool F, clinical appropriateness for Tool B).
 
 ## Deployment Strategy
+(Remains largely the same, but future AI tools might require dedicated services/APIs that need their own deployment considerations if not part of the Next.js monolith).
 
-### Environments
-1. **Development**: Continuous integration and feature development
-2. **Testing**: QA and user acceptance testing
-3. **Staging**: Pre-production validation
-4. **Production**: Live system
-
-### Deployment Process
-1. Automated build and test on commit
-2. Manual QA approval for staging
-3. Stakeholder approval for production
-4. Blue/green deployment to minimize downtime
-5. Automated smoke tests post-deployment
-6. Monitoring and alerting activation
-
-## Post-MVP Planning
+## Post-MVP Planning (Focused on AI Tool Expansion)
 
 ### Immediate Enhancements
-- Mobile responsiveness improvements
-- Additional clinical domains
-- Integration with external medical knowledge bases
-- Advanced analytics dashboard
-- Batch patient processing
+*   Refine Tool A (context-awareness, UI bug fixes).
+*   Develop foundational version of Tool B (Diagnosis/Treatment Engine).
 
 ### Long-term Roadmap
-- Machine learning enhancements
-- EHR integration capabilities
-- Collaborative care features
-- Patient portal integration
-- Real-time monitoring features
+*   Full development and integration of Tools C, D, F.
+*   Advanced features for Tool B (internet research parsing).
+*   Continuous improvement of all AI models based on feedback and new data.
+*   EHR integration to feed data into and receive outputs from these AI tools.

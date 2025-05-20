@@ -48,4 +48,37 @@ test.describe('Foresight CDSS E2E Tests', () => {
     // As a generic check, let's assume the header logo is still visible
     await expect(page.getByAltText('Foresight Logo')).toBeVisible();
   });
+
+  test('Advisor tab uses correct model for default and Think mode', async ({ page }) => {
+    await page.goto('/advisor');
+
+    // Wait for AdvisorView to mount
+    await page.waitForSelector('textarea');
+
+    // Intercept the network request to /api/advisor
+    let modelUsed = '';
+    await page.route('**/api/advisor', async (route, request) => {
+      const postData = request.postDataJSON();
+      modelUsed = postData.model;
+      // Respond with a minimal valid response stream
+      route.fulfill({
+        status: 200,
+        contentType: 'text/plain; charset=utf-8',
+        body: 'Test response',
+      });
+    });
+
+    // Type a message and send (default mode)
+    await page.fill('textarea', 'Test message');
+    await page.click('button:has(svg[data-lucide="Send"])');
+    await page.waitForTimeout(500); // Wait for request
+    expect(modelUsed).toBe('gpt-4.1');
+
+    // Enable Think mode
+    await page.click('button:has(svg[data-lucide="Sparkles"])');
+    await page.fill('textarea', 'Test message 2');
+    await page.click('button:has(svg[data-lucide="Send"])');
+    await page.waitForTimeout(500); // Wait for request
+    expect(modelUsed).toBe('o3-mini');
+  });
 }); 
