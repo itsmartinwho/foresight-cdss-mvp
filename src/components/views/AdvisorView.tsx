@@ -65,30 +65,38 @@ export default function AdvisorView() {
 
   // Auto-scroll when messages change
   useEffect(() => {
-    const viewport = scrollRef.current;
-    if (!viewport) {
-      console.log("AdvisorView (Debug): scrollRef.current is null");
-      return;
-    }
-    // pridestaff-debug-log
-    console.log("AdvisorView (Debug): Auto-scroll check", {
-      scrollHeight: viewport.scrollHeight,
-      clientHeight: viewport.clientHeight,
-      scrollTop: viewport.scrollTop,
-      userHasScrolledUp,
-      messageCount: messages.length,
-      timestamp: new Date().toISOString(),
-    });
-    const lastMsg = messages[messages.length - 1];
-    if (!userHasScrolledUp || (lastMsg && lastMsg.role === "user")) {
-      // pridestaff-debug-log
-      console.log("AdvisorView (Debug): Attempting to scroll", {
-        targetScrollTop: viewport.scrollHeight,
-        behavior: "smooth",
+    const animationFrameId = requestAnimationFrame(() => {
+      const viewport = scrollRef.current;
+      if (!viewport) {
+        console.log("AdvisorView (Debug RAF): scrollRef.current is null");
+        return;
+      }
+
+      // pridestaff-debug-log (RAF)
+      console.log("AdvisorView (Debug RAF): Auto-scroll check", {
+        scrollHeight: viewport.scrollHeight,
+        clientHeight: viewport.clientHeight,
+        scrollTop: viewport.scrollTop,
+        userHasScrolledUp,
+        messageCount: messages.length,
         timestamp: new Date().toISOString(),
       });
-      viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-    }
+
+      const lastMsg = messages[messages.length - 1];
+      if (!userHasScrolledUp || (lastMsg && lastMsg.role === "user")) {
+        // pridestaff-debug-log (RAF)
+        console.log("AdvisorView (Debug RAF): Attempting to scroll", {
+          targetScrollTop: viewport.scrollHeight,
+          behavior: "smooth",
+          timestamp: new Date().toISOString(),
+        });
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [messages, userHasScrolledUp]);
 
   // Voice dictation setup
