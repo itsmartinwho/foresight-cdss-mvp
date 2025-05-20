@@ -24,7 +24,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   `src/hooks/`: Custom React hooks (if any).
 *   `src/lib/`: Utility functions, helper scripts, type definitions.
 *   `src/styles/`: Global stylesheets (e.g., `globals.css`).
-*   `public/`: Static assets, including mock data in `public/data/`.
+*   `public/`: Static assets.
 
 ## Component Architecture
 
@@ -32,7 +32,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 
 *   The root layout is responsible for rendering the main HTML structure, including `<body>`.
 *   It globally renders `GlassHeader` and `GlassSidebar` which are fixed UI elements.
-*   A main content area with appropriate padding (to account for the fixed header and sidebar) wraps the `children` prop (which represents the content of the current page/route).
+*   A main content area wraps the `children` prop. Specific layout details, scrolling behavior, and the use of `ContentSurface` are further detailed in the [Frontend Styling Guide](docs/frontend-styling-guide.md).
 
 ### 2. View Router (`src/components/ForesightApp.tsx`)
 
@@ -42,20 +42,13 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   Example: If pathname is `/`, render `<DashboardView />`.
     *   Example: If pathname is `/patients`, render `<PatientsListView />`.
     *   Example: If pathname is `/patients/[id]`, render `<PatientWorkspaceView />` (passing the patient ID).
-*   Global states (like `activePatient`, `selectedPatientTab`) and their associated handlers are managed within `ForesightApp.tsx`. It also centrally fetches `complexCaseAlerts` which are then passed down to relevant views like `DashboardView` and `AlertsScreenView` to ensure a consistent data source for alerts across the application.
+*   Global states (like `activePatient`, `selectedPatientTab`) and their associated handlers are managed within `ForesightApp.tsx`. It also centrally fetches and processes `complexCaseAlerts` (sourced from the `alerts` field of patient data in Supabase) which are then passed down to relevant views like `DashboardView` and `AlertsScreenView`. Future enhancements might involve on-the-fly alert generation (see `src/lib/alertService.ts` for initial concepts).
 
 ### 3. View Components (`src/components/views/`)
 
 *   These components represent the main content for different sections of the application.
-*   Examples:
-    *   `DashboardView.tsx`
-    *   `PatientsListView.tsx`
-    *   `PatientWorkspaceView.tsx` (itself now primarily a layout and state manager for tabs, importing its tab content from components within `src/components/patient-workspace-tabs/` such as `ConsultationTab.tsx`, `DiagnosisTab.tsx`, etc.)
-    *   `AlertsScreenView.tsx`
-    *   `AnalyticsScreenView.tsx`
-    *   `SettingsScreenView.tsx`
-    *   `AdvisorView.tsx` – chat interface powering the **Foresight Advisor** AI medical assistant accessed via `/advisor`.
-    *   The chat input/footer is rendered via a React portal (using `createPortal`) directly into `document.body` to ensure it is always anchored to the bottom of the viewport, regardless of any parent stacking context or transforms. The chat area itself uses a scrollable `<div className="flex-1 min-h-0 overflow-y-auto">` inside `ContentSurface`, matching the pattern used in other main views. This ensures the chat area scrolls independently of the page, and the input/footer remains fixed.
+    *   Examples: `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`, `AlertsScreenView.tsx`, `AnalyticsScreenView.tsx`, `SettingsScreenView.tsx`, `AdvisorView.tsx`.
+*   For detailed styling, layout, and scrolling patterns (e.g., usage of `ContentSurface`, chat input in `AdvisorView`), refer to the [Frontend Styling Guide](docs/frontend-styling-guide.md).
 *   View components are responsible for their specific UI and interactions. Data fetching is increasingly centralized or handled by dedicated services. For instance, `DashboardView` and `AlertsScreenView` now receive shared alert data as props from `ForesightApp.tsx`.
     *   The Advisor chat calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
 
@@ -73,13 +66,30 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   Page files (`page.tsx`) within these directories act as entry points. In this architecture, they primarily delegate the rendering logic to `src/components/ForesightApp.tsx`.
 *   `src/components/ForesightApp.tsx` then inspects the `usePathname()` to determine which *view component* (from `src/components/views/`) to display. This provides a centralized place to manage transitions between the main sections of the application while leveraging Next.js file-system routing for the initial serving.
 
-## UI Patterns & Conventions
+## UI Patterns, Conventions, and Styling
 
-*   **Typography:** (Details to be filled in if a specific typography scale is defined, e.g., from Tailwind config or global CSS).
-*   **Glassmorphism:** Key layout elements like the header and sidebar utilize a "glassmorphism" effect, typically achieved with CSS `backdrop-filter: blur()` and semi-transparent backgrounds. Specific classes for this (e.g., `bg-glass`) should be consistently applied.
+Detailed information on UI patterns, styling conventions (including glassmorphism, typography, responsiveness, and accessibility), component styling, and layout/scrolling patterns are documented in the [Frontend Styling Guide](docs/frontend-styling-guide.md).
+
+Key architectural aspects related to UI include:
 *   **State Management:** Primarily uses React's built-in state (`useState`, `useReducer`) and Context API for global or shared state. `ForesightApp.tsx` is a key location for managing app-level states that affect multiple views.
-*   **Responsiveness:** Components should be designed to adapt to various screen sizes, primarily using Tailwind CSS's responsive prefixes (sm, md, lg, xl).
-*   **Accessibility:** Standard accessibility practices (semantic HTML, ARIA attributes where necessary) should be followed.
+
+## Backend Architecture and Data Layer
+
+The application utilizes **Supabase** as its primary backend, which provides a managed **PostgreSQL** database instance and auto-generated APIs.
+
+### Data Source
+*   **Primary Database:** A PostgreSQL database hosted on Supabase.
+*   **Schema Management:** The database schema is defined in `scripts/schema.sql`. This script creates the necessary tables, columns, relationships, and helper functions/triggers. It should be applied to your Supabase project via its SQL editor to set up the database structure.
+*   **Key Tables:**
+    *   `patients`: Stores patient demographic data, alerts, primary diagnosis, and other patient-specific information. Each patient has a unique `patient_id` (original identifier) and an internal Supabase `id` (UUID).
+    *   `visits`: Contains information about patient admissions or consultations, including types, dates, reasons, and associated notes or treatments. Each visit is linked to a patient via `patient_supabase_id` and has an `admission_id`.
+    *   `transcripts`: Intended for storing detailed or versioned transcripts, linked to the `visits` table. (Currently, simpler transcript/note fields might exist directly in `visits`).
+*   **Data Interaction:** Data is primarily fetched from and manipulated in Supabase. The application uses `src/lib/supabaseClient.ts` to create a Supabase client and `src/lib/supabaseDataService.ts` (or direct client usage in server components/API routes) for querying the database.
+*   **No Local Mock Data Files:** The system does not rely on local flat files (like TSV or JSON in the `public/` directory) for its primary data source anymore. All patient and clinical data comes from the Supabase backend.
+
+### API Layer
+*   **Supabase Auto-generated APIs:** Supabase provides RESTful and GraphQL APIs for database tables by default, which can be used for data operations.
+*   **Custom API Routes:** The Next.js application also defines custom API routes under `src/app/api/` (e.g., `/api/advisor`) for specific backend logic, such as proxying requests to third-party services (like OpenAI) or performing more complex operations not directly mapped to a simple CRUD operation on a single table.
 
 ## Target State Considerations
 
@@ -102,4 +112,36 @@ This architecture aims to provide a solid foundation for developing these more c
    *  `AlertSidePanel` (open and closed states with sample alerts)
    *  `RenderDetailTable` (with sample data arrays)
 *  **Type Safety Improvements:** The `Patient` type now mandates `firstName` and `lastName`, and service methods use explicit payload interfaces (`PatientDataPayload`). Web Speech API events in `AdvisorView.tsx` are typed locally, reducing use of `any`.
-*  **Next Steps:** Ensure coverage of workspace tab components in Storybook, and expand E2E tests for additional views (Patients list, Patient Workspace, Alerts page) as the application grows. 
+*  **Next Steps:** Ensure coverage of workspace tab components in Storybook, and expand E2E tests for additional views (Patients list, Patient Workspace, Alerts page) as the application grows.
+
+## Build, Performance, and Deployment Considerations
+
+This section covers aspects related to the project's build process, performance optimizations, and deployment, particularly concerning dependency management and Cloudflare.
+
+### Dependency Management & `node_modules`
+
+The project utilizes `pnpm` for package management. The `node_modules` directory can be large (several hundred MB) due to development-time dependencies that include pre-compiled binaries. Key contributors include:
+*   `next` and its SWC compiler: Essential for the Next.js framework.
+*   `@cloudflare/workerd`: Required for previewing and building Cloudflare Worker bundles.
+*   Large libraries like `date-fns` (all locales) and `lucide-react` (all icons): Tree-shaking significantly reduces their size in the final client bundle.
+
+These development dependencies do not impact the size of the production client bundles, which are typically small.
+
+### Build Scripts & Cloudflare
+
+*   Standard `pnpm run build` (`next build`) is generally fast.
+*   Scripts involving Cloudflare, such as `pnpm run preview` or `pnpm run build:worker`, use `opennextjs-cloudflare`. These can be slower and produce larger outputs as they bundle the application for the Cloudflare Workers environment.
+
+### Performance & Optimization Tips
+
+1.  **Dependency Caching:**
+    *   **CI (GitHub Actions):** PNPM caching should be enabled (e.g., using `pnpm/action-setup` with `cache: true`).
+    *   **Local:** PNPM automatically caches packages globally (e.g., `~/Library/pnpm/store`). Use `pnpm store prune` to remove old versions.
+2.  **Selective Builds:** Avoid running full Cloudflare worker builds (`pnpm run preview`) during general development if not specifically testing worker functionality. Standard `pnpm dev` and `pnpm build` are usually sufficient.
+
+### Future Performance Enhancements (Potential)
+
+*   **Lazy Loading:** Investigate dynamic imports for heavy libraries like `recharts` to load them only on relevant pages.
+*   **Icon Optimization:** Consider migrating `lucide-react` to native imports if further optimization is needed.
+*   **Locale Stripping:** Explore options to remove unused locales from `date-fns` via webpack or Next.js configuration.
+*   **Cloudflare Worker Evaluation:** Continue to evaluate if the full Cloudflare Worker build/deployment model is essential for the project's long-term goals or if simpler deployment targets suffice. 

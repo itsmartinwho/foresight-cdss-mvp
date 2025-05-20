@@ -2,14 +2,17 @@
 
 ## Overview
 
-Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and a refactored frontend architecture. It uses a Supabase backend (PostgreSQL) to manage and serve patient data, simulating functionalities like patient dashboards, lists, and workspaces. The system is designed to eventually assist healthcare providers with diagnostic planning, treatment recommendations, and complex case identification for autoimmune and oncology conditions by integrating ambient voice transcription, clinical data analysis, AI diagnostic assistance, and automated documentation.
+Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and a first version of the AI features. It uses a Supabase backend (PostgreSQL) to manage and serve realistic mock patient data, simulating functionalities like patient dashboards, lists, and workspaces. The system is designed to eventually assist healthcare providers with diagnostic planning, treatment recommendations, and complex case identification such as in the autoimmune and oncology areas by integrating ambient voice transcription, clinical data analysis, AI diagnostic assistance, and automated documentation.
 
-**Note:** This is currently a prototype. While it connects to a real Supabase database instance for data, it does not yet perform live clinical analysis beyond what's available in the seeded dataset.
+**Note:** This is currently a prototype. It connects to a real Supabase database instance for data and features a basic AI medical advisor but does not yet perform live clinical analysis beyond what's available in the seeded dataset.
 
 ## Features (Current Prototype Highlights)
 
 *   **Supabase Integration:** Patient and admission data is managed in a PostgreSQL database hosted on Supabase.
 *   **Dynamic Data Loading:** The application fetches data from Supabase at runtime.
+*   **Foresight Advisor:** Dedicated `/advisor` tab offering an AI medical advisor chat (powered by GPT models via `/api/advisor`) with features like citations, follow-up questions, voice dictation for input, and voice playback for responses.
+*   **Live Voice Transcription:** Real-time voice transcription is available within the consultation workspace to capture notes.
+*   **Complex Case Alert Display:** The system displays pre-existing complex case alerts associated with patients (e.g., autoimmune, oncology) on the dashboard and alerts screen.
 *   **Modular UI Components:** Demonstrates a component-based architecture with reusable UI elements for:
     *   Dashboard Overview
     *   Patient List & Search
@@ -19,18 +22,24 @@ Foresight CDSS is a browser-based clinical decision support system prototype. Th
 *   **Glassmorphism UI:** Features a modern "glassmorphism" visual style for header and sidebar.
 *   **Consultation Duration:** Optional duration field for new consultations; automatically sets the scheduled end time based on the selected start time.
 *   **Responsive Layout:** Basic responsive design for different screen sizes.
+*   **Automated Note Generation:** Automatic SOAP note generation from ambient voice transcription during consultations.
+*   **EHR Integration:** Securely connect to Electronic Health Record systems.
+*   **Enhanced AI Diagnostic & Treatment Advisor:** More advanced symptom-based diagnostic plans, evidence-based results, and treatment recommendations, potentially incorporating deeper EHR data.
+*   **Real-time Clinical Co-pilot:** Context-aware suggestions during consultations.
+*   **Advanced Complex Case Alerting:** Passive scanning of clinical data (including transcripts) to automatically identify and generate alerts for potential complex conditions and clinical trial eligibility.
+*   **Documentation Automation:** Generation of prior authorization requests and specialist referral letters.
+*   **Clinical Chatbot:** AI-powered assistant for general medical questions (potentially integrated or expanded from the current Advisor).
 
 ## Target State Features (Vision)
 
 The long-term vision for Foresight CDSS includes:
-*   **Ambient Voice Transcription & Note Generation:** Real-time transcription and automatic SOAP note generation.
+*   **Automated Note Generation:** Automatic SOAP note generation from ambient voice transcription during consultations.
 *   **EHR Integration:** Securely connect to Electronic Health Record systems.
-*   **AI Diagnostic & Treatment Advisor:** Symptom-based diagnostic plans, evidence-based results, and treatment recommendations.
+*   **Enhanced AI Diagnostic & Treatment Advisor:** More advanced symptom-based diagnostic plans, evidence-based results, and treatment recommendations, potentially incorporating deeper EHR data.
 *   **Real-time Clinical Co-pilot:** Context-aware suggestions during consultations.
-*   **Complex Case Alerting:** Passive scanning for potential complex conditions (autoimmune, oncology) and clinical trial eligibility.
+*   **Advanced Complex Case Alerting:** Passive scanning of clinical data (including transcripts) to automatically identify and generate alerts for potential complex conditions and clinical trial eligibility.
 *   **Documentation Automation:** Generation of prior authorization requests and specialist referral letters.
-*   **Clinical Chatbot:** AI-powered assistant for general medical questions.
-*   **Foresight Advisor (NEW):** Dedicated `/advisor` tab offering an AI medical advisor chat powered by GPT-4.1 with citations, follow-up questions, voice dictation and playback, and optional recent-paper search.
+*   **Clinical Chatbot:** AI-powered assistant for general medical questions (potentially integrated or expanded from the current Advisor).
 
 ## Getting Started
 
@@ -59,11 +68,7 @@ The long-term vision for Foresight CDSS includes:
         NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
         ```
     *   Replace `your-project-ref` and `your-anon-key` with your actual Supabase credentials.
-    *   **Seed the database** with the mock dataset (originally from TSV files, now adapted for SQL). Run the migration script:
-        ```bash
-        pnpm migrate:data
-        ```
-        This script reads data (originally from `docs/archived-data/`) and populates your Supabase tables.
+    *   **Seed the database (Optional):** The `scripts/schema.sql` file sets up the necessary tables. If you wish to populate the database with initial data for testing, you will need to do so manually using Supabase's SQL editor or data import features. There is no automated seeding script included in the project.
 
 ### Running the Development Server
 To start the Next.js development server, ensure the `NEXT_PUBLIC_USE_SUPABASE` environment variable is set to `true` (this is the default behavior now for development and production).
@@ -127,9 +132,7 @@ The application now primarily uses data from a Supabase PostgreSQL database.
 *   **Linting/Formatting:** ESLint, Prettier.
 
 ### Data Model & Source
-The primary data source is a PostgreSQL database managed by **Supabase**. The schema includes tables for `patients`, `visits`, and `transcripts`.
-
-The original mock data, previously stored in TSV/TXT files, has been migrated to this Supabase instance. These original flat files (`Enriched_Patients.tsv`, `Enriched_Admissions.tsv`, etc.) are now archived in `docs/archived-data/` for historical reference. The migration script `scripts/migratePatients.ts` was used to populate the Supabase database from these files.
+The primary data source is a PostgreSQL database managed by **Supabase**. The schema includes tables for `patients`, `visits`, and `transcripts`, as defined in `scripts/schema.sql`.
 
 ## Support
 For questions regarding this prototype, please refer to the project's GitHub repository and issues.
@@ -137,9 +140,7 @@ For questions regarding this prototype, please refer to the project's GitHub rep
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [Build Optimisation](docs/BUILD_OPTIMIZATION.md)
 - [Plasma Background Effect](docs/PLASMA_EFFECT.md)
-- **Archived Data Files:** Original TSV/TXT data sources are located in `docs/archived-data/`.
 
 ## Database (Supabase) - Primary Data Source
 
@@ -154,10 +155,6 @@ This application uses a managed Postgres instance provided by Supabase as its pr
     NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
     ```
     Setting `NEXT_PUBLIC_USE_SUPABASE="true"` ensures the application uses Supabase. This is the default and recommended mode.
-4.  **Data Seeding:** Populate the database using the migration script:
-    ```bash
-    pnpm migrate:data
-    ```
-    This script will read the (now archived) TSV data and insert it into your Supabase tables.
+4.  **Data Seeding (Optional):** After applying the schema from `scripts/schema.sql`, the tables will be empty. If you need sample data, you can insert it manually using the Supabase interface or by running your own SQL scripts.
 
-The application is configured to use Supabase by default. The older mechanism of reading from local TSV files (controlled by setting `
+The application is configured to use Supabase by default.

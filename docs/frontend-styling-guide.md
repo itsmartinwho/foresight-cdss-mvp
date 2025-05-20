@@ -177,10 +177,15 @@ This combination of the `unified-search-input` class (for semantic grouping, tho
 - Only use `Card` for content that should be visually separated from the main background (e.g., modals, popovers, or secondary panels).
 
 ## Visual Consistency
-- The frosted glass effect is achieved with `bg-glass` and `backdrop-blur` classes.
+- The frosted glass effect is achieved with `bg-glass` and `backdrop-blur` classes. Key layout elements like the header and sidebar utilize this "glassmorphism" effect, typically achieved with CSS `backdrop-filter: blur()` and semi-transparent backgrounds. Specific classes for this (e.g., `bg-glass`) should be consistently applied.
 - Main content should always align with the padding and spacing provided by `ContentSurface`.
+
+## Typography
+- (Details to be filled in if a specific typography scale is defined, e.g., from Tailwind config or global CSS. Currently, `font-sans` (Inter) is the base, and `text-step--1` is used for smaller input-like text.)
 
 ## Accessibility & Responsiveness
 - Use semantic HTML for headings and sections.
 - Ensure scrollable containers have appropriate keyboard and screen reader support.
+- Standard accessibility practices (semantic HTML, ARIA attributes where necessary) should be followed.
+- Components should be designed to adapt to various screen sizes, primarily using Tailwind CSS's responsive prefixes (sm, md, lg, xl).
 - Use Tailwind's responsive classes for layout adjustments on different screen sizes. 
