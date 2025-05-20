@@ -141,7 +141,7 @@ export default function GlassSidebar() {
       <Separator className="my-4" />
       {!collapsed && (
         <QuickSearch
-          inputClassName="unified-search-input placeholder-[#F0F0F0]/[.75] text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+          inputClassName="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 text-step--1 h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
           portal
         />
       )}
