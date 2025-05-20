@@ -316,16 +316,20 @@ export default function AdvisorView() {
                       : msg.role === "assistant"
                       ? "max-w-full w-fit bg-white/90 text-gray-800"
                       : msg.role === "system"
-                      ? "w-fit bg-gray-200/15 text-gray-700 flex justify-center"
+                      ? "w-fit bg-gray-200/10 text-gray-700 flex justify-center items-center"
                       : "hidden",
                     "rounded-lg p-4 text-sm shadow-sm"
                   )}
                 >
                   {msg.role === "user" && typeof msg.content === 'string' && msg.content}
                   {msg.role === "system" && typeof msg.content === 'string' && (
-                    <span className="bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen">
-                      {msg.content}
-                    </span>
+                    msg.content === "Ask Foresight" ? (
+                      <span className="bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen">
+                        {msg.content}
+                      </span>
+                    ) : (
+                      <span className="italic">{msg.content}</span>
+                    )
                   )}
                   {msg.role === "assistant" && typeof msg.content === 'object' && (
                     <AssistantMessageRenderer assistantMessage={msg.content as AssistantMessageContent} />
