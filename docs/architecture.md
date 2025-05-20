@@ -89,4 +89,17 @@ While the current MVP focuses on the UI shell and mock data, the architecture is
 *   **Real-time Updates:** Features like the clinical co-pilot and complex case alerting will require mechanisms for real-time data flow (e.g., WebSockets, server-sent events), which may influence state management and component design.
 *   **Authentication & Authorization:** Secure access to patient data and system features will necessitate an authentication layer, likely managed globally and impacting routing and data access.
 
-This architecture aims to provide a solid foundation for developing these more complex features in the future. 
+This architecture aims to provide a solid foundation for developing these more complex features in the future.
+
+## Phase 3.5: Testing and Component Documentation
+
+*  **E2E Tests Updated:** Playwright E2E tests now verify the header logo via its alt text (`Foresight Logo`), and sidebar collapse/expand via updated ARIA labels (`Minimize menu` / `Maximize menu`) and Tailwind width classes (`w-56` / `w-[4.5rem]`).
+*  **Storybook Stories:** Key UI components now have Storybook stories to facilitate visual testing and documentation. These include:
+   *  `SeverityBadge` (Low / Medium / High states)
+   *  `LikelihoodBadge` (levels 0 through 5+)
+   *  `NotificationBell` (with and without notification counts)
+   *  `ErrorDisplay` (with and without context)
+   *  `AlertSidePanel` (open and closed states with sample alerts)
+   *  `RenderDetailTable` (with sample data arrays)
+*  **Type Safety Improvements:** The `Patient` type now mandates `firstName` and `lastName`, and service methods use explicit payload interfaces (`PatientDataPayload`). Web Speech API events in `AdvisorView.tsx` are typed locally, reducing use of `any`.
+*  **Next Steps:** Ensure coverage of workspace tab components in Storybook, and expand E2E tests for additional views (Patients list, Patient Workspace, Alerts page) as the application grows. 

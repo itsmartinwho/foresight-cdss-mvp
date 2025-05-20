@@ -13,7 +13,7 @@ import ContentSurface from '@/components/layout/ContentSurface';
 import LoadingAnimation from "@/components/LoadingAnimation";
 
 // Define SortableKey and SortConfig types
-type SortableKey = 'patientName' | 'scheduledDate';
+type SortableKey = 'patientName' | 'scheduledDate' | 'reason';
 interface SortConfig {
   key: SortableKey;
   direction: 'ascending' | 'descending';
@@ -88,6 +88,9 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         } else if (sortConfig.key === 'scheduledDate') {
           aValue = new Date(a.visit.scheduledStart).getTime();
           bValue = new Date(b.visit.scheduledStart).getTime();
+        } else if (sortConfig.key === 'reason') {
+          aValue = (a.visit.reason || "").toLowerCase();
+          bValue = (b.visit.reason || "").toLowerCase();
         } else {
           return 0; // Should not happen
         }
@@ -180,7 +183,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   );
 
   if (isLoading) {
-    return <LoadingAnimation message="Loading patient list..." />;
+    return <LoadingAnimation />;
   }
 
   return (

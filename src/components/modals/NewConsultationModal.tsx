@@ -21,6 +21,7 @@ interface Props {
   /** Controls open state from parent */
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onConsultationCreated?: (patient: Patient | null, newAdmission: Admission | null) => void;
 }
 
 // Custom DatePicker wrapper component
@@ -57,7 +58,7 @@ const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ value, onClick, on
 });
 StyledDatePicker.displayName = 'StyledDatePicker';
 
-export default function NewConsultationModal({ open, onOpenChange }: Props) {
+export default function NewConsultationModal({ open, onOpenChange, onConsultationCreated }: Props) {
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const router = useRouter();
 
@@ -83,31 +84,16 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
 
   useEffect(() => {
     const loadInitialData = async () => {
-      if (supabaseDataService.getAllPatients().length === 0) {
-        await supabaseDataService.loadPatientData();
-      }
-      setAllPatients(supabaseDataService.getAllPatients());
-      if (allPatients.length > 0 && !selectedPatient) {
-        // setSelectedPatient(allPatients[0]); // Optionally pre-select first patient
-      } else if (tab === 'existing' && selectedPatient) {
-        setErrors({});
-        const ad = await supabaseDataService.createNewAdmission(selectedPatient.id, {
-          reason: reason || undefined,
-          scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
-          duration: duration || undefined,
-        });
-        router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
-      } else if (tab === 'new') {
-        setErrors({});
-        const { patient, admission } = await supabaseDataService.createNewPatientWithAdmission(
-          { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
-          { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined, duration: duration || undefined }
-        );
-        router.push(`/patients/${patient.id}?ad=${admission.id}`);
+      if (open) { // Only run if modal is open
+        if (supabaseDataService.getAllPatients().length === 0) {
+          await supabaseDataService.loadPatientData();
+        }
+        setAllPatients(supabaseDataService.getAllPatients());
+        // Removed the creation logic from here, it's handled by handleCreate
       }
     };
     loadInitialData();
-  }, [open]);
+  }, [open]); // Only dependent on 'open'
 
   const filteredPatients = allPatients.filter((p) => {
     if (!searchTerm) return true;
@@ -138,6 +124,9 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
       return;
     }
     try {
+      let createdPatient: Patient | null = null;
+      let createdAdmission: Admission | null = null;
+
       if (tab === 'existing') {
         if (!selectedPatient) return;
         const ad = await supabaseDataService.createNewAdmission(selectedPatient.id, {
@@ -145,13 +134,21 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
           scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
           duration: duration || undefined,
         });
+        createdPatient = selectedPatient;
+        createdAdmission = ad;
         router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
       } else {
         const { patient, admission } = await supabaseDataService.createNewPatientWithAdmission(
           { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
           { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined, duration: duration || undefined }
         );
+        createdPatient = patient;
+        createdAdmission = admission;
         router.push(`/patients/${patient.id}?ad=${admission.id}`);
+      }
+
+      if (onConsultationCreated) {
+        onConsultationCreated(createdPatient, createdAdmission);
       }
       onOpenChange(false);
     } catch (e) {

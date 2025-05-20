@@ -3,8 +3,8 @@
 export interface Patient {
   id: string;
   name?: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
   gender?: string;
   dateOfBirth?: string;
   race?: string;
@@ -244,4 +244,13 @@ export interface AdmissionDetailsWrapper {
   labResults: LabResult[];
   // Treatments are typically part of the Admission object itself now as per `Admission` type above.
   // If a specific tab needs treatments at this wrapper level, it can be added, but prefer it on Admission.
+}
+
+export interface PatientDataPayload {
+  patient: Patient | null;
+  admissions: Array<{
+    admission: Admission;
+    diagnoses: Diagnosis[];
+    labResults: LabResult[];
+  }>;
 }

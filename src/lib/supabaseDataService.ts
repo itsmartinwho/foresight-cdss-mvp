@@ -1,5 +1,8 @@
 import { getSupabaseClient } from './supabaseClient';
-import { Patient, Admission, Diagnosis, LabResult, ComplexCaseAlert, Treatment } from './types';
+import {
+  Patient, Admission, Diagnosis, LabResult, ComplexCaseAlert, Treatment,
+  PatientDataPayload // Import the new type
+} from './types';
 
 /*
   A minimal drop-in replacement for PatientDataService when NEXT_PUBLIC_USE_SUPABASE=true.
@@ -236,7 +239,7 @@ class SupabaseDataService {
     return admissionKeys.map(key => this.admissions[key]).filter(Boolean) as Admission[];
   }
 
-  getPatientData(patientId: string): any | null {
+  getPatientData(patientId: string): PatientDataPayload | null {
     // console.log(`SupabaseDataService (Prod Debug): getPatientData called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
     if (!this.isLoaded && !this.isLoading) {
        console.error(`SupabaseDataService: getPatientData(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);

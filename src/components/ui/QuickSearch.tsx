@@ -196,7 +196,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [query]);
+  }, [query, portal]);
 
   // Recompute when data service emits changes
   useEffect(() => {
