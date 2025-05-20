@@ -204,7 +204,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background) / 0.5); /* Semi-transparent background */
+  background: transparent; /* Make track transparent */
   border-radius: 4px;
 }
 
@@ -217,6 +217,13 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--foreground) / 0.5);
+}
+
+/* Firefox scrollbar styles */
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--foreground) / 0.3) transparent;
 }
 
 @layer utilities {
