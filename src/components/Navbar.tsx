@@ -62,8 +62,9 @@ export default function Navbar({ currentPath }: NavbarProps) {
         {/* Right cluster */}
         <div className="flex items-center gap-4">
           {/* Search – collapses into sheet on small screens */}
-          {/* <div className="hidden md:block">
+          <div className="hidden md:block">
             <Input
+              id="navbar-desktop-search"
               type="text"
               placeholder="Search…"
               className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
@@ -75,7 +76,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
             onClick={() => setSearchOpen(true)}
           >
             <Search className="h-[1em] w-[1em] text-white" />
-          </button> */}
+          </button>
           <div className="ml-3 relative">
             <button
               type="button"
@@ -90,16 +91,17 @@ export default function Navbar({ currentPath }: NavbarProps) {
         </div>
 
         {/* Mobile Search Sheet */}
-        {/* <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
+        <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
           <SheetContent side="top" className="pt-8 pb-4 backdrop-blur-lg bg-[rgba(255,255,255,0.1)] border-b border-[rgba(255,255,255,0.12)]">
             <Input
+              id="navbar-mobile-search"
               autoFocus
               type="text"
               placeholder="Search…"
               className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
             />
           </SheetContent>
-        </Sheet> */}
+        </Sheet>
       </div>
     </nav>
   );

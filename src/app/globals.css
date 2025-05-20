@@ -181,6 +181,16 @@
     font-weight: 300 !important;
     font-family: inherit !important;
   }
+
+  /* Brute-force override for navbar search input placeholders */
+  #navbar-desktop-search::placeholder,
+  #navbar-mobile-search::placeholder {
+    color: #F0F0F0 !important;
+    opacity: 0.75 !important;
+    font-size: var(--step--1) !important; /* Consistent with other placeholders */
+    font-weight: 300 !important;        /* Consistent with other placeholders */
+    font-family: inherit !important;   /* Consistent with other placeholders */
+  }
 }
 
 /* Custom scrollbar to match new aesthetic */
