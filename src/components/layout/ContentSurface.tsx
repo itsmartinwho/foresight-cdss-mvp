@@ -22,7 +22,7 @@ export default function ContentSurface({
 }: ContentSurfaceProps) {
   if (fullBleed) {
     return (
-      <div className={cn('flex flex-col flex-1', className)} {...rest}>
+      <div className={cn('flex flex-col flex-1 min-h-0 overflow-hidden', className)} {...rest}>
         {children}
       </div>
     );
