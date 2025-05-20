@@ -25,7 +25,6 @@ export default function AdvisorView() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -40,7 +39,8 @@ export default function AdvisorView() {
 
   const SCROLL_THRESHOLD = 100; // Pixels from bottom
 
-  // Handle user scrolling
+  // Handle user scrolling - Will be re-enabled in Phase 2
+  /*
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!scrollElement) return;
@@ -55,11 +55,10 @@ export default function AdvisorView() {
       }
     };
 
-    // Debounce scroll handler
     let timeoutId: NodeJS.Timeout | null = null;
     const debouncedHandleScroll = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(handleScroll, 100); // 100ms debounce
+      timeoutId = setTimeout(handleScroll, 100); 
     };
 
     scrollElement.addEventListener("scroll", debouncedHandleScroll);
@@ -68,13 +67,18 @@ export default function AdvisorView() {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
+  */
 
-  // Scroll to bottom when messages change (debug: always scroll)
+  // Scroll to bottom when messages change, (debug: always scroll for now)
   useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    const viewport = scrollRef.current;
+    if (viewport) {
+      console.log("Attempting to scroll. Viewport:", viewport);
+      console.log("Viewport scrollHeight:", viewport.scrollHeight, "clientHeight:", viewport.clientHeight, "scrollTop:", viewport.scrollTop);
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+      console.log("After scrollTo, new scrollTop should eventually be:", viewport.scrollHeight - viewport.clientHeight);
     }
-  }, [messages]);
+  }, [messages]); // Dependency: messages. userHasScrolledUp will be added back in Phase 2
 
   // Voice dictation setup
   const recognitionRef = useRef<any>(null);
@@ -206,7 +210,7 @@ export default function AdvisorView() {
                   {msg.content}
                 </div>
               ))}
-              <div ref={bottomRef} />
+              {/* <div ref={bottomRef} /> // No longer using bottomRef */}
             </div>
           </ScrollArea>
         </div>
