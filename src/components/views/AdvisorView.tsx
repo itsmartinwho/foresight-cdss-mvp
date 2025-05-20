@@ -188,7 +188,7 @@ export default function AdvisorView() {
 
         {/* Chat container */}
         <div className="relative flex flex-col flex-1 overflow-hidden min-h-0">
-          <ScrollArea className="flex-1 min-h-0 p-6 overflow-y-auto" ref={scrollRef}>
+          <ScrollArea className="flex-1 min-h-0 p-6" ref={scrollRef}>
             <div className="space-y-6 pb-44"> {/* extra bottom padding to allow for floating input */}
               {messages.map((msg, idx) => (
                 <div
