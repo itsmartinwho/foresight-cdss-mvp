@@ -2,13 +2,11 @@ import { NextRequest } from "next/server";
 import OpenAI from "openai";
 
 const systemPrompt = `You are Foresight, a medical advisor helping US physicians.
-You MUST reply with a JSON object conforming to the schema below. Do NOT write Markdown.
+You MUST reply with a stream of newline-delimited JSON objects. Each JSON object MUST conform to ONE of the 'element' schemas or the 'references_object' schema defined below.
+Do NOT write Markdown outside of these JSON objects.
+The stream should consist of multiple 'element' JSONs, followed by a single 'references_object' JSON at the very end if there are any references.
 
-SCHEMA:
-{
-  "content": "element[]",
-  "references": "{ [key: string]: string }"
-}
+SCHEMAS:
 
 element =
   | { "type": "paragraph", "text": "string" }
@@ -19,15 +17,20 @@ element =
   | { "type": "table", "header": "string[]", "rows": "string[][]" }
   | { "type": "reference", "target": "string", "display": "string" }
 
-Ensure JSON is valid and UTF-8 encoded.
+references_object =
+  | { "type": "references_container", "references": "{ [key: string]: string }" } // Use this type for the final references object
+
+Ensure each JSON object is valid, complete, and UTF-8 encoded, and is followed by a newline character.
 Your primary role is to provide medical advice to US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations (using the reference element type), then list 3 relevant follow-up questions (which can be part of a paragraph or list element).
 
 For inline citations (type: "reference"):
 - The "target" field MUST be a unique key (e.g., "ref1", "nejm2023").
 - The "display" field is the text shown inline (e.g., "Smith et al. 2023").
-- Each "target" key MUST have a corresponding entry in the "references" object at the end of your response.
+- Each "target" key MUST have a corresponding entry in the "references" object (inside the "references_container" type) at the end of your response.
 
-For the "references" object at the end:
+For the "references_container" object at the end:
+- It must be the LAST object in the stream.
+- The "references" field within it contains the dictionary of all references.
 - Each key (e.g., "ref1", "nejm2023") MUST match a "target" used in an inline citation.
 - The string value for each key in "references" should be the full citation text or a single, complete URL. Do NOT put multiple URLs in a single reference string. If multiple sources are cited for one point, create distinct reference entries.
 `;
@@ -41,7 +44,6 @@ export async function POST(req: NextRequest) {
     const responseStream = await openai.chat.completions.create({
       model,
       stream: true,
-      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         ...messages,
@@ -49,12 +51,48 @@ export async function POST(req: NextRequest) {
     });
 
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let buffer = "";
 
     const stream = new ReadableStream({
       async start(controller) {
         for await (const chunk of responseStream) {
           const token = chunk.choices?.[0]?.delta?.content || "";
-          controller.enqueue(encoder.encode(token));
+          buffer += token;
+
+          // Process buffer line by line if newlines are present
+          let newlineIndex;
+          while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
+            const line = buffer.substring(0, newlineIndex).trim();
+            buffer = buffer.substring(newlineIndex + 1);
+
+            if (line) {
+              try {
+                // Attempt to parse the line as JSON
+                JSON.parse(line); // Validate if it's a valid JSON object
+                controller.enqueue(encoder.encode(line + "\n")); // Send the valid JSON line (with newline)
+              } catch (e) {
+                // Not a valid JSON object on its own, could be part of a larger, incomplete one.
+                // Or it could be an error from the LLM. For now, we are assuming LLM sends valid, newline-separated JSONs.
+                // If the LLM doesn't strictly adhere, this part needs more robust error handling or a different parsing strategy.
+                // console.warn("Skipping non-JSON line:", line, e);
+                // Let's re-add it to the buffer if it's not valid JSON, as it might be an incomplete chunk.
+                // However, the prompt asks for newline *terminated* JSONs. So a non-JSON line before a newline is an LLM error.
+                // For now, we will strictly expect each newline-terminated string to be a self-contained JSON.
+                // If it's not, we log a warning and discard it to prevent breaking the frontend.
+                console.warn("Received non-JSON line before newline, discarding:", line);
+              }
+            }
+          }
+        }
+        // Process any remaining data in the buffer after the stream ends
+        if (buffer.trim()) {
+            try {
+                JSON.parse(buffer.trim());
+                controller.enqueue(encoder.encode(buffer.trim() + "\n"));
+            } catch (e) {
+                console.warn("Remaining data in buffer is not valid JSON, discarding:", buffer.trim());
+            }
         }
         controller.close();
       },
@@ -62,7 +100,8 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "application/json; charset=utf-8",
+        // Changed content type to ndjson for newline delimited JSON
+        "Content-Type": "application/x-ndjson; charset=utf-8",
         "Cache-Control": "no-cache",
       },
     });
