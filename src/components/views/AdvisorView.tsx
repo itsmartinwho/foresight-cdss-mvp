@@ -44,7 +44,7 @@ interface ChatMessage {
 }
 
 export default function AdvisorView() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ role: "system", content: "Ask Foresight" }]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -239,9 +239,7 @@ export default function AdvisorView() {
   return (
     <>
       <ContentSurface fullBleed className="">
-        {!messages.some((m) => m.role === "user") && (
-          <h1 className="text-2xl font-medium self-center mb-4">Ask Foresight</h1>
-        )}
+        {/* Removed static header; using system message in chat */}
 
         {/* Using Radix ScrollArea now -  REPLACE with native scroll div */}
         <div
@@ -259,7 +257,13 @@ export default function AdvisorView() {
                     : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
                 )}
               >
-                {msg.content}
+                {msg.role === "system" ? (
+                  <span className="bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen">
+                    {msg.content}
+                  </span>
+                ) : (
+                  msg.content
+                )}
               </div>
             ))}
           </div>
