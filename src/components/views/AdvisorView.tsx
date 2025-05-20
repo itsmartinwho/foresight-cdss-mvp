@@ -290,7 +290,9 @@ export default function AdvisorView() {
               transition: 'left 0.3s ease-in-out, width 0.3s ease-in-out',
             }}
           >
-            <div className="w-full max-w-3xl bg-[rgba(255,255,255,0.55)] backdrop-blur-lg border border-white/25 rounded-xl p-4 flex flex-col gap-3 pointer-events-auto shadow-lg">
+            <div
+              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-full p-4 flex flex-col gap-3 pointer-events-auto shadow-lg"
+            >
               {/* Textarea input */}
               <Textarea
                 value={input}
