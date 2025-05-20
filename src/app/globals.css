@@ -284,9 +284,8 @@
     animation-delay: 1s;
   }
 
-  /* Increase placeholder brightness for sidebar and navbar search inputs by 10% */
-  .sidebar-search-input::placeholder,
-  .navbar-search-input::placeholder {
+  /* Unified placeholder style for sidebar and navbar search inputs */
+  .unified-search-input::placeholder {
     color: #F0F0F0 !important; /* Light gray for sidebar and navbar placeholders */
     opacity: 0.75 !important;
   }

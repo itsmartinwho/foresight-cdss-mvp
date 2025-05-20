@@ -139,11 +139,37 @@ The sidebar and top navbar use a glassmorphic/dark background, so their search i
 - Overriding the placeholder color for these classes in `globals.css`:
 
 ```css
-.sidebar-search-input::placeholder,
-.navbar-search-input::placeholder {
+.unified-search-input::placeholder {
   color: #F0F0F0 !important; /* Light gray for sidebar and navbar placeholders */
   opacity: 0.75 !important;
 }
 ```
 
-This ensures only the sidebar and navbar search placeholders are lighter, while all other input placeholders retain the standard color for forms and modals. 
+This ensures both the sidebar and navbar search placeholders are always in sync, using a single shared class for robust styling.
+
+# Frontend Styling Guide: Outer Layout & Containers
+
+## ContentSurface – the single frosted-glass wrapper (2025-05 refactor)
+
+All route-level pages must render their contents inside exactly one `<ContentSurface>` component which lives at `src/components/layout/ContentSurface.tsx`.
+
+• **Default**: a frosted-glass div with `rounded-2xl`, internal padding `p-6`, and a max-width of 80 rem (≈1280 px).
+• **fullBleed**: pass `fullBleed` when the view needs the entire viewport (e.g. complex workspaces). This renders a plain flex column without glass styling.
+
+Never nest glass surfaces—`utils.css` contains a guard (`.glass .glass{background:transparent!important}`) that automatically neutralises accidental second-level surfaces.
+
+## Exception: Lighter Placeholder in Sidebar and Navbar Search
+
+The sidebar and top navbar use a glassmorphic/dark background, so their search input placeholders need to be much lighter for readability. This is achieved by:
+
+- Adding a unique class (`sidebar-search-input` or `navbar-search-input`) to the relevant `<Input>` fields in the sidebar and navbar.
+- Overriding the placeholder color for these classes in `globals.css`:
+
+```css
+.unified-search-input::placeholder {
+  color: #F0F0F0 !important; /* Light gray for sidebar and navbar placeholders */
+  opacity: 0.75 !important;
+}
+```
+
+This ensures both the sidebar and navbar search placeholders are always in sync, using a single shared class for robust styling. 
