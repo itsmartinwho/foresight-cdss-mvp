@@ -60,18 +60,34 @@ export default function AdvisorView() {
     setMounted(true);
   }, []);
 
-  const SCROLL_THRESHOLD = 100; // Pixels from bottom to consider "not at bottom"
+  const SCROLL_THRESHOLD = 10; // Pixels from bottom to consider "not at bottom" - Reduced for sensitivity
 
   // Re-enable user scroll effect: remove comment markers
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!scrollElement) return;
 
-    const handleScroll = () => { // Debounce removed for more immediate response
+    const handleScroll = () => { 
       const { scrollTop, scrollHeight, clientHeight } = scrollElement;
-      // If scroll position is further than SCROLL_THRESHOLD from the bottom, user has scrolled up.
-      const atBottom = scrollHeight - scrollTop - clientHeight <= SCROLL_THRESHOLD;
-      setUserHasScrolledUp(!atBottom);
+      const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+      const atBottom = distanceToBottom <= SCROLL_THRESHOLD;
+      const newScrolledUpState = !atBottom;
+      
+      // Log only if the state changes to avoid excessive logging
+      setUserHasScrolledUp(prevScrolledUp => {
+        if (prevScrolledUp !== newScrolledUpState) {
+          console.log('[AdvisorView:handleScroll]', {
+            scrollTop,
+            scrollHeight,
+            clientHeight,
+            distanceToBottom,
+            SCROLL_THRESHOLD,
+            atBottom,
+            newScrolledUpState 
+          });
+        }
+        return newScrolledUpState;
+      });
     };
 
     scrollElement.addEventListener("scroll", handleScroll);
@@ -91,9 +107,16 @@ export default function AdvisorView() {
       const lastMessage = messages[messages.length - 1];
       const assistantIsResponding = lastMessage && lastMessage.role === "assistant";
 
+      console.log('[AdvisorView:autoScrollEffect]', {
+        userHasScrolledUp,
+        assistantIsResponding,
+        shouldScroll: !userHasScrolledUp && assistantIsResponding
+      });
+
       // Only auto-scroll if the user hasn't manually scrolled up AND the assistant is the one "typing".
       // Scrolling for new user messages is handled in handleSend.
       if (!userHasScrolledUp && assistantIsResponding) {
+        console.log('[AdvisorView:autoScrollEffect] SCROLLING NOW');
         viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
       }
     });
