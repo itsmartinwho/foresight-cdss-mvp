@@ -25,6 +25,7 @@ export default function AdvisorView() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -68,16 +69,12 @@ export default function AdvisorView() {
     };
   }, []);
 
-  // Scroll to bottom when messages change, respecting user scroll
+  // Scroll to bottom when messages change (debug: always scroll)
   useEffect(() => {
-    if (scrollRef.current) {
-      const lastMessage = messages[messages.length - 1];
-      // Auto-scroll if user hasn't scrolled up, or if the last message is from the user
-      if (!userHasScrolledUp || (lastMessage && lastMessage.role === "user")) {
-        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-      }
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, userHasScrolledUp]);
+  }, [messages]);
 
   // Voice dictation setup
   const recognitionRef = useRef<any>(null);
@@ -209,6 +206,7 @@ export default function AdvisorView() {
                   {msg.content}
                 </div>
               ))}
+              <div ref={bottomRef} />
             </div>
           </ScrollArea>
         </div>
