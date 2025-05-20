@@ -34,7 +34,7 @@ export default function RootLayout({
       <body>
         <PlasmaBackground />
         <GlassHeader />
-        <div className="flex flex-1 overflow-hidden pt-16"> {/* content area below header */}
+        <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0"> {/* content area below header */}
           <GlassSidebar />
           <main className="flex flex-col flex-1 overflow-hidden relative">
             <MotionWrapper>{children}</MotionWrapper>
