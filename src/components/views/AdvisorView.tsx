@@ -207,9 +207,9 @@ export default function AdvisorView() {
 
   return (
     <>
-      <ContentSurface fullBleed className="p-6 space-y-4">
+      <ContentSurface fullBleed className="">
         {!messages.some((m) => m.role === "user") && (
-          <h1 className="text-2xl font-medium self-center">Ask Foresight</h1>
+          <h1 className="text-2xl font-medium self-center mb-4">Ask Foresight</h1>
         )}
 
         {/* Temporary plain div for testing - now a direct child of ContentSurface */}
