@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 export default function PriorAuthTab({ patient: currentPatientInfo, allAdmissions }: { 
   patient: Patient; 
@@ -33,7 +34,7 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allAdmission
   }, [allAdmissions]);
 
   if (isLoadingPA) {
-    return <div className="p-6 text-center text-muted-foreground">Loading prior auth information...</div>;
+    return <LoadingAnimation />;
   }
 
   const selectedAdmissionDetails = allAdmissions.find(ad => ad.admission.id === selectedAdmissionState?.id);

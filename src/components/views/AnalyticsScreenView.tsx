@@ -4,8 +4,16 @@ import ContentSurface from '@/components/layout/ContentSurface';
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
+// Placeholder data for analytics view - define a type for this
+interface AnalyticsEntry {
+  date: string;
+  consults: number;
+  timeSaved: number;
+  accuracyGain: number;
+}
+
 // Copied analyticsData from ForesightApp.tsx
-const analyticsData: any[] = [
+const analyticsData: AnalyticsEntry[] = [
   { date: "Apr 18", consults: 14, timeSaved: 132, accuracyGain: 0.11 },
   { date: "Apr 19", consults: 18, timeSaved: 162, accuracyGain: 0.14 },
   { date: "Apr 20", consults: 20, timeSaved: 180, accuracyGain: 0.12 },

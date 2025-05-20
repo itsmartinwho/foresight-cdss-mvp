@@ -1,49 +1,50 @@
 'use client';
 import React from 'react';
-import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
+import type { Patient, Admission, Diagnosis, LabResult, AdmissionDetailsWrapper } from "@/lib/types";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { supabaseDataService } from "@/lib/supabaseDataService"; // For restore/delete
 
-// Renaming to AllDataViewTab for consistency, was AllDataView helper
-export default function AllDataViewTab({ detailedPatientData, setDetailedPatientData }: { 
-  detailedPatientData: any; 
-  setDetailedPatientData: React.Dispatch<React.SetStateAction<any | null>> 
-}) {
-  if (!detailedPatientData) return <div className="p-6 text-center text-muted-foreground">No data loaded.</div>;
+interface AllDataViewTabProps {
+  detailedPatientData: { patient: Patient; admissions: AdmissionDetailsWrapper[] } | null;
+  setDetailedPatientData: React.Dispatch<React.SetStateAction<{ patient: Patient; admissions: AdmissionDetailsWrapper[] } | null>>;
+}
+
+export default function AllDataViewTab({ detailedPatientData, setDetailedPatientData }: AllDataViewTabProps) {
+  if (!detailedPatientData || !detailedPatientData.patient) return <div className="p-6 text-center text-muted-foreground">No data loaded or patient missing.</div>;
 
   const { patient, admissions } = detailedPatientData;
 
-  const deletedAdmissions = (admissions || []).filter((a: { admission: Admission }) => a.admission.isDeleted);
+  const deletedAdmissions = (admissions || []).filter(adWrapper => adWrapper.admission.isDeleted);
 
-  const handleRestore = (ad: Admission) => {
-    if (patient && supabaseDataService.restoreAdmission(patient.id, ad.id)) {
-      setDetailedPatientData((prevData: any) => {
+  const handleRestore = (adToRestore: Admission) => {
+    if (patient && supabaseDataService.restoreAdmission(patient.id, adToRestore.id)) {
+      setDetailedPatientData((prevData) => {
         if (!prevData) return prevData;
-        const newAdmissions = prevData.admissions.map((w: any) => {
-          if (w.admission.id === ad.id) {
+        const newAdmissions = prevData.admissions.map(adWrapper => {
+          if (adWrapper.admission.id === adToRestore.id) {
             return {
-              ...w,
+              ...adWrapper,
               admission: {
-                ...w.admission,
+                ...adWrapper.admission,
                 isDeleted: false,
                 deletedAt: undefined,
               },
             };
           }
-          return w;
+          return adWrapper;
         });
         return { ...prevData, admissions: newAdmissions };
       });
     }
   };
 
-  const handlePermanentDelete = (ad: Admission) => {
-    if (patient && supabaseDataService.permanentlyDeleteAdmission(patient.id, ad.id)) {
-      setDetailedPatientData((prevData: any) => {
+  const handlePermanentDelete = (adToDelete: Admission) => {
+    if (patient && supabaseDataService.permanentlyDeleteAdmission(patient.id, adToDelete.id)) {
+      setDetailedPatientData((prevData) => {
         if (!prevData) return prevData;
-        const newAdmissions = prevData.admissions.filter((w: any) => w.admission.id !== ad.id);
+        const newAdmissions = prevData.admissions.filter(adWrapper => adWrapper.admission.id !== adToDelete.id);
         return { ...prevData, admissions: newAdmissions };
       });
     }
@@ -64,10 +65,10 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
 
       {/* Active Admissions History */}
       <h3 className="text-lg font-semibold mt-4 text-step-1">Admissions History</h3>
-      {admissions.filter((a:any)=> !a.admission.isDeleted).map((admMockWrapper: any, index: number) => {
-        const adm: Admission = admMockWrapper.admission;
-        const diagnoses: Diagnosis[] = admMockWrapper.diagnoses || [];
-        const labResults: LabResult[] = admMockWrapper.labResults || [];
+      {admissions.filter(adWrapper => !adWrapper.admission.isDeleted).map((adWrapper: AdmissionDetailsWrapper, index: number) => {
+        const adm: Admission = adWrapper.admission;
+        const diagnoses: Diagnosis[] = adWrapper.diagnoses || [];
+        const labResults: LabResult[] = adWrapper.labResults || [];
 
         return (
           <Card key={adm.id || index} className="mt-2 bg-glass glass-dense backdrop-blur-lg">
@@ -87,13 +88,13 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
           </Card>
         );
       })}
-      {admissions.filter((a:any)=> !a.admission.isDeleted).length === 0 && <p className="text-muted-foreground">No admission history for this patient.</p>}
+      {admissions.filter(adWrapper => !adWrapper.admission.isDeleted).length === 0 && <p className="text-muted-foreground">No admission history for this patient.</p>}
 
       {/* Deleted Items Section */}
       <h3 className="text-lg font-semibold mt-8 text-red-500">Deleted Items</h3>
       {deletedAdmissions.length === 0 && <p className="text-muted-foreground">No deleted items.</p>}
 
-      {deletedAdmissions.map((admWrapper:any,index:number)=>{
+      {deletedAdmissions.map((admWrapper: AdmissionDetailsWrapper, index: number) => {
         const adm: Admission = admWrapper.admission;
         return (
           <Card key={adm.id || index} className="mt-2 bg-destructive/10 border-destructive/30 hover:bg-destructive/20 transition">

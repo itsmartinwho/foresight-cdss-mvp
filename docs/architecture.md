@@ -42,7 +42,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   Example: If pathname is `/`, render `<DashboardView />`.
     *   Example: If pathname is `/patients`, render `<PatientsListView />`.
     *   Example: If pathname is `/patients/[id]`, render `<PatientWorkspaceView />` (passing the patient ID).
-*   Global states (like `activePatient`, `complexCaseAlerts`, `isAlertPanelOpen`) and their associated handlers are managed within `ForesightApp.tsx` if they are needed by multiple views or for global UI elements (like an alert panel that might overlay any view).
+*   Global states (like `activePatient`, `selectedPatientTab`) and their associated handlers are managed within `ForesightApp.tsx`. It also centrally fetches `complexCaseAlerts` which are then passed down to relevant views like `DashboardView` and `AlertsScreenView` to ensure a consistent data source for alerts across the application.
 
 ### 3. View Components (`src/components/views/`)
 
@@ -56,7 +56,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   `SettingsScreenView.tsx`
     *   `AdvisorView.tsx` – chat interface powering the **Foresight Advisor** AI medical assistant accessed via `/advisor`.
     *   The chat input/footer is rendered via a React portal (using `createPortal`) directly into `document.body` to ensure it is always anchored to the bottom of the viewport, regardless of any parent stacking context or transforms. The chat area itself uses a scrollable `<div className="flex-1 min-h-0 overflow-y-auto">` inside `ContentSurface`, matching the pattern used in other main views. This ensures the chat area scrolls independently of the page, and the input/footer remains fixed.
-*   View components are responsible for fetching or receiving their specific data (primarily using `src/lib/supabaseDataService.ts`) and rendering the appropriate UI.
+*   View components are responsible for their specific UI and interactions. Data fetching is increasingly centralized or handled by dedicated services. For instance, `DashboardView` and `AlertsScreenView` now receive shared alert data as props from `ForesightApp.tsx`.
     *   The Advisor chat calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
 
 ### 4. UI Components (`src/components/ui/`, `src/components/layout/`)

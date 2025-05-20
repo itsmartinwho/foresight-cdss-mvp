@@ -36,7 +36,7 @@ export interface Admission {
   transcript?: string;
   soapNote?: string;
   treatments?: Treatment[];
-  priorAuthJustification?: string; // Ensured this field is present
+  priorAuthJustification?: string;
   isDeleted?: boolean;
   deletedAt?: string;
 }
@@ -237,6 +237,11 @@ export interface Consultation {
   reason?: string;
 }
 
-export interface PatientAdmissionDetails {
-  // ... existing code ...
+// New type for the wrapper around admission details
+export interface AdmissionDetailsWrapper {
+  admission: Admission;
+  diagnoses: Diagnosis[];
+  labResults: LabResult[];
+  // Treatments are typically part of the Admission object itself now as per `Admission` type above.
+  // If a specific tab needs treatments at this wrapper level, it can be added, but prefer it on Admission.
 }

@@ -3,61 +3,63 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabaseDataService } from "@/lib/supabaseDataService";
-import type { Patient, ComplexCaseAlert } from "@/lib/types";
+import type { Patient, ComplexCaseAlert, Admission } from "@/lib/types";
 import ContentSurface from '@/components/layout/ContentSurface';
 
 // Import shared UI components
 import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
 import SeverityBadge from "@/components/ui/SeverityBadge";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
-export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (patientId: string) => void }) {
-  const [allAlerts, setAllAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }>>([]);
+interface AlertsScreenViewProps {
+  onAlertClick: (patientId: string) => void;
+  allAlerts: Array<ComplexCaseAlert & { patientName?: string }>;
+}
+
+export default function AlertsScreenView({ onAlertClick, allAlerts: rawAlerts }: AlertsScreenViewProps) {
+  const [enrichedAlerts, setEnrichedAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'date' | 'likelihood'>('likelihood');
 
   useEffect(() => {
-    const loadAlertData = async () => {
+    const enrichAlertData = async () => {
       setIsLoading(true);
-      if (supabaseDataService.getAllPatients().length === 0) {
-        await supabaseDataService.loadPatientData();
-      }
-      const allPatients = supabaseDataService.getAllPatients();
-      const alertsWithPatientNames: Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }> = [];
-      allPatients.forEach(patient => {
-        if (patient.alerts && patient.alerts.length > 0) {
-          const patientAdmissions = supabaseDataService.getPatientAdmissions(patient.id);
-          let lastConsultDate: string | undefined;
-          if (patientAdmissions.length > 0) {
-            const sortedAdmissions = [...patientAdmissions].sort((a, b) => {
-              const dateA = a.actualEnd || a.actualStart || a.scheduledStart;
-              const dateB = b.actualEnd || b.actualStart || b.scheduledStart;
-              return new Date(dateB).getTime() - new Date(dateA).getTime();
-            });
-            const mostRecentAdmission = sortedAdmissions[0];
-            if (mostRecentAdmission) {
-              const admissionDate = mostRecentAdmission.actualEnd || mostRecentAdmission.actualStart || mostRecentAdmission.scheduledStart;
-              if (admissionDate) {
-                lastConsultDate = new Date(admissionDate).toLocaleDateString();
-              }
+      await supabaseDataService.loadPatientData();
+
+      const alertsToEnrich = rawAlerts || [];
+      const processedAlerts: Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }> = [];
+
+      for (const alert of alertsToEnrich) {
+        let lastConsultDate: string | undefined;
+        const patientAdmissions: Admission[] = supabaseDataService.getPatientAdmissions(alert.patientId);
+        
+        if (patientAdmissions && patientAdmissions.length > 0) {
+          const sortedAdmissions = [...patientAdmissions].sort((a, b) => {
+            const dateA = a.actualEnd || a.actualStart || a.scheduledStart;
+            const dateB = b.actualEnd || b.actualStart || b.scheduledStart;
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+          });
+          const mostRecentAdmission = sortedAdmissions[0];
+          if (mostRecentAdmission) {
+            const admissionDate = mostRecentAdmission.actualEnd || mostRecentAdmission.actualStart || mostRecentAdmission.scheduledStart;
+            if (admissionDate) {
+              lastConsultDate = new Date(admissionDate).toLocaleDateString();
             }
           }
-          patient.alerts.forEach(alert => {
-            alertsWithPatientNames.push({
-              ...alert,
-              patientName: patient.name || patient.id,
-              lastConsultation: lastConsultDate
-            });
-          });
         }
-      });
-      setAllAlerts(alertsWithPatientNames);
-      // console.log('AlertsScreenView (Prod Debug): All alerts with patient names in AlertsScreenView:', alertsWithPatientNames);
+        processedAlerts.push({
+          ...alert,
+          lastConsultation: lastConsultDate
+        });
+      }
+      setEnrichedAlerts(processedAlerts);
       setIsLoading(false);
     };
-    loadAlertData();
-  }, []);
 
-  const sortedAlerts = [...allAlerts].sort((a, b) => {
+    enrichAlertData();
+  }, [rawAlerts]);
+
+  const sortedAlertsToDisplay = [...enrichedAlerts].sort((a, b) => {
     if (sortBy === 'date') {
       const dateA = a.date ? new Date(a.date).getTime() : 0;
       const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -69,14 +71,22 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
     }
   });
 
-  // console.log('AlertsScreenView (Prod Debug): Sorted alerts in AlertsScreenView:', sortedAlerts);
-
-  const highPriorityAlertsCount = allAlerts.filter(
+  const highPriorityAlertsCount = (rawAlerts || []).filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
   ).length;
 
-  if (isLoading) {
-    return <div className="p-6 text-center text-muted-foreground">Loading alerts...</div>;
+  if (isLoading && rawAlerts.length > 0) {
+    return <LoadingAnimation />;
+  }
+  if (rawAlerts.length === 0 && !isLoading) {
+    return (
+      <ContentSurface fullBleed className="p-6 flex flex-col">
+        <div className="flex flex-row items-center justify-between mb-6">
+          <h1 className="text-step-1 font-semibold">Patient Alerts</h1>
+        </div>
+        <p className="text-muted-foreground">No active alerts for any patient.</p>
+      </ContentSurface>
+    );
   }
 
   return (
@@ -111,8 +121,8 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
         </div>
       </div>
       <div className="space-y-4 text-sm flex-1 overflow-y-auto">
-        {sortedAlerts.length === 0 && <p className="text-muted-foreground">No active alerts for any patient.</p>}
-        {sortedAlerts.map((alert) => (
+        {sortedAlertsToDisplay.length === 0 && !isLoading && <p className="text-muted-foreground">No active alerts match filters or none exist.</p>} 
+        {sortedAlertsToDisplay.map((alert) => (
           <div
             key={alert.id}
             className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-background/50 hover:bg-foreground/5"

@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, ChevronLeft, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
-import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types";
+import type { Patient, Admission, AdmissionDetailsWrapper, ComplexCaseAlert } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { useSearchParams, useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
@@ -21,6 +21,8 @@ import PriorAuthTab from "@/components/patient-workspace-tabs/PriorAuthTab";
 import TrialsTab from "@/components/patient-workspace-tabs/TrialsTab";
 import HistoryTab from "@/components/patient-workspace-tabs/HistoryTab";
 import AllDataViewTab from "@/components/patient-workspace-tabs/AllDataViewTab";
+import ErrorDisplay from "@/components/ui/ErrorDisplay";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -28,9 +30,11 @@ interface PatientWorkspaceProps {
   onBack: () => void;
 }
 
-export default function PatientWorkspaceView({ patient: initialPatient, initialTab, onBack }: PatientWorkspaceProps) {
+export type DetailedPatientDataType = { patient: Patient; admissions: AdmissionDetailsWrapper[] } | null;
+
+export default function PatientWorkspaceView({ patient: initialPatientStub, initialTab, onBack }: PatientWorkspaceProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [detailedPatientData, setDetailedPatientData] = useState<any | null>(null);
+  const [detailedPatientData, setDetailedPatientData] = useState<DetailedPatientDataType>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAdmissionForConsultation, setSelectedAdmissionForConsultation] = useState<Admission | null>(null);
@@ -44,9 +48,9 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const activeAdmissionDetails = React.useMemo(() => {
+  const activeAdmissionDetails: AdmissionDetailsWrapper[] = React.useMemo(() => {
     if (!detailedPatientData?.admissions) return [];
-    return detailedPatientData.admissions.filter((adWrapper: any) => !adWrapper.admission.isDeleted);
+    return detailedPatientData.admissions.filter(adWrapper => !adWrapper.admission.isDeleted);
   }, [detailedPatientData]);
 
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   }, [initialTab]);
 
   const loadData = useCallback(async () => {
-    if (!initialPatient?.id) {
+    if (!initialPatientStub?.id) {
       setError("No patient ID provided.");
       setIsLoading(false);
       return;
@@ -62,29 +66,29 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
     setIsLoading(true);
     try {
       await supabaseDataService.loadPatientData();
-      const data = supabaseDataService.getPatientData(initialPatient.id);
+      const data = supabaseDataService.getPatientData(initialPatientStub.id);
       if (data) {
-        setDetailedPatientData(data);
+        setDetailedPatientData(data as DetailedPatientDataType);
         const paramAd = searchParams?.get('ad');
         const admissionsToSearch = data.admissions || [];
-        const firstActiveNonDeleted = admissionsToSearch.find((a: any) => !a.admission.isDeleted)?.admission || null;
+        const firstActiveNonDeleted = admissionsToSearch.find(aWrapper => !aWrapper.admission.isDeleted)?.admission || null;
 
         if (paramAd) {
-          const foundAdmissionWrapper = admissionsToSearch.find((a: any) => a.admission.id === paramAd && !a.admission.isDeleted);
+          const foundAdmissionWrapper = admissionsToSearch.find(aWrapper => aWrapper.admission.id === paramAd && !aWrapper.admission.isDeleted);
           setSelectedAdmissionForConsultation(foundAdmissionWrapper?.admission || firstActiveNonDeleted);
         } else {
           setSelectedAdmissionForConsultation(firstActiveNonDeleted);
         }
       } else {
-        setError(`Patient data not found for ${initialPatient.name || initialPatient.id}`);
+        setError(`Patient data not found for ${initialPatientStub.id}`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error loading detailed patient data:", err);
-      setError(err.message || "Failed to load detailed patient data.");
+      setError(err instanceof Error ? err.message : "Failed to load detailed patient data.");
     } finally {
       setIsLoading(false);
     }
-  }, [initialPatient, searchParams]);
+  }, [initialPatientStub, searchParams]);
 
   useEffect(() => {
     loadData();
@@ -109,7 +113,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   );
 
   if (isLoading) {
-    return <div className="p-6 text-center text-muted-foreground">Loading patient workspace...</div>;
+    return <LoadingAnimation />;
   }
 
   if (error || !detailedPatientData || !detailedPatientData.patient) {
@@ -121,7 +125,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         }} className="text-step-0">
           ← Patients
         </Button>
-        <p className="text-red-500 mt-4">Error: {error || "Detailed patient data could not be loaded."}</p>
+        <ErrorDisplay message={error || "Detailed patient data could not be loaded."} />
       </div>
     );
   }
@@ -139,9 +143,9 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
     if (visitToDeleteId && patient?.id) {
       const currentPatientId = patient.id;
       if (supabaseDataService.markAdmissionAsDeleted(currentPatientId, visitToDeleteId)) {
-        setDetailedPatientData((prevData: any) => {
+        setDetailedPatientData((prevData) => {
           if (!prevData) return prevData;
-          const newAdmissions = prevData.admissions.map((adWrapper: any) => {
+          const newAdmissions = prevData.admissions.map(adWrapper => {
             if (adWrapper.admission.id === visitToDeleteId) {
               return {
                 ...adWrapper,
@@ -153,20 +157,20 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
           return { ...prevData, admissions: newAdmissions };
         });
 
-        const stillActiveAdmissions = (detailedPatientData?.admissions || [])
-          .map((adWrapper:any) => adWrapper.admission)
-          .filter((adm: Admission) => adm.id !== visitToDeleteId && !adm.isDeleted);
+        const stillActiveAdmissions = activeAdmissionDetails
+            .map(adWrapper => adWrapper.admission)
+            .filter(adm => adm.id !== visitToDeleteId);
 
         if (stillActiveAdmissions.length > 0) {
           const sortedActive = [...stillActiveAdmissions].sort((a,b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime());
           setSelectedAdmissionForConsultation(sortedActive[0]);
         } else {
           const newAd = await supabaseDataService.createNewAdmission(currentPatientId);
-          setDetailedPatientData((prevData: any) => {
-            const baseAdmissions = prevData ? prevData.admissions.filter((w:any) => w.admission.id !== visitToDeleteId) : [];
+          setDetailedPatientData((prevData) => {
+            if (!prevData) return { patient, admissions: [{ admission: newAd, diagnoses: [], labResults: [] }] };
+            const baseAdmissions = prevData.admissions.filter(w => w.admission.id !== visitToDeleteId);
             return { 
               ...prevData, 
-              patient: prevData.patient,
               admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...baseAdmissions]
             };
           });
@@ -191,18 +195,19 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
         scheduledStart: newConsultationDate ? newConsultationDate.toISOString() : new Date().toISOString(),
         duration: newConsultationDuration || undefined,
       });
-      setDetailedPatientData((prev: any) => {
-        if (!prev) return { patient, admissions: [{ admission: newAd, diagnoses: [], labResults: [] }] };
-        const newAdmissionsList = [{ admission: newAd, diagnoses: [], labResults: [] }, ...(prev.admissions || [])];
+      setDetailedPatientData((prev) => {
+        const newAdmissionEntry: AdmissionDetailsWrapper = { admission: newAd, diagnoses: [], labResults: [] };
+        if (!prev || !prev.patient) return { patient: patient, admissions: [newAdmissionEntry] };
+        const newAdmissionsList = [newAdmissionEntry, ...(prev.admissions || [])];
         return { ...prev, admissions: newAdmissionsList };
       });
       setSelectedAdmissionForConsultation(newAd);
       setIsStartingNewConsultation(false);
       setActiveTab('consult');
       return newAd;
-    } catch (e) {
-      console.error("Failed to finalize new consultation", e);
-      setError("Failed to create new consultation visit.");
+    } catch (err: unknown) {
+      console.error("Failed to finalize new consultation", err);
+      setError(err instanceof Error ? err.message : "Failed to create new consultation visit.");
       return null;
     }
   };
@@ -237,8 +242,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
                 if (isStartingNewConsultation) {
                   setIsStartingNewConsultation(false);
                   if (activeAdmissionDetails && activeAdmissionDetails.length > 0) {
-                    const firstActive = activeAdmissionDetails.find((ad:any) => !ad.admission.isDeleted)?.admission;
-                    setSelectedAdmissionForConsultation(selectedAdmissionForConsultation || firstActive || null);
+                    const firstActiveWrapper = activeAdmissionDetails.find(adWrapper => !adWrapper.admission.isDeleted);
+                    setSelectedAdmissionForConsultation(selectedAdmissionForConsultation || firstActiveWrapper?.admission || null);
                   } else {
                     setSelectedAdmissionForConsultation(null);
                   }
@@ -267,15 +272,15 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
                 value={selectedAdmissionForConsultation?.id || ""}
                 onChange={(e) => {
                   const admissionId = e.target.value;
-                  const selected = activeAdmissionDetails.find((adWrap: any) => adWrap.admission.id === admissionId)?.admission || null;
+                  const selected = activeAdmissionDetails.find(adWrap => adWrap.admission.id === admissionId)?.admission || null;
                   setSelectedAdmissionForConsultation(selected);
                 }}
                 disabled={showDeleteConfirmation || isStartingNewConsultation}
               >
                 <option value="" disabled>-- Select a consultation --</option>
-                {activeAdmissionDetails.map((adDetail: any) => (
-                  <option key={adDetail.admission.id} value={adDetail.admission.id}>
-                    {new Date(adDetail.admission.scheduledStart).toLocaleString()} - {adDetail.admission.reason || 'N/A'}
+                {activeAdmissionDetails.map((adDetailWrapper: AdmissionDetailsWrapper) => (
+                  <option key={adDetailWrapper.admission.id} value={adDetailWrapper.admission.id}>
+                    {new Date(adDetailWrapper.admission.scheduledStart).toLocaleString()} - {adDetailWrapper.admission.reason || 'N/A'}
                   </option>
                 ))}
               </select>
@@ -305,11 +310,11 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
               <p>Are you sure you want to delete this visit? <br />
                 Scheduled: {
                   new Date(
-                    activeAdmissionDetails.find((adWrap:any) => adWrap.admission.id === visitToDeleteId)?.admission.scheduledStart
+                    activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.scheduledStart || new Date()
                   ).toLocaleString()
                 }
                 <br />
-                Reason: {activeAdmissionDetails.find((adWrap:any) => adWrap.admission.id === visitToDeleteId)?.admission.reason || 'N/A'}
+                Reason: {activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.reason || 'N/A'}
               </p>
             </CardContent>
             <div className="flex justify-end gap-2 mt-4">

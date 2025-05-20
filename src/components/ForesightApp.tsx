@@ -24,7 +24,7 @@ function ForesightApp() {
 
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
-  
+  const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
 
   useEffect(() => {
     if (patientIdFromPath && patientIdFromPath !== activePatient?.id) {
@@ -47,6 +47,23 @@ function ForesightApp() {
     }
   }, [patientIdFromPath, searchParams, selectedPatientTab]);
 
+  useEffect(() => {
+    const loadGlobalAlerts = async () => {
+        await supabaseDataService.loadPatientData(); 
+        const allPatients = supabaseDataService.getAllPatients();
+        const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
+        allPatients.forEach(p => {
+            if (p.alerts && p.alerts.length > 0) {
+                p.alerts.forEach(alert => {
+                    collectedAlerts.push({ ...alert, patientName: p.name || p.id });
+                });
+            }
+        });
+        setComplexCaseAlerts(collectedAlerts);
+    };
+    loadGlobalAlerts();
+  }, []);
+
   const handleAlertClick = (patientId: string) => {
     router.push(`/patients/${patientId}?tab=diagnosis`);
   };
@@ -68,7 +85,7 @@ function ForesightApp() {
   let currentView;
   switch (activeView) {
     case "dashboard":
-      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} />;
+      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
       break;
     case "patients":
       if (patientIdFromPath) {
@@ -85,7 +102,7 @@ function ForesightApp() {
       }
       break;
     case "alerts":
-      currentView = <AlertsScreenView onAlertClick={handleAlertClick} />;
+      currentView = <AlertsScreenView onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
       break;
     case "analytics":
       currentView = <AnalyticsScreenView />;
@@ -94,7 +111,7 @@ function ForesightApp() {
       currentView = <SettingsScreenView />;
       break;
     default:
-      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} />;
+      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
   }
 
   return (

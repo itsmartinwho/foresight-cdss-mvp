@@ -111,14 +111,15 @@ export default function AdvisorView() {
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = "en-US";
         recognitionRef.current.onresult = (event: any) => {
-          let interim = "";
+          let finalTranscript = "";
           for (let i = event.resultIndex; i < event.results.length; ++i) {
-            const transcript = event.results[i][0].transcript;
+            const transcriptPart = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              setInput((prev) => prev + transcript + " ");
-            } else {
-              interim += transcript;
+              finalTranscript += transcriptPart + " ";
             }
+          }
+          if (finalTranscript) {
+            setInput((prev) => prev + finalTranscript);
           }
         };
       }

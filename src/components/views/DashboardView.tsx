@@ -18,44 +18,36 @@ import AlertSidePanel from "@/components/ui/AlertSidePanel";
 // Type for upcoming appointments, specific to this view
 type UpcomingEntry = { patient: Patient; visit: Admission };
 
-export default function DashboardView({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patient) => void; onAlertClick: (patientId: string) => void }) {
+interface DashboardViewProps {
+  onStartConsult: (p: Patient) => void;
+  onAlertClick: (patientId: string) => void;
+  allAlerts: Array<ComplexCaseAlert & { patientName?: string }>;
+}
+
+export default function DashboardView({ onStartConsult, onAlertClick, allAlerts }: DashboardViewProps) {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingEntry[]>([]);
-  const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      setIsLoading(true);
+    const loadUpcomingAppointments = async () => {
+      setIsLoadingAppointments(true);
       if (supabaseDataService.getAllPatients().length === 0) {
         await supabaseDataService.loadPatientData();
       }
       const upcoming = supabaseDataService.getUpcomingConsultations();
       setUpcomingAppointments(upcoming);
-
-      const allPatients = supabaseDataService.getAllPatients();
-      const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
-      allPatients.forEach(p => {
-        if (p.alerts && p.alerts.length > 0) {
-          p.alerts.forEach(alert => {
-            collectedAlerts.push({ ...alert, patientName: p.name || p.id });
-          });
-        }
-      });
-      setComplexCaseAlertsForDisplay(collectedAlerts);
-      // console.log('DashboardView (Prod Debug): Alerts for display in DashboardView:', collectedAlerts);
-      setIsLoading(false);
+      setIsLoadingAppointments(false);
     };
-    loadDashboardData();
+    loadUpcomingAppointments();
   }, []);
 
-  const highPriorityAlertsCount = complexCaseAlertsForDisplay.filter(
+  const highPriorityAlertsCount = allAlerts.filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
   ).length;
-  // console.log('DashboardView (Prod Debug): High priority alerts count in DashboardView:', highPriorityAlertsCount);
 
-  if (isLoading) {
+  if (isLoadingAppointments) {
     return <LoadingAnimation />;
   }
 
@@ -139,7 +131,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
         <AlertSidePanel
           isOpen={true}
           onClose={() => setIsAlertPanelOpen(false)}
-          alerts={complexCaseAlertsForDisplay}
+          alerts={allAlerts}
           onAlertClick={onAlertClick}
         />
       )}

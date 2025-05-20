@@ -11,7 +11,7 @@ import {
 
 export default function RenderDetailTable({ title, dataArray, headers, columnAccessors }: {
   title: string;
-  dataArray: any[];
+  dataArray: Record<string, any>[];
   headers: string[];
   columnAccessors?: string[];
 }) {

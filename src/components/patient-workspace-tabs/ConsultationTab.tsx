@@ -108,7 +108,7 @@ export default function ConsultationTab({
       ws.onclose = () => {
         mediaRecorder.stop();
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error starting transcription', err);
     }
   };

@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from '@/lib/utils';
 import { LoadingSpinner } from './LoadingSpinner';
+import ErrorDisplay from '@/components/ui/ErrorDisplay';
+import type { Patient } from '@/lib/types';
 
 export const PatientList = () => {
-  const [patients, setPatients] = useState<any[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<any[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,7 +48,7 @@ export const PatientList = () => {
         patient.id.toLowerCase().includes(searchTermLower) ||
         (patient.name && patient.name.toLowerCase().includes(searchTermLower)) ||
         (patient.gender && patient.gender.toLowerCase().includes(searchTermLower)) ||
-        (patient.dob && patient.dob.toLowerCase().includes(searchTermLower))
+        (patient.dateOfBirth && patient.dateOfBirth.toLowerCase().includes(searchTermLower))
       );
     });
 
@@ -54,12 +56,12 @@ export const PatientList = () => {
   }, [searchTerm, patients]);
 
   // Group patients by status (recent, upcoming, all)
-  const recentPatients = filteredPatients.filter(patient => {
-    const lastSeen = new Date(patient.lastConsultation || "2000-01-01");
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return lastSeen >= oneWeekAgo;
-  });
+  // const recentPatients = filteredPatients.filter(patient => {
+  //   const lastSeen = new Date(patient.lastConsultation || "2000-01-01");
+  //   const oneWeekAgo = new Date();
+  //   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  //   return lastSeen >= oneWeekAgo;
+  // });
 
   const upcomingPatients = filteredPatients.filter(patient => {
     const admissions = supabaseDataService.getPatientAdmissions(patient.id) || [];
@@ -67,7 +69,7 @@ export const PatientList = () => {
     return admissions.some(ad => ad.scheduledStart && new Date(ad.scheduledStart) > now);
   });
 
-  const renderPatientTable = (patientList: any[]) => {
+  const renderPatientTable = (patientList: Patient[]) => {
     if (patientList.length === 0) {
       return <p className="text-center py-4">No patients found</p>;
     }
@@ -92,7 +94,7 @@ export const PatientList = () => {
                 <td className="px-6 py-4">{patient.name || 'N/A'}</td>
                 <td className="px-6 py-4">{patient.gender || 'N/A'}</td>
                 <td className="px-6 py-4">
-                  {patient.dob ? formatDate(new Date(patient.dob)) : 'N/A'}
+                  {patient.dateOfBirth ? formatDate(new Date(patient.dateOfBirth)) : 'N/A'}
                 </td>
                 <td className="px-6 py-4">{patient.race || 'N/A'}</td>
                 <td className="px-6 py-4 space-x-2">
@@ -122,7 +124,7 @@ export const PatientList = () => {
   }
 
   if (error) {
-    return <div className="text-red-500 text-center p-4">{error}</div>;
+    return <ErrorDisplay message={error} />;
   }
 
   return (
@@ -143,7 +145,7 @@ export const PatientList = () => {
       <Tabs defaultValue="all" className="w-full">
         <TabsList>
           <TabsTrigger value="all">All Patients</TabsTrigger>
-          <TabsTrigger value="recent">Recent Consultations</TabsTrigger>
+          {/* <TabsTrigger value="recent">Recent Consultations</TabsTrigger> */}
           <TabsTrigger value="upcoming">Upcoming Appointments</TabsTrigger>
         </TabsList>
         
@@ -154,12 +156,12 @@ export const PatientList = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="recent">
-          <div className="mt-4">
-            <h2 className="text-xl font-semibold mb-4">Recent Consultations</h2>
-            {renderPatientTable(recentPatients)}
-          </div>
-        </TabsContent>
+        {/* <TabsContent value="recent"> */}
+        {/*  <div className="mt-4"> */}
+        {/*    <h2 className="text-xl font-semibold mb-4">Recent Consultations</h2> */}
+        {/*    {renderPatientTable(recentPatients)} */}
+        {/*  </div> */}
+        {/* </TabsContent> */}
         
         <TabsContent value="upcoming">
           <div className="mt-4">

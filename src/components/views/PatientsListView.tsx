@@ -79,8 +79,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     const sortData = (data: { patient: Patient | null; visit: Admission }[]) => {
       if (!sortConfig) return data;
       return [...data].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number;
+        let bValue: string | number;
 
         if (sortConfig.key === 'patientName') {
           aValue = displayName(a.patient).toLowerCase();
