@@ -24,7 +24,7 @@ export default function ContentSurface({
     return (
       <div
         className={cn(
-          'flex flex-col flex-1 min-h-0 h-full overflow-x-hidden overflow-y-auto',
+          'flex flex-col flex-1 min-h-0 h-full overflow-x-hidden',
           className
         )}
         {...rest}
