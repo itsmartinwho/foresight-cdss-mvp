@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { patientDataService } from "@/lib/patientDataService";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Diagnosis, Treatment } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -64,14 +64,14 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
       }
       // Ensure data is loaded; noop if already loaded
       try {
-        await patientDataService.loadPatientData();
+        await supabaseDataService.loadPatientData();
       } catch (_) {
         /* load errors are logged inside the service */
       }
       const lower = q.toLowerCase();
       const matches: SearchResult[] = [];
 
-      const allPatients = patientDataService.getAllPatients();
+      const allPatients = supabaseDataService.getAllPatients();
 
       const addIfNotExceeded = (res: SearchResult) => {
         if (matches.length < 10) matches.push(res);
@@ -119,7 +119,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
         if (matches.length >= 10) return;
 
         // 3) Deep search in admissions / diagnoses / treatments.
-        const admissions = patientDataService.getPatientAdmissions(p.id);
+        const admissions = supabaseDataService.getPatientAdmissions(p.id);
         for (const ad of admissions) {
           if (matches.length >= 10) break;
 
@@ -135,19 +135,19 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
 
           // Diagnoses (Diagnosis tab)
           const key = `${p.id}_${ad.id}`;
-          const diagMap = (patientDataService as any).allDiagnosesByAdmission;
-          const diagnoses: Diagnosis[] = diagMap ? diagMap[key] || [] : [];
-          for (const dx of diagnoses) {
-            if (dx.description && dx.description.toLowerCase().includes(lower)) {
-              addIfNotExceeded({
-                patient: p,
-                kind: "diagnosis",
-                admissionId: ad.id,
-                snippet: buildSnippet(dx.description),
-              });
-              break;
-            }
-          }
+          // const diagMap = (supabaseDataService as any).allDiagnosesByAdmission;
+          // const diagnoses: Diagnosis[] = diagMap ? diagMap[key] || [] : [];
+          // for (const dx of diagnoses) {
+          //   if (dx.description && dx.description.toLowerCase().includes(lower)) {
+          //     addIfNotExceeded({
+          //       patient: p,
+          //       kind: "diagnosis",
+          //       admissionId: ad.id,
+          //       snippet: buildSnippet(dx.description),
+          //     });
+          //     break;
+          //   }
+          // }
 
           // Treatments (Treatment tab)
           const treatments: Treatment[] = ad.treatments || [];
@@ -205,8 +205,8 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
         setQuery((q) => q + ""); // trigger debounce effect
       }
     };
-    patientDataService.subscribe(cb);
-    return () => patientDataService.unsubscribe(cb);
+    supabaseDataService.subscribe(cb);
+    return () => supabaseDataService.unsubscribe(cb);
   }, [query]);
 
   // Close dropdown when clicking outside

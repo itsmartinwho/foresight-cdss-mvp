@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, ChevronLeft, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { patientDataService } from "@/lib/patientDataService";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types"; // Added Treatment
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"; // For renderDetailTable
 import { Input } from "@/components/ui/input"; // <--- ADD THIS LINE
@@ -64,7 +64,7 @@ function AllDataView({ detailedPatientData, setDetailedPatientData }: { detailed
   const deletedAdmissions = (admissions || []).filter((a: { admission: Admission }) => a.admission.isDeleted);
 
   const handleRestore = (ad: Admission) => {
-    if (patient && patientDataService.restoreAdmission(patient.id, ad.id)) {
+    if (patient && supabaseDataService.restoreAdmission(patient.id, ad.id)) {
       setDetailedPatientData((prevData: any) => {
         if (!prevData) return prevData;
         const newAdmissions = prevData.admissions.map((w: any) => {
@@ -86,7 +86,7 @@ function AllDataView({ detailedPatientData, setDetailedPatientData }: { detailed
   };
 
   const handlePermanentDelete = (ad: Admission) => {
-    if (patient && patientDataService.permanentlyDeleteAdmission(patient.id, ad.id)) {
+    if (patient && supabaseDataService.permanentlyDeleteAdmission(patient.id, ad.id)) {
       setDetailedPatientData((prevData: any) => {
         if (!prevData) return prevData;
         const newAdmissions = prevData.admissions.filter((w: any) => w.admission.id !== ad.id);
@@ -305,9 +305,9 @@ function ConsultationTab({
     const admissionToSaveTo = isStartingNewConsultation ? selectedAdmission : currentDetailedAdmission;
 
     if (patient && admissionToSaveTo) {
-      patientDataService.updateAdmissionTranscript(patient.id, admissionToSaveTo.id, liveTranscript);
+      supabaseDataService.updateAdmissionTranscript(patient.id, admissionToSaveTo.id, liveTranscript);
     } else if (patient && selectedAdmission) { // Fallback for safety, though above should cover
-        patientDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, liveTranscript);
+        supabaseDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, liveTranscript);
     }
   };
 
@@ -384,7 +384,7 @@ function ConsultationTab({
               onInput={(e) => {
                 const text = (e.currentTarget as HTMLDivElement).innerText;
                 if (!isTranscribing && patient && selectedAdmission) {
-                  patientDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, text);
+                  supabaseDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, text);
                 }
               }}
               className="whitespace-pre-wrap outline-none"
@@ -678,8 +678,8 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
 
     setIsLoading(true);
     try {
-      await patientDataService.loadPatientData();
-      const data = patientDataService.getPatientData(initialPatient.id);
+      await supabaseDataService.loadPatientData();
+      const data = supabaseDataService.getPatientData(initialPatient.id);
       if (data) {
         setDetailedPatientData(data);
 
@@ -715,9 +715,9 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
     const cb = () => {
       loadData();
     };
-    patientDataService.subscribe(cb);
+    supabaseDataService.subscribe(cb);
     return () => {
-      patientDataService.unsubscribe(cb);
+      supabaseDataService.unsubscribe(cb);
     };
   }, [loadData]);
 
@@ -761,7 +761,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   const handleDeleteConfirm = async () => {
     if (visitToDeleteId && patient?.id) {
       const patientId = patient.id;
-      if (patientDataService.markAdmissionAsDeleted(patientId, visitToDeleteId)) {
+      if (supabaseDataService.markAdmissionAsDeleted(patientId, visitToDeleteId)) {
         setDetailedPatientData((prevData: any) => {
           if (!prevData) return prevData;
           const newAdmissions = prevData.admissions.map((adWrapper: any) => {
@@ -786,7 +786,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
           );
           setSelectedAdmissionForConsultation(sortedActive[0]);
         } else {
-          const maybePromise = patientDataService.createNewAdmission(patientId);
+          const maybePromise = supabaseDataService.createNewAdmission(patientId);
           const newAd = (maybePromise instanceof Promise) ? await maybePromise : (maybePromise as Admission);
           
           setDetailedPatientData((prevData: any) => {
@@ -813,7 +813,7 @@ export default function PatientWorkspaceView({ patient: initialPatient, initialT
   const handleFinalizeNewConsultation = async (): Promise<Admission | null> => {
     if (!patient?.id) return null;
     try {
-      const newAd = await patientDataService.createNewAdmission(patient.id, {
+      const newAd = await supabaseDataService.createNewAdmission(patient.id, {
         reason: newConsultationReason || undefined,
         scheduledStart: newConsultationDate ? newConsultationDate.toISOString() : new Date().toISOString(),
         duration: newConsultationDuration || undefined,

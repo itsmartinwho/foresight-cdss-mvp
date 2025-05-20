@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { patientDataService } from '@/lib/patientDataService';
+import { supabaseDataService } from '@/lib/supabaseDataService';
 import Link from 'next/link';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ export const PatientList = () => {
     const loadPatients = async () => {
       setLoading(true);
       try {
-        await patientDataService.loadPatientData();
-        const allPatients = patientDataService.getAllPatients();
+        await supabaseDataService.loadPatientData();
+        const allPatients = supabaseDataService.getAllPatients();
         setPatients(allPatients);
         setFilteredPatients(allPatients);
         setLoading(false);
@@ -62,7 +62,7 @@ export const PatientList = () => {
   });
 
   const upcomingPatients = filteredPatients.filter(patient => {
-    const admissions = patientDataService.getPatientAdmissions(patient.id) || [];
+    const admissions = supabaseDataService.getPatientAdmissions(patient.id) || [];
     const now = new Date();
     return admissions.some(ad => ad.scheduledStart && new Date(ad.scheduledStart) > now);
   });

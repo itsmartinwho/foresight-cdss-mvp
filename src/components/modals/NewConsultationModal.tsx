@@ -5,7 +5,6 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { patientDataService } from '@/lib/patientDataService';
 import type { Patient } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
@@ -13,6 +12,10 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { PlusCircle, UserPlus, Search } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabaseDataService } from '@/lib/supabaseDataService';
+import type { Admission } from '@/lib/types';
 
 interface Props {
   /** Controls open state from parent */
@@ -79,13 +82,31 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
   const [shake, setShake] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      if (patientDataService.getAllPatients().length === 0) {
-        await patientDataService.loadPatientData();
+    const loadInitialData = async () => {
+      if (supabaseDataService.getAllPatients().length === 0) {
+        await supabaseDataService.loadPatientData();
       }
-      setAllPatients(patientDataService.getAllPatients());
+      setAllPatients(supabaseDataService.getAllPatients());
+      if (allPatients.length > 0 && !selectedPatient) {
+        // setSelectedPatient(allPatients[0]); // Optionally pre-select first patient
+      } else if (tab === 'existing' && selectedPatient) {
+        setErrors({});
+        const ad = await supabaseDataService.createNewAdmission(selectedPatient.id, {
+          reason: reason || undefined,
+          scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
+          duration: duration || undefined,
+        });
+        router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
+      } else if (tab === 'new') {
+        setErrors({});
+        const { patient, admission } = await supabaseDataService.createNewPatientWithAdmission(
+          { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
+          { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined, duration: duration || undefined }
+        );
+        router.push(`/patients/${patient.id}?ad=${admission.id}`);
+      }
     };
-    load();
+    loadInitialData();
   }, [open]);
 
   const filteredPatients = allPatients.filter((p) => {
@@ -119,14 +140,14 @@ export default function NewConsultationModal({ open, onOpenChange }: Props) {
     try {
       if (tab === 'existing') {
         if (!selectedPatient) return;
-        const ad = await patientDataService.createNewAdmission(selectedPatient.id, {
+        const ad = await supabaseDataService.createNewAdmission(selectedPatient.id, {
           reason: reason || undefined,
           scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
           duration: duration || undefined,
         });
         router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
       } else {
-        const { patient, admission } = await patientDataService.createNewPatientWithAdmission(
+        const { patient, admission } = await supabaseDataService.createNewPatientWithAdmission(
           { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
           { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined, duration: duration || undefined }
         );

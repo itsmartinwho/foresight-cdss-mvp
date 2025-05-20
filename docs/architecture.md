@@ -15,9 +15,9 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 
 *   `src/app/`: Contains Next.js App Router specific files, including page entry points and the global layout.
     *   `layout.tsx`: Defines the root layout, including global components like `GlassHeader` and `GlassSidebar`.
-    *   `ForesightApp.tsx`: A client component that acts as the main view router, determining which specific view to render based on `usePathname()`.
-    *   `page.tsx`, `patients/page.tsx`, etc.: Entry points for different routes. These typically just render `<ForesightApp />` which then handles the actual content display.
+    *   `page.tsx`, `patients/page.tsx`, etc.: Entry points for different routes. These typically just render the main application component (e.g. `<ForesightApp />`) which then handles the actual content display based on the route.
 *   `src/components/`: Houses all React components.
+    *   `ForesightApp.tsx`: A client component that acts as the main view router, determining which specific view component from `src/components/views/` to render based on `usePathname()`.
     *   `layout/`: Components related to the overall page structure (e.g., `GlassHeader.tsx`, `GlassSidebar.tsx`).
     *   `views/`: Components representing distinct screens or major sections of the application (e.g., `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`).
     *   `ui/`: Generic, reusable UI elements (e.g., buttons, inputs, cards) potentially from a library like `shadcn/ui` or custom-built.
@@ -34,9 +34,9 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   It globally renders `GlassHeader` and `GlassSidebar` which are fixed UI elements.
 *   A main content area with appropriate padding (to account for the fixed header and sidebar) wraps the `children` prop (which represents the content of the current page/route).
 
-### 2. View Router (`src/app/ForesightApp.tsx`)
+### 2. View Router (`src/components/ForesightApp.tsx`)
 
-*   This is a crucial client-side component (`"use client";`).
+*   This is a crucial client-side component (`"use client";`) located in `src/components/ForesightApp.tsx`.
 *   It uses the `usePathname()` hook from `next/navigation` to get the current URL path.
 *   Based on the pathname, it conditionally renders the appropriate view component from `src/components/views/`.
     *   Example: If pathname is `/`, render `<DashboardView />`.
@@ -56,7 +56,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
     *   `SettingsScreenView.tsx`
     *   `AdvisorView.tsx` – chat interface powering the **Foresight Advisor** AI medical assistant accessed via `/advisor`.
     *   The chat input/footer is rendered via a React portal (using `createPortal`) directly into `document.body` to ensure it is always anchored to the bottom of the viewport, regardless of any parent stacking context or transforms. The chat area itself uses a scrollable `<div className="flex-1 min-h-0 overflow-y-auto">` inside `ContentSurface`, matching the pattern used in other main views. This ensures the chat area scrolls independently of the page, and the input/footer remains fixed.
-*   View components are responsible for fetching or receiving their specific data (currently from mock sources, often passed down from `ForesightApp.tsx` or loaded directly if view-specific) and rendering the appropriate UI.
+*   View components are responsible for fetching or receiving their specific data (primarily using `src/lib/supabaseDataService.ts`) and rendering the appropriate UI.
     *   The Advisor chat calls a dedicated OpenAI proxy endpoint at `/api/advisor` which streams/composes responses from GPT-4.1, optionally switching to GPT-3.5 for the "Think harder" mode.
 
 ### 4. UI Components (`src/components/ui/`, `src/components/layout/`)
@@ -70,8 +70,8 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   The application uses the Next.js App Router.
 *   Directory structure within `src/app/` defines routes (e.g., `src/app/patients/` maps to `/patients`).
 *   Dynamic routes are supported (e.g., `src/app/patients/[id]/page.tsx` for individual patient views).
-*   Page files (`page.tsx`) within these directories act as entry points. In this architecture, they primarily delegate the rendering logic to `<ForesightApp />`.
-*   `<ForesightApp />` then inspects the `usePathname()` to determine which *view component* (from `src/components/views/`) to display. This provides a centralized place to manage transitions between the main sections of the application while leveraging Next.js file-system routing for the initial serving.
+*   Page files (`page.tsx`) within these directories act as entry points. In this architecture, they primarily delegate the rendering logic to `src/components/ForesightApp.tsx`.
+*   `src/components/ForesightApp.tsx` then inspects the `usePathname()` to determine which *view component* (from `src/components/views/`) to display. This provides a centralized place to manage transitions between the main sections of the application while leveraging Next.js file-system routing for the initial serving.
 
 ## UI Patterns & Conventions
 

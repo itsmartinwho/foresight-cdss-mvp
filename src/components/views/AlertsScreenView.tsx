@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { patientDataService } from "@/lib/patientDataService";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, ComplexCaseAlert } from "@/lib/types";
 import ContentSurface from '@/components/layout/ContentSurface';
 
@@ -36,14 +36,14 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
   useEffect(() => {
     const loadAlertData = async () => {
       setIsLoading(true);
-      if (patientDataService.getAllPatients().length === 0) { // Avoid re-fetch if already loaded
-          await patientDataService.loadPatientData();
+      if (supabaseDataService.getAllPatients().length === 0) {
+        await supabaseDataService.loadPatientData();
       }
-      const allPatients = patientDataService.getAllPatients();
+      const allPatients = supabaseDataService.getAllPatients();
       const alertsWithPatientNames: Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }> = [];
       allPatients.forEach(patient => {
         if (patient.alerts && patient.alerts.length > 0) {
-          const patientAdmissions = patientDataService.getPatientAdmissions(patient.id);
+          const patientAdmissions = supabaseDataService.getPatientAdmissions(patient.id);
           let lastConsultDate: string | undefined;
           if (patientAdmissions.length > 0) {
             const sortedAdmissions = [...patientAdmissions].sort((a, b) => {

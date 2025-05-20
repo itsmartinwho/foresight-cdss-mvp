@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { patientDataService } from "@/lib/patientDataService";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult, Treatment, ComplexCaseAlert } from "@/lib/types";
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
@@ -291,127 +291,6 @@ function AlertSidePanel({
 }
 
 // ***********************************
-// DASHBOARD
-// ***********************************
-function Dashboard({ onStartConsult, onAlertClick }: { onStartConsult: (p: Patient) => void; onAlertClick: (patientId: string) => void }) {
-  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingEntry[]>([]);
-  // State for alerts, now explicitly typed to include the patientName for display purposes
-  const [complexCaseAlertsForDisplay, setComplexCaseAlertsForDisplay] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
-
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      setIsLoading(true);
-      if (patientDataService.getAllPatients().length === 0) {
-        await patientDataService.loadPatientData();
-      }
-      
-      const upcoming = patientDataService.getUpcomingConsultations();
-      setUpcomingAppointments(upcoming);
-
-      const allPatients = patientDataService.getAllPatients();
-      const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
-      allPatients.forEach(p => {
-        if (p.alerts && p.alerts.length > 0) {
-          p.alerts.forEach(alert => {
-            collectedAlerts.push({ ...alert, patientName: p.name || p.id }); 
-          });
-        }
-      });
-      setComplexCaseAlertsForDisplay(collectedAlerts);
-      
-      setIsLoading(false);
-    };
-    loadDashboardData();
-  }, []);
-
-  const highPriorityAlertsCount = complexCaseAlertsForDisplay.filter(
-    alert => alert.likelihood !== undefined && alert.likelihood >= 4
-  ).length;
-
-  if (isLoading) {
-    return <div className="p-6 text-center">Loading dashboard...</div>
-  }
-
-  return (
-    <div className="p-6 relative">
-      <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg">
-        <CardHeader>
-          <CardTitle>Upcoming Appointments</CardTitle>
-          <CardDescription>
-            Select a patient to start consultation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {upcomingAppointments.length > 0 ? (
-            <Table className="mobile-card:block sm:table">
-              <TableHeader className="mobile-card:hidden sm:table-header-group">
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="mobile-card:block sm:table-row-group">
-                {upcomingAppointments.map(({ patient: p, visit }) => (
-                  <TableRow 
-                    key={`${p.id}_${visit.id}`} 
-                    className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
-                  >
-                    <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
-                      {new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})}
-                    </TableCell>
-                    <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
-                      {p.photo && (
-                        <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2 mobile-card:hidden" />
-                      )}
-                      {p.name}
-                    </TableCell>
-                    <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                      {visit.reason}
-                    </TableCell>
-                    <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
-                      <Button
-                        size="sm"
-                        onClick={() => onStartConsult(p)}
-                        className="gap-1 w-full mobile-card:w-full"
-                      >
-                        <PlayCircle className="h-4 w-4" /> Start
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-gray-500">No upcoming appointments scheduled.</p>
-          )}
-        </CardContent>
-      </Card>
-      
-      <div className="fixed bottom-6 right-6 z-40">
-        <NotificationBell 
-          count={highPriorityAlertsCount} 
-          onClick={() => setIsAlertPanelOpen(true)} 
-        />
-      </div>
-      
-      <AlertSidePanel
-        isOpen={isAlertPanelOpen}
-        onClose={() => setIsAlertPanelOpen(false)}
-        alerts={complexCaseAlertsForDisplay}
-        onAlertClick={onAlertClick}
-      />
-    </div>
-  );
-}
-
-// ***********************************
 // PATIENT WORKSPACE & ITS TABS
 // ***********************************
 
@@ -445,7 +324,7 @@ function PatientWorkspace({ patient: initialPatient, initialTab, onBack }: Patie
       try {
         // Ensure service is loaded (it might have been loaded by Dashboard already)
         // await patientDataService.loadPatientData(); // loadPatientData has an internal isLoaded check
-        const data = patientDataService.getPatientData(initialPatient.id);
+        const data = supabaseDataService.getPatientData(initialPatient.id);
         if (data) {
           setDetailedPatientData(data);
           // Default select the first admission for the consultation tab if available
@@ -859,217 +738,6 @@ function History({ patient, allAdmissions }: { patient: Patient; allAdmissions: 
 }
 
 // ***********************************
-// AUXILIARY VIEWS
-// ***********************************
-
-// AlertsView Updated with More Detailed Temporary Debug Output
-function AlertsView({ onAlertClick }: { onAlertClick: (patientId: string) => void }) {
-  const [patientsWithAlerts, setPatientsWithAlerts] = useState<Patient[]>([]);
-  const [allAlerts, setAllAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }>>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'date' | 'likelihood'>('likelihood');
-
-  useEffect(() => {
-    const loadAlertData = async () => {
-      setIsLoading(true);
-      await patientDataService.loadPatientData();
-      const allPatients = patientDataService.getAllPatients();
-      
-      // Store patients that have alerts
-      setPatientsWithAlerts(allPatients.filter((p) => p.alerts && p.alerts.length > 0));
-      
-      // Collect all alerts with patient names and last consultation dates
-      const alertsWithPatientNames: Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }> = [];
-      allPatients.forEach(patient => {
-        if (patient.alerts && patient.alerts.length > 0) {
-          // Find the most recent consultation date for this patient
-          const patientAdmissions = patientDataService.getPatientAdmissions(patient.id);
-          let lastConsultDate: string | undefined;
-          
-          if (patientAdmissions.length > 0) {
-            // Sort admissions by date (most recent first)
-            const sortedAdmissions = [...patientAdmissions].sort((a, b) => {
-              const dateA = a.actualEnd || a.actualStart || a.scheduledStart;
-              const dateB = b.actualEnd || b.actualStart || b.scheduledStart;
-              return new Date(dateB).getTime() - new Date(dateA).getTime();
-            });
-            
-            // Use the date from the most recent admission
-            const mostRecentAdmission = sortedAdmissions[0];
-            if (mostRecentAdmission) {
-              const admissionDate = mostRecentAdmission.actualEnd || mostRecentAdmission.actualStart || mostRecentAdmission.scheduledStart;
-              if (admissionDate) {
-                lastConsultDate = new Date(admissionDate).toLocaleDateString();
-              }
-            }
-          }
-          
-          patient.alerts.forEach(alert => {
-            alertsWithPatientNames.push({
-              ...alert,
-              patientName: patient.name || patient.id,
-              lastConsultation: lastConsultDate
-            });
-          });
-        }
-      });
-      
-      setAllAlerts(alertsWithPatientNames);
-      setIsLoading(false);
-    };
-    loadAlertData();
-  }, []);
-  
-  // Sort alerts based on selected criteria
-  const sortedAlerts = [...allAlerts].sort((a, b) => {
-    if (sortBy === 'date') {
-      // Sort by date (newest first)
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-      return dateB - dateA;
-    } else {
-      // Sort by likelihood (highest first)
-      const likelihoodA = a.likelihood !== undefined ? a.likelihood : 0;
-      const likelihoodB = b.likelihood !== undefined ? b.likelihood : 0;
-      return likelihoodB - likelihoodA;
-    }
-  });
-
-  // Calculate high priority alerts count
-  const highPriorityAlertsCount = allAlerts.filter(
-    alert => alert.likelihood !== undefined && alert.likelihood >= 4
-  ).length;
-
-  if (isLoading) {
-    return <div className="p-6 text-center">Loading alerts...</div>;
-  }
-
-  return (
-    <div className="p-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle>Patient Alerts</CardTitle>
-            {highPriorityAlertsCount > 0 && (
-              <div className="bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {highPriorityAlertsCount}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">Sort by:</span>
-            <Button 
-              variant={sortBy === 'likelihood' ? "default" : "outline"} 
-              size="sm"
-              onClick={() => setSortBy('likelihood')}
-            >
-              Priority
-            </Button>
-            <Button 
-              variant={sortBy === 'date' ? "default" : "outline"} 
-              size="sm"
-              onClick={() => setSortBy('date')}
-            >
-              Date
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm">
-          {sortedAlerts.length === 0 && <p>No active alerts for any patient.</p>}
-          {sortedAlerts.map((alert) => (
-            <div
-              key={alert.id}
-              className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => onAlertClick(alert.patientId)}
-            >
-              <LikelihoodBadge likelihood={alert.likelihood} />
-              
-              <div className="flex-grow">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-800">{alert.patientName}</p>
-                  {alert.conditionType && (
-                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
-                      {alert.conditionType}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-700 truncate" title={alert.msg}>{alert.msg || ""}</p>
-                {alert.lastConsultation && (
-                  <p className="text-xs text-gray-500">
-                    Last consultation: {alert.lastConsultation}
-                  </p>
-                )}
-              </div>
-              
-              <div className="text-xs text-gray-500 text-right">
-                {alert.date && <div>{alert.date}</div>}
-                {alert.severity && (
-                  <div className="mt-1">
-                    <SeverityBadge severity={alert.severity} />
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function AnalyticsView() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage Analytics (Mock)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Consults</TableHead>
-                <TableHead>Minutes Saved</TableHead>
-                <TableHead>Accuracy Gain</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {analyticsData.map((d) => (
-                <TableRow key={d.date}>
-                  <TableCell>{d.date}</TableCell>
-                  <TableCell>{d.consults}</TableCell>
-                  <TableCell>{d.timeSaved}</TableCell>
-                  <TableCell>{(d.accuracyGain * 100).toFixed(0)}%</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function SettingsView() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm space-y-2">
-          <p>
-            User profile, integrations & alert threshold configuration panels
-            will appear here.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ***********************************
 // MAIN APP
 // ***********************************
 
@@ -1090,8 +758,8 @@ function ForesightApp() {
     // Load patient data if a specific patient ID is in the path
     // and that patient isn't already the active one.
     if (patientIdFromPath && patientIdFromPath !== activePatient?.id) {
-      patientDataService.loadPatientData().then(() => {
-        const p = patientDataService.getPatient(patientIdFromPath);
+      supabaseDataService.loadPatientData().then(() => {
+        const p = supabaseDataService.getPatient(patientIdFromPath);
         if (p) setActivePatient(p);
         else setActivePatient(null); // Patient not found for this ID
       });
@@ -1118,10 +786,10 @@ function ForesightApp() {
     // Load global alerts data on app initialization or when not viewing a specific patient
     // This ensures alerts are available for the global bell, but might not reload if already populated.
     const loadGlobalAlerts = async () => {
-        if (patientDataService.getAllPatients().length === 0) { // Ensure core data is there
-            await patientDataService.loadPatientData();
+        if (supabaseDataService.getAllPatients().length === 0) { // Ensure core data is there
+            await supabaseDataService.loadPatientData();
         }
-        const allPatients = patientDataService.getAllPatients();
+        const allPatients = supabaseDataService.getAllPatients();
         const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
         allPatients.forEach(p => {
             if (p.alerts && p.alerts.length > 0) {

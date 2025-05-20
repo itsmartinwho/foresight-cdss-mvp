@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Patient, Admission, Diagnosis, LabResult, Treatment } from '@/lib/types';
-import { patientDataService } from '@/lib/patientDataService';
+import { supabaseDataService } from '@/lib/supabaseDataService';
 import Link from 'next/link';
 
 interface PatientDetailProps {
@@ -20,8 +20,8 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
     async function loadData() {
       setLoading(true);
       try {
-        await patientDataService.loadPatientData();
-        const data = patientDataService.getPatientData(patientId);
+        await supabaseDataService.loadPatientData();
+        const data = supabaseDataService.getPatientData(patientId);
         
         if (!data || !data.patient) {
           setError('Patient data not found');

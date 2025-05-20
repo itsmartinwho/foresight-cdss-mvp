@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { patientDataService } from "@/lib/patientDataService";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission } from "@/lib/types";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';
 import ContentSurface from '@/components/layout/ContentSurface';
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate';
@@ -17,66 +19,45 @@ interface SortConfig {
   direction: 'ascending' | 'descending';
 }
 
-// PatientsList function from ForesightApp.tsx (approx. lines 1034-1124)
-export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) => void }) {
-  const [upcomingRowsData, setUpcomingRowsData] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
-  const [pastRowsData, setPastRowsData] = useState<{ patient: Patient | null; visit: Admission }[]>([]);
+interface PatientsListViewProps {
+  onSelect: (patient: Patient) => void;
+}
+
+export default function PatientsListView({ onSelect }: PatientsListViewProps) {
+  const [upcomingRowsData, setUpcomingRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
+  const [pastRowsData, setPastRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      await patientDataService.loadPatientData();
-      const now = new Date();
-      const upcoming: { patient: Patient | null; visit: Admission }[] = [];
-      const past: { patient: Patient | null; visit: Admission }[] = [];
+  const fetchData = async () => {
+    setIsLoading(true);
+    await supabaseDataService.loadPatientData();
+    const now = new Date();
+    const upcoming: { patient: Patient | null; visit: Admission }[] = [];
+    const past: { patient: Patient | null; visit: Admission }[] = [];
 
-      patientDataService.getAllAdmissions().forEach(({ patient, admission }) => {
-        if ((admission as any).isDeleted) return; // skip soft-deleted visits
-        const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
-        arr.push({ patient, visit: admission });
-      });
+    supabaseDataService.getAllAdmissions().forEach(({ patient, admission }) => {
+      if ((admission as any).isDeleted) return;
+      const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
+      arr.push({ patient, visit: admission });
+    });
 
-      upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
-      past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
+    upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+    past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
 
-      setUpcomingRowsData(upcoming);
-      setPastRowsData(past);
-      setIsLoading(false);
-    };
-    load();
-  }, []);
+    setUpcomingRowsData(upcoming);
+    setPastRowsData(past);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    const cb = () => {
-      const load = async () => {
-        setIsLoading(true);
-        await patientDataService.loadPatientData();
-        const now = new Date();
-        const upcoming: { patient: Patient | null; visit: Admission }[] = [];
-        const past: { patient: Patient | null; visit: Admission }[] = [];
-
-        patientDataService.getAllAdmissions().forEach(({ patient, admission }) => {
-          if ((admission as any).isDeleted) return;
-          const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
-          arr.push({ patient, visit: admission });
-        });
-
-        upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
-        past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
-
-        setUpcomingRowsData(upcoming);
-        setPastRowsData(past);
-        setIsLoading(false);
-      };
-      load();
-    };
-    patientDataService.subscribe(cb);
+    fetchData();
+    const cb = () => fetchData();
+    supabaseDataService.subscribe(cb);
     return () => {
-      patientDataService.unsubscribe(cb);
+      supabaseDataService.unsubscribe(cb);
     };
   }, []);
 
@@ -122,101 +103,111 @@ export default function PatientsListView({ onSelect }: { onSelect: (p: Patient) 
     };
   }, [upcomingRowsData, pastRowsData, sortConfig, displayName]);
 
+  const renderTable = (title: string, data: Array<{ patient: Patient | null; visit: Admission }>) => (
+    <Card className="mb-6 bg-glass-sidebar backdrop-blur-lg border-slate-700/20 shadow-lg">
+      <CardHeader>
+        <CardTitle className="text-slate-100">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {data.length > 0 ? (
+          <Table className="text-slate-200 text-step-0">
+            <TableHeader>
+              <TableRow className="border-slate-700/50">
+                <TableHead onClick={() => requestSort('patientName')} className="cursor-pointer hover:text-neon">Patient{sortConfig?.key === 'patientName' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('scheduledDate')} className="cursor-pointer hover:text-neon">Scheduled date{sortConfig?.key === 'scheduledDate' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('reason')} className="cursor-pointer hover:text-neon">Reason{sortConfig?.key === 'reason' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRows.upcoming.length > 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="font-semibold text-sm pt-4 pb-2 text-foreground/80">{title}</TableCell>
+                </TableRow>
+              )}
+              {sortedRows.upcoming.map(({ patient, visit }) => (
+                <TableRow key={`upcoming_${patient?.id}_${visit.id}`} onClick={() => {
+                  if (patient) {
+                    router.push(`/patients/${patient.id}?ad=${visit.id}`);
+                  }
+                }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
+                  <TableCell className="flex items-center gap-2">
+                    {patient?.photo && (
+                      <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
+                    )}
+                    {displayName(patient)}
+                  </TableCell>
+                  <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
+                  <TableCell>{visit.reason ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" className="text-neon hover:text-neon/80 hover:bg-neon/10">
+                      View Details
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(sortedRows.upcoming.length === 0 && sortedRows.past.length === 0) && (
+                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-4">No consultations found.</TableCell></TableRow>
+              )}
+              {sortedRows.past.map(({ patient, visit }) => (
+                <TableRow key={`past_${patient?.id}_${visit.id}`} onClick={() => {
+                  if (patient) {
+                    router.push(`/patients/${patient.id}?ad=${visit.id}`);
+                  }
+                }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
+                  <TableCell className="flex items-center gap-2">
+                    {patient?.photo && (
+                      <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
+                    )}
+                    {displayName(patient)}
+                  </TableCell>
+                  <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
+                  <TableCell>{visit.reason ?? "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" className="text-neon hover:text-neon/80 hover:bg-neon/10">
+                      View Details
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-sm text-slate-400">No {title.toLowerCase()} scheduled.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   if (isLoading) {
-    return <div className="p-6 text-center text-muted-foreground">Loading patient list...</div>;
+    return <LoadingAnimation message="Loading patient list..." />;
   }
 
   return (
     <ContentSurface fullBleed className="p-6 flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-        <div>
-          <h1 className="text-step-1 font-semibold">Consultations</h1>
-          <p className="text-step-0 text-muted-foreground/80">Click a patient to open the workspace</p>
-        </div>
-        <button
+      <div className="flex justify-between items-center mb-6">
+        <CardTitle className="text-slate-100 text-step-1">All Consultations</CardTitle>
+        <Button 
           onClick={() => setShowNewConsultModal(true)}
-          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+          className="bg-neon text-slate-900 hover:bg-neon/90 flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
         >
-          + New Consultation
-        </button>
+          <PlusCircle className="h-4 w-4"/>
+          New Consultation
+        </Button>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        <Table className="text-step-0">
-          <TableHeader>
-            <TableRow>
-              <TableHead
-                className="w-[40%] cursor-pointer hover:bg-muted/10 transition-colors"
-                onClick={() => requestSort('patientName')}
-              >
-                <div className="flex items-center gap-1 py-1">
-                  Patient
-                  {sortConfig?.key === 'patientName' && 
-                    (sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3 text-muted-foreground/80" /> : <ArrowDown className="h-3 w-3 text-muted-foreground/80" />)}
-                </div>
-              </TableHead>
-              <TableHead
-                className="w-60 cursor-pointer hover:bg-muted/10 transition-colors"
-                onClick={() => requestSort('scheduledDate')}
-              >
-                <div className="flex items-center gap-1 py-1">
-                  Scheduled date
-                  {sortConfig?.key === 'scheduledDate' && 
-                    (sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3 text-muted-foreground/80" /> : <ArrowDown className="h-3 w-3 text-muted-foreground/80" />)}
-                </div>
-              </TableHead>
-              <TableHead><div className="py-1">Reason for visit</div></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedRows.upcoming.length > 0 && (
-              <TableRow>
-                <TableCell colSpan={3} className="font-semibold text-sm pt-4 pb-2 text-foreground/80">Upcoming visits</TableCell>
-              </TableRow>
-            )}
-            {sortedRows.upcoming.map(({ patient, visit }) => (
-              <TableRow key={`upcoming_${patient?.id}_${visit.id}`} onClick={() => {
-                  if (patient) {
-                    router.push(`/patients/${patient.id}?ad=${visit.id}`);
-                  }
-                }} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
-                <TableCell className="flex items-center gap-2">
-                  {patient?.photo && (
-                    <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
-                  )}
-                  {displayName(patient)}
-                </TableCell>
-                <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                <TableCell>{visit.reason ?? "—"}</TableCell>
-              </TableRow>
-            ))}
-            {(sortedRows.upcoming.length === 0 && sortedRows.past.length === 0) && (
-               <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-4">No consultations found.</TableCell></TableRow>
-            )}
-            {sortedRows.past.length > 0 && (
-              <TableRow>
-                <TableCell colSpan={3} className="font-semibold text-sm pt-6 pb-2 text-foreground/80">Past visits</TableCell>
-              </TableRow>
-            )}
-            {sortedRows.past.map(({ patient, visit }) => (
-              <TableRow key={`past_${patient?.id}_${visit.id}`} onClick={() => {
-                  if (patient) {
-                    router.push(`/patients/${patient.id}?ad=${visit.id}`);
-                  }
-                }} className={patient ? "cursor-pointer hover:bg-foreground/5" : "opacity-60"}>
-                <TableCell className="flex items-center gap-2">
-                  {patient?.photo && (
-                    <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
-                  )}
-                  {displayName(patient)}
-                </TableCell>
-                <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                <TableCell>{visit.reason ?? "—"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
+      {renderTable("Upcoming Consultations", upcomingRowsData)}
+      {renderTable("Past Consultations", pastRowsData)}
+      <NewConsultationModal 
+        open={showNewConsultModal} 
+        onOpenChange={setShowNewConsultModal}
+        onConsultationCreated={(patient, admission) => {
+          if (patient && admission) {
+            onSelect(patient);
+          } else {
+            fetchData();
+          }
+        }}
+      />
     </ContentSurface>
   );
 } 

@@ -15,7 +15,7 @@ Foresight CDSS is a browser-based clinical decision support system prototype. Th
     *   Patient List & Search
     *   Individual Patient Workspace (Demographics, Admissions, etc., using data from Supabase)
     *   Alerts, Analytics, and Settings screens (placeholders or basic views)
-*   **Client-Side Routing:** Utilizes Next.js for routing, with a central `ForesightApp.tsx` component managing view rendering.
+*   **Client-Side Routing:** Utilizes Next.js for routing, with a central `ForesightApp.tsx` component managing view rendering based on the URL.
 *   **Glassmorphism UI:** Features a modern "glassmorphism" visual style for header and sidebar.
 *   **Consultation Duration:** Optional duration field for new consultations; automatically sets the scheduled end time based on the selected start time.
 *   **Responsive Layout:** Basic responsive design for different screen sizes.
@@ -118,9 +118,9 @@ The application now primarily uses data from a Supabase PostgreSQL database.
 *   **Component Structure:**
     *   Global Layout: `src/app/layout.tsx` renders `GlassHeader` and `GlassSidebar`.
     *   View Components: Located in `src/components/views/` (e.g., `DashboardView.tsx`, `PatientsListView.tsx`, `PatientWorkspaceView.tsx`).
-    *   Routing Logic: `src/app/ForesightApp.tsx` acts as a client-side router.
-    *   Page Entry Points: Files like `src/app/page.tsx`, `src/app/patients/page.tsx` primarily render `<ForesightApp />`.
-*   **Data Fetching:** Data is primarily fetched from Supabase using a service layer (`src/lib/supabaseDataService.ts`). A feature flag (`NEXT_PUBLIC_USE_SUPABASE`) controls this; it defaults to `true`. A fallback to an older, local file-based data service (`src/lib/patientDataService.ts`) exists if the flag is explicitly set to `false`, though this mode is deprecated.
+    *   Routing Logic:** `src/components/ForesightApp.tsx` (note: path corrected from src/app/ForesightApp.tsx as it's a component) acts as a client-side router, rendering views from `src/components/views/`.
+    *   Page Entry Points:** Files like `src/app/page.tsx`, `src/app/patients/page.tsx` primarily render `<ForesightApp />` (often via a default export from a `page.tsx` in the `app` router structure which then imports and uses `ForesightApp`).
+*   **Data Fetching:** Data is fetched from Supabase using a service layer (`src/lib/supabaseDataService.ts`).
 *   **Testing:**
     *   **Storybook:** For UI component development and visualization.
     *   **Playwright:** For end-to-end testing.
@@ -152,7 +152,6 @@ This application uses a managed Postgres instance provided by Supabase as its pr
     ```env
     NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
     NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
-    NEXT_PUBLIC_USE_SUPABASE="true"
     ```
     Setting `NEXT_PUBLIC_USE_SUPABASE="true"` ensures the application uses Supabase. This is the default and recommended mode.
 4.  **Data Seeding:** Populate the database using the migration script:

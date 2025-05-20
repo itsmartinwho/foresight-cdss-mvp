@@ -4,7 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { PlayCircle, Bell, X } from "lucide-react";
-import { patientDataService } from "@/lib/patientDataService";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import LoadingAnimation from '@/components/LoadingAnimation';
@@ -111,13 +111,13 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   useEffect(() => {
     const loadDashboardData = async () => {
       setIsLoading(true);
-      if (patientDataService.getAllPatients().length === 0) {
-        await patientDataService.loadPatientData();
+      if (supabaseDataService.getAllPatients().length === 0) {
+        await supabaseDataService.loadPatientData();
       }
-      const upcoming = patientDataService.getUpcomingConsultations();
+      const upcoming = supabaseDataService.getUpcomingConsultations();
       setUpcomingAppointments(upcoming);
 
-      const allPatients = patientDataService.getAllPatients();
+      const allPatients = supabaseDataService.getAllPatients();
       const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
       allPatients.forEach(p => {
         if (p.alerts && p.alerts.length > 0) {
