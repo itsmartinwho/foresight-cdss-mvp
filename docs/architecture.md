@@ -216,6 +216,23 @@ These development dependencies do not impact the size of the production client b
 - The Advisor tab defaults to the `gpt-4.1` model for general queries.
 - When the user enables **Think** mode, the model switches to `o3-mini` for more advanced reasoning tasks.
 
+## Advisor Chat Rendering Pipeline
+
+### Backend (API)
+- The advisor API route (`/api/advisor/route.ts`) requests responses from OpenAI in strict JSON mode, using a schema that supports paragraphs, lists, tables, and references.
+- The response is streamed to the frontend as a JSON object.
+
+### Frontend
+- The advisor view (`AdvisorView.tsx`) streams the response, buffering tokens until a valid JSON object is received.
+- The JSON is parsed and rendered using React components for each content type (paragraph, bold, italic, lists, tables, references).
+- References are interactive: URLs open in a new tab, text references scroll to a footnote section.
+- All messages have unique IDs for React key stability.
+
+### Benefits
+- Robust against malformed Markdown.
+- Secure (no `dangerouslySetInnerHTML`).
+- Easily extensible for future content types or UI improvements.
+
 ---
 
 > **Cross-reference:**

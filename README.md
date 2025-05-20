@@ -170,3 +170,13 @@ Specific guidelines and rules are also present in:
 *   **[rules/](rules/)**: Contains various other guidelines (implementation plans, frontend/backend aspirational designs, etc.). These generally defer to `/docs` for authoritative current-state information.
 
 Refer to these documents for a comprehensive understanding of the project.
+
+## Advisor Tab: Rich Chat Rendering
+
+The Advisor tab now streams and renders AI responses in a structured, user-friendly format. Instead of raw Markdown, the backend requests JSON-formatted responses from OpenAI, which are parsed and rendered as React components. Supported features:
+
+- **Paragraphs, bold, italic, lists, and tables** are rendered natively for clarity and accessibility.
+- **References** are clickable: URLs open in a new tab, while text/footnote references scroll to a footnote section at the end of the chat.
+- **Streaming**: As soon as a valid JSON object is received, the UI updates, providing a responsive experience.
+
+This approach ensures robust, secure, and accessible medical advice presentation for users.

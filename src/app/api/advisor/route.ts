@@ -1,7 +1,26 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
 
-const systemPrompt = `You are Foresight, a medical advisor helping US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations, then list 3 relevant follow-up questions.`;
+const systemPrompt = `You are Foresight, a medical advisor helping US physicians.
+You MUST reply with a JSON object conforming to the schema below. Do NOT write Markdown.
+
+SCHEMA:
+{
+  "content": "element[]",
+  "references": "{ [key: string]: string }"
+}
+
+element =
+  | { "type": "paragraph", "text": "string" }
+  | { "type": "bold", "text": "string" }
+  | { "type": "italic", "text": "string" }
+  | { "type": "unordered_list", "items": "string[]" }
+  | { "type": "ordered_list", "items": "string[]" }
+  | { "type": "table", "header": "string[]", "rows": "string[][]" }
+  | { "type": "reference", "target": "string", "display": "string" }
+
+Ensure JSON is valid and UTF-8 encoded.
+Your primary role is to provide medical advice to US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations (using the reference element type), then list 3 relevant follow-up questions (which can be part of a paragraph or list element).`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +31,7 @@ export async function POST(req: NextRequest) {
     const responseStream = await openai.chat.completions.create({
       model,
       stream: true,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         ...messages,
@@ -32,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-cache",
       },
     });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
+import { v4 as uuidv4 } from 'uuid';
+import { ChatMessage, AssistantMessageContent, ContentElement } from '../advisor/chat-types';
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -37,13 +39,8 @@ interface SpeechRecognitionEvent extends Event {
   readonly results: SpeechRecognitionResultList;
 }
 
-interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
-
 export default function AdvisorView() {
-  const [messages, setMessages] = useState<ChatMessage[]>([{ role: "system", content: "Ask Foresight" }]);
+  const [messages, setMessages] = useState<ChatMessage[]>([{ id: uuidv4(), role: "system", content: "Ask Foresight" }]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -158,18 +155,38 @@ export default function AdvisorView() {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    let content = input.trim();
-    if (includePapers) content += "\n\nInclude recent peer-reviewed medical papers.";
+    let queryContent = input.trim();
+    if (includePapers) queryContent += "\n\nInclude recent peer-reviewed medical papers.";
 
-    const newUserMessage: ChatMessage = { role: "user", content };
-    // Add user message and a placeholder for the assistant's response
-    // Ensure the placeholder is added so the auto-scroll useEffect can pick up on assistant responding.
-    setMessages(prevMessages => [...prevMessages, newUserMessage, { role: "assistant", content: "" }]);
+    const newUserMessage: ChatMessage = { id: uuidv4(), role: "user", content: queryContent };
+    
+    const assistantMessageId = uuidv4();
+    const initialAssistantMessage: ChatMessage = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: { content: [], references: {} }, 
+      isStreaming: true,
+    };
+
+    setMessages(prevMessages => {
+      const explicitlyConstructedUserMessage: ChatMessage = {
+        id: newUserMessage.id,
+        role: newUserMessage.role,
+        content: newUserMessage.content,
+        // isStreaming is optional, so it's fine if newUserMessage doesn't explicitly have it 
+        // (it would be undefined, which is acceptable for an optional field)
+      };
+      const newMessages: ChatMessage[] = [
+        ...prevMessages,
+        explicitlyConstructedUserMessage, // Use the very explicitly constructed object
+        initialAssistantMessage
+      ];
+      return newMessages;
+    });
     setInput("");
     setIsSending(true);
-    setUserHasScrolledUp(false); // IMPORTANT: Reset scroll lock state, user wants to see new messages.
+    setUserHasScrolledUp(false); 
 
-    // Ensure view scrolls to the new message immediately
     requestAnimationFrame(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -177,11 +194,26 @@ export default function AdvisorView() {
     });
 
     try {
+      // Explicitly type the payload for the OpenAI API call
+      const apiPayloadMessages: Array<{role: 'user' | 'assistant' | 'system', content: string}> = messages
+        .filter(m => m.role !== 'system') // Filter out system messages from history
+        .map(currentMessageInMap => ({
+          role: currentMessageInMap.role,
+          // Convert assistant's structured content to JSON string for the API
+          content: typeof currentMessageInMap.content === 'string' 
+                     ? currentMessageInMap.content 
+                     : JSON.stringify(currentMessageInMap.content)
+        }))
+        .concat([{
+          role: newUserMessage.role as 'user', // Role of newUserMessage is known
+          content: newUserMessage.content as string // Content of newUserMessage is string
+        }]);
+
       const res = await fetch("/api/advisor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: messages.filter(m => m.role !== 'system').concat([newUserMessage]), // Send current messages + new user message
+          messages: apiPayloadMessages, // Use the explicitly typed array
           model: thinkMode ? "o3-mini" : "gpt-4.1",
         }),
       });
@@ -190,37 +222,60 @@ export default function AdvisorView() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = "";
       
-      let assistantText = "";
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
-        assistantText += decoder.decode(value);
-        setMessages((prev) => {
-          const cloned = [...prev];
-          // Update the last message (assistant's placeholder)
-          if (cloned.length > 0 && cloned[cloned.length - 1].role === "assistant") {
-             cloned[cloned.length - 1].content = assistantText;
-          } else {
-            // This case should ideally not happen if placeholder was added correctly
-            cloned.push({ role: "assistant", content: assistantText });
+        if (done) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
+          ));
+          // Final parse attempt for any remaining buffer, though ideally OpenAI JSON mode sends a single complete object.
+          try {
+            const finalJson = JSON.parse(buffer) as AssistantMessageContent;
+            setMessages(prev => prev.map(msg => 
+              msg.id === assistantMessageId ? { ...msg, content: finalJson, isStreaming: false } : msg
+            ));
+            if (voiceMode && finalJson.content.length > 0) {
+              // For voice, concatenate paragraph text for now. More sophisticated speech generation could be added.
+              const speechText = finalJson.content
+                .filter(el => el.type === 'paragraph' && el.text)
+                .map(el => (el as any).text)
+                .join(' ');
+              if (speechText) speak(speechText);
+            }
+          } catch (e) {
+            // If parsing fails at the very end, it might indicate an issue with the stream or LLM response.
+            // The message might remain partially filled or show an error.
+            console.error("Final JSON parse failed:", e);
+             setMessages(prev => prev.map(msg => 
+              msg.id === assistantMessageId ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: Could not parse full response. Partial data: ${buffer}`}], references: {}}, isStreaming: false } : msg
+            ));
           }
-          return cloned;
-        });
-      }
-
-      if (voiceMode && assistantText) speak(assistantText);
-    } catch (err) {
-      console.error(err);
-      // On error, remove the optimistic assistant placeholder message if it's still empty,
-      // or if it was the one being streamed to.
-      setMessages(prev => {
-        const lastMsg = prev[prev.length -1];
-        if(lastMsg && lastMsg.role === 'assistant' && (lastMsg.content === "" || prev.find(m => m === lastMsg))) {
-          return prev.slice(0, -1);
+          break;
         }
-        return prev;
-      });
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Try to parse the buffer progressively
+        // This is a basic approach. For very large JSON, more robust partial parsing might be needed.
+        // However, with OpenAI's JSON mode, it should ideally stream a well-formed JSON object.
+        try {
+          const parsedJson = JSON.parse(buffer) as AssistantMessageContent;
+          // If parse succeeds, it means the full JSON object has been received.
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId ? { ...msg, content: parsedJson, isStreaming: true } : msg
+          ));
+        } catch (e) {
+          // JSON is not yet complete/valid, continue accumulating
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: ${err.message}`}], references: {}}, isStreaming: false } 
+          : msg
+      ));
     } finally {
       setIsSending(false);
     }
@@ -248,21 +303,31 @@ export default function AdvisorView() {
           <div className="space-y-6 pb-44"> {/* This is the inner content div */}
             {messages.map((msg, idx) => (
               <div
-                key={idx}
+                key={msg.id}
                 className={cn(
-                  "max-w-xl w-fit px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
-                  msg.role === "user"
-                    ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
-                    : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
+                  "flex flex-col items-start gap-2",
+                  msg.role === "user" ? "items-end" : ""
                 )}
               >
-                {msg.role === "system" ? (
-                  <span className="bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen">
-                    {msg.content}
-                  </span>
-                ) : (
-                  msg.content
-                )}
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-lg p-3 text-sm shadow-sm",
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : msg.role === "assistant"
+                      ? "bg-muted"
+                      : "hidden" // System messages are not rendered directly here anymore, or styled differently if needed
+                  )}
+                >
+                  {msg.role === "user" && typeof msg.content === 'string' && msg.content}
+                  {msg.role === "system" && typeof msg.content === 'string' && <div className="text-xs text-muted-foreground italic p-2 text-center w-full">{msg.content}</div>}
+                  {msg.role === "assistant" && typeof msg.content === 'object' && (
+                    <AssistantMessageRenderer assistantMessage={msg.content as AssistantMessageContent} />
+                  )}
+                  {msg.role === "assistant" && msg.isStreaming && typeof msg.content === 'object' && (msg.content as AssistantMessageContent).content.length === 0 && (
+                    <div className="animate-pulse">Thinking...</div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -350,7 +415,7 @@ export default function AdvisorView() {
                       if (!file) return;
                       setMessages((prev) => [
                         ...prev,
-                        { role: "user", content: `[Uploaded ${file.name}]` },
+                        { id: uuidv4(), role: "user", content: `[Uploaded ${file.name}]` },
                       ]);
                       e.target.value = "";
                     }}
@@ -387,3 +452,93 @@ export default function AdvisorView() {
     </>
   );
 }
+
+// Placeholder for AssistantMessageRenderer (to be created in a new file)
+const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent }> = ({ assistantMessage }) => {
+  const handleReferenceClick = (target: string) => {
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      window.open(target, '_blank');
+    } else {
+      const footnoteElement = document.getElementById(`footnote-${target}`);
+      footnoteElement?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {(assistantMessage.content || []).map((element, index) => {
+        // Use Fragment to avoid unnecessary div wrappers if an element renders multiple top-level tags (like bold/italic might if not handled carefully)
+        // Or, ensure each component renders a single root or text.
+        return (
+          <Fragment key={index}>
+            {element.type === 'paragraph' && <p>{element.text}</p>}
+            {element.type === 'bold' && <strong>{element.text}</strong>}
+            {element.type === 'italic' && <em>{element.text}</em>}
+            {element.type === 'unordered_list' && (
+              <ul className="list-disc list-inside pl-4">
+                {element.items?.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
+            )}
+            {element.type === 'ordered_list' && (
+              <ol className="list-decimal list-inside pl-4">
+                {element.items?.map((item, i) => <li key={i}>{item}</li>)}
+              </ol>
+            )}
+            {element.type === 'table' && element.header && element.rows && (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {element.header.map((headerText, i) => (
+                        <th key={i} scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r last:border-r-0 border-gray-300">
+                          {headerText}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {element.rows.map((row, i) => (
+                      <tr key={i} className="border-b last:border-b-0 border-gray-300">
+                        {row.map((cellText, j) => (
+                          <td key={j} className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 border-r last:border-r-0 border-gray-300">
+                            {cellText}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {element.type === 'reference' && element.target && element.display && (
+              <a 
+                href={element.target.startsWith('http') ? element.target : `#footnote-${element.target}`}
+                onClick={(e) => {
+                  if (!element.target.startsWith('http')) e.preventDefault();
+                  handleReferenceClick(element.target);
+                }}
+                className="text-blue-600 hover:underline cursor-pointer"
+                target={element.target.startsWith('http') ? "_blank" : "_self"}
+                rel={element.target.startsWith('http') ? "noopener noreferrer" : undefined}
+              >
+                {element.display}
+              </a>
+            )}
+          </Fragment>
+        );
+      })}
+      {assistantMessage.references && Object.keys(assistantMessage.references).length > 0 && (
+        <div className="mt-6 pt-4 border-t border-gray-300">
+          <h4 className="text-sm font-semibold mb-2">References</h4>
+          <ul className="space-y-1 list-none pl-0">
+            {Object.entries(assistantMessage.references).map(([key, value]) => (
+              <li key={key} id={`footnote-${key}`} className="text-xs text-gray-600">
+                <span className="font-medium">[{key}]</span> {value}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
