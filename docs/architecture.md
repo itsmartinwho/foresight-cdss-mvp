@@ -10,6 +10,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   **Centralized Routing Logic:** A main application component (`ForesightApp.tsx`) handles the display of different views based on the current URL pathname.
 *   **Global Layout:** Consistent UI elements like the header and sidebar are managed at the root layout level. Starting with the May-2025 flattening refactor, each route now renders its main content inside a single `ContentSurface` component which provides a frosted-glass backdrop and consistent padding. Pages that need the full viewport (e.g. `PatientWorkspaceView`) may pass `fullBleed` to opt out of the glass wrapper.
 *   **Styling:** Tailwind CSS is the primary utility for styling, supplemented by global styles and potentially CSS Modules for component-specific styles.
+*   **Logging Strategy:** The `SupabaseDataService` uses concise `Prod Debug` logs via `console.log` for key data-loading events (e.g., load in progress, initiating sequence, fetching patients, fetching visits). Row-level verbose logs have been removed for clarity; errors and warnings remain enabled.
 
 ## Directory Structure Highlights
 

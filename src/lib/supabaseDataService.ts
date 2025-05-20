@@ -59,10 +59,8 @@ class SupabaseDataService {
           // this.isLoading = false;
           throw new Error("Patient rows fetch returned null.");
       }
-      console.log(`SupabaseDataService (Prod Debug): Fetched ${patientRows.length} raw patient rows from Supabase.`);
 
       patientRows.forEach((row) => {
-        console.log(`SupabaseDataService (Prod Debug): Processing patient row: ${row.patient_id}`, row);
         // Gather possible alert sources
         const candidateSources = [
           { key: 'alerts', value: row.alerts },
@@ -82,7 +80,6 @@ class SupabaseDataService {
           chosenKey = c.key;
           break;
         }
-        console.log(`SupabaseDataService (Prod Debug): Chosen alerts source for patient ${row.patient_id}: ${chosenKey}`, chosenRawAlerts);
         const rawAlertsData = chosenRawAlerts;
         const patient: Patient = {
           id: row.patient_id,
@@ -116,7 +113,6 @@ class SupabaseDataService {
                 }
                 s = s.replace(/""/g, '"');
                 const parsed = JSON.parse(s);
-                console.log(`SupabaseDataService (Prod Debug): Parsed alerts from string for patient ${row.patient_id}:`, parsed);
                 return Array.isArray(parsed) ? parsed as ComplexCaseAlert[] : [];
               }
             } catch (e) {
@@ -129,11 +125,9 @@ class SupabaseDataService {
           nextAppointment: row.next_appointment_date ? new Date(row.next_appointment_date).toISOString() : undefined,
           reason: row.patient_level_reason,
         };
-        console.log(`SupabaseDataService (Prod Debug): Processed patient object for ${patient.id}:`, patient);
         this.patients[patient.id] = patient;
         this.admissionsByPatient[patient.id] = []; 
       });
-      console.log(`SupabaseDataService (Prod Debug): Processed and cached ${Object.keys(this.patients).length} patients.`);
 
       let visitRows = null;
       let totalVisitsAvailable = 0;
@@ -149,7 +143,6 @@ class SupabaseDataService {
           }
           visitRows = data;
           totalVisitsAvailable = count ?? 0;
-          console.log(`SupabaseDataService (Prod Debug): Fetched ${visitRows ? visitRows.length : 0} raw visit rows. Total available: ${totalVisitsAvailable}`);
       } catch (error) {
           console.error('SupabaseDataService (Prod Debug): Exception during visits fetch:', error);
           this.loadPromise = null; 
@@ -202,12 +195,10 @@ class SupabaseDataService {
         }
         visitsProcessed++;
       });
-      console.log(`SupabaseDataService (Prod Debug): Processed and cached ${visitsProcessed} visits. Total in cache: ${Object.keys(this.admissions).length}.`);
 
       this.isLoaded = true;
       // this.isLoading = false;
       this.loadPromise = null; // Clear the promise, so next call will trigger a new load if isLoaded becomes false
-      console.log('SupabaseDataService (Prod Debug): loadPatientData completed successfully.');
       this.emitChange(); // Notify subscribers that data is loaded/updated.
     })();
     return this.loadPromise;
@@ -548,8 +539,8 @@ class SupabaseDataService {
   }
 
   unsubscribe(cb: () => void) {
-    this.changeSubscribers = this.changeSubscribers.filter(sub => sub !== cb);
-    console.log("SupabaseDataService (Prod Debug): Unsubscribed a callback. Total subscribers:", this.changeSubscribers.length);
+    this.changeSubscribers = this.changeSubscribers.filter(s => s !== cb);
+    // console.log("SupabaseDataService (Prod Debug): Unsubscribed a callback. Total subscribers:", this.changeSubscribers.length);
   }
 }
 

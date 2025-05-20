@@ -134,6 +134,17 @@ The application now primarily uses data from a Supabase PostgreSQL database.
 ### Data Model & Source
 The primary data source is a PostgreSQL database managed by **Supabase**. The schema includes tables for `patients`, `visits`, and `transcripts`, as defined in `scripts/schema.sql`.
 
+## Logging / Debugging
+
+Client-side data service (`SupabaseDataService`) emits concise `Prod Debug` logs through `console.log` for key events:
+
+- "Load already in progress, returning existing promise."
+- "Initiating new data load sequence."
+- "Fetching patients from Supabase..."
+- "Attempting to fetch ALL visits with count..."
+
+All other verbose logs (per-patient and per-visit processing details) have been removed to reduce console noise. Errors and warnings remain active for troubleshooting.
+
 ## Support
 For questions regarding this prototype, please refer to the project's GitHub repository and issues.
 
