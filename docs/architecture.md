@@ -50,7 +50,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 *   Examples:
     *   `DashboardView.tsx`
     *   `PatientsListView.tsx`
-    *   `PatientWorkspaceView.tsx` (itself containing sub-components for demographics, admissions, etc.)
+    *   `PatientWorkspaceView.tsx` (itself now primarily a layout and state manager for tabs, importing its tab content from components within `src/components/patient-workspace-tabs/` such as `ConsultationTab.tsx`, `DiagnosisTab.tsx`, etc.)
     *   `AlertsScreenView.tsx`
     *   `AnalyticsScreenView.tsx`
     *   `SettingsScreenView.tsx`
@@ -63,7 +63,7 @@ This document outlines the frontend architecture of the Foresight CDSS MVP proto
 
 *   These are more granular, reusable components.
 *   `layout/` components like `GlassHeader` and `GlassSidebar` define major structural elements.
-*   `ui/` components are typically generic building blocks (buttons, inputs, cards, etc.).
+*   `ui/` components are typically generic building blocks (buttons, inputs, cards, etc.). This directory now also includes shared helper components like `RenderDetailTable.tsx`, `SeverityBadge.tsx`, `LikelihoodBadge.tsx`, `NotificationBell.tsx`, and `AlertSidePanel.tsx` which were extracted from larger components for reusability.
 
 ## Routing Strategy
 

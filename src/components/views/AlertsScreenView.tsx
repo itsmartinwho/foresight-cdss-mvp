@@ -6,28 +6,10 @@ import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, ComplexCaseAlert } from "@/lib/types";
 import ContentSurface from '@/components/layout/ContentSurface';
 
-// Copied LikelihoodBadge and SeverityBadge from ForesightApp.tsx as they are used here
-function LikelihoodBadge({ likelihood }: { likelihood?: number }) {
-  const level = likelihood !== undefined ? likelihood : 0;
-  const color =
-    level >= 5 ? "bg-red-600 text-white" :
-    level >= 4 ? "bg-red-400 text-white" :
-    level >= 3 ? "bg-orange-400 text-white" :
-    level >= 2 ? "bg-yellow-400 text-black" :
-    level >= 1 ? "bg-green-300 text-black" :
-    "bg-green-100 text-black";
-  return <span className={`${color} text-xs px-2 py-0.5 rounded-full`}>{level}</span>;
-}
+// Import shared UI components
+import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
+import SeverityBadge from "@/components/ui/SeverityBadge";
 
-function SeverityBadge({ severity }: { severity: string }) {
-  const color =
-    severity === "High" ? "bg-red-600" :
-    severity === "Medium" ? "bg-orange-500" :
-    "bg-slate-500";
-  return <span className={`${color} text-white text-xs px-2 py-0.5 rounded-full`}>{severity}</span>;
-}
-
-// AlertsView function from ForesightApp.tsx (approx. lines 825-977)
 export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (patientId: string) => void }) {
   const [allAlerts, setAllAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string; lastConsultation?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +51,7 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
         }
       });
       setAllAlerts(alertsWithPatientNames);
-      console.log('AlertsScreenView (Prod Debug): All alerts with patient names in AlertsScreenView:', alertsWithPatientNames);
+      // console.log('AlertsScreenView (Prod Debug): All alerts with patient names in AlertsScreenView:', alertsWithPatientNames);
       setIsLoading(false);
     };
     loadAlertData();
@@ -87,7 +69,7 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
     }
   });
 
-  console.log('AlertsScreenView (Prod Debug): Sorted alerts in AlertsScreenView:', sortedAlerts);
+  // console.log('AlertsScreenView (Prod Debug): Sorted alerts in AlertsScreenView:', sortedAlerts);
 
   const highPriorityAlertsCount = allAlerts.filter(
     alert => alert.likelihood !== undefined && alert.likelihood >= 4
