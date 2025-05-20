@@ -143,72 +143,71 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   }
 
   return (
-    <ContentSurface fullBleed className="flex flex-col relative">
-      <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-6">
-          <div>
-            <CardTitle className="text-step-1">Upcoming Appointments</CardTitle>
-            <CardDescription className="text-step-0 text-muted-foreground/80">
-              Select a patient to start consultation
-            </CardDescription>
-          </div>
-          <button
-            onClick={() => setShowNewConsultModal(true)}
-            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
-          >
-            + New Consultation
-          </button>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-6">
-          {upcomingAppointments.length > 0 ? (
-            <Table className="mobile-card:block sm:table text-step-0">
-              <TableHeader className="mobile-card:hidden sm:table-header-group">
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead></TableHead>
+    <ContentSurface fullBleed className="p-6 flex flex-col relative">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+        <div>
+          <h1 className="text-step-1 font-semibold">Upcoming Appointments</h1>
+          <p className="text-step-0 text-muted-foreground/80">
+            Select a patient to start consultation
+          </p>
+        </div>
+        <button
+          onClick={() => setShowNewConsultModal(true)}
+          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+        >
+          + New Consultation
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {upcomingAppointments.length > 0 ? (
+          <Table className="mobile-card:block sm:table text-step-0">
+            <TableHeader className="mobile-card:hidden sm:table-header-group">
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>Patient</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="mobile-card:block sm:table-row-group">
+              {upcomingAppointments.map(({ patient: p, visit }) => (
+                <TableRow
+                  key={`upcoming_dashboard_${p.id}_${visit.id}`}
+                  className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
+                >
+                  <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                    <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
+                    {visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
+                  </TableCell>
+                  <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
+                    <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
+                    {p.photo && (
+                      <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2 mobile-card:hidden" />
+                    )}
+                    {p.name}
+                  </TableCell>
+                  <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                    <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
+                    {visit.reason}
+                  </TableCell>
+                  <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
+                    <Button
+                      size="sm"
+                      onClick={() => onStartConsult(p)}
+                      className="gap-1 w-full mobile-card:w-full text-step--1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      <PlayCircle className="h-[1em] w-[1em]" /> Start
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="mobile-card:block sm:table-row-group">
-                {upcomingAppointments.map(({ patient: p, visit }) => (
-                  <TableRow
-                    key={`upcoming_dashboard_${p.id}_${visit.id}`}
-                    className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
-                  >
-                    <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
-                      {visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
-                    </TableCell>
-                    <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
-                      {p.photo && (
-                        <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2 mobile-card:hidden" />
-                      )}
-                      {p.name}
-                    </TableCell>
-                    <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                      {visit.reason}
-                    </TableCell>
-                    <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
-                      <Button
-                        size="sm"
-                        onClick={() => onStartConsult(p)}
-                        className="gap-1 w-full mobile-card:w-full text-step--1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                      >
-                        <PlayCircle className="h-[1em] w-[1em]" /> Start
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-muted-foreground">No upcoming appointments scheduled.</p>
-          )}
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-sm text-muted-foreground">No upcoming appointments scheduled.</p>
+        )}
+      </div>
 
       <div className="fixed bottom-6 right-6 z-40">
         <div className="bg-white p-2 rounded-full shadow-lg">
