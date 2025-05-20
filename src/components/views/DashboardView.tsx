@@ -143,9 +143,9 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
   }
 
   return (
-    <ContentSurface fullBleed className="p-6 flex flex-col relative">
+    <ContentSurface fullBleed className="flex flex-col relative">
       <Card className="mb-6 bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-6">
           <div>
             <CardTitle className="text-step-1">Upcoming Appointments</CardTitle>
             <CardDescription className="text-step-0 text-muted-foreground/80">
@@ -159,7 +159,7 @@ export default function DashboardView({ onStartConsult, onAlertClick }: { onStar
             + New Consultation
           </button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto p-6">
           {upcomingAppointments.length > 0 ? (
             <Table className="mobile-card:block sm:table text-step-0">
               <TableHeader className="mobile-card:hidden sm:table-header-group">
