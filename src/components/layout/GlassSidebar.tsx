@@ -70,7 +70,7 @@ export default function GlassSidebar() {
     { key: "alerts", label: "Alerts", icon: BellRing },
   ];
   return (
-    <div className={`min-h-[calc(100svh-4rem)] ${collapsed ? 'w-[4.5rem]' : 'w-56'} backdrop-blur-lg bg-transparent border-r border-[rgba(255,255,255,0.12)] shadow-card flex flex-col p-3 hidden lg:flex transition-all duration-300 ease-in-out overflow-hidden`}>
+    <div className={`min-h-[calc(100svh-4rem)] ${collapsed ? 'w-[4.5rem]' : 'w-56'} backdrop-blur-lg bg-transparent border-r border-[rgba(255,255,255,0.12)] flex flex-col p-3 hidden lg:flex transition-all duration-300 ease-in-out overflow-hidden`}>
       <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
