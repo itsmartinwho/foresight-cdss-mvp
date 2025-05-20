@@ -133,13 +133,24 @@
   .text-step-3  { font-size: var(--step-3);  line-height: 1.25; font-weight: 600; }
 
   /* Global placeholder text styling */
-  input::placeholder,
-  textarea::placeholder {
+  input:not(.unified-search-input)::placeholder,
+  textarea:not(.unified-search-input)::placeholder {
     color: var(--placeholder-color) !important;
     opacity: var(--placeholder-opacity) !important;
     font-size: var(--step--1) !important;
     font-weight: 300 !important;
     font-family: inherit !important; /* Ensure font family matches input */
+  }
+
+  /* Placeholder for unified search inputs (navbar, sidebar) */
+  .unified-search-input::placeholder {
+    color: #F0F0F0 !important;
+    opacity: 0.75 !important;
+    /* Inherit other font properties from the input itself or define explicitly if needed */
+    /* For example, if you want to ensure it uses the same font styles as other placeholders: */
+    /* font-size: var(--step--1) !important; */
+    /* font-weight: 300 !important; */
+    /* font-family: inherit !important; */
   }
 
   /* Directly target react-datepicker input and select placeholder */
