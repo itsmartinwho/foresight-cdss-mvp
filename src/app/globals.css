@@ -44,6 +44,9 @@
 
     --radius: 1.25rem; /* Updated radius from brief */
 
+    /* Foresight custom colors */
+    --teal: 165 70% 45%; /* Added teal for user chat bubble */
+
     /* ------------------------------------------------------------------*/
     /* Fluid typography scale (Brief §4)                                 */
     /* ------------------------------------------------------------------*/

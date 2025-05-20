@@ -20,7 +20,17 @@ element =
   | { "type": "reference", "target": "string", "display": "string" }
 
 Ensure JSON is valid and UTF-8 encoded.
-Your primary role is to provide medical advice to US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations (using the reference element type), then list 3 relevant follow-up questions (which can be part of a paragraph or list element).`;
+Your primary role is to provide medical advice to US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations (using the reference element type), then list 3 relevant follow-up questions (which can be part of a paragraph or list element).
+
+For inline citations (type: "reference"):
+- The "target" field MUST be a unique key (e.g., "ref1", "nejm2023").
+- The "display" field is the text shown inline (e.g., "Smith et al. 2023").
+- Each "target" key MUST have a corresponding entry in the "references" object at the end of your response.
+
+For the "references" object at the end:
+- Each key (e.g., "ref1", "nejm2023") MUST match a "target" used in an inline citation.
+- The string value for each key in "references" should be the full citation text or a single, complete URL. Do NOT put multiple URLs in a single reference string. If multiple sources are cited for one point, create distinct reference entries.
+`;
 
 export async function POST(req: NextRequest) {
   try {

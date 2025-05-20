@@ -312,20 +312,31 @@ export default function AdvisorView() {
                 <div
                   className={cn(
                     msg.role === "user"
-                      ? "max-w-[66.666%] w-fit bg-primary text-primary-foreground"
+                      ? "max-w-[66.666%] w-fit bg-foresight-teal text-white"
                       : msg.role === "assistant"
-                      ? "max-w-full w-fit bg-muted"
+                      ? "max-w-full w-fit bg-white/90 text-gray-800"
                       : "hidden",
                     "rounded-lg p-3 text-sm shadow-sm"
                   )}
                 >
                   {msg.role === "user" && typeof msg.content === 'string' && msg.content}
-                  {msg.role === "system" && typeof msg.content === 'string' && <div className="text-xs text-muted-foreground italic p-2 text-center w-full">{msg.content}</div>}
+                  {msg.role === "system" && typeof msg.content === 'string' && <div className="text-xs text-muted-foreground italic p-2 text-center w-full sheen">{msg.content}</div>}
                   {msg.role === "assistant" && typeof msg.content === 'object' && (
                     <AssistantMessageRenderer assistantMessage={msg.content as AssistantMessageContent} />
                   )}
-                  {msg.role === "assistant" && msg.isStreaming && typeof msg.content === 'object' && (msg.content as AssistantMessageContent).content.length === 0 && (
-                    <div className="animate-pulse">Thinking...</div>
+                  {/* Loading indicators */}
+                  {msg.role === "assistant" && 
+                   msg.isStreaming && 
+                   typeof msg.content === 'object' && 
+                   (msg.content as AssistantMessageContent).content.length === 0 && (
+                    <> {/* Use a fragment to conditionally render one of the indicators */}
+                      {thinkMode && (
+                        <div className="animate-pulse">Thinking...</div>
+                      )}
+                      {!thinkMode && isSending && (
+                        <div className="animate-pulse">Foresight is typing...</div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -472,8 +483,8 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         return (
           <Fragment key={index}>
             {element.type === 'paragraph' && <p>{element.text}</p>}
-            {element.type === 'bold' && <strong>{element.text}</strong>}
-            {element.type === 'italic' && <em>{element.text}</em>}
+            {element.type === 'bold' && <p><strong>{element.text}</strong></p>}
+            {element.type === 'italic' && <p><em>{element.text}</em></p>}
             {element.type === 'unordered_list' && (
               <ul className="list-disc list-inside pl-4">
                 {element.items?.map((item, i) => <li key={i}>{item}</li>)}
