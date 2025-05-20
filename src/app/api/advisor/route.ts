@@ -37,7 +37,16 @@ For the "references_container" object at the end:
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages = [], model = "gpt-4.1" } = await req.json();
+    // Read payload from query parameter for SSE GET requests
+    const url = new URL(req.url);
+    const payloadParam = url.searchParams.get("payload");
+    if (!payloadParam) {
+      return new Response(JSON.stringify({ error: "Payload missing" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const { messages = [], model = "gpt-4.1" } = JSON.parse(payloadParam);
 
     const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
 
@@ -60,7 +69,6 @@ export async function POST(req: NextRequest) {
           const token = chunk.choices?.[0]?.delta?.content || "";
           buffer += token;
 
-          // Process buffer line by line if newlines are present
           let newlineIndex;
           while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
             const line = buffer.substring(0, newlineIndex).trim();
@@ -68,31 +76,22 @@ export async function POST(req: NextRequest) {
 
             if (line) {
               try {
-                // Attempt to parse the line as JSON
-                JSON.parse(line); // Validate if it's a valid JSON object
-                controller.enqueue(encoder.encode(line + "\n")); // Send the valid JSON line (with newline)
+                JSON.parse(line);
+                controller.enqueue(encoder.encode(`data: ${line}\n\n`));
               } catch (e) {
-                // Not a valid JSON object on its own, could be part of a larger, incomplete one.
-                // Or it could be an error from the LLM. For now, we are assuming LLM sends valid, newline-separated JSONs.
-                // If the LLM doesn't strictly adhere, this part needs more robust error handling or a different parsing strategy.
-                // console.warn("Skipping non-JSON line:", line, e);
-                // Let's re-add it to the buffer if it's not valid JSON, as it might be an incomplete chunk.
-                // However, the prompt asks for newline *terminated* JSONs. So a non-JSON line before a newline is an LLM error.
-                // For now, we will strictly expect each newline-terminated string to be a self-contained JSON.
-                // If it's not, we log a warning and discard it to prevent breaking the frontend.
-                console.warn("Received non-JSON line before newline, discarding:", line);
+                console.warn("Skipping invalid JSON line for SSE:", line, e);
               }
             }
           }
         }
-        // Process any remaining data in the buffer after the stream ends
-        if (buffer.trim()) {
-            try {
-                JSON.parse(buffer.trim());
-                controller.enqueue(encoder.encode(buffer.trim() + "\n"));
-            } catch (e) {
-                console.warn("Remaining data in buffer is not valid JSON, discarding:", buffer.trim());
-            }
+        const remainingLine = buffer.trim();
+        if (remainingLine) {
+          try {
+            JSON.parse(remainingLine);
+            controller.enqueue(encoder.encode(`data: ${remainingLine}\n\n`));
+          } catch (e) {
+            console.warn("Skipping invalid JSON from remaining buffer for SSE:", remainingLine, e);
+          }
         }
         controller.close();
       },
@@ -100,9 +99,10 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        // Changed content type to ndjson for newline delimited JSON
-        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (error: unknown) {

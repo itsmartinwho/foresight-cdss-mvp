@@ -168,21 +168,11 @@ export default function AdvisorView() {
       isStreaming: true,
     };
 
-    setMessages(prevMessages => {
-      const explicitlyConstructedUserMessage: ChatMessage = {
-        id: newUserMessage.id,
-        role: newUserMessage.role,
-        content: newUserMessage.content,
-        // isStreaming is optional, so it's fine if newUserMessage doesn't explicitly have it 
-        // (it would be undefined, which is acceptable for an optional field)
-      };
-      const newMessages: ChatMessage[] = [
-        ...prevMessages,
-        explicitlyConstructedUserMessage, // Use the very explicitly constructed object
-        initialAssistantMessage
-      ];
-      return newMessages;
-    });
+    setMessages(prevMessages => [
+      ...prevMessages,
+      newUserMessage,
+      initialAssistantMessage
+    ]);
     setInput("");
     setIsSending(true);
     setUserHasScrolledUp(false); 
@@ -194,123 +184,82 @@ export default function AdvisorView() {
     });
 
     try {
-      // Explicitly type the payload for the OpenAI API call
-      const apiPayloadMessages: Array<{role: 'user' | 'assistant' | 'system', content: string}> = messages
-        .filter(m => m.role !== 'system') // Filter out system messages from history
+      const apiPayloadMessages = messages
+        .filter(m => m.role !== 'system') 
         .map(currentMessageInMap => ({
           role: currentMessageInMap.role,
-          // Convert assistant's structured content to JSON string for the API
           content: typeof currentMessageInMap.content === 'string' 
                      ? currentMessageInMap.content 
                      : JSON.stringify(currentMessageInMap.content)
         }))
         .concat([{
-          role: newUserMessage.role as 'user', // Role of newUserMessage is known
-          content: newUserMessage.content as string // Content of newUserMessage is string
+          role: newUserMessage.role as 'user',
+          content: newUserMessage.content as string 
         }]);
 
-      const res = await fetch("/api/advisor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: apiPayloadMessages, // Use the explicitly typed array
-          model: thinkMode ? "o3-mini" : "gpt-4.1",
-        }),
-      });
+      // Use EventSource for SSE
+      const eventSource = new EventSource("/api/advisor?payload=" + encodeURIComponent(JSON.stringify({
+        messages: apiPayloadMessages,
+        model: thinkMode ? "o3-mini" : "gpt-4.1",
+      })));
 
-      if (!res.ok || !res.body) throw new Error(await res.text());
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
       let currentAssistantMessageContent: AssistantMessageContent = { content: [], references: {} };
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          // Process any remaining buffer content if necessary
-          if (buffer.trim()) {
-            try {
-              const jsonObject = JSON.parse(buffer.trim()) as ContentElement | { type: "references_container", references: { [key: string]: string } };
-              if (jsonObject.type === "references_container") {
-                currentAssistantMessageContent.references = jsonObject.references;
-              } else {
-                currentAssistantMessageContent.content.push(jsonObject as ContentElement);
-              }
-              setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId ? { ...msg, content: { ...currentAssistantMessageContent }, isStreaming: false } : msg
-              ));
-            } catch (e) {
-              console.error("Error parsing remaining buffer content:", e, "Buffer:", buffer);
-              // Fallback: update with what we have and stop streaming
-              setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId ? { ...msg, content: { ...currentAssistantMessageContent }, isStreaming: false } : msg
-              ));
+      eventSource.onmessage = (event) => {
+        const line = event.data;
+        if (line) {
+          try {
+            const jsonObject = JSON.parse(line) as ContentElement | { type: "references_container", references: { [key: string]: string } };
+
+            if (jsonObject.type === "references_container") {
+              currentAssistantMessageContent.references = jsonObject.references;
+            } else {
+              currentAssistantMessageContent.content.push(jsonObject as ContentElement);
             }
-          } else {
+
             setMessages(prev => prev.map(msg =>
-              msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg
+              msg.id === assistantMessageId
+                ? { ...msg, content: { ...currentAssistantMessageContent }, isStreaming: true } // Keep isStreaming true until closed
+                : msg
             ));
-          }
 
-          // Speak the final assembled content if voiceMode is on
-          if (voiceMode && currentAssistantMessageContent.content.length > 0) {
-            const speechText = currentAssistantMessageContent.content
-              .filter(el => el.type === 'paragraph' && el.text)
-              .map(el => (el as any).text) // Type assertion needed as 'text' is not on all ContentElement types
-              .join(' ');
-            if (speechText) speak(speechText);
-          }
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        let newlineIndex;
-        while ((newlineIndex = buffer.indexOf("\\n")) >= 0) {
-          const line = buffer.substring(0, newlineIndex).trim();
-          buffer = buffer.substring(newlineIndex + 1);
-
-          if (line) {
-            try {
-              const jsonObject = JSON.parse(line) as ContentElement | { type: "references_container", references: { [key: string]: string } };
-
-              if (jsonObject.type === "references_container") {
-                currentAssistantMessageContent.references = jsonObject.references;
-                // We might receive references at the end, so update and continue, but don't change isStreaming yet.
-              } else {
-                currentAssistantMessageContent.content.push(jsonObject as ContentElement);
-              }
-
-              // Update messages with the new piece of content
-              setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId
-                  ? { ...msg, content: { ...currentAssistantMessageContent } } // Shallow copy current content
-                  : msg
-              ));
-
-              // Speak paragraph text as it arrives if voiceMode is on and the element is a paragraph
-              if (voiceMode && jsonObject.type === 'paragraph' && (jsonObject as any).text) {
-                 speak((jsonObject as any).text);
-              }
-
-            } catch (e) {
-              console.error("Error parsing streamed JSON object:", e, "Line:", line);
-              // If a line fails to parse, we could log it and try to continue,
-              // or decide to stop if errors are critical. For now, log and continue.
+            if (voiceMode && jsonObject.type === 'paragraph' && (jsonObject as any).text) {
+              speak((jsonObject as any).text);
             }
+
+          } catch (e) {
+            console.error("Error parsing SSE event data:", e, "Data:", line);
           }
         }
-      }
-    } catch (err: any) {
-      console.error(err);
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("EventSource failed:", err);
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: Connection failed or stream ended.`}], references: {}}, isStreaming: false } 
+            : msg
+        ));
+        setIsSending(false);
+        eventSource.close(); // Important to close on error
+      };
+
+      // The stream will be closed by the server, or on error.
+      // We can set isStreaming to false when the server signals completion, 
+      // or if the EventSource is explicitly closed after all data is assumed received.
+      // For now, onerror handles setting isStreaming to false.
+      // A specific "end" event from server would be more robust for this.
+
+    } catch (err: any) { // This catch is for errors setting up EventSource, not for stream errors
+      console.error("Error setting up EventSource:", err);
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMessageId 
           ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: ${err.message}`}], references: {}}, isStreaming: false } 
           : msg
       ));
-    } finally {
       setIsSending(false);
     }
+    // setIsSending(false) will now be handled by EventSource onerror or a potential onclose/onend event.
   };
 
   // ESC key exits voice mode
