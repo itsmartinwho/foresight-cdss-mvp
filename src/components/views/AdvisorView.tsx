@@ -212,49 +212,26 @@ export default function AdvisorView() {
           <h1 className="text-2xl font-medium self-center">Ask Foresight</h1>
         )}
 
-        {/* Chat container */}
-        <div className="relative flex flex-col flex-1 overflow-hidden min-h-0">
-          {/* <ScrollArea className="flex-1 min-h-0 p-6" ref={scrollRef}>
-            <div className="space-y-6 pb-44"> {/* extra bottom padding to allow for floating input */}
-          {/*
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
-                    msg.role === "user"
-                      ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
-                      : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
-                  )}
-                >
-                  {msg.content}
-                </div>
-              ))}
-            </div>
-          </ScrollArea> */}
-          {/* Temporary plain div for testing */}
-          <div
-            ref={scrollRef}
-            className="flex-1 min-h-0 p-6 overflow-y-auto bg-red-500/10" // Added a light red background for visual debugging
-            data-testid="plain-scrolling-div"
-          >
-            <div className="space-y-6 pb-44"> {/* This is the inner content div */}
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
-                    msg.role === "user"
-                      ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
-                      : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
-                  )}
-                >
-                  {/* pridestaff-debug-log */}
-                  {/* console.log("AdvisorView (Debug): Rendering message", idx); */}
-                  {msg.content}
-                </div>
-              ))}
-            </div>
+        {/* Temporary plain div for testing - now a direct child of ContentSurface */}
+        <div
+          ref={scrollRef}
+          className="flex-1 min-h-0 p-6 overflow-y-auto bg-red-500/10" // Added a light red background for visual debugging
+          data-testid="plain-scrolling-div"
+        >
+          <div className="space-y-6 pb-44"> {/* This is the inner content div */}
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "max-w-xl px-5 py-3 rounded-lg whitespace-pre-wrap text-sm",
+                  msg.role === "user"
+                    ? "ml-auto bg-gradient-to-br from-teal-500 to-cyan-500 text-white"
+                    : "mr-auto bg-[rgba(255,255,255,0.12)] backdrop-blur-md"
+                )}
+              >
+                {msg.content}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -285,7 +262,7 @@ export default function AdvisorView() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={includePapers
-                  ? "Ask anything, we'll look for recent research papers in the area"
+                  ? "Ask anything, we\'ll look for recent research papers in the area"
                   : thinkMode
                   ? "Reasoning mode selected for your harder medical queries"
                   : "Ask anything"}
@@ -348,7 +325,7 @@ export default function AdvisorView() {
                         ...prev,
                         { role: "user", content: `[Uploaded ${file.name}]` },
                       ]);
-                      e.target.value = "";
+                      e.target.value = ""; // Clear the input after selection
                     }}
                   />
 
@@ -383,4 +360,4 @@ export default function AdvisorView() {
       )}
     </>
   );
-} 
+}
