@@ -18,34 +18,32 @@ const analyticsData: any[] = [
 // AnalyticsView function from ForesightApp.tsx (approx. lines 979-1011)
 export default function AnalyticsScreenView() {
   return (
-    <ContentSurface fullBleed className="flex flex-col">
-      <Card className="bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
-        <CardHeader className="p-6">
-          <CardTitle className="text-step-1">Usage Analytics (Mock)</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-6">
-          <Table className="text-step-0">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Consults</TableHead>
-                <TableHead>Minutes Saved</TableHead>
-                <TableHead>Accuracy Gain</TableHead>
+    <ContentSurface fullBleed className="p-6 flex flex-col">
+      <div className="mb-6">
+        <h1 className="text-step-1 font-semibold">Usage Analytics (Mock)</h1>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <Table className="text-step-0">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Consults</TableHead>
+              <TableHead>Minutes Saved</TableHead>
+              <TableHead>Accuracy Gain</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {analyticsData.map((d) => (
+              <TableRow key={d.date}>
+                <TableCell>{d.date}</TableCell>
+                <TableCell>{d.consults}</TableCell>
+                <TableCell>{d.timeSaved}</TableCell>
+                <TableCell>{(d.accuracyGain * 100).toFixed(0)}%</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {analyticsData.map((d) => (
-                <TableRow key={d.date}>
-                  <TableCell>{d.date}</TableCell>
-                  <TableCell>{d.consults}</TableCell>
-                  <TableCell>{d.timeSaved}</TableCell>
-                  <TableCell>{(d.accuracyGain * 100).toFixed(0)}%</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </ContentSurface>
   );
 } 

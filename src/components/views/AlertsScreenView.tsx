@@ -98,74 +98,72 @@ export default function AlertsScreenView({ onAlertClick }: { onAlertClick: (pati
   }
 
   return (
-    <ContentSurface fullBleed className="flex flex-col">
-      <Card className="bg-glass glass-dense backdrop-blur-lg flex-1 min-h-0 flex flex-col overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between p-6">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-step-1">Patient Alerts</CardTitle>
-            {highPriorityAlertsCount > 0 && (
-              <div className="bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {highPriorityAlertsCount}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
-            <Button
-              variant={sortBy === 'likelihood' ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSortBy('likelihood')}
-              className="text-step--1"
-            >
-              Priority
-            </Button>
-            <Button
-              variant={sortBy === 'date' ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSortBy('date')}
-              className="text-step--1"
-            >
-              Date
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm flex-1 overflow-y-auto p-6">
-          {sortedAlerts.length === 0 && <p className="text-muted-foreground">No active alerts for any patient.</p>}
-          {sortedAlerts.map((alert) => (
-            <div
-              key={alert.id}
-              className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-background/50 hover:bg-foreground/5"
-              onClick={() => onAlertClick(alert.patientId)}
-            >
-              <LikelihoodBadge likelihood={alert.likelihood} />
-              <div className="flex-grow">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-foreground">{alert.patientName}</p>
-                  {alert.conditionType && (
-                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
-                      {alert.conditionType}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground truncate" title={alert.msg}>{alert.msg || ""}</p>
-                {alert.lastConsultation && (
-                  <p className="text-xs text-muted-foreground/80">
-                    Last consultation: {alert.lastConsultation}
-                  </p>
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground/80 text-right">
-                {alert.date && <div>{alert.date}</div>}
-                {alert.severity && (
-                  <div className="mt-1">
-                    <SeverityBadge severity={alert.severity} />
-                  </div>
-                )}
-              </div>
+    <ContentSurface fullBleed className="p-6 flex flex-col">
+      <div className="flex flex-row items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <h1 className="text-step-1 font-semibold">Patient Alerts</h1>
+          {highPriorityAlertsCount > 0 && (
+            <div className="bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {highPriorityAlertsCount}
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">Sort by:</span>
+          <Button
+            variant={sortBy === 'likelihood' ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSortBy('likelihood')}
+            className="text-step--1"
+          >
+            Priority
+          </Button>
+          <Button
+            variant={sortBy === 'date' ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSortBy('date')}
+            className="text-step--1"
+          >
+            Date
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-4 text-sm flex-1 overflow-y-auto">
+        {sortedAlerts.length === 0 && <p className="text-muted-foreground">No active alerts for any patient.</p>}
+        {sortedAlerts.map((alert) => (
+          <div
+            key={alert.id}
+            className="flex items-center space-x-3 p-3 border rounded-md shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-background/50 hover:bg-foreground/5"
+            onClick={() => onAlertClick(alert.patientId)}
+          >
+            <LikelihoodBadge likelihood={alert.likelihood} />
+            <div className="flex-grow">
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-foreground">{alert.patientName}</p>
+                {alert.conditionType && (
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                    {alert.conditionType}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground truncate" title={alert.msg}>{alert.msg || ""}</p>
+              {alert.lastConsultation && (
+                <p className="text-xs text-muted-foreground/80">
+                  Last consultation: {alert.lastConsultation}
+                </p>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground/80 text-right">
+              {alert.date && <div>{alert.date}</div>}
+              {alert.severity && (
+                <div className="mt-1">
+                  <SeverityBadge severity={alert.severity} />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </ContentSurface>
   );
 } 
