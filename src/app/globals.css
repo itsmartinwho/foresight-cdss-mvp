@@ -226,6 +226,28 @@ body {
   scrollbar-color: hsl(var(--foreground) / 0.3) transparent;
 }
 
+/* Radix ScrollArea scrollbar styling */
+[data-radix-scroll-area-scrollbar] {
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+[data-radix-scroll-area-scrollbar]:hover {
+  background: hsl(var(--foreground) / 0.15);
+}
+[data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
+  width: 8px;
+}
+[data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
+  height: 8px;
+}
+[data-radix-scroll-area-thumb] {
+  background: hsl(var(--foreground) / 0.3);
+  border-radius: 4px;
+}
+[data-radix-scroll-area-thumb]:hover {
+  background: hsl(var(--foreground) / 0.5);
+}
+
 @layer utilities {
   /* Utility class for elements (e.g., select, custom inputs) that need placeholder-style text */
   .placeholder-like {
