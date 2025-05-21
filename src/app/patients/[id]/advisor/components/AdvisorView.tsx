@@ -3,59 +3,23 @@ import { EventSource } from "event-source-polyfill";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ChatMessage, AssistantMessageContent, ContentElement, ContentElementParagraph, ContentElementUnorderedList, ContentElementOrderedList, ContentElementTable, ContentElementReferencesContainer, VALID_ELEMENT_TYPES } from "@/components/advisor/chat-types";
+import { parser, default_renderer, parser_write as smd_parser_write, parser_end as smd_parser_end } from "../../../../../components/advisor/streaming-markdown/smd";
+import { ChatMessage, AssistantMessageContent } from "@/components/advisor/chat-types";
+
+// Define a type for the parser instance from smd.js
+// smd.js doesn't export a specific type for the parser object, so we use 'any'.
+type SmdParser = any;
 
 const AdvisorView: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Store the EventSource instance
   const eventSourceRef = useRef<EventSource | null>(null);
+  // Ref to store parser instances, keyed by message ID
+  const parsersRef = useRef<Record<string, SmdParser>>({});
+  // Ref to store the div elements that the parsers will render into, keyed by message ID
+  const markdownRootsRef = useRef<Record<string, HTMLDivElement>>({});
 
-  // Helper to append a structured element to the streaming assistant message
-  const appendStructuredElement = (element: ContentElement) => {
-    setMessages((prevMessages) => {
-      const lastAssistantIndex = prevMessages.findIndex(
-        (m) => m.role === "assistant" && m.isStreaming
-      );
-      if (lastAssistantIndex === -1) {
-        // If no streaming assistant message is found, it might be that the placeholder wasn't added
-        // or the stream started sending data before the placeholder was set.
-        // Create a new streaming message.
-        console.warn("No streaming assistant message found, creating new one to append structured element.");
-        const newStreamingMessage: ChatMessage = {
-          id: `msg-${Date.now()}-streaming-recovery-${prevMessages.length}`,
-          role: "assistant",
-          content: {
-            content: [element],
-            isFallback: false,
-            fallbackMarkdown: "",
-          } as AssistantMessageContent,
-          isStreaming: true,
-        };
-        return [...prevMessages, newStreamingMessage];
-      }
-      const messagesCopy = [...prevMessages];
-      const targetMsg = messagesCopy[lastAssistantIndex];
-      const currentContent = targetMsg.content as AssistantMessageContent;
-      const updatedContent: AssistantMessageContent = {
-        ...currentContent,
-        content: Array.isArray(currentContent.content)
-          ? [...currentContent.content, element]
-          : [element],
-        isFallback: false, // Ensure fallback is off when a structured element arrives
-        fallbackMarkdown: "", // Clear any fallback markdown
-      };
-      messagesCopy[lastAssistantIndex] = {
-        ...targetMsg,
-        content: updatedContent,
-        isStreaming: true,
-      };
-      return messagesCopy;
-    });
-  };
-
-  // Function to close the EventSource - Defined in component scope
   const closeEventSource = () => {
     if (eventSourceRef.current) {
       console.log("Closing EventSource.");
@@ -68,398 +32,307 @@ const AdvisorView: React.FC = () => {
     // Clean up the EventSource when the component unmounts
     return () => {
       closeEventSource();
+      // Clean up any remaining parsers and their roots
+      Object.keys(parsersRef.current).forEach(msgId => {
+        if (parsersRef.current[msgId]) {
+          // Assuming parser_end is the correct cleanup. If not, adjust.
+          // parser_end(parsersRef.current[msgId]); 
+        }
+      });
+      parsersRef.current = {};
+      markdownRootsRef.current = {};
     };
-  }, []); // Empty dependency array ensures this runs only on mount and unmount
+  }, []);
 
   useEffect(() => {
-    // Function to open the EventSource
     const openEventSource = async () => {
-      // Re-enable the guard: Only open EventSource if the last message is from the user
       if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
         console.log("Skipping EventSource: No user input or messages empty, or last message not from user.");
-        return; 
+        return;
       }
 
-      // Construct the payload and URL
-      const thinkMode = false; // Placeholder for thinkMode logic
-      const payload = { messages }; // Send the whole messages array, server will filter
+      const thinkMode = false;
+      const payload = { messages };
       const encodedPayload = encodeURIComponent(JSON.stringify(payload));
       const apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
 
       try {
         console.debug("Opening SSE to", apiUrl);
         const eventSource = new EventSource(apiUrl);
-
         eventSourceRef.current = eventSource;
 
-        // Add a new assistant message placeholder when the stream starts
+        const newStreamMessageId = `msg-${Date.now()}-streaming-${messages.length}`;
+        
+        // Create a div for the markdown content
+        const markdownRootDiv = document.createElement('div');
+        markdownRootsRef.current[newStreamMessageId] = markdownRootDiv;
+
+        // Initialize parser for this message
+        const newParser = parser(default_renderer(markdownRootDiv));
+        parsersRef.current[newStreamMessageId] = newParser;
+
         setMessages((prevMessages) => [
           ...prevMessages,
           {
-            id: `msg-${Date.now()}-streaming-${prevMessages.length}`,
+            id: newStreamMessageId,
             role: "assistant",
             content: {
-              content: [],
-              isFallback: false,
-              fallbackMarkdown: "",
+              isMarkdownStream: true,
+              // Add 'content' and 'fallbackMarkdown' as optional undefined to satisfy type if needed, 
+              // or ensure AssistantMessageContent truly makes them optional.
+              // Based on previous chat-types.ts edit, they are optional.
             } as AssistantMessageContent,
             isStreaming: true,
           },
         ]);
 
         eventSource.onmessage = (ev) => {
-          console.debug("SSE recv:", ev.data); // Log raw received data
+          console.debug("SSE recv:", ev.data);
           try {
             const data = JSON.parse(ev.data);
+            const streamingMessageIdRef = useRef<string | null>(null);
 
-            // 1. New branch – handle server-wrapped structured blocks
-            if (data.type === "structured_block" && data.element) {
-              appendStructuredElement(data.element as ContentElement);
-              return; // handled
-            }
-
-            // 2. Legacy direct-element support (if server ever sends raw element objects)
-            if (
-              data.element &&
-              typeof data.element === "string" &&
-              (VALID_ELEMENT_TYPES as readonly string[]).includes(data.element)
-            ) {
-              appendStructuredElement(data as ContentElement);
-              return; // handled
-            }
-
-            // 3. Handle the rest by data.type switch
-            switch (data.type) {
-              case "fallback_initiated": {
-                // Find the index of the last assistant message
-                const lastAssistantMessageIndex = messages.findIndex(
-                  (msg) => msg.role === "assistant" && msg.isStreaming
-                );
-
-                if (lastAssistantMessageIndex !== -1) {
-                  setMessages((prevMessages) => {
-                    const prevMessagesCopy = [...prevMessages];
-                    const lastAssistantMessage = prevMessagesCopy[lastAssistantMessageIndex];
-
-                     // Ensure the content property is treated as AssistantMessageContent
-                    const currentContent = lastAssistantMessage.content as AssistantMessageContent;
-
-                    // Mark the message as fallback
-                    const updatedContent: AssistantMessageContent = {
-                        ...currentContent,
-                        content: Array.isArray(currentContent.content) ? currentContent.content : [], // Preserve structured content if any
-                        isFallback: true, // Engage fallback
-                        fallbackMarkdown: currentContent.fallbackMarkdown || "" // Keep existing or initialize
-                    };
-
-                     // Update the message in the array
-                    prevMessagesCopy[lastAssistantMessageIndex] = {
-                        ...lastAssistantMessage,
-                         content: updatedContent,
-                         isStreaming: true, // Still streaming until stream_end
-                    };
-
-                    return prevMessagesCopy;
-                  });
-                } else {
-                  // If no streaming assistant message found, create a new fallback message
-                   const newFallbackMessage: ChatMessage = {
-                        id: `msg-${Date.now()}-fallback-${messages.length}`,
-                        role: "assistant",
-                        content: {
-                            content: [],
-                            isFallback: true,
-                            fallbackMarkdown: ""
-                        } as AssistantMessageContent, // Cast to AssistantMessageContent
-                        isStreaming: true,
-                   }
-                   setMessages((prevMessages) => [...prevMessages, newFallbackMessage]);
+            // Find the current streaming assistant message ID
+            // This needs to be robust, potentially by finding the last assistant message with isStreaming: true
+            setMessages(prev => {
+                const lastStreamingMsg = prev.slice().reverse().find(m => m.role === 'assistant' && m.isStreaming);
+                if (lastStreamingMsg) {
+                    streamingMessageIdRef.current = lastStreamingMsg.id;
                 }
-                break;
-              }
+                return prev; // No state change here, just reading
+            });
+            
+            const currentStreamingMsgId = streamingMessageIdRef.current;
 
+            if (!currentStreamingMsgId) {
+                console.warn("No streaming message ID found for incoming SSE data.");
+                return;
+            }
+
+            const currentParser = parsersRef.current[currentStreamingMsgId];
+            if (!currentParser) {
+                console.warn(`No parser found for message ID: ${currentStreamingMsgId}`);
+                return;
+            }
+
+            switch (data.type) {
               case "markdown_chunk": {
-                 // Find the index of the last assistant message which is in fallback mode and streaming
-                const lastFallbackMessageIndex = messages.findIndex(
-                  (msg) => msg.role === "assistant" && (msg.content as AssistantMessageContent).isFallback && msg.isStreaming
-                );
-
-                if (lastFallbackMessageIndex !== -1) {
-                   setMessages((prevMessages) => {
-                    const prevMessagesCopy = [...prevMessages];
-                    const lastFallbackMessage = prevMessagesCopy[lastFallbackMessageIndex];
-
-                    // Ensure the content property is treated as AssistantMessageContent
-                    const currentContent = lastFallbackMessage.content as AssistantMessageContent;
-
-                    // Append markdown content
-                    const updatedContent: AssistantMessageContent = {
-                        ...currentContent,
-                        fallbackMarkdown: (currentContent.fallbackMarkdown || "") + data.content, // Append markdown chunk
-                    };
-
-                    // Update the message in the array
-                    prevMessagesCopy[lastFallbackMessageIndex] = {
-                         ...lastFallbackMessage,
-                         content: updatedContent,
-                         isStreaming: true, // Still streaming until stream_end
-                    };
-
-                    return prevMessagesCopy;
-                  });
-                } else {
-                    // This case shouldn't ideally happen if fallback_initiated is sent first,
-                    // but if a markdown chunk arrives without a preceding fallback_initiated,
-                    // create a new fallback message.
-                    const newMarkdownMessage: ChatMessage = {
-                        id: `msg-${Date.now()}-markdown-chunk-${messages.length}`,
-                        role: "assistant",
-                         content: {
-                            content: [],
-                            isFallback: true,
-                            fallbackMarkdown: data.content,
-                        } as AssistantMessageContent, // Cast to AssistantMessageContent
-                        isStreaming: true,
-                    }
-                    setMessages((prevMessages) => [...prevMessages, newMarkdownMessage]);
+                if (data.content) {
+                  // Use the imported smd_parser_write
+                  smd_parser_write(currentParser, data.content);
                 }
                 break;
               }
 
               case "error": {
-                // Handle errors from the server
                 console.error("Server error message:", data.message);
-                 const errorMessage: ChatMessage = {
-                   id: `msg-${Date.now()}-error-${messages.length}`,
-                   role: "assistant",
-                   content: {
-                       content: [],
-                       isFallback: true,
-                       fallbackMarkdown: `Error: ${data.message}` // Display error as markdown
-                   } as AssistantMessageContent,
-                   isStreaming: false, // Streaming stops on error
-                 }
-                 setMessages((prevMessages) => [...prevMessages, errorMessage]);
+                setMessages((prevMessages) =>
+                  prevMessages.map((msg) =>
+                    msg.id === currentStreamingMsgId ? { ...msg, isStreaming: false } : msg
+                  )
+                );
+                const errorMsgId = `msg-${Date.now()}-error-${messages.length}`;
+                const errorMessageContent: AssistantMessageContent = {
+                  isMarkdownStream: true, // Render error as markdown too
+                  // No actual parser for this, div will be manually filled
+                };
+                const errorMessage: ChatMessage = {
+                  id: errorMsgId,
+                  role: "assistant",
+                  content: errorMessageContent,
+                  isStreaming: false,
+                };
+                setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+                const errorDiv = document.createElement('div');
+                errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> ${data.message}`);
+                markdownRootsRef.current[errorMsgId] = errorDiv;
+
                 setIsLoading(false);
-                closeEventSource(); // Close the stream on error
+                closeEventSource();
+                if (parsersRef.current[currentStreamingMsgId]) {
+                  // smd_parser_end(parsersRef.current[currentStreamingMsgId]); // Call end for the original stream's parser
+                  delete parsersRef.current[currentStreamingMsgId];
+                }
                 break;
               }
 
               case "stream_end": {
-                // The stream has ended gracefully
                 console.log("Stream ended.");
-                // Find the index of the last assistant message that is streaming
-                const lastStreamingMessageIndex = messages.findIndex(
-                  (msg) => msg.role === "assistant" && msg.isStreaming
-                );
-
-                if (lastStreamingMessageIndex !== -1) {
-                   setMessages((prevMessages) => {
-                    const prevMessagesCopy = [...prevMessages];
-                    const lastStreamingMessage = prevMessagesCopy[lastStreamingMessageIndex];
-
-                    // Mark the message as not streaming
-                    prevMessagesCopy[lastStreamingMessageIndex] = {
-                         ...lastStreamingMessage,
-                         isStreaming: false,
-                    };
-                    return prevMessagesCopy;
-                  });
+                if (currentParser) {
+                  smd_parser_end(currentParser);
                 }
-
+                setMessages((prevMessages) =>
+                  prevMessages.map((msg) =>
+                    msg.id === currentStreamingMsgId ? { ...msg, isStreaming: false } : msg
+                  )
+                );
                 setIsLoading(false);
-                closeEventSource(); // Close the stream when done
+                // Don't close EventSource here if more messages can be sent/received in the session.
+                // closeEventSource(); // Only close if the entire interaction is done.
+                
+                // Clean up the specific parser instance
+                if (parsersRef.current[currentStreamingMsgId]) {
+                    smd_parser_end(parsersRef.current[currentStreamingMsgId]); // Ensure parser is ended
+                    delete parsersRef.current[currentStreamingMsgId];
+                }
+                // The markdownRootsRef entry can remain as it holds the rendered content.
                 break;
               }
 
               default:
-                console.warn("Unknown event type:", data.type);
+                // console.log("Received unhandled SSE event type:", data.type, data);
+                break;
             }
-          } catch (parseError) {
-            console.error("Failed to parse SSE data:", ev.data, parseError);
-            // Handle parsing error - maybe display a message to the user
-             const parseErrorMessage: ChatMessage = {
-               id: `msg-${Date.now()}-parse-error-${messages.length}`,
-               role: "assistant",
-               content: {
-                   content: [],
-                   isFallback: true,
-                   fallbackMarkdown: `Error parsing message from server.` // Display error as markdown
-               } as AssistantMessageContent,
-               isStreaming: false, // Streaming stops on error
-             }
-             setMessages((prevMessages) => [...prevMessages, parseErrorMessage]);
-             setIsLoading(false);
-             closeEventSource(); // Close the stream on parse error
+          } catch (error) {
+            console.error("Error parsing SSE message or processing data:", error, ev.data);
+            // Potentially display a client-side error message
+            // setIsLoading(false); // Consider if loading should stop here.
+            // closeEventSource(); // Close on unexpected client-side parsing error.
           }
         };
 
-        eventSource.onerror = (errorEvent) => {
-          console.error("EventSource error:", errorEvent); // Log the full error event
-          // An error occurred, potentially before a stream_end
-          setIsLoading(false);
-          // Check if the error is due to the stream being closed normally
-          // This might not be reliable across all browsers/errors
-          // A robust solution relies on the server sending stream_end before closing
-          if (eventSourceRef.current && eventSourceRef.current.readyState === EventSource.CLOSED) {
-            console.log("EventSource closed by server.");
-             // If the last message is streaming, mark it as not streaming
-            const lastStreamingMessageIndex = messages.findIndex(
-              (msg) => msg.role === "assistant" && msg.isStreaming
+        eventSource.onerror = (err) => {
+          console.error("EventSource failed:", err);
+          // Find the current streaming assistant message ID
+          let currentStreamingMsgIdOnError: string | null = null;
+          setMessages(prev => { // Use a non-state-updating way to get the ID if possible
+              const lastStreamingMsg = prev.slice().reverse().find(m => m.role === 'assistant' && m.isStreaming);
+              if (lastStreamingMsg) {
+                currentStreamingMsgIdOnError = lastStreamingMsg.id;
+              }
+              return prev;
+          });
+
+          if (currentStreamingMsgIdOnError && parsersRef.current[currentStreamingMsgIdOnError]) {
+             smd_parser_end(parsersRef.current[currentStreamingMsgIdOnError]); // Ensure parser is ended
+             delete parsersRef.current[currentStreamingMsgIdOnError];
+          }
+          
+          setMessages((prevMessages) => {
+            const updatedMessages = prevMessages.map(msg => 
+              msg.role === 'assistant' && msg.isStreaming ? { ...msg, isStreaming: false } : msg
             );
-             if (lastStreamingMessageIndex !== -1) {
-                 setMessages((prevMessages) => {
-                    const prevMessagesCopy = [...prevMessages];
-                    const lastStreamingMessage = prevMessagesCopy[lastStreamingMessageIndex];
+            // Add an error message to UI
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Connection issue or stream interrupted.`);
+            const errorMsgId = `msg-${Date.now()}-conn-error-${updatedMessages.length}`;
+            markdownRootsRef.current[errorMsgId] = errorDiv;
 
-                    // Mark the message as not streaming
-                    prevMessagesCopy[lastStreamingMessageIndex] = {
-                         ...lastStreamingMessage,
-                         isStreaming: false,
-                    };
-                    return prevMessagesCopy;
-                  });
-             }
+            return [
+              ...updatedMessages,
+              {
+                id: errorMsgId,
+                role: "assistant",
+                content: { isMarkdownStream: true } as AssistantMessageContent,
+                isStreaming: false,
+              }
+            ];
+          });
 
-          } else {
-            console.error("EventSource encountered an error before closing.");
-            // Optionally add a user-facing error message if the stream didn't end gracefully
-             const connectionErrorMessage: ChatMessage = {
-               id: `msg-${Date.now()}-connection-error-${messages.length}`,
-               role: "assistant",
-               content: {
-                   content: [],
-                   isFallback: true,
-                   fallbackMarkdown: `Connection error. Please try again.` // Display connection error
-               } as AssistantMessageContent,
-               isStreaming: false, // Streaming stops on error
-             }
-             setMessages((prevMessages) => [...prevMessages, connectionErrorMessage]);
-          }
-          closeEventSource(); // Ensure it's closed on error
+          setIsLoading(false);
+          closeEventSource();
         };
-      } catch (e) {
-        console.error("Error opening EventSource:", e);
+      } catch (error) {
+        console.error("Failed to open EventSource:", error);
         setIsLoading(false);
+        // Display an error message in the chat
+        const errorDiv = document.createElement('div');
+        errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Could not connect to the advisor service.`);
+        const errorMsgId = `msg-${Date.now()}-connect-error-${messages.length}`;
+        markdownRootsRef.current[errorMsgId] = errorDiv;
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: errorMsgId,
+            role: "assistant",
+            content: { isMarkdownStream: true } as AssistantMessageContent,
+            isStreaming: false,
+          },
+        ]);
       }
     };
 
+    // Open EventSource only if the last message is from the user, or if messages array is empty (initial state)
+    // The `openEventSource` itself has a guard for messages.length > 0 and last message being user.
+    // This effect should run when `messages` changes to potentially trigger a new stream.
     openEventSource();
-  }, [messages.length]); // Depend on messages.length to correctly find the last message index
+
+    // Cleanup function for this effect
+    return () => {
+      // Close event source if it's open when dependencies change in a way that stops streaming
+      // (e.g., user navigates away, or sends a new message which will trigger a new effect run)
+      // This check is important: only close if there's an active stream that this effect instance "owns".
+      // However, the main unmount cleanup already handles eventSourceRef.current.
+    };
+  }, [messages.length]);
 
   return (
     <div className="flex flex-col gap-2">
       {messages.map((message) => (
-        <div key={message.id}>
-          {/* Pass message.content to AssistantMessageRenderer if it's an assistant message */}
-          {message.role === "assistant" && typeof message.content !== 'string' && (
-             <AssistantMessageRenderer message={message.content} />
-          )}
-           {/* Render user or system messages directly or with a different renderer */}
-           {message.role !== "assistant" && (
-              <div className={
-                `p-2 rounded-lg max-w-xs ${message.role === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-200 text-black mr-auto"}`
-              }>
-                {message.content as string} {/* Assuming user/system messages have string content */}
-              </div>
-           )}
+        <div key={message.id} className={`chat-message ${message.role}`}>
+          <div className="message-content">
+            {message.role === "user" ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content as string}
+              </ReactMarkdown>
+            ) : (
+              <AssistantMessageRenderer
+                messageContent={message.content as AssistantMessageContent}
+                messageId={message.id}
+                markdownRootDiv={markdownRootsRef.current[message.id]}
+              />
+            )}
+          </div>
         </div>
       ))}
     </div>
   );
 };
 
-// Define ContentElementRenderer within this file
-const ContentElementRenderer: React.FC<{ element: ContentElement }> = ({ element }) => {
-  switch (element.element) {
-    case "paragraph":
-      return <p>{(element as ContentElementParagraph).text}</p>;
-    case "unordered_list":
-      return (
-        <ul>
-          {(element as ContentElementUnorderedList).items.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      );
-    case "ordered_list":
-      return (
-        <ol>
-          {(element as ContentElementOrderedList).items.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ol>
-      );
-    case "table":
-      const tableData = element as ContentElementTable;
-      return (
-        <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-          <thead>
-            <tr>
-              {tableData.header.map((headerText, index) => (
-                <th key={index} className="px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white">{headerText}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-            {tableData.rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {row.map((cellText, cellIndex) => (
-                  <td key={cellIndex} className="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{cellText}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      );
-    case "references":
-        const referencesData = element as ContentElementReferencesContainer;
-        return (
-            <div className="references-block mt-4 p-2 border-t border-gray-300 dark:border-gray-700">
-                <h4 className="text-sm font-semibold mb-1">References:</h4>
-                <ul className="list-none pl-0">
-                    {Object.entries(referencesData.references).map(([key, value]) => (
-                        <li key={key} className="text-xs mb-1">
-                            <span className="font-medium">[{key}]</span> {value}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        );
-    // Add cases for other element types (bold, italic, reference) as needed
-    default:
-      return <div className="text-red-500">Unsupported element type: {element.element}</div>;
-  }
-};
-
+// Function to render AssistantMessageContent
 function AssistantMessageRenderer({
-  message,
+  messageContent,
+  messageId,
+  markdownRootDiv,
 }: {
-  message: AssistantMessageContent;
+  messageContent: AssistantMessageContent;
+  messageId: string;
+  markdownRootDiv?: HTMLDivElement;
 }) {
-  // Use DOMPurify to sanitize HTML generated from Markdown
-  const sanitizedMarkdown = DOMPurify.sanitize(message.fallbackMarkdown || "");
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (containerRef.current && markdownRootDiv) {
+      while (containerRef.current.firstChild) {
+        containerRef.current.removeChild(containerRef.current.firstChild);
+      }
+      containerRef.current.appendChild(markdownRootDiv);
+    }
+  }, [markdownRootDiv]);
+
+  if (messageContent.isMarkdownStream) {
+    return <div ref={containerRef} className="prose prose-sm max-w-none"></div>;
+  }
+
+  // Fallback for any other type of content, though current logic aims for all assistant messages to be isMarkdownStream
+  // This part should ideally not be reached if all assistant responses are markdown streams.
+  let sanitizedFallbackMarkdown = "";
+  if (typeof messageContent.fallbackMarkdown === 'string') {
+    sanitizedFallbackMarkdown = DOMPurify.sanitize(messageContent.fallbackMarkdown);
+  } else if (messageContent.content && Array.isArray(messageContent.content) && messageContent.content.length > 0) {
+    // This is a failsafe, ideally structured content is not mixed with this new approach
+    sanitizedFallbackMarkdown = "Error: Mixed content types detected.";
+  }
+
+
+  // This part for non-streaming or error display could be simplified or removed
+  // if errors are also pushed as markdown streams into their own divs.
   return (
-    <div className="flex flex-col gap-2">
-      {message.isFallback ? (
-        // Render raw markdown if fallback is active
-        // Add CSS classes for wrapping
-        <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap break-words">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {sanitizedMarkdown}
-          </ReactMarkdown>
-        </div>
-      ) : (
-        // Render structured content elements
-        // Ensure message.content is an array before mapping and that the content is AssistantMessageContent
-        Array.isArray(message.content) && message.content.map((element, index) => (
-          <div key={index}>{/* Using index as key is acceptable here as elements are only appended */}
-            <ContentElementRenderer element={element} />
-          </div>
-        ))
-      )}
-    </div>
+    <div
+      className="prose prose-sm max-w-none"
+      dangerouslySetInnerHTML={{ __html: sanitizedFallbackMarkdown }}
+    />
   );
 }
 

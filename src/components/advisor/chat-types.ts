@@ -73,10 +73,11 @@ export const VALID_ELEMENT_TYPES = [
 ] as const;
 
 export interface AssistantMessageContent {
-  content: ContentElement[];
+  content?: ContentElement[]; // Made optional
   references?: Record<string, string>;
   isFallback?: boolean;
-  fallbackMarkdown?: string;
+  fallbackMarkdown?: string; // Made optional
+  isMarkdownStream?: boolean; // Added for smd.js integration
 }
 
 export interface ChatMessage {

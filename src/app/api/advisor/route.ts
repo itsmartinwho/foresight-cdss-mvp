@@ -218,6 +218,14 @@ export async function GET(req: NextRequest) {
           return;
         }
         
+        // IMMEDIATELY GO TO MARKDOWN STREAMING FOR NOW
+        console.log("Routing directly to Markdown streaming for stability.");
+        await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
+        requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+        return; 
+
+        // Commenting out the structured streaming logic for now
+        /*
         const hasUserMessages = messages.some(m => m.role === 'user');
         if (!hasUserMessages && !isGreetingOrTest) { 
           if (!isControllerClosedRef.value) {
@@ -236,220 +244,8 @@ export async function GET(req: NextRequest) {
         }
 
         let structuredFunctionCallArgsBuffer = "";
-        let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null; 
-        let tokenCount = 0;
-        const MAX_TOKENS_BEFORE_FALLBACK = 100;
-        const FALLBACK_TIMEOUT_MS = 500;
-        let firstBlockSent = false;
-        let fallbackEngaged = false;
-        const structuredStreamInternalAbortController = new AbortController();
-
-        const structuredStreamAbortListener = () => { structuredStreamInternalAbortController.abort(); }; 
-        requestAbortController.signal.addEventListener('abort', structuredStreamAbortListener, { once: true });
-
-        const engageMarkdownFallback = async (reason: string) => {
-          if (fallbackEngaged || isControllerClosedRef.value) return;
-          fallbackEngaged = true;
-          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
-          fallbackTimeoutId = null;
-          structuredStreamInternalAbortController.abort();
-
-          if (!isControllerClosedRef.value) {
-            const fbPayload = { type: "fallback_initiated", reason };
-            console.log("SSE send (fallback_initiated):", JSON.stringify(fbPayload));
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(fbPayload)}\n\n`));
-          }
-          await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
-        };
-
-        const resetFallbackTimer = () => {
-          // If fallback already engaged, controller closed, or firstBlockSent is true, this timer is no longer needed.
-          if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) {
-            // If the timer was set before firstBlockSent became true, clear it now.
-            if (fallbackTimeoutId) {
-                clearTimeout(fallbackTimeoutId);
-                fallbackTimeoutId = null;
-            }
-            return;
-          }
-          
-          // This part only runs if firstBlockSent is false.
-          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
-          // fallbackTimeoutId = setTimeout(() => { // Fallback DEFINITIVELY disabled
-          //   if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
-          //   // engageMarkdownFallback("Timeout: Initial block not received in 500ms"); // Fallback DEFINITIVELY disabled
-          // }, FALLBACK_TIMEOUT_MS);
-        };
-        
-        // resetFallbackTimer(); // Fallback DEFINITIVELY disabled
-
-        try {
-          console.log("Attempting structured stream with OpenAI...");
-
-          let continueStreaming = true;
-          let loopCount = 0; // Safety break for the loop
-          const MAX_LOOPS = 10; // Allow up to 10 tool calls
-
-          // Make a mutable copy of messagesForToolCalls to append tool responses
-          // Explicitly type to allow for function_call and tool roles
-          let currentMessagesForToolCalls: Array<OpenAI.Chat.ChatCompletionMessageParam | OpenAI.Chat.ChatCompletionToolMessageParam> = [...messagesForToolCalls.map(m => m as OpenAI.Chat.ChatCompletionMessageParam)]; 
-
-          while (continueStreaming && loopCount < MAX_LOOPS) {
-            loopCount++;
-            if (requestAbortController.signal.aborted || isControllerClosedRef.value) {
-              console.log("Loop break: Request aborted or controller closed.");
-              break;
-            }
-
-            console.log(`Loop ${loopCount}: Calling OpenAI with ${currentMessagesForToolCalls.length} messages.`);
-
-            const structuredStream = await openai.chat.completions.create({
-              model,
-              stream: true,
-              messages: currentMessagesForToolCalls,
-              tools: [ { type: "function", function: addElementFunctionDefinition } ],
-              tool_choice: { type: "function", function: { name: addElementFunctionDefinition.name } },
-            },
-            { signal: structuredStreamInternalAbortController.signal }
-            );
-
-            let functionCallArgumentsReceived = "";
-            let madeSuccessfulToolCallInThisLoop = false;
-
-            for await (const chunk of structuredStream) {
-              if (fallbackEngaged || structuredStreamInternalAbortController.signal.aborted || isControllerClosedRef.value) {
-                console.log("Chunk processing break: Fallback, abort, or controller closed.");
-                continueStreaming = false; // Stop the outer loop
-                break;
-              }
-              // tokenCount++; // Token count is less relevant in a multi-call loop for fallback timer
-              // resetFallbackTimer(); // Fallback disabled
-
-              const fcDelta = chunk.choices[0]?.delta?.function_call;
-              if (fcDelta?.arguments) {
-                functionCallArgumentsReceived += fcDelta.arguments;
-              }
-
-              // Check for finish_reason other than function_call to stop the loop
-              // or if the LLM simply stops sending function call arguments.
-              const finishReason = chunk.choices[0]?.finish_reason;
-              if (finishReason && finishReason !== "function_call" && finishReason !== "tool_calls") {
-                  console.log(`Loop ${loopCount}: OpenAI indicated finish reason: ${finishReason}. Stopping further tool calls.`);
-                  continueStreaming = false; // Stop making new OpenAI calls
-                  // No break here, let bracesBalanced check for any final partial args
-              }
-
-              if (bracesBalanced(functionCallArgumentsReceived)) {
-                try {
-                  const parsedArgs = JSON.parse(functionCallArgumentsReceived);
-                  const toolCallId = chunk.choices[0]?.delta?.tool_calls?.[0]?.id || `tool_call_${Date.now()}`;
-                  // ^^^ Note: The original `functions` API doesn't use tool_calls array or provide tool_call_id in delta directly like the newer `tools` API.
-                  // For `functions`, the `function_call` object is directly on the delta.
-                  // We will synthesize a tool message without a specific ID from the LLM if not available.
-
-                  functionCallArgumentsReceived = ""; // Reset buffer
-
-                  if (Object.keys(parsedArgs).length === 0 && parsedArgs.constructor === Object) {
-                    // Skip empty {}
-                  } else if (
-                    typeof parsedArgs.element !== 'string' ||
-                    !VALID_ELEMENT_TYPES.includes(parsedArgs.element as typeof VALID_ELEMENT_TYPES[number])
-                  ) {
-                    console.warn("Invalid or missing 'element' field:", parsedArgs);
-                    // Potentially stop streaming if LLM sends bad data repeatedly?
-                  } else {
-                    if (!isControllerClosedRef.value) {
-                      console.log(`Loop ${loopCount}: First block enqueued:`, parsedArgs);
-                      firstBlockSent = true; // This ref might need re-evaluation in multi-call
-                                            // For now, it still helps avoid fallback if it were enabled.
-                      // if (fallbackTimeoutId) { // Fallback disabled
-                      //   clearTimeout(fallbackTimeoutId);
-                      //   fallbackTimeoutId = null;
-                      // }
-                      const payload = { type: "structured_block", element: parsedArgs };
-                      console.log(`Loop ${loopCount}: SSE send:`, JSON.stringify(payload));
-                      controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
-                      madeSuccessfulToolCallInThisLoop = true;
-
-                      // Add the assistant's function call and our tool response to messages for next iteration
-                      currentMessagesForToolCalls.push({
-                        role: "assistant",
-                        content: null, // Per OpenAI spec for function call message
-                        function_call: { 
-                          name: addElementFunctionDefinition.name,
-                          arguments: JSON.stringify(parsedArgs) 
-                        }
-                      } as OpenAI.Chat.ChatCompletionAssistantMessageParam); // Cast to the specific type
-                      currentMessagesForToolCalls.push({
-                        role: "tool", 
-                        tool_call_id: toolCallId, // Synthesized or from actual tool_call if available
-                        name: addElementFunctionDefinition.name, 
-                        content: JSON.stringify({ success: true, message: "Element added." }) 
-                      } as OpenAI.Chat.ChatCompletionToolMessageParam); // Cast to the specific type
-                    }
-                  }
-                } catch (e) {
-                  // JSON parse error, continue accumulating
-                  console.warn(`Loop ${loopCount}: JSON parse error, continuing to accumulate:`, e);
-                }
-              } // End bracesBalanced check
-            } // End for-await-chunk loop
-
-            if (!madeSuccessfulToolCallInThisLoop && continueStreaming) {
-                // If the inner loop finished (e.g. stream ended from OpenAI) but we didn't make a tool call
-                // (e.g. LLM stopped calling functions, or sent empty/invalid args that we skipped)
-                // then we should stop the outer while loop.
-                console.log(`Loop ${loopCount}: No successful tool call made in this loop iteration. Stopping streaming.`);
-                continueStreaming = false;
-            }
-
-            // If OpenAI stream ended (inner loop broke) and we don't want to continue (e.g. finish_reason was not function_call)
-            // then continueStreaming would be false, and the while loop condition will handle it.
-
-          } // End while(continueStreaming) loop
-
-          if (loopCount >= MAX_LOOPS) {
-            console.warn("Max loop count reached. Stopping further tool calls.");
-          }
-
-        } catch (error: any) {
-          if (!(error.name === 'AbortError' || structuredStreamInternalAbortController.signal.aborted)) {
-            if (!fallbackEngaged && !isControllerClosedRef.value) {
-              console.error("Error in structured OpenAI stream:", error);
-              const detailedErrorReason = `Structured stream error: ${error.message || 'Unknown error'}`;
-              // Send a specific error event before fallback
-              const errorPayload = { type: "error", message: detailedErrorReason };
-              console.log("SSE send (structured stream error):", JSON.stringify(errorPayload));
-              controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
-              
-              // await engageMarkdownFallback(detailedErrorReason); // Fallback DEFINITIVELY disabled
-              console.warn(`Fallback suppressed: Structured stream error: ${detailedErrorReason}`);
-            }
-          }
-        } finally {
-          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId); // Final cleanup for any reason
-          requestAbortController.signal.removeEventListener('abort', structuredStreamAbortListener);
-          
-          // If fallback was engaged, streamMarkdownOnly is responsible for closing.
-          // If structured stream completed without fallback, we close here.
-          if (!fallbackEngaged && !isControllerClosedRef.value) {
-            const endPayload = { type: "stream_end" };
-            console.log("SSE send (end of structured stream):", JSON.stringify(endPayload));
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
-            closeControllerOnce(); 
-          }
-          // Removed redundant closeControllerOnce() as it might have already been called or stream is handled by fallback.
-          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
-        }
-
-        // Ensure the stream is closed properly at the end
-        // This section is now largely handled by the finally block of the structured stream
-        // or by streamMarkdownOnly in case of fallback.
-        // const endPayload = { type: "stream_end" };
-        // console.log("SSE send:", JSON.stringify(endPayload));
-        // controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
-        // controller.close();
-        // isControllerClosedRef.value = true; // Mark as closed
+        // ... (rest of the complex structured streaming logic is now bypassed) ...
+        */
       }
     });
 
