@@ -250,9 +250,9 @@ export default function AdvisorView() {
         }
 
         setMessages(prevMessages => {
-          if (!Array.isArray(prevMessages)) return prevMessages || [];
+          const prev = Array.isArray(prevMessages) ? prevMessages : [];
           const assistantMessageId = currentAssistantMessageIdRef.current;
-          let updatedMessages = [...prevMessages];
+          let updatedMessages = [...prev];
 
           if (!assistantMessageId) {
             console.error("No currentAssistantMessageIdRef.current available for SSE processing.");
@@ -359,8 +359,9 @@ export default function AdvisorView() {
             // If no structured block was received, show error
             if (!receivedStructuredBlock.current) {
               setMessages(prevMessages => {
+                const prev = Array.isArray(prevMessages) ? prevMessages : [];
                 const assistantMessageId = currentAssistantMessageIdRef.current;
-                let updatedMessages = [...prevMessages];
+                let updatedMessages = [...prev];
                 const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
                 if (existingAssistantMsgIndex !== -1) {
                   const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
@@ -421,8 +422,9 @@ export default function AdvisorView() {
           // Generic error handling if not gracefully ended
           console.error("EventSource encountered an error, and stream did not end gracefully or readyState is not CLOSED.");
           setMessages(prevMessages => {
+            const prev = Array.isArray(prevMessages) ? prevMessages : [];
             const assistantMessageId = currentAssistantMessageIdRef.current;
-            let updatedMessages = [...prevMessages];
+            let updatedMessages = [...prev];
             const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
             if (existingAssistantMsgIndex !== -1) {
@@ -467,22 +469,23 @@ export default function AdvisorView() {
       console.error("Error setting up EventSource:", error);
       // Ensure currentAssistantMessageIdRef.current is used if an error occurs here
       const assistantMessageId = currentAssistantMessageIdRef.current || `error-${uuidv4()}`;
-      setMessages(prev => prev.map(msg => 
-        msg.id === assistantMessageId 
-          ? { ...msg, content: { content: [{element: 'paragraph' as const, text: `Error setting up EventSource: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: `Error setting up EventSource: ${error.message}` }, isStreaming: false } 
-          // If no assistant message was even created, add a new error message.
-          // This is a fallback, ideally an assistant message placeholder linked to currentAssistantMessageIdRef should exist.
-          : msg 
-      ).concat(
-        !prev.find(msg => msg.id === assistantMessageId) 
-        ? [{
+      setMessages(prev => {
+        if (!Array.isArray(prev)) return prev || [];
+        const mapped = prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: { content: [{element: 'paragraph' as const, text: `Error setting up EventSource: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: `Error setting up EventSource: ${error.message}` }, isStreaming: false } 
+            : msg 
+        );
+        if (!mapped.find(msg => msg.id === assistantMessageId)) {
+          mapped.push({
             id: assistantMessageId,
             role: "assistant",
             content: { content: [{element: 'paragraph' as const, text: `Error setting up EventSource: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: `Error setting up EventSource: ${error.message}` },
             isStreaming: false
-          } as ChatMessage]
-        : []
-      ));
+          } as ChatMessage);
+        }
+        return mapped;
+      });
       setIsSending(false);
     }
     // setIsSending(false) will now be handled by EventSource onerror or a potential onclose/onend event.
@@ -643,10 +646,13 @@ export default function AdvisorView() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      setMessages((prev) => [
-                        ...prev,
-                        { id: uuidv4(), role: "user", content: `[Uploaded ${file.name}]` },
-                      ]);
+                      setMessages(prev => {
+                        if (!Array.isArray(prev)) return prev || [];
+                        return [
+                          ...prev,
+                          { id: uuidv4(), role: "user", content: `[Uploaded ${file.name}]` },
+                        ];
+                      });
                       e.target.value = "";
                     }}
                   />

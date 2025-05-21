@@ -11,6 +11,9 @@
   --surface-3: 218 16% 25%;   /* light grey (borders etc) */
 
   /* ----- New accent tokens (UI refresh) ----- */
+  --accent-primary: 329 84% 59%;   /* pink-500 */
+  --accent-secondary: 271 100% 62%; /* purple-500 */
+  --accent-tertiary: 217 89% 65%;  /* blue-500 */
   /* Primary is still --accent / --neon-val */
   
   
