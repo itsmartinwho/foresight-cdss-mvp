@@ -174,7 +174,6 @@ export async function GET(req: NextRequest) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        let isControllerClosed = false; // Local variable to track controller state
         const isControllerClosedRef = { value: false }; // Pass as ref to streamMarkdownOnly
 
         const closeControllerOnce = () => {
