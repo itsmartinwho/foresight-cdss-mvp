@@ -25,7 +25,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preload" as="image" href="/load-animation-small-quick.gif" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any" />
+        <link rel="preload" as="image" href="/slower-load-animation.gif" />
       </head>
       <body>
         <PlasmaBackground />
