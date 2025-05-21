@@ -60,12 +60,12 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
             Select a patient to start consultation
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowNewConsultModal(true)}
-          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+          size="sm"
         >
           + New Consultation
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
