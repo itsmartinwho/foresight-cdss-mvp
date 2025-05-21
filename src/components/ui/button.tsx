@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "relative overflow-hidden isolate border border-transparent text-white before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--accent-primary)),hsl(var(--accent-secondary)),hsl(var(--accent-tertiary)),hsl(var(--accent-primary)))] before:bg-[length:200%_200%] before:opacity-90 before:transition-transform before:duration-\[0ms\] hover:before:animate-conic-spin focus-visible:ring-neon",
+          "relative isolate border border-transparent text-white before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--accent-primary)),hsl(var(--accent-secondary)),hsl(var(--accent-tertiary)),hsl(var(--accent-primary)))] before:bg-[length:200%_200%] before:opacity-90 before:transition-transform before:duration-\[0ms\] hover:before:animate-conic-spin focus-visible:ring-neon",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
