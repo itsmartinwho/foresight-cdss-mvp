@@ -50,6 +50,7 @@ export default function AdvisorView() {
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const userHasScrolledUpRef = useRef(userHasScrolledUp); // Ref to hold the latest userHasScrolledUp
   const streamEndedGracefully = useRef(false); // Added streamEndedGracefully ref
+  const receivedStructuredBlock = useRef(false); // Track if at least one structured_block was received
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [includePapers, setIncludePapers] = useState(false);
@@ -227,6 +228,7 @@ export default function AdvisorView() {
       let inJson = false;
       let streamProperlyEnded = false; // Flag to track if stream_end was received
       streamEndedGracefully.current = false; // Reset for each new stream
+      receivedStructuredBlock.current = false; // Reset for each new stream
       let eventIndex = 0; // Counter for SSE events
 
       eventSource.onmessage = (event) => {
@@ -256,6 +258,7 @@ export default function AdvisorView() {
           const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
           if (parsedData.type === "structured_block" && parsedData.element) {
+            receivedStructuredBlock.current = true; // Mark that we received a structured block
             if (existingAssistantMsgIndex !== -1) {
               // Assistant message already exists, append content
               const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
@@ -349,6 +352,38 @@ export default function AdvisorView() {
             streamEndedGracefully.current = true; // Mark as gracefully ended
             eventSource.close();
             setIsSending(false);
+            // If no structured block was received, show error
+            if (!receivedStructuredBlock.current) {
+              setMessages(prevMessages => {
+                const assistantMessageId = currentAssistantMessageIdRef.current;
+                let updatedMessages = [...prevMessages];
+                const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
+                if (existingAssistantMsgIndex !== -1) {
+                  const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+                  if (typeof msgToUpdate.content === 'object') {
+                    msgToUpdate.content.isFallback = true;
+                    msgToUpdate.content.fallbackMarkdown = (msgToUpdate.content.fallbackMarkdown || "") + "\n**Error:** No valid response received from server.";
+                  }
+                  msgToUpdate.isStreaming = false;
+                  updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+                } else if (assistantMessageId) {
+                  const connectionErrorMessage: ChatMessage = {
+                    id: assistantMessageId,
+                    role: "assistant",
+                    content: {
+                      content: [],
+                      references: {},
+                      isFallback: true,
+                      fallbackMarkdown: "**Error:** No valid response received from server.",
+                    } as AssistantMessageContent,
+                    isStreaming: false,
+                  };
+                  updatedMessages.push(connectionErrorMessage);
+                }
+                return updatedMessages;
+              });
+            }
+            return;
           }
           // Removed legacy direct element handling as server sends structured_block
 
