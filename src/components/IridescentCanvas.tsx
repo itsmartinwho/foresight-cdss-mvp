@@ -48,7 +48,7 @@ export default function IridescentCanvas() {
         float t = fract((angle / 6.2831) + uTime * 0.02);
         vec3 color = mix(uColorA, uColorB, t);
         color = mix(color, uColorC, smoothstep(0.3, 0.8, radius));
-        gl_FragColor = vec4(color, 0.45); // 45% opacity
+        gl_FragColor = vec4(color, 0.7); // 70% opacity
       }
     `;
 
@@ -100,7 +100,7 @@ export default function IridescentCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 pointer-events-none [mask-image:linear-gradient(to_bottom,transparent_0%,transparent_40%,black_60%)] [--webkit-mask-image:linear-gradient(to_bottom,transparent_0%,transparent_40%,black_60%)]"
+      className="fixed inset-0 z-1 pointer-events-none [mask-image:linear-gradient(to_bottom,transparent_0%,transparent_40%,black_60%)] [--webkit-mask-image:linear-gradient(to_bottom,transparent_0%,transparent_40%,black_60%)]"
     />
   );
 } 
