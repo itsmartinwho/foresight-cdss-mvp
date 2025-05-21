@@ -56,6 +56,10 @@ export default function AdvisorView() {
   const [voiceMode, setVoiceMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Use a ref to store the ID of the current assistant message being streamed to.
+  // This helps manage state updates correctly within the EventSource callbacks.
+  const currentAssistantMessageIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -163,19 +167,19 @@ export default function AdvisorView() {
 
     const newUserMessage: ChatMessage = { id: uuidv4(), role: "user", content: queryContent };
     
-    const assistantMessageId = uuidv4();
-    const initialAssistantMessage: ChatMessage = {
-      id: assistantMessageId,
-      role: "assistant",
-      content: { content: [], references: {}, isFallback: false, fallbackMarkdown: "" },
-      isStreaming: true,
-    };
+    // Generate a unique ID for the upcoming assistant message.
+    // This ID will be used to create or update the correct message in the state.
+    currentAssistantMessageIdRef.current = uuidv4(); 
 
+    // Add only the new user message to the state for now.
+    // The assistant message will be added when the first structured_block is received.
     setMessages(prevMessages => [
       ...prevMessages,
-      newUserMessage,
-      initialAssistantMessage
+      newUserMessage
     ]);
+    // Log message state after adding user message
+    // console.log('Updated messages state (after user send):', messages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
+
     setInput("");
     setIsSending(true);
     setUserHasScrolledUp(false); 
@@ -189,6 +193,8 @@ export default function AdvisorView() {
     try {
       const apiPayloadMessages = messages
         .filter(m => m.role !== 'system') 
+        // Make sure to include the latest user message in the payload for the API call
+        // as `messages` state might not have updated yet.
         .map(m => ({
           role: m.role,
           content:
@@ -201,7 +207,6 @@ export default function AdvisorView() {
                       if (el.element === 'paragraph') return el.text;
                       if (el.element === 'unordered_list' || el.element === 'ordered_list')
                         return el.items.join('\n');
-                      // handle tables or drop them (currently dropped by returning "")
                       if (el.element === 'table' && el.rows && el.header) {
                         const headerString = el.header.join(' | ');
                         const rowsString = el.rows.map(row => row.join(' | ')).join('\n');
@@ -238,65 +243,114 @@ export default function AdvisorView() {
         }
 
         setMessages(prevMessages => {
-          const lastMsgIndex = prevMessages.length - 1;
-          if (lastMsgIndex < 0 || prevMessages[lastMsgIndex].id !== assistantMessageId) {
-            // This can happen if another message was added or state was changed unexpectedly
-            console.warn("Assistant message not found or ID mismatch.");
-            return prevMessages;
+          let updatedMessages = [...prevMessages];
+          const assistantMessageId = currentAssistantMessageIdRef.current;
+
+          if (!assistantMessageId) {
+            console.error("No currentAssistantMessageIdRef.current available for SSE processing.");
+            return prevMessages; // Should not happen if handleSend sets it
           }
 
-          const updatedMessages = [...prevMessages];
-          const currentAssistantMessage = { ...updatedMessages[lastMsgIndex] };
+          const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
-          if (typeof currentAssistantMessage.content === 'string') {
-            // This should not happen with the new structured approach
-            console.warn("Assistant message content is a string, expected object.");
-            currentAssistantMessage.content = { content: [], references: {}, isFallback: false, fallbackMarkdown: "" };
-          }
-          
-          const assistantContent = currentAssistantMessage.content as AssistantMessageContent;
-
-          if (parsedData.type === "structured_block" && parsedData.element && !assistantContent.isFallback) {
-            assistantContent.content.push(parsedData.element as any);
+          if (parsedData.type === "structured_block" && parsedData.element) {
+            if (existingAssistantMsgIndex !== -1) {
+              // Assistant message already exists, append content
+              const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+              if (typeof msgToUpdate.content === 'object' && !msgToUpdate.content.isFallback) {
+                msgToUpdate.content.content.push(parsedData.element as ContentElement);
+                msgToUpdate.isStreaming = true; // Keep streaming
+                updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+              } else {
+                // This case should ideally not be hit if structured_block is received
+                console.warn("Tried to append structured_block to a string content or fallback message.");
+              }
+            } else {
+              // First structured_block, create the assistant message
+              const newAssistantMessage: ChatMessage = {
+                id: assistantMessageId,
+                role: "assistant",
+                content: { 
+                  content: [parsedData.element as ContentElement], 
+                  references: {}, 
+                  isFallback: false, 
+                  fallbackMarkdown: "" 
+                },
+                isStreaming: true,
+              };
+              updatedMessages.push(newAssistantMessage);
+            }
           } else if (parsedData.type === "fallback_initiated") {
-            assistantContent.isFallback = true;
-            // Optional: Log the reason if needed: console.log("Fallback initiated:", parsedData.reason);
+            if (existingAssistantMsgIndex !== -1) {
+              const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+              if (typeof msgToUpdate.content === 'object') {
+                msgToUpdate.content.isFallback = true;
+                msgToUpdate.content.fallbackMarkdown = `Fallback: ${parsedData.reason || 'Unknown reason'}`;
+                updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+              }
+            } else {
+              // Fallback initiated before any structured block - create a fallback message
+               const newFallbackMessage: ChatMessage = {
+                id: assistantMessageId,
+                role: "assistant",
+                content: { 
+                    content: [], 
+                    references: {}, 
+                    isFallback: true, 
+                    fallbackMarkdown: `Fallback: ${parsedData.reason || 'Unknown reason'}` 
+                },
+                isStreaming: true,
+               };
+               updatedMessages.push(newFallbackMessage);
+            }
           } else if (parsedData.type === "markdown_chunk") {
-            if (assistantContent.isFallback) {
-              assistantContent.fallbackMarkdown = (assistantContent.fallbackMarkdown || "") + parsedData.content;
-            }
+            if (existingAssistantMsgIndex !== -1) {
+              const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+              if (typeof msgToUpdate.content === 'object' && msgToUpdate.content.isFallback) {
+                msgToUpdate.content.fallbackMarkdown += parsedData.content;
+                updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+              }
+            } // If no assistant message for markdown_chunk, it might be lost or an error
           } else if (parsedData.type === "error") {
-            // Handle error reporting, maybe update UI or log
             console.error("SSE Error:", parsedData.message);
-            // Potentially update the message to show an error state
-            assistantContent.fallbackMarkdown = (assistantContent.fallbackMarkdown || "") + `\n**Error:** ${parsedData.message}`;
-             assistantContent.isFallback = true; // Force fallback rendering for errors
-          } else if (parsedData.type === "stream_end") {
-            currentAssistantMessage.isStreaming = false;
-            streamProperlyEnded = true; // Mark that stream ended correctly
-            eventSource.close(); // Cleanly close the connection HERE
-            setIsSending(false); // Reset sending state
-          } else if (parsedData.element && !assistantContent.isFallback) {
-            // This is a structured element
-            const newElement = parsedData as ContentElement; // Type assertion
-            
-            // Always push new element as IDs are not guaranteed for updates
-            assistantContent.content.push(newElement);
-
-            // Speak content if voice mode is enabled
-            if (newElement.element === 'paragraph' && newElement.text) {
-              speak(newElement.text);
-            } else if ((newElement.element === 'ordered_list' || newElement.element === 'unordered_list') && newElement.items) {
-              speak(newElement.items.join(', '));
+            if (existingAssistantMsgIndex !== -1) {
+              const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+              if (typeof msgToUpdate.content === 'object') {
+                msgToUpdate.content.isFallback = true;
+                msgToUpdate.content.fallbackMarkdown = (msgToUpdate.content.fallbackMarkdown || "") + `\n**Error:** ${parsedData.message}`;
+              }
+              msgToUpdate.isStreaming = false;
+              updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+            } else {
+              // Error received, but no existing assistant message to update. Create one.
+              const errorAssistantMessage: ChatMessage = {
+                id: assistantMessageId,
+                role: "assistant",
+                content: {
+                  content: [],
+                  references: {},
+                  isFallback: true,
+                  fallbackMarkdown: `**Error:** ${parsedData.message}`
+                },
+                isStreaming: false,
+              };
+              updatedMessages.push(errorAssistantMessage);
             }
-            // Add other speakable elements as needed
+            streamProperlyEnded = false; // Error means stream didn't end properly
+            eventSource.close();
+            setIsSending(false);
+          } else if (parsedData.type === "stream_end") {
+            if (existingAssistantMsgIndex !== -1) {
+              updatedMessages[existingAssistantMsgIndex].isStreaming = false;
+            }
+            streamProperlyEnded = true;
+            eventSource.close();
+            setIsSending(false);
           }
-          // else: it's a non-element, non-fallback, non-markdown_chunk message from the stream.
-          // This could be the buffered function call arguments before full JSON object assembly.
-          // No explicit client-side action for these intermediate chunks with the current design,
-          // as the server sends complete JSON objects for elements.
+          // Removed legacy direct element handling as server sends structured_block
 
-          updatedMessages[lastMsgIndex] = currentAssistantMessage;
+          // Log message state after each update
+          console.log('Updated messages state:', updatedMessages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
           return updatedMessages;
         });
       };
@@ -313,7 +367,10 @@ export default function AdvisorView() {
 
         setMessages(prevMessages => {
           const lastMsgIndex = prevMessages.length - 1;
-          if (lastMsgIndex >=0 && prevMessages[lastMsgIndex].id === assistantMessageId) {
+          // Ensure we are targeting the correct assistant message using the ref
+          const assistantMessageId = currentAssistantMessageIdRef.current;
+
+          if (lastMsgIndex >=0 && assistantMessageId && prevMessages[lastMsgIndex].id === assistantMessageId) {
             const updatedMessages = [...prevMessages];
             updatedMessages[lastMsgIndex].isStreaming = false;
             
@@ -338,10 +395,23 @@ export default function AdvisorView() {
 
     } catch (error: any) {
       console.error("Error setting up EventSource:", error);
+      // Ensure currentAssistantMessageIdRef.current is used if an error occurs here
+      const assistantMessageId = currentAssistantMessageIdRef.current || `error-${uuidv4()}`;
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMessageId 
-          ? { ...msg, content: { content: [{element: 'paragraph', text: `Error: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: error.message }, isStreaming: false } 
-          : msg
+          ? { ...msg, content: { content: [{element: 'paragraph' as const, text: `Error setting up EventSource: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: `Error setting up EventSource: ${error.message}` }, isStreaming: false } 
+          // If no assistant message was even created, add a new error message.
+          // This is a fallback, ideally an assistant message placeholder linked to currentAssistantMessageIdRef should exist.
+          : msg 
+      ).concat(
+        !prev.find(msg => msg.id === assistantMessageId) 
+        ? [{
+            id: assistantMessageId,
+            role: "assistant",
+            content: { content: [{element: 'paragraph' as const, text: `Error setting up EventSource: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: `Error setting up EventSource: ${error.message}` },
+            isStreaming: false
+          } as ChatMessage]
+        : []
       ));
       setIsSending(false);
     }

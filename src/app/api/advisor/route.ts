@@ -182,9 +182,11 @@ export async function GET(req: NextRequest) {
     const messagesForToolCalls = [
         { role: "system" as const, content:
           `${newSystemPromptBase}
-           You must respond *exclusively* via add_element calls. 
-           After each call, if any content remains, immediately start another add_element invocation. 
-           For lists or tables, emit one element per list item or table row. Do not emit any direct text at any point.` },
+           You must respond *exclusively* by making one or more calls to the 'add_element' function.
+           Break down your response into logical blocks (paragraphs, lists, tables, etc.). For each block, make a separate 'add_element' call.
+           For example, each paragraph should be its own 'add_element' call. Each item in a list can be part of a single 'unordered_list' or 'ordered_list' element with multiple items, or very long individual list items could be their own 'add_element' paragraph call if that makes sense for clarity.
+           Do not emit any direct text at any point. Ensure all content is delivered via 'add_element'.`
+        },
         ...messages.filter(m => m.role === "user" || m.role === "assistant")
     ];
 
