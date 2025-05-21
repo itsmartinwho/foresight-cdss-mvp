@@ -103,9 +103,8 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   </TableCell>
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
                     <Button
-                      variant="default"
                       size="sm"
-                      className="gap-1 w-full mobile-card:w-full"
+                      className="bg-gradient-to-r from-blue-200 via-indigo-200 to-pink-200 border border-black text-white hover:bg-transparent hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%] gap-1 w-full mobile-card:w-full"
                       onClick={() => onStartConsult(p)}
                     >
                       <PlayCircle className="h-[1em] w-[1em]" /> Start
