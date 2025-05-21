@@ -27,7 +27,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const [upcomingRowsData, setUpcomingRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
   const [pastRowsData, setPastRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [upcomingSortConfig, setUpcomingSortConfig] = useState<SortConfig | null>(null);
+  const [pastSortConfig, setPastSortConfig] = useState<SortConfig | null>(null);
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
   const router = useRouter();
 
@@ -67,16 +68,19 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     return p?.id || "Unknown Patient";
   }, []);
 
-  const requestSort = (key: SortableKey) => {
+  const requestSort = (key: SortableKey, tableType: 'upcoming' | 'past') => {
     let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+    const currentSortConfig = tableType === 'upcoming' ? upcomingSortConfig : pastSortConfig;
+    const setSortConfigAction = tableType === 'upcoming' ? setUpcomingSortConfig : setPastSortConfig;
+
+    if (currentSortConfig && currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    setSortConfig({ key, direction });
+    setSortConfigAction({ key, direction });
   };
 
   const sortedRows = useMemo(() => {
-    const sortData = (data: { patient: Patient | null; visit: Admission }[]) => {
+    const sortData = (data: { patient: Patient | null; visit: Admission }[], sortConfig: SortConfig | null) => {
       if (!sortConfig) return data;
       return [...data].sort((a, b) => {
         let aValue: string | number;
@@ -101,34 +105,40 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       });
     };
     return {
-      upcoming: sortData(upcomingRowsData),
-      past: sortData(pastRowsData),
+      upcoming: sortData(upcomingRowsData, upcomingSortConfig),
+      past: sortData(pastRowsData, pastSortConfig),
     };
-  }, [upcomingRowsData, pastRowsData, sortConfig, displayName]);
+  }, [upcomingRowsData, pastRowsData, upcomingSortConfig, pastSortConfig, displayName]);
 
-  const renderTable = (title: string, data: Array<{ patient: Patient | null; visit: Admission }>) => (
-    <Card className="mb-6 bg-glass-sidebar backdrop-blur-lg border-slate-700/20 shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-slate-100">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {data.length > 0 ? (
-          <Table className="text-slate-200 text-step-0">
-            <TableHeader>
-              <TableRow className="border-slate-700/50">
-                <TableHead onClick={() => requestSort('patientName')} className="w-[25%] cursor-pointer hover:text-neon">Patient{sortConfig?.key === 'patientName' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('scheduledDate')} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{sortConfig?.key === 'scheduledDate' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('reason')} className="cursor-pointer hover:text-neon">Reason{sortConfig?.key === 'reason' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead className="w-[15%]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map(({ patient, visit }) => (
-                <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${visit.id}`} onClick={() => {
-                  if (patient) {
-                    router.push(`/patients/${patient.id}?ad=${visit.id}`);
-                  }
-                }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
+  const renderTable = (
+    title: string,
+    data: Array<{ patient: Patient | null; visit: Admission }>,
+    tableType: 'upcoming' | 'past'
+  ) => {
+    const currentSortConfig = tableType === 'upcoming' ? upcomingSortConfig : pastSortConfig;
+    return (
+      <Card className="mb-6 bg-glass-sidebar backdrop-blur-lg border-slate-700/20 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-slate-100">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.length > 0 ? (
+            <Table className="text-slate-200 text-step-0">
+              <TableHeader>
+                <TableRow className="border-slate-700/50">
+                  <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                  <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                  <TableHead onClick={() => requestSort('reason', tableType)} className="cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                  <TableHead className="w-[15%]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map(({ patient, visit }) => (
+                  <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${visit.id}`} onClick={() => {
+                    if (patient) {
+                      router.push(`/patients/${patient.id}?ad=${visit.id}`);
+                    }
+                  }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
                       <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
@@ -144,14 +154,15 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   </TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="text-sm text-slate-400">No {title.toLowerCase()} scheduled.</p>
-        )}
-      </CardContent>
-    </Card>
-  );
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-slate-400">No {title.toLowerCase()} scheduled.</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (isLoading) {
     return <LoadingAnimation />;
@@ -169,8 +180,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           New Consultation
         </button>
       </div>
-      {renderTable("Upcoming Consultations", sortedRows.upcoming)}
-      {renderTable("Past Consultations", sortedRows.past)}
+      {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
+      {renderTable("Past Consultations", sortedRows.past, 'past')}
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}
