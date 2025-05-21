@@ -33,7 +33,9 @@ export default function RootLayout({
         <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0">
           <GlassSidebar />
           <main className="flex flex-col flex-1 overflow-hidden relative">
-            <MotionWrapper>{children}</MotionWrapper>
+            <React.Suspense fallback={<div>Loading page...</div>}>
+              <MotionWrapper>{children}</MotionWrapper>
+            </React.Suspense>
           </main>
         </div>
         {process.env.NEXT_PUBLIC_ENABLE_NEW_UI !== 'false' && <IridescentBg />}
