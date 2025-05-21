@@ -13,6 +13,7 @@ import PatientWorkspaceView from "@/components/views/PatientWorkspaceView";
 import AlertsScreenView from "@/components/views/AlertsScreenView";
 import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
 import SettingsScreenView from "@/components/views/SettingsScreenView";
+import LoadingAnimation from '@/components/LoadingAnimation';
 
 function ForesightApp() {
   const pathname = usePathname();
@@ -25,6 +26,7 @@ function ForesightApp() {
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
   const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
   useEffect(() => {
     if (patientIdFromPath && patientIdFromPath !== activePatient?.id) {
@@ -48,7 +50,8 @@ function ForesightApp() {
   }, [patientIdFromPath, searchParams, selectedPatientTab]);
 
   useEffect(() => {
-    const loadGlobalAlerts = async () => {
+    const loadInitialData = async () => {
+        setIsAppLoading(true);
         await supabaseDataService.loadPatientData(); 
         const allPatients = supabaseDataService.getAllPatients();
         const collectedAlerts: Array<ComplexCaseAlert & { patientName?: string }> = [];
@@ -60,8 +63,9 @@ function ForesightApp() {
             }
         });
         setComplexCaseAlerts(collectedAlerts);
+        setIsAppLoading(false);
     };
-    loadGlobalAlerts();
+    loadInitialData();
   }, []);
 
   const handleAlertClick = (patientId: string) => {
@@ -81,6 +85,10 @@ function ForesightApp() {
   const handlePatientWorkspaceBack = () => {
     router.push("/patients");
   };
+
+  if (isAppLoading) {
+    return <LoadingAnimation />;
+  }
 
   let currentView;
   switch (activeView) {

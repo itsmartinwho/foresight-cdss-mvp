@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, forwardRef } from 'react';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -162,6 +162,9 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       <DialogContent className={`max-w-lg ${shake ? 'animate-shake' : ''}`}>
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
+          <DialogDescription>
+            Select an existing patient or create a new patient to begin a consultation.
+          </DialogDescription>
         </DialogHeader>
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">

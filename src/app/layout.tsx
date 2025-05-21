@@ -3,22 +3,19 @@
 import React from 'react';
 import './globals.css';
 import { Metadata } from 'next';
-import MotionWrapper from '../components/MotionWrapper';
-import GlassHeader from '@/components/layout/GlassHeader';
-import GlassSidebar from '@/components/layout/GlassSidebar';
 import dynamic from 'next/dynamic';
 import PlasmaBackground from '../components/PlasmaBackground';
+import GlassHeader from '@/components/layout/GlassHeader';
+import GlassSidebar from '@/components/layout/GlassSidebar';
+import MotionWrapper from '../components/MotionWrapper';
+
+const IridescentBg = dynamic(() => import('../components/IridescentCanvas'));
 
 export const metadata: Metadata = {
   title: 'Foresight',
   description: 'Clinical Decision Support System for healthcare providers',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/images/foresight-icon.png',
-  },
+  // icons metadata can remain if src/app/favicon.ico is intended to be used by convention
 };
-
-const IridescentBg = dynamic(() => import('../components/IridescentCanvas'));
 
 export default function RootLayout({
   children,
@@ -28,13 +25,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preload the loading animation GIF so it appears instantly on subsequent route changes */}
         <link rel="preload" as="image" href="/load-animation-small-quick.gif" />
       </head>
       <body>
         <PlasmaBackground />
         <GlassHeader />
-        <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0"> {/* content area below header */}
+        <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0">
           <GlassSidebar />
           <main className="flex flex-col flex-1 overflow-hidden relative">
             <MotionWrapper>{children}</MotionWrapper>
