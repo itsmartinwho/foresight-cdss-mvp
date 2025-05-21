@@ -116,10 +116,10 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           <Table className="text-slate-200 text-step-0">
             <TableHeader>
               <TableRow className="border-slate-700/50">
-                <TableHead onClick={() => requestSort('patientName')} className="cursor-pointer hover:text-neon">Patient{sortConfig?.key === 'patientName' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('scheduledDate')} className="cursor-pointer hover:text-neon">Scheduled date{sortConfig?.key === 'scheduledDate' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('patientName')} className="w-[35%] cursor-pointer hover:text-neon">Patient{sortConfig?.key === 'patientName' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('scheduledDate')} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{sortConfig?.key === 'scheduledDate' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
                 <TableHead onClick={() => requestSort('reason')} className="cursor-pointer hover:text-neon">Reason{sortConfig?.key === 'reason' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="w-[15%]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
