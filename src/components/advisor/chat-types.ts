@@ -1,52 +1,70 @@
 export interface ContentElementParagraph {
-  type: "paragraph";
+  element: "paragraph";
   text: string;
+  id?: string; // Optional ID
 }
 
 export interface ContentElementBold {
-  type: "bold";
+  element: "bold";
   text: string;
+  id?: string; // Optional ID
 }
 
 export interface ContentElementItalic {
-  type: "italic";
+  element: "italic";
   text: string;
+  id?: string; // Optional ID
 }
 
 export interface ContentElementUnorderedList {
-  type: "unordered_list";
+  element: "unordered_list";
   items: string[];
+  id?: string; // Optional ID
 }
 
 export interface ContentElementOrderedList {
-  type: "ordered_list";
+  element: "ordered_list";
   items: string[];
+  id?: string; // Optional ID
 }
 
 export interface ContentElementTable {
-  type: "table";
+  element: "table";
   header: string[];
   rows: string[][];
+  id?: string; // Optional ID
 }
 
 export interface ContentElementReference {
-  type: "reference";
+  element: "reference"; // Changed from "references" to singular "reference" for consistency with other elements
   target: string;
   display: string;
+  id?: string; // Optional ID
 }
 
-export type ContentElement = 
+// For the actual block of multiple references, let's define a separate type if needed by the server
+// For now, assuming 'references' element type will contain multiple reference items
+export interface ContentElementReferencesContainer {
+  element: "references"; // This is the container for multiple reference links
+  references: Record<string, string>; // { "1": "Nature article...", "2": "PubMed study..." }
+  id?: string; // Optional ID
+}
+
+export type ContentElement =
   | ContentElementParagraph
   | ContentElementBold
   | ContentElementItalic
   | ContentElementUnorderedList
   | ContentElementOrderedList
   | ContentElementTable
-  | ContentElementReference;
+  | ContentElementReference
+  | ContentElementReferencesContainer; // Added ReferencesContainer
 
 export interface AssistantMessageContent {
   content: ContentElement[];
   references?: Record<string, string>;
+  isFallback?: boolean;
+  fallbackMarkdown?: string;
 }
 
 export interface ChatMessage {

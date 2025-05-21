@@ -14,6 +14,9 @@ import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, AssistantMessageContent, ContentElement } from '../advisor/chat-types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -164,7 +167,7 @@ export default function AdvisorView() {
     const initialAssistantMessage: ChatMessage = {
       id: assistantMessageId,
       role: "assistant",
-      content: { content: [], references: {} }, 
+      content: { content: [], references: {}, isFallback: false, fallbackMarkdown: "" },
       isStreaming: true,
     };
 
@@ -186,75 +189,139 @@ export default function AdvisorView() {
     try {
       const apiPayloadMessages = messages
         .filter(m => m.role !== 'system') 
-        .map(currentMessageInMap => ({
-          role: currentMessageInMap.role,
-          content: typeof currentMessageInMap.content === 'string' 
-                     ? currentMessageInMap.content 
-                     : JSON.stringify(currentMessageInMap.content)
+        .map(m => ({
+          role: m.role,
+          content:
+            typeof m.content === 'string'
+              ? m.content
+              : (m.content as AssistantMessageContent).isFallback
+                ? (m.content as AssistantMessageContent).fallbackMarkdown || ""
+                : (m.content as AssistantMessageContent).content
+                    .map(el => {
+                      if (el.element === 'paragraph') return el.text;
+                      if (el.element === 'unordered_list' || el.element === 'ordered_list')
+                        return el.items.join('\n');
+                      // handle tables or drop them (currently dropped by returning "")
+                      if (el.element === 'table' && el.rows && el.header) {
+                        const headerString = el.header.join(' | ');
+                        const rowsString = el.rows.map(row => row.join(' | ')).join('\n');
+                        return `${headerString}\n${'-'.repeat(headerString.length)}\n${rowsString}`;
+                      }
+                      return "";
+                    })
+                    .filter(Boolean)
+                    .join('\n\n')
         }))
-        .concat([{
-          role: newUserMessage.role as 'user',
-          content: newUserMessage.content as string 
-        }]);
+        .concat([{ role: newUserMessage.role as 'user', content: newUserMessage.content as string }]);
 
       // Use EventSource for SSE
-      const eventSource = new EventSource("/api/advisor?payload=" + encodeURIComponent(JSON.stringify({
-        messages: apiPayloadMessages,
-        model: thinkMode ? "o3-mini" : "gpt-4.1",
-      })));
-
-      let currentAssistantMessageContent: AssistantMessageContent = { content: [], references: {} };
+      const eventSource = new EventSource(`/api/advisor?payload=${encodeURIComponent(JSON.stringify({ messages: apiPayloadMessages }))}&think=${thinkMode}`);
+      let accumulatedArgs = '';
+      let braceCount = 0;
+      let inJson = false;
 
       eventSource.onmessage = (event) => {
-        const line = event.data;
-        if (line) {
-          try {
-            const jsonObject = JSON.parse(line) as ContentElement | { type: "references_container", references: { [key: string]: string } };
+        const rawData = event.data;
 
-            if (jsonObject.type === "references_container") {
-              currentAssistantMessageContent.references = jsonObject.references;
-            } else {
-              currentAssistantMessageContent.content.push(jsonObject as ContentElement);
-            }
-
-            setMessages(prev => prev.map(msg =>
-              msg.id === assistantMessageId
-                ? { ...msg, content: { ...currentAssistantMessageContent }, isStreaming: true } // Keep isStreaming true until closed
-                : msg
-            ));
-
-            if (voiceMode && jsonObject.type === 'paragraph' && (jsonObject as any).text) {
-              speak((jsonObject as any).text);
-            }
-
-          } catch (e) {
-            console.error("Error parsing SSE event data:", e, "Data:", line);
-          }
+        // Attempt to parse as JSON first
+        let parsedData;
+        try {
+          parsedData = JSON.parse(rawData);
+        } catch (e) {
+          // If it's not JSON, it might be a raw string from an older version or an error
+          // For now, we'll assume new SSE format and log unexpected non-JSON
+          console.warn("Received non-JSON SSE data:", rawData);
+          return;
         }
+
+        setMessages(prevMessages => {
+          const lastMsgIndex = prevMessages.length - 1;
+          if (lastMsgIndex < 0 || prevMessages[lastMsgIndex].id !== assistantMessageId) {
+            // This can happen if another message was added or state was changed unexpectedly
+            console.warn("Assistant message not found or ID mismatch.");
+            return prevMessages;
+          }
+
+          const updatedMessages = [...prevMessages];
+          const currentAssistantMessage = { ...updatedMessages[lastMsgIndex] };
+
+          if (typeof currentAssistantMessage.content === 'string') {
+            // This should not happen with the new structured approach
+            console.warn("Assistant message content is a string, expected object.");
+            currentAssistantMessage.content = { content: [], references: {}, isFallback: false, fallbackMarkdown: "" };
+          }
+          
+          const assistantContent = currentAssistantMessage.content as AssistantMessageContent;
+
+          if (parsedData.type === "fallback_initiated") {
+            assistantContent.isFallback = true;
+            // Optional: Log the reason if needed: console.log("Fallback initiated:", parsedData.reason);
+          } else if (parsedData.type === "markdown_chunk") {
+            if (assistantContent.isFallback) {
+              assistantContent.fallbackMarkdown = (assistantContent.fallbackMarkdown || "") + parsedData.content;
+            }
+          } else if (parsedData.type === "error") {
+            // Handle error reporting, maybe update UI or log
+            console.error("SSE Error:", parsedData.message);
+            // Potentially update the message to show an error state
+            assistantContent.fallbackMarkdown = (assistantContent.fallbackMarkdown || "") + `\n**Error:** ${parsedData.message}`;
+             assistantContent.isFallback = true; // Force fallback rendering for errors
+          } else if (parsedData.type === "stream_end") {
+            currentAssistantMessage.isStreaming = false;
+            eventSource.close(); // Cleanly close the connection
+            setIsSending(false); // Reset sending state
+          } else if (parsedData.element && !assistantContent.isFallback) {
+            // This is a structured element
+            const newElement = parsedData as ContentElement; // Type assertion
+            
+            // Always push new element as IDs are not guaranteed for updates
+            assistantContent.content.push(newElement);
+
+            // Speak content if voice mode is enabled
+            if (newElement.element === 'paragraph' && newElement.text) {
+              speak(newElement.text);
+            } else if ((newElement.element === 'ordered_list' || newElement.element === 'unordered_list') && newElement.items) {
+              speak(newElement.items.join(', '));
+            }
+            // Add other speakable elements as needed
+          }
+          // else: it's a non-element, non-fallback, non-markdown_chunk message from the stream.
+          // This could be the buffered function call arguments before full JSON object assembly.
+          // No explicit client-side action for these intermediate chunks with the current design,
+          // as the server sends complete JSON objects for elements.
+
+          updatedMessages[lastMsgIndex] = currentAssistantMessage;
+          return updatedMessages;
+        });
       };
 
       eventSource.onerror = (err) => {
         console.error("EventSource failed:", err);
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: Connection failed or stream ended.`}], references: {}}, isStreaming: false } 
-            : msg
-        ));
+        setMessages(prevMessages => {
+          const lastMsgIndex = prevMessages.length - 1;
+          if (lastMsgIndex >=0 && prevMessages[lastMsgIndex].id === assistantMessageId) {
+            const updatedMessages = [...prevMessages];
+            updatedMessages[lastMsgIndex].isStreaming = false;
+            // Optionally indicate an error in the message content
+             if (typeof updatedMessages[lastMsgIndex].content !== 'string') {
+                (updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown = 
+                    ((updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown || "") + 
+                    "\n**Error:** Connection failed.";
+                (updatedMessages[lastMsgIndex].content as AssistantMessageContent).isFallback = true;
+            }
+            return updatedMessages;
+          }
+          return prevMessages;
+        });
+        eventSource.close();
         setIsSending(false);
-        eventSource.close(); // Important to close on error
       };
 
-      // The stream will be closed by the server, or on error.
-      // We can set isStreaming to false when the server signals completion, 
-      // or if the EventSource is explicitly closed after all data is assumed received.
-      // For now, onerror handles setting isStreaming to false.
-      // A specific "end" event from server would be more robust for this.
-
-    } catch (err: any) { // This catch is for errors setting up EventSource, not for stream errors
-      console.error("Error setting up EventSource:", err);
+    } catch (error: any) {
+      console.error("Error setting up EventSource:", error);
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMessageId 
-          ? { ...msg, content: { content: [{type: 'paragraph', text: `Error: ${err.message}`}], references: {}}, isStreaming: false } 
+          ? { ...msg, content: { content: [{element: 'paragraph', text: `Error: ${error.message}`}], references: {}, isFallback: true, fallbackMarkdown: error.message }, isStreaming: false } 
           : msg
       ));
       setIsSending(false);
@@ -315,7 +382,7 @@ export default function AdvisorView() {
                     )
                   )}
                   {msg.role === "assistant" && typeof msg.content === 'object' && (
-                    <AssistantMessageRenderer assistantMessage={msg.content as AssistantMessageContent} />
+                    <AssistantMessageRenderer assistantMessage={msg.content as AssistantMessageContent} isStreaming={msg.isStreaming} />
                   )}
                   {/* Loading indicators */}
                   {msg.role === "assistant" && 
@@ -458,47 +525,68 @@ export default function AdvisorView() {
 }
 
 // Placeholder for AssistantMessageRenderer (to be created in a new file)
-const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent }> = ({ assistantMessage }) => {
+const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent, isStreaming?: boolean }> = ({ assistantMessage, isStreaming }) => {
   const handleReferenceClick = (target: string) => {
-    if (target.startsWith('http://') || target.startsWith('https://')) {
-      let urlToOpen = target;
-      try {
-        const urlObj = new URL(target);
-        urlObj.searchParams.append('utm_source', 'foresight');
-        urlObj.searchParams.append('utm_medium', 'inline_chat_reference');
-        urlToOpen = urlObj.toString();
-      } catch (e) {
-        console.warn("Failed to append UTM codes to URL:", target, e);
+    const element = document.getElementById(target);
+    if (element) {
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        let urlToOpen = target;
+        try {
+          const urlObj = new URL(target);
+          urlObj.searchParams.append('utm_source', 'foresight');
+          urlObj.searchParams.append('utm_medium', 'inline_chat_reference');
+          urlToOpen = urlObj.toString();
+        } catch (e) {
+          console.warn("Failed to append UTM codes to URL:", target, e);
+        }
+        window.open(urlToOpen, '_blank');
+      } else {
+        const footnoteElement = document.getElementById(`footnote-${target}`);
+        footnoteElement?.scrollIntoView({ behavior: 'smooth' });
       }
-      window.open(urlToOpen, '_blank');
-    } else {
-      const footnoteElement = document.getElementById(`footnote-${target}`);
-      footnoteElement?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
+  if (assistantMessage.isFallback && assistantMessage.fallbackMarkdown) {
+    const cleanHtml = DOMPurify.sanitize(assistantMessage.fallbackMarkdown);
+    return (
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+        // Customize heading rendering if needed
+        h1: ({node, ...props}) => <h1 className="text-2xl font-bold my-2" {...props} />,
+        h2: ({node, ...props}) => <h2 className="text-xl font-semibold my-2" {...props} />,
+        h3: ({node, ...props}) => <h3 className="text-lg font-medium my-2" {...props} />,
+        ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2" {...props} />,
+        ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2" {...props} />,
+        p: ({node, ...props}) => <p className="my-1" {...props} />,
+        table: ({node, ...props}) => <table className="table-auto w-full my-2 border-collapse border border-gray-300" {...props} />,
+        thead: ({node, ...props}) => <thead className="bg-gray-100" {...props} />,
+        th: ({node, ...props}) => <th className="border border-gray-300 px-2 py-1 text-left" {...props} />,
+        td: ({node, ...props}) => <td className="border border-gray-300 px-2 py-1" {...props} />,
+        // Add other custom components as needed
+      }}>
+        {cleanHtml}
+      </ReactMarkdown>
+    );
+  }
+
   return (
-    <div className="space-y-2">
+    <div>
       {(assistantMessage.content || []).map((element, index) => {
-        // Use Fragment to avoid unnecessary div wrappers if an element renders multiple top-level tags (like bold/italic might if not handled carefully)
-        // Or, ensure each component renders a single root or text.
         return (
           <Fragment key={index}>
-            {element.type === 'paragraph' && <p>{element.text}</p>}
-            {element.type === 'bold' && <p><strong>{element.text}</strong></p>}
-            {element.type === 'italic' && <p><em>{element.text}</em></p>}
-            {element.type === 'unordered_list' && (
-              <ul className="list-disc list-inside pl-4">
-                {element.items?.map((item, i) => <li key={i}>{item}</li>)}
-              </ul>
-            )}
-            {element.type === 'ordered_list' && (
-              <ol className="list-decimal list-inside pl-4">
+            {element.element === "paragraph" && <p className="mb-2">{element.text}</p>}
+            {element.element === "ordered_list" && (
+              <ol className="list-decimal pl-5 mb-2">
                 {element.items?.map((item, i) => <li key={i}>{item}</li>)}
               </ol>
             )}
-            {element.type === 'table' && element.header && element.rows && (
-              <div className="overflow-x-auto">
+            {element.element === "unordered_list" && (
+              <ul className="list-disc pl-5 mb-2">
+                {element.items?.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
+            )}
+            {element.element === "table" && (
+              <div className="overflow-x-auto mb-2">
                 <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
                   <thead className="bg-gray-50">
                     <tr>
@@ -523,63 +611,34 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
                 </table>
               </div>
             )}
-            {element.type === 'reference' && element.target && element.display && (
-              <a 
-                href={element.target.startsWith('http') ? element.target : `#footnote-${element.target}`}
-                onClick={(e) => {
-                  if (!element.target.startsWith('http')) e.preventDefault();
-                  handleReferenceClick(element.target);
-                }}
-                className="text-blue-600 hover:underline cursor-pointer"
-                target={element.target.startsWith('http') ? "_blank" : "_self"}
-                rel={element.target.startsWith('http') ? "noopener noreferrer" : undefined}
-              >
-                {element.display}
-              </a>
+            {element.element === "references" && element.references && (
+              <div className="mt-4 text-sm mb-2">
+                <h4 className="font-semibold mb-1">References:</h4>
+                <ul className="list-none pl-0">
+                  {Object.entries(element.references).map(([id, text]) => (
+                    <li key={id} id={`ref-${id}`} className="mb-1">
+                      <a 
+                        href={`#ref-${id}`} 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleReferenceClick(id);
+                        }}
+                        className="text-blue-600 hover:underline"
+                      >
+                        [{id}]
+                      </a>: {text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {/* Render a streaming indicator if no specific elements are present yet and streaming is active */}
+            {assistantMessage.content.length === 0 && isStreaming && (
+              <p className="text-gray-500"><em>Assistant is typing...</em></p>
             )}
           </Fragment>
         );
       })}
-      {assistantMessage.references && Object.keys(assistantMessage.references).length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-300">
-          <h4 className="text-sm font-semibold mb-2">References</h4>
-          <ul className="space-y-1 list-none pl-0">
-            {Object.entries(assistantMessage.references).map(([key, value]) => {
-              const isExternalUrl = value.startsWith('http://') || value.startsWith('https://');
-              let urlToOpen = value;
-              if (isExternalUrl) {
-                try {
-                  const urlObj = new URL(value);
-                  urlObj.searchParams.append('utm_source', 'foresight');
-                  urlObj.searchParams.append('utm_medium', 'chat_reference');
-                  urlToOpen = urlObj.toString();
-                } catch (e) {
-                  console.warn("Failed to append UTM codes to URL:", value, e);
-                  // urlToOpen remains original value if parsing fails
-                }
-              }
-
-              return (
-                <li key={key} id={`footnote-${key}`} className="text-xs text-gray-600">
-                  <span className="font-medium">[{key}]</span> 
-                  {isExternalUrl ? (
-                    <a 
-                      href={urlToOpen} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-blue-600 hover:underline"
-                    >
-                      {value} {/* Display original value */}
-                    </a>
-                  ) : (
-                    value
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
     </div>
   );
 };
