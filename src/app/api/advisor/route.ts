@@ -35,7 +35,7 @@ For the "references_container" object at the end:
 - The string value for each key in "references" should be the full citation text or a single, complete URL. Do NOT put multiple URLs in a single reference string. If multiple sources are cited for one point, create distinct reference entries.
 `;
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     // Read payload from query parameter for SSE GET requests
     const url = new URL(req.url);
