@@ -90,28 +90,18 @@ const AdvisorView: React.FC = () => {
           console.debug("SSE recv:", ev.data);
           try {
             const data = JSON.parse(ev.data);
-            const streamingMessageIdRef = useRef<string | null>(null);
-
-            // Find the current streaming assistant message ID
-            // This needs to be robust, potentially by finding the last assistant message with isStreaming: true
-            setMessages(prev => {
-                const lastStreamingMsg = prev.slice().reverse().find(m => m.role === 'assistant' && m.isStreaming);
-                if (lastStreamingMsg) {
-                    streamingMessageIdRef.current = lastStreamingMsg.id;
-                }
-                return prev; // No state change here, just reading
-            });
             
-            const currentStreamingMsgId = streamingMessageIdRef.current;
+            // Use newStreamMessageId directly from the closure
+            const currentStreamingMsgId = newStreamMessageId;
 
             if (!currentStreamingMsgId) {
-                console.warn("No streaming message ID found for incoming SSE data.");
+                console.warn("newStreamMessageId is null/undefined in onmessage. This should not happen.");
                 return;
             }
 
             const currentParser = parsersRef.current[currentStreamingMsgId];
             if (!currentParser) {
-                console.warn(`No parser found for message ID: ${currentStreamingMsgId}`);
+                console.warn(`No parser found for message ID: ${currentStreamingMsgId}. Message might have already ended or been cleaned up.`);
                 return;
             }
 
@@ -194,15 +184,9 @@ const AdvisorView: React.FC = () => {
 
         eventSource.onerror = (err) => {
           console.error("EventSource failed:", err);
-          // Find the current streaming assistant message ID
-          let currentStreamingMsgIdOnError: string | null = null;
-          setMessages(prev => { // Use a non-state-updating way to get the ID if possible
-              const lastStreamingMsg = prev.slice().reverse().find(m => m.role === 'assistant' && m.isStreaming);
-              if (lastStreamingMsg) {
-                currentStreamingMsgIdOnError = lastStreamingMsg.id;
-              }
-              return prev;
-          });
+          
+          // Use newStreamMessageId directly from the closure for identifying the message that errored
+          const currentStreamingMsgIdOnError = newStreamMessageId;
 
           if (currentStreamingMsgIdOnError && parsersRef.current[currentStreamingMsgIdOnError]) {
              smd_parser_end(parsersRef.current[currentStreamingMsgIdOnError]); // Ensure parser is ended
@@ -211,7 +195,8 @@ const AdvisorView: React.FC = () => {
           
           setMessages((prevMessages) => {
             const updatedMessages = prevMessages.map(msg => 
-              msg.role === 'assistant' && msg.isStreaming ? { ...msg, isStreaming: false } : msg
+              // Use currentStreamingMsgIdOnError to mark the correct message as not streaming
+              msg.id === currentStreamingMsgIdOnError ? { ...msg, isStreaming: false } : msg
             );
             // Add an error message to UI
             const errorDiv = document.createElement('div');
