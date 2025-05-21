@@ -18,7 +18,8 @@ export default function Navbar({ currentPath }: NavbarProps) {
   return (
     <nav className="fixed inset-x-0 top-0 z-30 h-16 backdrop-blur-md bg-[rgba(255,255,255,0.06)] border-b border-[rgba(255,255,255,0.12)]">
       <div className="layout-wrapper h-full flex items-center justify-between">
-        <div className="flex">
+        {/* Left cluster: Logo and navigation links */}
+        <div className="flex items-center">
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center">
               <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-8 w-8 mr-2" />
@@ -59,24 +60,35 @@ export default function Navbar({ currentPath }: NavbarProps) {
           </div>
         </div>
 
-        {/* Right cluster */}
-        <div className="flex items-center gap-4">
-          {/* Search – collapses into sheet on small screens */}
-          <div className="hidden md:block">
-            <Input
-              id="navbar-desktop-search"
-              type="text"
-              placeholder="Search…"
-              className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 h-8 w-64 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-            />
+        {/* Center cluster (Search Bar): Takes up remaining space and centers its content */}
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-5xl">
+            {/* Desktop Search Input - hidden on small screens */} 
+            <div className="hidden md:block w-full">
+              <Input
+                id="navbar-desktop-search"
+                type="text"
+                placeholder="Search…"
+                className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 h-8 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+              />
+            </div>
+            {/* Mobile Search Button - visible only on small screens, positioned within the search area */}
+            {/* This button now primarily serves to open the Sheet, as the input itself is part of the Sheet on mobile. */}
+            {/* For consistency, we ensure this button is part of the central cluster, but it's hidden when desktop search is visible. */}
+            <div className="md:hidden flex justify-end w-full">
+              <button
+                aria-label="Open search"
+                className="p-2 rounded-full hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="h-[1em] w-[1em] text-white" />
+              </button>
+            </div>
           </div>
-          <button
-            aria-label="Open search"
-            className="md:hidden p-2 rounded-full hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon"
-            onClick={() => setSearchOpen(true)}
-          >
-            <Search className="h-[1em] w-[1em] text-white" />
-          </button>
+        </div>
+
+        {/* Right cluster (User Avatar): Kept to the right */}
+        <div className="flex items-center">
           <div className="ml-3 relative">
             <button
               type="button"
@@ -90,7 +102,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile Search Sheet */}
+        {/* Mobile Search Sheet - Full width for mobile */}
         <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
           <SheetContent side="top" className="pt-8 pb-4 backdrop-blur-lg bg-[rgba(255,255,255,0.1)] border-b border-[rgba(255,255,255,0.12)]">
             <Input
