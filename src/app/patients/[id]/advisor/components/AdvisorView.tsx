@@ -13,6 +13,7 @@ type SmdParser = any;
 const AdvisorView: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [userInput, setUserInput] = useState("");
 
   const eventSourceRef = useRef<EventSource | null>(null);
   // Ref to store parser instances, keyed by message ID
@@ -44,213 +45,258 @@ const AdvisorView: React.FC = () => {
     };
   }, []);
 
+  // useEffect to open EventSource when a new user message is added and we are not already loading.
   useEffect(() => {
-    const openEventSource = async () => {
-      if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
-        console.log("Skipping EventSource: No user input or messages empty, or last message not from user.");
-        return;
-      }
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
 
-      const thinkMode = false;
-      const payload = { messages };
-      const encodedPayload = encodeURIComponent(JSON.stringify(payload));
-      const apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
+    if (lastMessage && lastMessage.role === 'user' && !isLoading) {
+      // It is important to set isLoading to true here before any async operations
+      // or before the EventSource might try to add its own placeholder, to prevent re-triggers.
+      // However, openEventSource itself will set the placeholder and manage isLoading for the stream.
+      // The primary isLoading flag here is to prevent this effect from re-triggering for the same user message
+      // if other state changes cause this effect to re-evaluate.
+      // `handleSendMessage` will primarily set isLoading true.
+      console.log("useEffect triggered to open EventSource for user message:", lastMessage.id);
+      openEventSource();
+    }
 
-      try {
-        console.debug("Opening SSE to", apiUrl);
-        const eventSource = new EventSource(apiUrl);
-        eventSourceRef.current = eventSource;
+    // Cleanup function for this effect if dependencies change
+    return () => {
+      // If the component unmounts or dependencies change mid-stream, 
+      // ensure the existing connection is closed.
+      // The main unmount cleanup already calls closeEventSource(), but this can be a safeguard.
+      // if (eventSourceRef.current) {
+      //   console.log("useEffect cleanup: Closing EventSource due to dependency change or unmount.");
+      //   closeEventSource();
+      // }
+    };
+  // Rerun this effect if the ID of the last message changes, or if isLoading changes from true to false (signalling readiness for new msg)
+  }, [messages[messages.length - 1]?.id, isLoading]);
 
-        const newStreamMessageId = `msg-${Date.now()}-streaming-${messages.length}`;
-        
-        // Create a div for the markdown content
-        const markdownRootDiv = document.createElement('div');
-        markdownRootsRef.current[newStreamMessageId] = markdownRootDiv;
+  const openEventSource = async () => {
+    // Guard: Only proceed if the last message is from the user.
+    // This is a crucial guard to prevent re-opening if the effect somehow re-runs after assistant placeholder is added.
+    if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
+      console.log("openEventSource: Skipped. Last message not from user or messages empty.");
+      return;
+    }
+    
+    // Guard: If an EventSource is already open and active, don't open another one.
+    if (eventSourceRef.current && eventSourceRef.current.readyState !== EventSource.CLOSED) {
+      console.log("openEventSource: Skipped. EventSource already open and active.");
+      return;
+    }
+    
+    // Set loading state for the duration of the stream
+    setIsLoading(true); 
 
-        // Initialize parser for this message
-        const newParser = parser(default_renderer(markdownRootDiv));
-        parsersRef.current[newStreamMessageId] = newParser;
+    const thinkMode = false;
+    const payload = { messages };
+    const encodedPayload = encodeURIComponent(JSON.stringify(payload));
+    const apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
 
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: newStreamMessageId,
-            role: "assistant",
-            content: {
-              isMarkdownStream: true,
-              // Add 'content' and 'fallbackMarkdown' as optional undefined to satisfy type if needed, 
-              // or ensure AssistantMessageContent truly makes them optional.
-              // Based on previous chat-types.ts edit, they are optional.
-            } as AssistantMessageContent,
-            isStreaming: true,
-          },
-        ]);
+    try {
+      console.debug("Opening SSE to", apiUrl);
+      const eventSource = new EventSource(apiUrl);
+      eventSourceRef.current = eventSource;
 
-        eventSource.onmessage = (ev) => {
-          console.debug("SSE recv:", ev.data);
-          try {
-            const data = JSON.parse(ev.data);
-            
-            // Use newStreamMessageId directly from the closure
-            const currentStreamingMsgId = newStreamMessageId;
+      const newStreamMessageId = `msg-${Date.now()}-streaming-${messages.length}`;
+      
+      // Create a div for the markdown content
+      const markdownRootDiv = document.createElement('div');
+      markdownRootsRef.current[newStreamMessageId] = markdownRootDiv;
 
-            if (!currentStreamingMsgId) {
-                console.warn("newStreamMessageId is null/undefined in onmessage. This should not happen.");
-                return;
-            }
+      // Initialize parser for this message
+      const newParser = parser(default_renderer(markdownRootDiv));
+      parsersRef.current[newStreamMessageId] = newParser;
 
-            const currentParser = parsersRef.current[currentStreamingMsgId];
-            if (!currentParser) {
-                console.warn(`No parser found for message ID: ${currentStreamingMsgId}. Message might have already ended or been cleaned up.`);
-                return;
-            }
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: newStreamMessageId,
+          role: "assistant",
+          content: {
+            isMarkdownStream: true,
+            // Add 'content' and 'fallbackMarkdown' as optional undefined to satisfy type if needed, 
+            // or ensure AssistantMessageContent truly makes them optional.
+            // Based on previous chat-types.ts edit, they are optional.
+          } as AssistantMessageContent,
+          isStreaming: true,
+        },
+      ]);
 
-            switch (data.type) {
-              case "markdown_chunk": {
-                if (data.content) {
-                  // Use the imported smd_parser_write
-                  smd_parser_write(currentParser, data.content);
-                }
-                break;
-              }
-
-              case "error": {
-                console.error("Server error message:", data.message);
-                setMessages((prevMessages) =>
-                  prevMessages.map((msg) =>
-                    msg.id === currentStreamingMsgId ? { ...msg, isStreaming: false } : msg
-                  )
-                );
-                const errorMsgId = `msg-${Date.now()}-error-${messages.length}`;
-                const errorMessageContent: AssistantMessageContent = {
-                  isMarkdownStream: true, // Render error as markdown too
-                  // No actual parser for this, div will be manually filled
-                };
-                const errorMessage: ChatMessage = {
-                  id: errorMsgId,
-                  role: "assistant",
-                  content: errorMessageContent,
-                  isStreaming: false,
-                };
-                setMessages((prevMessages) => [...prevMessages, errorMessage]);
-
-                const errorDiv = document.createElement('div');
-                errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> ${data.message}`);
-                markdownRootsRef.current[errorMsgId] = errorDiv;
-
-                setIsLoading(false);
-                closeEventSource();
-                if (parsersRef.current[currentStreamingMsgId]) {
-                  // smd_parser_end(parsersRef.current[currentStreamingMsgId]); // Call end for the original stream's parser
-                  delete parsersRef.current[currentStreamingMsgId];
-                }
-                break;
-              }
-
-              case "stream_end": {
-                console.log("Stream ended.");
-                if (currentParser) {
-                  smd_parser_end(currentParser);
-                }
-                setMessages((prevMessages) =>
-                  prevMessages.map((msg) =>
-                    msg.id === currentStreamingMsgId ? { ...msg, isStreaming: false } : msg
-                  )
-                );
-                setIsLoading(false);
-                // Don't close EventSource here if more messages can be sent/received in the session.
-                // closeEventSource(); // Only close if the entire interaction is done.
-                
-                // Clean up the specific parser instance
-                if (parsersRef.current[currentStreamingMsgId]) {
-                    smd_parser_end(parsersRef.current[currentStreamingMsgId]); // Ensure parser is ended
-                    delete parsersRef.current[currentStreamingMsgId];
-                }
-                // The markdownRootsRef entry can remain as it holds the rendered content.
-                break;
-              }
-
-              default:
-                // console.log("Received unhandled SSE event type:", data.type, data);
-                break;
-            }
-          } catch (error) {
-            console.error("Error parsing SSE message or processing data:", error, ev.data);
-            // Potentially display a client-side error message
-            // setIsLoading(false); // Consider if loading should stop here.
-            // closeEventSource(); // Close on unexpected client-side parsing error.
-          }
-        };
-
-        eventSource.onerror = (err) => {
-          console.error("EventSource failed:", err);
+      eventSource.onmessage = (ev) => {
+        console.debug("SSE recv:", ev.data);
+        try {
+          const data = JSON.parse(ev.data);
           
-          // Use newStreamMessageId directly from the closure for identifying the message that errored
-          const currentStreamingMsgIdOnError = newStreamMessageId;
+          // Use newStreamMessageId directly from the closure
+          const currentStreamingMsgId = newStreamMessageId;
 
-          if (currentStreamingMsgIdOnError && parsersRef.current[currentStreamingMsgIdOnError]) {
-             smd_parser_end(parsersRef.current[currentStreamingMsgIdOnError]); // Ensure parser is ended
-             delete parsersRef.current[currentStreamingMsgIdOnError];
+          if (!currentStreamingMsgId) {
+              console.warn("newStreamMessageId is null/undefined in onmessage. This should not happen.");
+              return;
           }
-          
-          setMessages((prevMessages) => {
-            const updatedMessages = prevMessages.map(msg => 
-              // Use currentStreamingMsgIdOnError to mark the correct message as not streaming
-              msg.id === currentStreamingMsgIdOnError ? { ...msg, isStreaming: false } : msg
-            );
-            // Add an error message to UI
-            const errorDiv = document.createElement('div');
-            errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Connection issue or stream interrupted.`);
-            const errorMsgId = `msg-${Date.now()}-conn-error-${updatedMessages.length}`;
-            markdownRootsRef.current[errorMsgId] = errorDiv;
 
-            return [
-              ...updatedMessages,
-              {
+          const currentParser = parsersRef.current[currentStreamingMsgId];
+          if (!currentParser) {
+              console.warn(`No parser found for message ID: ${currentStreamingMsgId}. Message might have already ended or been cleaned up.`);
+              return;
+          }
+
+          switch (data.type) {
+            case "markdown_chunk": {
+              if (data.content) {
+                // Use the imported smd_parser_write
+                smd_parser_write(currentParser, data.content);
+              }
+              break;
+            }
+
+            case "error": {
+              console.error("Server error message:", data.message);
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                  msg.id === currentStreamingMsgId ? { ...msg, isStreaming: false } : msg
+                )
+              );
+              const errorMsgId = `msg-${Date.now()}-error-${messages.length}`;
+              const errorMessageContent: AssistantMessageContent = {
+                isMarkdownStream: true, // Render error as markdown too
+                // No actual parser for this, div will be manually filled
+              };
+              const errorMessage: ChatMessage = {
                 id: errorMsgId,
                 role: "assistant",
-                content: { isMarkdownStream: true } as AssistantMessageContent,
+                content: errorMessageContent,
                 isStreaming: false,
+              };
+              setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+              const errorDiv = document.createElement('div');
+              errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> ${data.message}`);
+              markdownRootsRef.current[errorMsgId] = errorDiv;
+
+              setIsLoading(false);
+              closeEventSource();
+              if (parsersRef.current[currentStreamingMsgId]) {
+                // smd_parser_end(parsersRef.current[currentStreamingMsgId]); // Call end for the original stream's parser
+                delete parsersRef.current[currentStreamingMsgId];
               }
-            ];
-          });
+              break;
+            }
 
-          setIsLoading(false);
-          closeEventSource();
-        };
-      } catch (error) {
-        console.error("Failed to open EventSource:", error);
+            case "stream_end": {
+              console.log("Stream ended.");
+              if (currentParser) {
+                smd_parser_end(currentParser);
+              }
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                  msg.id === currentStreamingMsgId ? { ...msg, isStreaming: false } : msg
+                )
+              );
+              setIsLoading(false);
+              // Don't close EventSource here if more messages can be sent/received in the session.
+              // closeEventSource(); // Only close if the entire interaction is done.
+              
+              // Clean up the specific parser instance
+              if (parsersRef.current[currentStreamingMsgId]) {
+                  // Check if parser_end was already called by currentParser check above
+                  if (currentParser && typeof smd_parser_end === 'function') { 
+                      // smd_parser_end was called on currentParser, no need to call again
+                  } else if (typeof smd_parser_end === 'function'){
+                      smd_parser_end(parsersRef.current[currentStreamingMsgId]);
+                  }
+                  delete parsersRef.current[currentStreamingMsgId];
+              }
+              // The markdownRootsRef entry can remain as it holds the rendered content.
+              break;
+            }
+
+            default:
+              // console.log("Received unhandled SSE event type:", data.type, data);
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing SSE message or processing data:", error, ev.data);
+          // Potentially display a client-side error message
+          // setIsLoading(false); // Consider if loading should stop here.
+          // closeEventSource(); // Close on unexpected client-side parsing error.
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error("EventSource failed:", err);
+        
+        // Use newStreamMessageId directly from the closure for identifying the message that errored
+        const currentStreamingMsgIdOnError = newStreamMessageId;
+
+        if (currentStreamingMsgIdOnError && parsersRef.current[currentStreamingMsgIdOnError]) {
+           smd_parser_end(parsersRef.current[currentStreamingMsgIdOnError]); // Ensure parser is ended
+           delete parsersRef.current[currentStreamingMsgIdOnError];
+        }
+        
+        setMessages((prevMessages) => {
+          const updatedMessages = prevMessages.map(msg => 
+            // Use currentStreamingMsgIdOnError to mark the correct message as not streaming
+            msg.id === currentStreamingMsgIdOnError ? { ...msg, isStreaming: false } : msg
+          );
+          // Add an error message to UI
+          const errorDiv = document.createElement('div');
+          errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Connection issue or stream interrupted.`);
+          const errorMsgId = `msg-${Date.now()}-conn-error-${updatedMessages.length}`;
+          markdownRootsRef.current[errorMsgId] = errorDiv;
+
+          return [
+            ...updatedMessages,
+            {
+              id: errorMsgId,
+              role: "assistant",
+              content: { isMarkdownStream: true } as AssistantMessageContent,
+              isStreaming: false,
+            }
+          ];
+        });
+
         setIsLoading(false);
-        // Display an error message in the chat
-        const errorDiv = document.createElement('div');
-        errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Could not connect to the advisor service.`);
-        const errorMsgId = `msg-${Date.now()}-connect-error-${messages.length}`;
-        markdownRootsRef.current[errorMsgId] = errorDiv;
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: errorMsgId,
-            role: "assistant",
-            content: { isMarkdownStream: true } as AssistantMessageContent,
-            isStreaming: false,
-          },
-        ]);
-      }
-    };
+        closeEventSource();
+      };
+    } catch (error) {
+      console.error("Failed to open EventSource:", error);
+      setIsLoading(false);
+      // Display an error message in the chat
+      const errorDiv = document.createElement('div');
+      errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Could not connect to the advisor service.`);
+      const errorMsgId = `msg-${Date.now()}-connect-error-${messages.length}`;
+      markdownRootsRef.current[errorMsgId] = errorDiv;
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: errorMsgId,
+          role: "assistant",
+          content: { isMarkdownStream: true } as AssistantMessageContent,
+          isStreaming: false,
+        },
+      ]);
+    }
+  };
 
-    // Open EventSource only if the last message is from the user, or if messages array is empty (initial state)
-    // The `openEventSource` itself has a guard for messages.length > 0 and last message being user.
-    // This effect should run when `messages` changes to potentially trigger a new stream.
-    openEventSource();
+  const handleSendMessage = () => {
+    if (userInput.trim() === "") return;
 
-    // Cleanup function for this effect
-    return () => {
-      // Close event source if it's open when dependencies change in a way that stops streaming
-      // (e.g., user navigates away, or sends a new message which will trigger a new effect run)
-      // This check is important: only close if there's an active stream that this effect instance "owns".
-      // However, the main unmount cleanup already handles eventSourceRef.current.
+    const newUserMessage: ChatMessage = {
+      id: `msg-${Date.now()}-user-${messages.length}`,
+      role: "user",
+      content: userInput,
     };
-  }, [messages.length]);
+    
+    // Set isLoading to true when a message is sent. 
+    // The useEffect listening to last message ID and isLoading will pick this up.
+    setMessages((prevMessages) => [...prevMessages, newUserMessage]);
+    setUserInput("");
+    // setIsLoading(true); // This will be handled by the effect or openEventSource start
+  };
 
   return (
     <div className="flex flex-col gap-2">
