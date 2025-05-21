@@ -280,65 +280,134 @@ export async function GET(req: NextRequest) {
         // resetFallbackTimer(); // Fallback DEFINITIVELY disabled
 
         try {
-          console.log("Attempting structured stream with OpenAI..."); // Added log
-          const structuredStream = await openai.chat.completions.create({
-            model,
-            stream: true,
-            messages: messagesForToolCalls,
-            functions: [addElementFunctionDefinition],
-            function_call: { name: addElementFunctionDefinition.name }, 
-          },
-          { signal: structuredStreamInternalAbortController.signal }
-          );
+          console.log("Attempting structured stream with OpenAI...");
 
-          for await (const chunk of structuredStream) {
-            if (fallbackEngaged || structuredStreamInternalAbortController.signal.aborted || isControllerClosedRef.value) {
+          let continueStreaming = true;
+          let loopCount = 0; // Safety break for the loop
+          const MAX_LOOPS = 10; // Allow up to 10 tool calls
+
+          // Make a mutable copy of messagesForToolCalls to append tool responses
+          // Explicitly type to allow for function_call and tool roles
+          let currentMessagesForToolCalls: Array<OpenAI.Chat.ChatCompletionMessageParam | OpenAI.Chat.ChatCompletionToolMessageParam> = [...messagesForToolCalls.map(m => m as OpenAI.Chat.ChatCompletionMessageParam)]; 
+
+          while (continueStreaming && loopCount < MAX_LOOPS) {
+            loopCount++;
+            if (requestAbortController.signal.aborted || isControllerClosedRef.value) {
+              console.log("Loop break: Request aborted or controller closed.");
               break;
             }
-            tokenCount++;
-            resetFallbackTimer(); // Reset timer on any activity before the first block.
-                                // If firstBlockSent is true, this will now be a no-op for setting a new timer.
 
-            const fcDelta = chunk.choices[0]?.delta?.function_call;
-            if (fcDelta?.arguments) {
-              structuredFunctionCallArgsBuffer += fcDelta.arguments;
-            }
+            console.log(`Loop ${loopCount}: Calling OpenAI with ${currentMessagesForToolCalls.length} messages.`);
 
-            if (bracesBalanced(structuredFunctionCallArgsBuffer)) {
-              try {
-                const parsedArgs = JSON.parse(structuredFunctionCallArgsBuffer);
-                structuredFunctionCallArgsBuffer = "";
-                if (Object.keys(parsedArgs).length === 0 && parsedArgs.constructor === Object) {
-                  // Skip empty {} 
-                } else if (
-                  typeof parsedArgs.element !== 'string' ||
-                  !VALID_ELEMENT_TYPES.includes(parsedArgs.element as typeof VALID_ELEMENT_TYPES[number])
-                ) {
-                  console.warn("Invalid or missing 'element' field:", parsedArgs);
-                } else {
-                  if (!isControllerClosedRef.value) {
-                    console.log("First block enqueued:", parsedArgs);
-                    firstBlockSent = true;
-                    if (fallbackTimeoutId) {
-                      clearTimeout(fallbackTimeoutId);
-                      fallbackTimeoutId = null;
-                    }
-                    const payload = { type: "structured_block", element: parsedArgs };
-                    console.log("SSE send:", JSON.stringify(payload));
-                    controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
-                  }
-                }
-              } catch (e) {
-                // Continue accumulating
+            const structuredStream = await openai.chat.completions.create({
+              model,
+              stream: true,
+              messages: currentMessagesForToolCalls, // Use the potentially updated messages array
+              functions: [addElementFunctionDefinition],
+              function_call: { name: addElementFunctionDefinition.name }, 
+            },
+            { signal: structuredStreamInternalAbortController.signal }
+            );
+
+            let functionCallArgumentsReceived = "";
+            let madeSuccessfulToolCallInThisLoop = false;
+
+            for await (const chunk of structuredStream) {
+              if (fallbackEngaged || structuredStreamInternalAbortController.signal.aborted || isControllerClosedRef.value) {
+                console.log("Chunk processing break: Fallback, abort, or controller closed.");
+                continueStreaming = false; // Stop the outer loop
+                break;
               }
+              // tokenCount++; // Token count is less relevant in a multi-call loop for fallback timer
+              // resetFallbackTimer(); // Fallback disabled
+
+              const fcDelta = chunk.choices[0]?.delta?.function_call;
+              if (fcDelta?.arguments) {
+                functionCallArgumentsReceived += fcDelta.arguments;
+              }
+
+              // Check for finish_reason other than function_call to stop the loop
+              // or if the LLM simply stops sending function call arguments.
+              const finishReason = chunk.choices[0]?.finish_reason;
+              if (finishReason && finishReason !== "function_call" && finishReason !== "tool_calls") {
+                  console.log(`Loop ${loopCount}: OpenAI indicated finish reason: ${finishReason}. Stopping further tool calls.`);
+                  continueStreaming = false; // Stop making new OpenAI calls
+                  // No break here, let bracesBalanced check for any final partial args
+              }
+
+              if (bracesBalanced(functionCallArgumentsReceived)) {
+                try {
+                  const parsedArgs = JSON.parse(functionCallArgumentsReceived);
+                  const toolCallId = chunk.choices[0]?.delta?.tool_calls?.[0]?.id || `tool_call_${Date.now()}`;
+                  // ^^^ Note: The original `functions` API doesn't use tool_calls array or provide tool_call_id in delta directly like the newer `tools` API.
+                  // For `functions`, the `function_call` object is directly on the delta.
+                  // We will synthesize a tool message without a specific ID from the LLM if not available.
+
+                  functionCallArgumentsReceived = ""; // Reset buffer
+
+                  if (Object.keys(parsedArgs).length === 0 && parsedArgs.constructor === Object) {
+                    // Skip empty {}
+                  } else if (
+                    typeof parsedArgs.element !== 'string' ||
+                    !VALID_ELEMENT_TYPES.includes(parsedArgs.element as typeof VALID_ELEMENT_TYPES[number])
+                  ) {
+                    console.warn("Invalid or missing 'element' field:", parsedArgs);
+                    // Potentially stop streaming if LLM sends bad data repeatedly?
+                  } else {
+                    if (!isControllerClosedRef.value) {
+                      console.log(`Loop ${loopCount}: First block enqueued:`, parsedArgs);
+                      firstBlockSent = true; // This ref might need re-evaluation in multi-call
+                                            // For now, it still helps avoid fallback if it were enabled.
+                      // if (fallbackTimeoutId) { // Fallback disabled
+                      //   clearTimeout(fallbackTimeoutId);
+                      //   fallbackTimeoutId = null;
+                      // }
+                      const payload = { type: "structured_block", element: parsedArgs };
+                      console.log(`Loop ${loopCount}: SSE send:`, JSON.stringify(payload));
+                      controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
+                      madeSuccessfulToolCallInThisLoop = true;
+
+                      // Add the assistant's function call and our tool response to messages for next iteration
+                      currentMessagesForToolCalls.push({
+                        role: "assistant",
+                        content: null, // Per OpenAI spec for function call message
+                        function_call: { 
+                          name: addElementFunctionDefinition.name,
+                          arguments: JSON.stringify(parsedArgs) 
+                        }
+                      } as OpenAI.Chat.ChatCompletionAssistantMessageParam); // Cast to the specific type
+                      currentMessagesForToolCalls.push({
+                        role: "tool", 
+                        tool_call_id: toolCallId, // Synthesized or from actual tool_call if available
+                        name: addElementFunctionDefinition.name, 
+                        content: JSON.stringify({ success: true, message: "Element added." }) 
+                      } as OpenAI.Chat.ChatCompletionToolMessageParam); // Cast to the specific type
+                    }
+                  }
+                } catch (e) {
+                  // JSON parse error, continue accumulating
+                  console.warn(`Loop ${loopCount}: JSON parse error, continuing to accumulate:`, e);
+                }
+              } // End bracesBalanced check
+            } // End for-await-chunk loop
+
+            if (!madeSuccessfulToolCallInThisLoop && continueStreaming) {
+                // If the inner loop finished (e.g. stream ended from OpenAI) but we didn't make a tool call
+                // (e.g. LLM stopped calling functions, or sent empty/invalid args that we skipped)
+                // then we should stop the outer while loop.
+                console.log(`Loop ${loopCount}: No successful tool call made in this loop iteration. Stopping streaming.`);
+                continueStreaming = false;
             }
-            
-            if (!firstBlockSent && tokenCount >= MAX_TOKENS_BEFORE_FALLBACK && structuredFunctionCallArgsBuffer.length === 0) {
-              // await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`); // Fallback DEFINITIVELY disabled
-              console.warn(`Fallback suppressed: Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
-              break;
-            }
+
+            // If OpenAI stream ended (inner loop broke) and we don't want to continue (e.g. finish_reason was not function_call)
+            // then continueStreaming would be false, and the while loop condition will handle it.
+
+          } // End while(continueStreaming) loop
+
+          if (loopCount >= MAX_LOOPS) {
+            console.warn("Max loop count reached. Stopping further tool calls.");
           }
+
         } catch (error: any) {
           if (!(error.name === 'AbortError' || structuredStreamInternalAbortController.signal.aborted)) {
             if (!fallbackEngaged && !isControllerClosedRef.value) {
