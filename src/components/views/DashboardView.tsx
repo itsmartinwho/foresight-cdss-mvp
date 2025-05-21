@@ -63,7 +63,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         <Button
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
-          className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white before:opacity-0 hover:before:opacity-90 hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%]"
+          className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white before:opacity-0 before:rounded-full hover:before:opacity-90 hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%]"
         >
           + New Consultation
         </Button>
