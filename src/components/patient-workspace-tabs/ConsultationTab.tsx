@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Mic } from "lucide-react";
+import { Mic, Save, Pause as PauseIcon, Play as PlayIcon } from "lucide-react";
 
 // Consultation Tab
 export default function ConsultationTab({
@@ -44,23 +44,67 @@ export default function ConsultationTab({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [editableTranscript, setEditableTranscript] = useState<string>("");
+  const [lastSavedTranscript, setLastSavedTranscript] = useState<string>("");
+  const [transcriptChanged, setTranscriptChanged] = useState<boolean>(false);
+  const [cursorPosition, setCursorPosition] = useState<number | null>(null);
+  const transcriptAreaRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (currentDetailedAdmission?.transcript) {
-      setEditableTranscript(currentDetailedAdmission.transcript);
-    } else {
-      setEditableTranscript("");
-    }
+    const initialTranscript = currentDetailedAdmission?.transcript || "";
+    setEditableTranscript(initialTranscript);
+    setLastSavedTranscript(initialTranscript);
+    setTranscriptChanged(false);
   }, [currentDetailedAdmission?.transcript, selectedAdmission]);
 
   const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
   const socketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  const handleSaveTranscript = async () => {
+    if (!patient || !currentDetailedAdmission) {
+      console.warn("Cannot save: Patient or admission data missing.");
+      return;
+    }
+    if (editableTranscript !== lastSavedTranscript) {
+      try {
+        await supabaseDataService.updateAdmissionTranscript(patient.id, currentDetailedAdmission.id, editableTranscript);
+        setLastSavedTranscript(editableTranscript);
+        setTranscriptChanged(false);
+        console.log("Transcript saved.");
+      } catch (error) {
+        console.error("Error saving transcript:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (transcriptChanged) {
+        handleSaveTranscript();
+      }
+    };
+  }, [transcriptChanged, selectedAdmission]);
+
+  const getCursorPosition = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0 && transcriptAreaRef.current && transcriptAreaRef.current.contains(selection.anchorNode)) {
+      const range = selection.getRangeAt(0);
+      return range.startOffset;
+    }
+    return null;
+  };
+
   const startTranscription = async () => {
     if (!apiKey) {
       alert('Deepgram API key not configured');
       return;
+    }
+    if (isTranscribing && !isPaused) return;
+
+    if (document.activeElement === transcriptAreaRef.current) {
+      setCursorPosition(getCursorPosition());
+    } else {
+      setCursorPosition(null);
     }
 
     let admissionToUse = currentDetailedAdmission;
@@ -80,11 +124,20 @@ export default function ConsultationTab({
          return;
       }
       setEditableTranscript("");
-    }
-    
-    if (!admissionToUse) {
+      setLastSavedTranscript("");
+      setTranscriptChanged(false);
+    } else if (!admissionToUse) {
         alert("No active consultation selected. Cannot start transcription.");
         return;
+    }
+    
+    if (isPaused) {
+       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
+        mediaRecorderRef.current.resume();
+      }
+      setIsPaused(false);
+      setIsTranscribing(true);
+      return;
     }
 
     try {
@@ -101,9 +154,20 @@ export default function ConsultationTab({
         try {
           const data = JSON.parse(e.data);
           if (data && data.channel && data.is_final) {
-            const alt = data.channel.alternatives[0];
-            if (alt && alt.transcript) {
-              setEditableTranscript((prev) => (prev ? prev + '\n' + alt.transcript : alt.transcript));
+            const newTextChunk = data.channel.alternatives[0]?.transcript || '';
+            if (newTextChunk) {
+              setEditableTranscript((prev) => {
+                const currentText = prev || '';
+                let finalText;
+                if (cursorPosition !== null && cursorPosition <= currentText.length) {
+                  finalText = currentText.slice(0, cursorPosition) + newTextChunk + ' ' + currentText.slice(cursorPosition);
+                  setCursorPosition(cursorPosition + newTextChunk.length + 1);
+                } else {
+                  finalText = (currentText ? currentText + '\n' : '') + newTextChunk;
+                }
+                setTranscriptChanged(true);
+                return finalText;
+              });
             }
           }
         } catch (_) {}
@@ -127,22 +191,19 @@ export default function ConsultationTab({
     } catch (err: unknown) {
       console.error('Error starting transcription', err);
       alert(`Error starting transcription: ${err instanceof Error ? err.message : String(err)}`);
+      setIsTranscribing(false);
+      setIsPaused(false);
     }
   };
 
   const pauseTranscription = () => {
-    if (mediaRecorderRef.current && socketRef.current) {
-      if (!isPaused) {
-        mediaRecorderRef.current.pause();
-        setIsPaused(true);
-      } else {
-        mediaRecorderRef.current.resume();
-        setIsPaused(false);
-      }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.pause();
+      setIsPaused(true);
     }
   };
 
-  const endTranscription = () => {
+  const stopTranscriptionAndSave = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
     }
@@ -152,24 +213,31 @@ export default function ConsultationTab({
     }
     setIsTranscribing(false);
     setIsPaused(false);
-    
-    const admissionToSaveTo = currentDetailedAdmission || selectedAdmission;
+    handleSaveTranscript();
+  };
 
-    if (patient && admissionToSaveTo) {
-      supabaseDataService.updateAdmissionTranscript(patient.id, admissionToSaveTo.id, editableTranscript);
-    } else {
-      console.warn("Could not save transcript: patient or admission data missing.");
+  const handleTranscriptChange = (newText: string) => {
+    setEditableTranscript(newText);
+    if (newText !== lastSavedTranscript) {
+      setTranscriptChanged(true);
     }
   };
 
-  const handleTranscriptChange = (text: string) => {
-    setEditableTranscript(text);
-    if (!isTranscribing && patient && currentDetailedAdmission) {
-      supabaseDataService.updateAdmissionTranscript(patient.id, currentDetailedAdmission.id, text);
+  const showStartTranscriptionOverlay = !isStartingNewConsultation && !currentDetailedAdmission?.transcript && !editableTranscript && !isTranscribing;
+
+  const handleSelectionChange = () => {
+    if (transcriptAreaRef.current && document.activeElement === transcriptAreaRef.current) {
+        const pos = getCursorPosition();
+        if (pos !== null) setCursorPosition(pos);
     }
   };
 
-  const showStartTranscriptionOverlay = !isStartingNewConsultation && !currentDetailedAdmission?.transcript && !isTranscribing;
+  useEffect(() => {
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, [transcriptAreaRef.current]);
 
   return (
     <div className={cn("p-6 grid lg:grid-cols-3 gap-6", isStartingNewConsultation ? "lg:grid-cols-1" : "")}>
@@ -217,7 +285,7 @@ export default function ConsultationTab({
         </div>
       )}
       
-      <Card className={cn("lg:col-span-2 bg-glass glass-dense backdrop-blur-lg", isStartingNewConsultation ? "lg:col-span-3" : "")}>
+      <Card className={cn("lg:col-span-2 bg-glass glass-dense backdrop-blur-lg relative", isStartingNewConsultation ? "lg:col-span-3" : "")}>
         {showStartTranscriptionOverlay && (
           <button
             onClick={startTranscription}
@@ -231,56 +299,61 @@ export default function ConsultationTab({
           <CardTitle className="flex items-center justify-between gap-2 text-step-0">
             <div className="flex items-center gap-2">
               <span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span>
-              Live Transcript
+              Transcript
             </div>
-            {!isTranscribing && !isStartingNewConsultation && currentDetailedAdmission?.transcript && (
-              <Button variant="ghost" size="icon" onClick={startTranscription} title="Start/Restart Transcription">
+            {transcriptChanged && !isTranscribing && (
+              <Button variant="default" size="sm" onClick={handleSaveTranscript} className="ml-auto mr-2">
+                <Save className="h-4 w-4 mr-2" /> Save
+              </Button>
+            )}
+            {!isTranscribing && !isStartingNewConsultation && (editableTranscript || currentDetailedAdmission?.transcript) && !showStartTranscriptionOverlay && (
+              <Button variant="ghost" size="icon" onClick={startTranscription} title="Start Transcription">
                 <Mic className="h-5 w-5 text-neon" />
               </Button>
             )}
           </CardTitle>
-          {!isTranscribing && (isStartingNewConsultation || currentDetailedAdmission?.transcript) && (
-            <div className="mt-2 p-2 border-b border-border">
+          
+          {isTranscribing && (
+            <div className="mt-2 p-2 border-b border-border flex items-center gap-2">
+              {!isPaused ? (
+                <Button variant="secondary" size="sm" onClick={pauseTranscription} title="Pause Transcription">
+                  <PauseIcon className="h-4 w-4 mr-2" /> Pause
+                </Button>
+              ) : (
+                <Button variant="secondary" size="sm" onClick={startTranscription} title="Resume Transcription">
+                  <PlayIcon className="h-4 w-4 mr-2" /> Resume
+                </Button>
+              )}
+              <Button variant="destructive" size="sm" onClick={stopTranscriptionAndSave} title="Stop Transcription & Save">
+                Stop & Save
+              </Button>
+              <span className="ml-auto text-xs text-muted-foreground">{isPaused ? "Paused" : "Transcribing..."}</span>
+            </div>
+          )}
+
+          {!isTranscribing && (isStartingNewConsultation || editableTranscript || currentDetailedAdmission?.transcript) && !showStartTranscriptionOverlay && (
+             <div className="mt-2 p-2 border-b border-border"> 
               <span className="text-xs text-muted-foreground">Editing tools (TODO)</span>
             </div>
           )}
+
         </CardHeader>
-        <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
-          {(isStartingNewConsultation || currentDetailedAdmission?.transcript || isTranscribing || editableTranscript) ? (
+        <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm relative">
+          {(isStartingNewConsultation || currentDetailedAdmission?.transcript || editableTranscript || isTranscribing) ? (
             <div
+              ref={transcriptAreaRef}
               contentEditable={!isTranscribing}
               suppressContentEditableWarning
               onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerText)}
-              className="whitespace-pre-wrap outline-none p-1 min-h-[50px]"
+              className="whitespace-pre-wrap outline-none p-1 min-h-[calc(60vh-40px)]"
               dangerouslySetInnerHTML={{ __html: editableTranscript }}
             />
           ) : (
             <p className="text-muted-foreground text-center py-10">
-              {isStartingNewConsultation ? "Begin typing or start transcription." : "No transcript available for this consultation. Click Start Transcription."}
+              {isStartingNewConsultation ? "Begin typing or start transcription." : "No transcript available for this consultation."}
             </p>
           )}
         </CardContent>
-        {isTranscribing ? (
-          <div className="absolute bottom-4 right-4 flex gap-4 z-20">
-            <Button onClick={pauseTranscription} variant="secondary" size="sm" className="rounded-full">
-              {isPaused ? 'Resume' : 'Pause'}
-            </Button>
-            <Button onClick={endTranscription} variant="destructive" size="sm" className="rounded-full">
-              End
-            </Button>
-          </div>
-        ) : (
-          isStartingNewConsultation && !editableTranscript && (
-            <div className="absolute bottom-4 right-4 z-20">
-              <Button 
-                onClick={startTranscription} 
-                className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none w-[140px] h-[40px] flex items-center justify-center"
-              >
-                Start Transcription
-              </Button>
-            </div>
-          )
-        )}
       </Card>
 
       {!isStartingNewConsultation && (
