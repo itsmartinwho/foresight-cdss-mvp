@@ -256,26 +256,23 @@ export default function AdvisorView() {
 
           if (!assistantMessageId) {
             console.error("No currentAssistantMessageIdRef.current available for SSE processing.");
-            return prevMessages; // Should not happen if handleSend sets it
+            return prevMessages; 
           }
 
           const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
           if (parsedData.type === "structured_block" && parsedData.element) {
-            receivedStructuredBlock.current = true; // Mark that we received a structured block
+            receivedStructuredBlock.current = true; 
             if (existingAssistantMsgIndex !== -1) {
-              // Assistant message already exists, append content
               const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
               if (typeof msgToUpdate.content === 'object' && !msgToUpdate.content.isFallback) {
                 msgToUpdate.content.content.push(parsedData.element as ContentElement);
-                msgToUpdate.isStreaming = true; // Keep streaming
+                msgToUpdate.isStreaming = true; 
                 updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
               } else {
-                // This case should ideally not be hit if structured_block is received
                 console.warn("Tried to append structured_block to a string content or fallback message.");
               }
             } else {
-              // First structured_block, create the assistant message
               const newAssistantMessage: ChatMessage = {
                 id: assistantMessageId,
                 role: "assistant",
@@ -320,8 +317,8 @@ export default function AdvisorView() {
                 updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
               }
             } // If no assistant message for markdown_chunk, it might be lost or an error
-          } else if (parsedData.type === "error") {
-            console.error("SSE Error:", parsedData.message);
+          } else if (parsedData.type === "error") { // Server-sent error
+            console.error("SSE Error from server:", parsedData.message);
             if (existingAssistantMsgIndex !== -1) {
               const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
               if (typeof msgToUpdate.content === 'object') {
@@ -330,139 +327,111 @@ export default function AdvisorView() {
               }
               msgToUpdate.isStreaming = false;
               updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
-            } else {
-              // Error received, but no existing assistant message to update. Create one.
+            } else if (assistantMessageId) {
               const errorAssistantMessage: ChatMessage = {
                 id: assistantMessageId,
                 role: "assistant",
-                content: {
-                  content: [],
-                  references: {},
-                  isFallback: true,
-                  fallbackMarkdown: `**Error:** ${parsedData.message}`
-                },
+                content: { content: [], references: {}, isFallback: true, fallbackMarkdown: `**Error:** ${parsedData.message}` },
                 isStreaming: false,
               };
               updatedMessages.push(errorAssistantMessage);
             }
-            streamProperlyEnded = false; // Error means stream didn't end properly
-            eventSource.close();
-            setIsSending(false);
+            streamEndedGracefully.current = false; // Explicitly false as it's a server error
+            eventSource.close(); 
+            setIsSending(false); 
           } else if (parsedData.type === "stream_end") {
+            streamEndedGracefully.current = true; // Set GACEFUL first
+            eventSource.close(); // Then CLOSE
+
             if (existingAssistantMsgIndex !== -1) {
               updatedMessages[existingAssistantMsgIndex].isStreaming = false;
-            }
-            streamProperlyEnded = true;
-            streamEndedGracefully.current = true; // Mark as gracefully ended
-            eventSource.close();
-            setIsSending(false);
-            // If no structured block was received, show error
-            if (!receivedStructuredBlock.current) {
-              setMessages(prevMessages => {
-                const prev = Array.isArray(prevMessages) ? prevMessages : [];
-                const assistantMessageId = currentAssistantMessageIdRef.current;
-                let updatedMessages = [...prev];
-                const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
-                if (existingAssistantMsgIndex !== -1) {
-                  const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
-                  if (typeof msgToUpdate.content === 'object') {
-                    msgToUpdate.content.isFallback = true;
-                    msgToUpdate.content.fallbackMarkdown = (msgToUpdate.content.fallbackMarkdown || "") + "\n**Error:** No valid response received from server.";
-                  }
-                  msgToUpdate.isStreaming = false;
-                  updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
-                } else if (assistantMessageId) {
-                  const connectionErrorMessage: ChatMessage = {
-                    id: assistantMessageId,
-                    role: "assistant",
-                    content: {
-                      content: [],
-                      references: {},
-                      isFallback: true,
-                      fallbackMarkdown: "**Error:** No valid response received from server.",
-                    } as AssistantMessageContent,
-                    isStreaming: false,
-                  };
-                  updatedMessages.push(connectionErrorMessage);
+              if (!receivedStructuredBlock.current) {
+                if (typeof updatedMessages[existingAssistantMsgIndex].content === 'object') {
+                  (updatedMessages[existingAssistantMsgIndex].content as AssistantMessageContent).isFallback = true;
+                  (updatedMessages[existingAssistantMsgIndex].content as AssistantMessageContent).fallbackMarkdown = "**Error:** No valid response received from server.";
                 }
-                return updatedMessages;
-              });
+              }
+            } else if (assistantMessageId && !receivedStructuredBlock.current) {
+              // This case means a stream_end was received without any prior assistant message placeholder
+              // AND no structured blocks. This is unusual but possible if handleSend didn't set up a message.
+              // Or if currentAssistantMessageIdRef was somehow cleared.
+              const errorAssistantMessage: ChatMessage = {
+                id: assistantMessageId,
+                role: "assistant",
+                content: { content: [], references: {}, isFallback: true, fallbackMarkdown: "**Error:** No valid response received from server." },
+                isStreaming: false,
+              };
+              updatedMessages.push(errorAssistantMessage);
             }
-            return;
+            setIsSending(false);
           }
-          // Removed legacy direct element handling as server sends structured_block
-
-          // Log message state after each update
-          console.log('Updated messages state:', updatedMessages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
+          
+          console.log('Updated messages state (onmessage):', updatedMessages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
           return updatedMessages;
         });
       };
 
       eventSource.onerror = (err) => {
-        console.error("EventSource failed:", err);
-        // Check readyState AFTER console.error, as err might be misleading for deliberate client-side closes
-        console.log("onerror - eventSource.readyState at error time:", eventSource.readyState); // Direct access to eventSource here
+        console.error("EventSource failed (onerror):", err); 
+        console.log("onerror - eventSource.readyState:", eventSource.readyState);
         console.log("onerror - streamEndedGracefully.current:", streamEndedGracefully.current);
 
-        setIsSending(false); // Moved setIsSending to be called earlier
+        setIsSending(false); 
 
         if (streamEndedGracefully.current) {
-          console.log("onerror was called, but stream_end was already processed. This might be a normal post-closure event.");
-          // Optionally, ensure the stream is closed if not already, though stream_end should handle it
+          console.log("onerror: Stream already ended gracefully. Ignoring this error.");
           if (eventSource.readyState !== EventSource.CLOSED) {
-            eventSource.close();
+            eventSource.close(); // Ensure it's closed
           }
-          return; // Do not proceed to show error or modify messages further
-        } else if (eventSource.readyState === EventSource.CLOSED) {
-          console.log("EventSource state is CLOSED at time of error. Stream might have closed abruptly or this is how the browser reports a server-initiated close without a prior client close().");
-          // If it closed abruptly and stream_end wasn't processed, it's still an issue.
-          // We will fall through to the generic error handling unless streamProperlyEnded (legacy) is true
-          // This condition might be redundant if streamEndedGracefully.current covers all good closures.
+          return; 
         }
-          // Generic error handling if not gracefully ended
-          console.error("EventSource encountered an error, and stream did not end gracefully or readyState is not CLOSED.");
-          setMessages(prevMessagesFromState => { // Renamed for clarity
+
+        // If stream_end was NOT processed, then this is a genuine error or premature close
+        console.error("onerror: Stream did not end gracefully.");
+        setMessages(prevMessagesFromState => { 
             const safePrevMessages = Array.isArray(prevMessagesFromState) ? prevMessagesFromState : [];
             const assistantMessageId = currentAssistantMessageIdRef.current;
-            let updatedMessages = [...safePrevMessages]; // Use the safeguarded array
+            let updatedMessages = [...safePrevMessages];
             const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
-            if (existingAssistantMsgIndex !== -1) {
-                const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
-                if (typeof msgToUpdate.content === 'object') {
-                    msgToUpdate.content.isFallback = true;
-                    msgToUpdate.content.fallbackMarkdown = (msgToUpdate.content.fallbackMarkdown || "") + "\\n**Error:** Connection issue or stream interrupted.";
+            if (!receivedStructuredBlock.current) { 
+                console.log("onerror: No structured blocks received, displaying connection error.");
+                if (existingAssistantMsgIndex !== -1) {
+                    const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+                    if (typeof msgToUpdate.content === 'object') {
+                        msgToUpdate.content.isFallback = true;
+                        msgToUpdate.content.fallbackMarkdown = (msgToUpdate.content.fallbackMarkdown || "") + "\n**Error:** Connection issue or stream interrupted.";
+                    }
+                    msgToUpdate.isStreaming = false;
+                    updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+                } else if (assistantMessageId) { 
+                    const connectionErrorMessage: ChatMessage = {
+                        id: assistantMessageId, 
+                        role: "assistant",
+                        content: { content: [], references: {}, isFallback: true, fallbackMarkdown: "**Error:** Connection issue or stream interrupted." },
+                        isStreaming: false,
+                    };
+                    // Avoid adding duplicate error messages
+                    const lastMsg = safePrevMessages.length > 0 ? safePrevMessages[safePrevMessages.length -1] : null;
+                    if (!(lastMsg && lastMsg.id === assistantMessageId && lastMsg.role === 'assistant' && (lastMsg.content as AssistantMessageContent).fallbackMarkdown?.includes("Connection issue or stream interrupted."))) {
+                        updatedMessages.push(connectionErrorMessage);
+                    }
                 }
-                msgToUpdate.isStreaming = false;
-                updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
-            } else if (assistantMessageId) { 
-                 const connectionErrorMessage: ChatMessage = {
-                    id: assistantMessageId, 
-                    role: "assistant",
-                    content: {
-                        content: [],
-                        references: {},
-                        isFallback: true,
-                        fallbackMarkdown: "**Error:** Connection issue or stream interrupted.",
-                    } as AssistantMessageContent,
-                    isStreaming: false,
-                };
-                // Use the safe 'safePrevMessages' here for lastMsg calculation
-                const lastMsg = safePrevMessages.length > 0 ? safePrevMessages[safePrevMessages.length -1] : null;
-                if (lastMsg && lastMsg.id === assistantMessageId && lastMsg.role === 'assistant' && (lastMsg.content as AssistantMessageContent).fallbackMarkdown?.includes("Connection issue or stream interrupted.")) {
-                    return safePrevMessages; // Already handled, return the safe array
+            } else {
+                // Content was received, but stream errored before end.
+                // Silently mark as not streaming.
+                console.warn("onerror: Stream errored after some content was received. Marking as not streaming, no user-facing error.");
+                if (existingAssistantMsgIndex !== -1) {
+                    updatedMessages[existingAssistantMsgIndex].isStreaming = false;
                 }
-                updatedMessages.push(connectionErrorMessage);
             }
+            console.log('Updated messages state (onerror):', updatedMessages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
             return updatedMessages;
-          });
-        
+        });
 
-        // Ensure it's closed here too, especially if error occurred before stream_end
         if (eventSource.readyState !== EventSource.CLOSED) {
-            eventSource.close();
+          eventSource.close();
         }
-        // setIsSending(false); // Already called above
       };
 
     } catch (error: any) {
