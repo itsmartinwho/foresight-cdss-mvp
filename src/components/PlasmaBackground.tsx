@@ -101,6 +101,7 @@ const fragmentShader = `
   precision highp float; // Necessary for some mobile devices
   uniform vec2 u_resolution;
   uniform float u_time;
+  uniform vec3 u_viewDirection; // Added for specular calculation
   varying vec2 vUv;
 
   ${noiseGLSL} // Include the noise function
@@ -108,59 +109,64 @@ const fragmentShader = `
   // Constants for plasma effect - tweak these!
   const float PLASMA_SCALE = 1.5; // How zoomed in the noise pattern is
   const float TIME_SPEED = 0.05; // How fast the pattern evolves
-  const float COLOR_FREQ_R = 0.8;
-  const float COLOR_FREQ_G = 0.7;
-  const float COLOR_FREQ_B = 0.9;
-  const float COLOR_PHASE_R = 0.0;
-  const float COLOR_PHASE_G = 1.0; // Phase shifts create color variation
-  const float COLOR_PHASE_B = 2.0;
-  const float BRIGHTNESS = 1.5; // Overall brightness (~50% over original)
-  const float CONTRAST = 0.4; // Contrast adjustment
+  // const float COLOR_FREQ_R = 0.8; // Original color settings commented out
+  // const float COLOR_FREQ_G = 0.7;
+  // const float COLOR_FREQ_B = 0.9;
+  // const float COLOR_PHASE_R = 0.0;
+  // const float COLOR_PHASE_G = 1.0; 
+  // const float COLOR_PHASE_B = 2.0;
+  // const float BRIGHTNESS = 1.5; 
+  // const float CONTRAST = 0.4; 
 
   void main() {
-    vec2 scaledUv = vUv * PLASMA_SCALE; // Scale UV coordinates
+    vec2 scaledUv = vUv * PLASMA_SCALE; 
     float time = u_time * TIME_SPEED;
 
-    // Calculate noise value - using 3D noise with time as the third dimension
-    // Using snoise requires period and alpha, let's use arbitrary large period and 0 alpha
     float noiseValue = snoise(vec3(scaledUv * 2.0, time));
 
-    // Add another layer of noise (octave) for more detail - optional
-    // float noiseValue2 = psrdnoise(vec3(scaledUv * 2.5, time * 1.5), period, 0.0);
-    // noiseValue = (noiseValue + noiseValue2 * 0.5) / 1.5;
+    // Original color calculation commented out
+    // float r = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
+    // float g = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
+    // float b = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
+    // vec3 color = vec3(r, g, b);
+    // color = (color - 0.5) * (1.0 + CONTRAST) + 0.5; 
+    // color *= BRIGHTNESS; 
+    // color = clamp(color, 0.0, 1.0);
 
-    // Map noise value to color components using sine waves
-    float r = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
-    float g = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
-    float b = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
+    // --- New Metallic-Sheen Logic ---
 
-    // Apply brightness and contrast
-    vec3 color = vec3(r, g, b);
-    color = (color - 0.5) * (1.0 + CONTRAST) + 0.5; // Contrast
-    color *= BRIGHTNESS; // Brightness
+    // Base color from noise (can be simpler than original multi-channel)
+    vec3 baseColor = vec3(noiseValue * 0.5 + 0.5); // Simple grayscale from noise
 
-    // Clamp colors to valid range
-    color = clamp(color, 0.0, 1.0);
+    // Desaturate base hues to near‐silver
+    vec3 silver = vec3(0.92);
+    vec3 finalColor = mix(silver, baseColor, 0.2);  
 
-    // Define base colors (adjust these for desired palette)
-    vec3 color1 = vec3(0.0, 0.3, 0.5); // Brighter blue/purple
-    vec3 color2 = vec3(0.2, 0.6, 0.9); // Brighter cyan/blue
-    vec3 color3 = vec3(0.9, 0.3, 0.7); // Brighter magenta/pink
-    vec3 color4 = vec3(1.0, 0.8, 0.4); // Brighter orange/yellow highlight
+    // Add specular lighting term (Blinn–Phong)
+    // Assuming a simple normal (e.g., pointing out of the plane)
+    // For a 2D plane in UV space, normal would be (0,0,1)
+    vec3 normal = normalize(vec3(vUv * 2.0 - 1.0, 1.0)); // Simple pseudo-normal based on UV
+                                                       // or just vec3 normal = vec3(0.0, 0.0, 1.0);
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 0.5));
+    vec3 viewDir = normalize(u_viewDirection); // Use uniform
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfVec), 0.0), 64.0);
+    finalColor += spec * 0.2;  // boost sheen
 
-    // Blend colors based on noise value components (example blending)
-    // This part requires significant tweaking to get the filament look
-    vec3 finalColor = mix(color1, color2, color.r);
-    finalColor = mix(finalColor, color3, color.g * 0.6); // Mix in magenta less strongly
-    // Add subtle highlights based on blue component
-    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, color.b) * 0.3); 
+    // Tint micro‐highlights with pastel accents
+    vec3 accentLav = vec3(0.847, 0.706, 0.996);
+    vec3 accentTeal = vec3(0.6, 0.98, 0.89);
+    float highlightMask = smoothstep(0.8, 1.0, noiseValue); // Use original noiseValue
+    finalColor += highlightMask * mix(accentLav, accentTeal, mod(u_time * 0.1, 1.0)); // Slower accent modulation
 
+    // Clamp final color
+    finalColor = clamp(finalColor, 0.0, 1.0);
 
-    // Subtle vignette effect
+    // Subtle vignette effect (can be kept or adjusted)
     float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
-    finalColor *= vignette * 0.8 + 0.2; // Apply vignette
+    finalColor *= vignette * 0.8 + 0.2; 
 
-    gl_FragColor = vec4(finalColor, 0.52); // Decreased opacity
+    gl_FragColor = vec4(finalColor, 0.1); // New global alpha
   }
 `;
 
@@ -242,6 +248,7 @@ export default function PlasmaBackground() {
     const uniforms = {
       u_time: { value: 0.0 },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      u_viewDirection: { value: new THREE.Vector3(0, 0, 1) } // Added view direction
     };
     const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
     const mesh = new THREE.Mesh(geometry, material);

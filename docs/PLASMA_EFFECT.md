@@ -35,23 +35,49 @@ Render order **inside `<body>`** (Dashboard and every other page share the same 
 ```glsl
 // inside fragmentShader
 #include "noiseGLSL"             // Ashima 3-D simplex noise
+uniform vec3 u_viewDirection;    // View direction for specular lighting
+
 ...
-const float BRIGHTNESS = 1.25;   // Base brightness multiplier
-const float CONTRAST = 0.4;
-...
-float noise = snoise(vec3(uv * 2.0, u_time * 0.05));
+// Base color from noise
+vec3 baseColor = vec3(noiseValue * 0.5 + 0.5);
+
+// Desaturate base hues to near‐silver
+vec3 silver = vec3(0.92);
+vec3 finalColor = mix(silver, baseColor, 0.2);  
+
+// Add specular lighting term (Blinn–Phong)
+vec3 normal = normalize(vec3(vUv * 2.0 - 1.0, 1.0)); // Or vec3(0.0,0.0,1.0)
+vec3 lightDir = normalize(vec3(1.0, 1.0, 0.5));
+vec3 viewDir = normalize(u_viewDirection);
+vec3 halfVec = normalize(lightDir + viewDir);
+float spec = pow(max(dot(normal, halfVec), 0.0), 64.0);
+finalColor += spec * 0.2;
+
+// Tint micro‐highlights with pastel accents
+vec3 accentLav = vec3(0.847, 0.706, 0.996);
+vec3 accentTeal = vec3(0.6, 0.98, 0.89);
+float highlightMask = smoothstep(0.8, 1.0, noiseValue);
+finalColor += highlightMask * mix(accentLav, accentTeal, mod(u_time * 0.1, 1.0)); // Slower modulation
+
+finalColor = clamp(finalColor, 0.0, 1.0);
 ...
 float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5)); // Gentle vignette
 finalColor *= vignette * 0.8 + 0.2;
 ...
-gl_FragColor = vec4(finalColor, 0.65); // 65 % global alpha
+gl_FragColor = vec4(finalColor, 0.1); // 10 % global alpha
 ```
 
 * **Noise scaling** – `uv * 2.0` gives a gentle spatial frequency.
 * **Time scaling** – `u_time * 0.05` keeps motion extremely slow.
-* **Colour pipeline** – Maps noise to three sine-based channels, mixes four theme colours, applies a gentle vignette.
+* **New: Metallic Sheen Colour Pipeline** –
+    *   Generates a base grayscale color from simplex noise.
+    *   Desaturates this base towards silver (`mix(silver, baseColor, 0.2)`).
+    *   Adds a Blinn-Phong specular highlight (`spec * 0.2`). The `normal` is approximated from UVs or can be a flat `vec3(0.0,0.0,1.0)`. `u_viewDirection` is passed as a uniform.
+    *   Tints bright areas (micro-highlights based on `noiseValue`) with cycling pastel accents (lavender to teal, `mod(u_time * 0.1, 1.0)`).
+    *   Applies a gentle vignette.
+    *   The final global alpha is set to `0.1` (10%) for subtlety.
 
-You are free to tweak constants such as `PLASMA_SCALE`, `TIME_SPEED`, or colour stops to suit future branding. `BRIGHTNESS`, `CONTRAST`, vignette parameters, and the final alpha value in `gl_FragColor` directly control the visual intensity.
+You are free to tweak constants such as `PLASMA_SCALE`, `TIME_SPEED`, or the new specular/accent parameters to suit future branding. The final alpha value in `gl_FragColor` directly controls the visual intensity.
 
 ---
 
@@ -95,7 +121,7 @@ Avoid adding opaque backgrounds to pages if you want the plasma effect to remain
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Plasma invisible, shader compile errors in console | GLSL syntax error after edits | Ensure fragment shader compiles (WebGL 1 only supports GLSL 1.0). |
-| Plasma visible but too strong/weak | Adjust `BRIGHTNESS`, `CONTRAST`, vignette params, or final alpha in `gl_FragColor`. Also check opacity of UI layers above (see Section 5). |
+| Plasma visible but too strong/weak | Adjust specular parameters (`spec * 0.2`), highlight tinting, vignette, or final alpha in `gl_FragColor`. Also check opacity of UI layers above (see Section 5). The new alpha is `0.1`. |
 | Plasma covers UI | Incorrect `z-index` (should be 0) or `pointer-events` (should be `none`). The singleton init code sets these correctly. |
 
 ---
