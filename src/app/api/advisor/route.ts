@@ -217,8 +217,8 @@ export async function GET(req: NextRequest) {
         let structuredFunctionCallArgsBuffer = "";
         let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null; 
         let tokenCount = 0;
-        const MAX_TOKENS_BEFORE_FALLBACK = 20;
-        const FALLBACK_TIMEOUT_MS = 150;
+        const MAX_TOKENS_BEFORE_FALLBACK = 100;
+        const FALLBACK_TIMEOUT_MS = 500;
         let firstBlockSent = false;
         let fallbackEngaged = false;
         const structuredStreamInternalAbortController = new AbortController();
@@ -255,7 +255,7 @@ export async function GET(req: NextRequest) {
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
           fallbackTimeoutId = setTimeout(() => {
             if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
-            engageMarkdownFallback("Timeout: Initial block not received in 150ms");
+            engageMarkdownFallback("Timeout: Initial block not received in 500ms");
           }, FALLBACK_TIMEOUT_MS);
         };
         
@@ -318,9 +318,6 @@ export async function GET(req: NextRequest) {
               await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
               break;
             }
-
-            // Temporarily add a delay here to simulate slow response
-            await new Promise(r => setTimeout(r, 300)); // Added delay
           }
         } catch (error: any) {
           if (!(error.name === 'AbortError' || structuredStreamInternalAbortController.signal.aborted)) {

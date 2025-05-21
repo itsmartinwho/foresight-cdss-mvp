@@ -253,7 +253,9 @@ export default function AdvisorView() {
           
           const assistantContent = currentAssistantMessage.content as AssistantMessageContent;
 
-          if (parsedData.type === "fallback_initiated") {
+          if (parsedData.type === "structured_block" && parsedData.element && !assistantContent.isFallback) {
+            assistantContent.content.push(parsedData.element as any);
+          } else if (parsedData.type === "fallback_initiated") {
             assistantContent.isFallback = true;
             // Optional: Log the reason if needed: console.log("Fallback initiated:", parsedData.reason);
           } else if (parsedData.type === "markdown_chunk") {
