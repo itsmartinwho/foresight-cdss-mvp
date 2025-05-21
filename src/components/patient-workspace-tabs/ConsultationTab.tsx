@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Mic, Save, Pause as PauseIcon, Play as PlayIcon } from "lucide-react";
+import { Mic, Save, Pause as PauseIcon, Play as PlayIcon, Bold, Italic, List, Undo, Redo } from "lucide-react";
 
 // Consultation Tab
 export default function ConsultationTab({
@@ -73,7 +73,7 @@ export default function ConsultationTab({
   useEffect(() => {
     if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === currentDetailedAdmission?.id) {
       admissionStateForAutoSaveRef.current.transcriptToSave = editableTranscript;
-      admissionStateForAutoSaveRef.current.lastSaved = lastSavedTranscript; // Keep ref in sync with actual last saved state
+      admissionStateForAutoSaveRef.current.lastSaved = lastSavedTranscript;
     }
   }, [editableTranscript, lastSavedTranscript, currentDetailedAdmission?.id]);
 
@@ -87,12 +87,10 @@ export default function ConsultationTab({
       console.log(`Attempting to save. Changed: ${transcriptToSave !== currentLastSaved}. To Save: "${transcriptToSave.substring(0,100)}...", Last Saved: "${currentLastSaved.substring(0,100)}..."`);
       try {
         await supabaseDataService.updateAdmissionTranscript(patientId, admissionId, transcriptToSave);
-        // Only update component state if this save pertains to the currently viewed admission
         if (admissionId === currentDetailedAdmission?.id) {
             setLastSavedTranscript(transcriptToSave);
             setTranscriptChanged(false);
         }
-        // Always update the ref if it was for this admission, to mark it as saved in the ref too
         if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === admissionId) {
             admissionStateForAutoSaveRef.current.lastSaved = transcriptToSave;
         }
@@ -103,7 +101,6 @@ export default function ConsultationTab({
         return false;
       }
     } else {
-        // If no actual change, but transcriptChanged was true for the current admission, reset it.
         if (transcriptChanged && admissionId === currentDetailedAdmission?.id){
             setTranscriptChanged(false);
         }
@@ -124,12 +121,11 @@ export default function ConsultationTab({
       const stateToSave = admissionStateForAutoSaveRef.current;
       if (stateToSave && stateToSave.patientId && stateToSave.admissionId && (stateToSave.transcriptToSave !== stateToSave.lastSaved)) {
         console.log(`Auto-saving transcript for previous/unmounting admission ${stateToSave.admissionId}`);
-        // Fire and forget for cleanup
         performSave(stateToSave.patientId, stateToSave.admissionId, stateToSave.transcriptToSave, stateToSave.lastSaved);
       }
     };
     return autoSaveOnCleanup;
-  }, [currentDetailedAdmission?.id]); // This effect's primary trigger for cleanup is currentDetailedAdmission.id changing
+  }, [currentDetailedAdmission?.id]);
 
   const getCursorPosition = () => {
     const selection = window.getSelection();
@@ -200,9 +196,9 @@ export default function ConsultationTab({
             const newTextChunk = data.channel.alternatives[0].transcript;
             if (newTextChunk.trim() !== '') {
               setEditableTranscript((prevText) => {
-                const currentText = prevText || ''; // Ensure currentText is not null
+                const currentText = prevText || '';
                 let newComposedText;
-                let nextCursorPos = cursorPosition; // Use the state value of cursorPosition at the time of this update
+                let nextCursorPos = cursorPosition;
 
                 if (nextCursorPos !== null && nextCursorPos >= 0 && nextCursorPos <= currentText.length) {
                   newComposedText = currentText.slice(0, nextCursorPos) + newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ') + currentText.slice(nextCursorPos);
@@ -211,7 +207,7 @@ export default function ConsultationTab({
                   newComposedText = currentText + (currentText.length > 0 && !currentText.endsWith(' ') && !newTextChunk.startsWith(' ') ? ' ' : '') + newTextChunk;
                   nextCursorPos = newComposedText.length;
                 }
-                setCursorPosition(nextCursorPos); // Update for the *next* chunk or user interaction
+                setCursorPosition(nextCursorPos);
                 setTranscriptChanged(true);
                 return newComposedText;
               });
@@ -237,7 +233,7 @@ export default function ConsultationTab({
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
             mediaRecorderRef.current.stop();
         }
-        if (stream && typeof stream.getTracks === 'function') { // Check if stream and getTracks exist
+        if (stream && typeof stream.getTracks === 'function') {
             stream.getTracks().forEach(track => track.stop());
         }
         setIsTranscribing(false);
@@ -279,7 +275,6 @@ export default function ConsultationTab({
     }
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({ type: 'CloseStream' }));
-      // ws.onclose will handle setIsTranscribing(false), setIsPaused(false)
       socketRef.current.close(); 
     } else {
       setIsTranscribing(false);
@@ -288,7 +283,7 @@ export default function ConsultationTab({
     
     setTimeout(() => {
       handleSaveTranscript();
-    }, 250); // Increased delay further, ensure all state updates from WS close/stop are processed
+    }, 250);
   };
 
   const handleTranscriptChange = (newText: string) => {
@@ -298,26 +293,24 @@ export default function ConsultationTab({
     }
   };
   
-  useEffect(() => {
-    // This effect attempts to manage cursor position after programmatic changes to contentEditable.
-    // It is inherently tricky with dangerouslySetInnerHTML.
-    // The primary goal here is to ensure the div is focusable and basic interaction is possible.
-    // Advanced cursor management might require a more robust rich text editor solution.
-    if (transcriptAreaRef.current && cursorPosition !== null && document.activeElement === transcriptAreaRef.current) {
-        // No explicit action needed here for now if using innerText for onInput and selectionchange for cursor tracking
-        // as dangerouslySetInnerHTML will overwrite the DOM.
-        // The cursor logic in `startTranscription` and `ws.onmessage` tries to handle insertion points.
-    }
-  }, [editableTranscript, cursorPosition]); // Rerun when transcript or target cursor changes.
-
   const showStartTranscriptionOverlay = !isStartingNewConsultation && !currentDetailedAdmission?.transcript && !editableTranscript && !isTranscribing;
 
   const handleDivFocus = () => {
-    setCursorPosition(getCursorPosition());
+    // setCursorPosition(getCursorPosition()); // Removed manual cursor position update on focus
   };
 
-  const handleDivKeyUpOrMouseUp = () => { // Combined for simplicity
-    setCursorPosition(getCursorPosition());
+  const handleDivKeyUpOrMouseUp = () => {
+    // setCursorPosition(getCursorPosition()); // Removed manual cursor position update on keyup/mouseup
+  };
+
+  const applyFormat = (command: string, value?: string) => {
+    if (transcriptAreaRef.current) {
+      transcriptAreaRef.current.focus(); // Ensure editor has focus
+      document.execCommand(command, false, value);
+      // Update state from DOM after execCommand
+      const newText = transcriptAreaRef.current.innerHTML;
+      handleTranscriptChange(newText); // This will set editableTranscript and transcriptChanged
+    }
   };
 
   return (
@@ -413,8 +406,23 @@ export default function ConsultationTab({
           )}
 
           {!isTranscribing && (isStartingNewConsultation || editableTranscript || currentDetailedAdmission?.transcript) && !showStartTranscriptionOverlay && (
-             <div className="mt-2 p-2 border-b border-border"> 
-              <span className="text-xs text-muted-foreground">Editing tools (TODO)</span>
+             <div className="mt-2 p-2 border-b border-border flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => applyFormat('bold')} title="Bold">
+                <Bold className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => applyFormat('italic')} title="Italic">
+                <Italic className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List">
+                <List className="h-4 w-4" />
+              </Button>
+              <div className="mx-1 h-5 border-l border-border"></div> {/* Separator */}
+              <Button variant="outline" size="sm" onClick={() => applyFormat('undo')} title="Undo">
+                <Undo className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => applyFormat('redo')} title="Redo">
+                <Redo className="h-4 w-4" />
+              </Button>
             </div>
           )}
 
@@ -425,7 +433,7 @@ export default function ConsultationTab({
               ref={transcriptAreaRef}
               contentEditable={!isTranscribing}
               suppressContentEditableWarning
-              onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerText)}
+              onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerHTML)}
               onFocus={handleDivFocus}
               onKeyUp={handleDivKeyUpOrMouseUp}
               onMouseUp={handleDivKeyUpOrMouseUp}

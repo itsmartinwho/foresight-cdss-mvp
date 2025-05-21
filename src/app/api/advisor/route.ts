@@ -297,16 +297,15 @@ export async function GET(req: NextRequest) {
                   console.warn("Invalid or missing 'element' field:", parsedArgs);
                 } else {
                   if (!isControllerClosedRef.value) {
-                    controller.enqueue(encoder.encode(`data:${JSON.stringify(parsedArgs)}\n\n`));
-                    if (!firstBlockSent) { // This ensures the following block runs only once
-                        firstBlockSent = true;
-                        // Successfully sent the first block, explicitly clear and nullify the initial block fallback timer.
-                        // Subsequent calls to resetFallbackTimer() will also do nothing due to firstBlockSent being true.
-                        if (fallbackTimeoutId) {
-                            clearTimeout(fallbackTimeoutId);
-                            fallbackTimeoutId = null;
-                        }
+                    console.log("First block enqueued:", parsedArgs);
+                    firstBlockSent = true;
+                    if (fallbackTimeoutId) {
+                      clearTimeout(fallbackTimeoutId);
+                      fallbackTimeoutId = null;
                     }
+                    const payload = { type: "structured_block", element: parsedArgs };
+                    console.log("SSE send:", JSON.stringify(payload));
+                    controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
                   }
                 }
               } catch (e) {
@@ -318,6 +317,9 @@ export async function GET(req: NextRequest) {
               await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
               break;
             }
+
+            // Temporarily add a delay here to simulate slow response
+            await new Promise(r => setTimeout(r, 300)); // Added delay
           }
         } catch (error: any) {
           if (!(error.name === 'AbortError' || structuredStreamInternalAbortController.signal.aborted)) {
@@ -334,6 +336,14 @@ export async function GET(req: NextRequest) {
           }
           requestAbortController.signal.removeEventListener('abort', mainAbortListener);
         }
+
+        // Ensure the stream is closed properly at the end
+        // This should only be reached if the streaming finishes without errors
+        const endPayload = { type: "stream_end" };
+        console.log("SSE send:", JSON.stringify(endPayload));
+        controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
+        controller.close();
+        isControllerClosedRef.value = true; // Mark as closed
       }
     });
 
