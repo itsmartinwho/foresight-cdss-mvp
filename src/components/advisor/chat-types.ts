@@ -60,6 +60,18 @@ export type ContentElement =
   | ContentElementReference
   | ContentElementReferencesContainer; // Added ReferencesContainer
 
+// Define and export the valid element types for use by both client and server
+export const VALID_ELEMENT_TYPES = [
+  "paragraph",
+  "bold",
+  "italic",
+  "unordered_list",
+  "ordered_list",
+  "table",
+  "reference",
+  "references" // Assuming "references" is the container type, adjust if ContentElementReference is the one to validate against for individual refs
+] as const;
+
 export interface AssistantMessageContent {
   content: ContentElement[];
   references?: Record<string, string>;

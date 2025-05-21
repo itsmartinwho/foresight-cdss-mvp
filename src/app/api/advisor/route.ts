@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
+import { VALID_ELEMENT_TYPES } from "@/components/advisor/chat-types"; // Import from chat-types
 
 // 1. Model routing (default to gpt-4.1-mini)
 // 2. Define the streaming tool
@@ -37,7 +38,7 @@ const addElementFunctionDefinition = {
   }
 } as const; // Use 'as const' for stricter type inference
 
-const VALID_ELEMENT_TYPES = ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const;
+// const VALID_ELEMENT_TYPES = ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const; // Remove local definition
 
 // Refined bracesBalanced: checks for a syntactically complete JSON object structure
 function bracesBalanced(str: string): boolean {
