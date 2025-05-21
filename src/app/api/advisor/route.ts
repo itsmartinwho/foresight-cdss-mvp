@@ -71,8 +71,16 @@ async function streamMarkdownOnly(
   const cleanupAndCloseController = () => {
     if (isControllerClosedRef.value || streamEndedByThisFunction) return;
     streamEndedByThisFunction = true;
-    isControllerClosedRef.value = true;
-    try { controller.close(); } catch (e) { /* ignore if already closed by another path */ }
+    isControllerClosedRef.value = true; // Mark as closed immediately
+    try {
+      // Send stream_end only if this function is responsible for it and it hasn't been sent
+      const endPayload = { type: "stream_end" };
+      console.log("SSE send from streamMarkdownOnly (cleanup):", JSON.stringify(endPayload));
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
+      controller.close();
+    } catch (e) {
+      console.warn("Error closing controller in streamMarkdownOnly cleanup:", e);
+    }
   };
 
   if (reqSignal.aborted) {
@@ -102,6 +110,7 @@ async function streamMarkdownOnly(
       if (content) {
         if (!isControllerClosedRef.value) {
           const payload = { type: "markdown_chunk", content };
+          console.log("SSE send (markdown_chunk):", JSON.stringify(payload)); // Added log
           controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
         }
       }
@@ -110,7 +119,8 @@ async function streamMarkdownOnly(
     if (!(error.name === 'AbortError' || reqSignal.aborted)) {
       console.error("Error in streamMarkdownOnly:", error);
       if (!isControllerClosedRef.value) {
-        const errorPayload = { type: "error", message: "Markdown streaming failed" };
+        const errorPayload = { type: "error", message: `Markdown streaming failed: ${error.message || 'Unknown error'}` };
+        console.log("SSE send (markdown error):", JSON.stringify(errorPayload));
         controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
       }
     }
@@ -235,6 +245,7 @@ export async function GET(req: NextRequest) {
 
           if (!isControllerClosedRef.value) {
             const fbPayload = { type: "fallback_initiated", reason };
+            console.log("SSE send (fallback_initiated):", JSON.stringify(fbPayload));
             controller.enqueue(encoder.encode(`data:${JSON.stringify(fbPayload)}\n\n`));
           }
           await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
@@ -255,11 +266,11 @@ export async function GET(req: NextRequest) {
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
           fallbackTimeoutId = setTimeout(() => {
             if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
-            engageMarkdownFallback("Timeout: Initial block not received in 500ms");
+            // engageMarkdownFallback("Timeout: Initial block not received in 500ms"); // Fallback temporarily disabled
           }, FALLBACK_TIMEOUT_MS);
         };
         
-        resetFallbackTimer();
+        // resetFallbackTimer(); // Fallback temporarily disabled
 
         try {
           const structuredStream = await openai.chat.completions.create({
@@ -315,7 +326,8 @@ export async function GET(req: NextRequest) {
             }
             
             if (!firstBlockSent && tokenCount >= MAX_TOKENS_BEFORE_FALLBACK && structuredFunctionCallArgsBuffer.length === 0) {
-              await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
+              // await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`); // Fallback temporarily disabled
+              console.warn(`Fallback suppressed: Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
               break;
             }
           }
@@ -323,25 +335,40 @@ export async function GET(req: NextRequest) {
           if (!(error.name === 'AbortError' || structuredStreamInternalAbortController.signal.aborted)) {
             if (!fallbackEngaged && !isControllerClosedRef.value) {
               console.error("Error in structured OpenAI stream:", error);
-              await engageMarkdownFallback("Structured stream error");
+              const detailedErrorReason = `Structured stream error: ${error.message || 'Unknown error'}`;
+              // Send a specific error event before fallback
+              const errorPayload = { type: "error", message: detailedErrorReason };
+              console.log("SSE send (structured stream error):", JSON.stringify(errorPayload));
+              controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
+              
+              // await engageMarkdownFallback(detailedErrorReason); // Fallback temporarily disabled
+              console.warn(`Fallback suppressed: Structured stream error: ${detailedErrorReason}`);
             }
           }
         } finally {
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId); // Final cleanup for any reason
           requestAbortController.signal.removeEventListener('abort', structuredStreamAbortListener);
+          
+          // If fallback was engaged, streamMarkdownOnly is responsible for closing.
+          // If structured stream completed without fallback, we close here.
           if (!fallbackEngaged && !isControllerClosedRef.value) {
+            const endPayload = { type: "stream_end" };
+            console.log("SSE send (end of structured stream):", JSON.stringify(endPayload));
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
             closeControllerOnce(); 
           }
+          // Removed redundant closeControllerOnce() as it might have already been called or stream is handled by fallback.
           requestAbortController.signal.removeEventListener('abort', mainAbortListener);
         }
 
         // Ensure the stream is closed properly at the end
-        // This should only be reached if the streaming finishes without errors
-        const endPayload = { type: "stream_end" };
-        console.log("SSE send:", JSON.stringify(endPayload));
-        controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
-        controller.close();
-        isControllerClosedRef.value = true; // Mark as closed
+        // This section is now largely handled by the finally block of the structured stream
+        // or by streamMarkdownOnly in case of fallback.
+        // const endPayload = { type: "stream_end" };
+        // console.log("SSE send:", JSON.stringify(endPayload));
+        // controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
+        // controller.close();
+        // isControllerClosedRef.value = true; // Mark as closed
       }
     });
 
