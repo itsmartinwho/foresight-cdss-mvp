@@ -132,6 +132,8 @@ export async function GET(req: NextRequest) {
     let userInputForGreetingCheck = "";
 
     if (!payloadParam) {
+      // Abort the main controller if we exit early, as no stream will be started.
+      if (!requestAbortController.signal.aborted) requestAbortController.abort();
       return new Response(JSON.stringify({ error: "Payload missing. Please provide messages in the 'payload' query parameter." }), {
         status: 400, headers: { "Content-Type": "application/json" },
       });
@@ -147,6 +149,8 @@ export async function GET(req: NextRequest) {
       userInputForGreetingCheck = lastUserMessage?.content || "";
     } catch (e: any) {
       console.error("Failed to parse payload or invalid messages format:", e.message);
+      // Abort the main controller if we exit early
+      if (!requestAbortController.signal.aborted) requestAbortController.abort();
       return new Response(JSON.stringify({ error: `Invalid payload: ${e.message}` }), {
         status: 400, headers: { "Content-Type": "application/json" },
       });
@@ -188,6 +192,8 @@ export async function GET(req: NextRequest) {
 
         if (requestAbortController.signal.aborted) {
           closeControllerOnce();
+          // Ensure listener is removed if it didn't fire and self-remove due to {once:true}
+          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
           return;
         }
 
@@ -197,11 +203,13 @@ export async function GET(req: NextRequest) {
             controller.enqueue(encoder.encode(`data:${JSON.stringify(errPayload)}\n\n`));
             closeControllerOnce();
           }
+          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
           return;
         }
 
         if (isGreetingOrTest) {
           await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
+          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
           return; 
         }
 
@@ -214,9 +222,8 @@ export async function GET(req: NextRequest) {
         let fallbackEngaged = false;
         const structuredStreamInternalAbortController = new AbortController();
 
-        requestAbortController.signal.addEventListener('abort', () => {
-          structuredStreamInternalAbortController.abort();
-        }, { once: true });
+        const structuredStreamAbortListener = () => { structuredStreamInternalAbortController.abort(); }; 
+        requestAbortController.signal.addEventListener('abort', structuredStreamAbortListener, { once: true });
 
         const engageMarkdownFallback = async (reason: string) => {
           if (fallbackEngaged || isControllerClosedRef.value) return;
@@ -302,9 +309,11 @@ export async function GET(req: NextRequest) {
           }
         } finally {
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
+          requestAbortController.signal.removeEventListener('abort', structuredStreamAbortListener);
           if (!fallbackEngaged && !isControllerClosedRef.value) {
             closeControllerOnce();
           }
+          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
         }
       }
     });
@@ -318,7 +327,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error) errorMessage = error.message;
     else if (typeof error === 'string') errorMessage = error;
     if (!requestAbortController.signal.aborted) {
-        requestAbortController.abort();
+        requestAbortController.abort(); // Ensure main abort controller is signaled on global error exit
     }
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500, headers: { "Content-Type": "application/json" },
