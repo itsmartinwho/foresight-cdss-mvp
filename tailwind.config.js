@@ -49,7 +49,7 @@ module.exports = {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
         },
-        /* ----- New surface and iridescent accent tokens (UI refresh) ----- */
+        /* ----- New surface and accent tokens (UI refresh) ----- */
         surface: {
           0: "hsl(var(--surface-0) / <alpha-value>)",
           1: "hsl(var(--surface-1) / <alpha-value>)",

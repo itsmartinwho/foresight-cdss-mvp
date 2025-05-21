@@ -25,7 +25,6 @@ Render order **inside `<body>`** (Dashboard and every other page share the same 
 | 3 | Flex container | — | auto | Wrapper that holds sidebar + main. |
 | 3a | `GlassSidebar` | `bg-glass backdrop-blur-lg` | auto | Glass panel (current alpha ≈8%). │
 | 3b | `<main>` content | `relative bg-background/60` | auto | Primary background layer is semi-transparent (60% opacity) allowing plasma to show through. │
-| 4 | `IridescentCanvas` `<canvas>` | `fixed inset-0 -z-10` | `-10` | Legacy iridescent tint. Left in place for now, behind plasma. |
 
 > **Note:** The visibility of the plasma effect depends on both its own shader settings (brightness, alpha) and the transparency of the UI elements above it (`GlassHeader`, `GlassSidebar`, `main`). These values have been tuned together.
 
@@ -103,5 +102,4 @@ Avoid adding opaque backgrounds to pages if you want the plasma effect to remain
 
 ## 7  Future Work
 
-* Convert remaining background effects (`IridescentCanvas`) to use a unified effect stack if desired.
 * Expose palette constants via CSS variables so design can tweak colours without recompiling the shader. 
