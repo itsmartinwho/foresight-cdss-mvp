@@ -49,9 +49,8 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
   const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
 
   const calcWidth = (rect: DOMRect) => {
-    const base = rect.width;
-    const desired = Math.max(base, 280);
-    return Math.min(desired, 520); // cap width
+    // Make dropdown width same as input container width
+    return rect.width;
   };
 
   // Debounce the query input ~300 ms
@@ -81,8 +80,9 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
         const words = raw.split(/\s+/);
         const idx = words.findIndex((w) => w.toLowerCase().includes(lower));
         if (idx === -1) return raw.slice(0, 50); // fallback
-        const start = Math.max(0, idx - 2);
-        const end = Math.min(words.length, idx + 3);
+        // Increase context to 4 words before and after
+        const start = Math.max(0, idx - 4);
+        const end = Math.min(words.length, idx + 5); // idx + 4 words + the match itself
         return words.slice(start, end).join(" ");
       };
 
@@ -171,18 +171,19 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
       if (portal && containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         
-        const dropdownEffectiveWidth = calcWidth(rect); // Width determined by JS logic
+        const dropdownEffectiveWidth = calcWidth(rect); // Width determined by input container
 
-        // Align right edge of dropdown with right edge of input container
-        let newLeft = rect.right - dropdownEffectiveWidth; 
+        // Align left edge of dropdown with left edge of input container
+        let newLeft = rect.left;
         
         const margin = 8; // Screen edge margin
 
-        // Ensure it doesn't go off-screen to the left
+        // Ensure it doesn't go off-screen to the left (should be redundant if input is on screen)
         newLeft = Math.max(margin, newLeft);
 
         // Ensure it doesn't go off-screen to the right
         if (newLeft + dropdownEffectiveWidth + margin > window.innerWidth) {
+          // If it would go off-screen, align to the right edge of the screen with margin
           newLeft = window.innerWidth - dropdownEffectiveWidth - margin;
         }
         
