@@ -116,7 +116,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           <Table className="text-slate-200 text-step-0">
             <TableHeader>
               <TableRow className="border-slate-700/50">
-                <TableHead onClick={() => requestSort('patientName')} className="w-[35%] cursor-pointer hover:text-neon">Patient{sortConfig?.key === 'patientName' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('patientName')} className="w-[25%] cursor-pointer hover:text-neon">Patient{sortConfig?.key === 'patientName' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
                 <TableHead onClick={() => requestSort('scheduledDate')} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{sortConfig?.key === 'scheduledDate' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
                 <TableHead onClick={() => requestSort('reason')} className="cursor-pointer hover:text-neon">Reason{sortConfig?.key === 'reason' ? (sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
                 <TableHead className="w-[15%]"></TableHead>
@@ -161,13 +161,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     <ContentSurface fullBleed className="p-6 flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <CardTitle className="text-slate-100 text-step-1">All Consultations</CardTitle>
-        <Button 
+        <button
           onClick={() => setShowNewConsultModal(true)}
-          className="bg-neon text-slate-900 hover:bg-neon/90 flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
         >
-          <PlusCircle className="h-4 w-4"/>
+          <PlusCircle className="h-4 w-4 mr-2" />
           New Consultation
-        </Button>
+        </button>
       </div>
       {renderTable("Upcoming Consultations", sortedRows.upcoming)}
       {renderTable("Past Consultations", sortedRows.past)}
