@@ -175,6 +175,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         <Button
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
           New Consultation

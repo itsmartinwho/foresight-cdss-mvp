@@ -256,6 +256,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
                 }
               }}
               size="sm"
+              className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent ml-6"
             >
               {isStartingNewConsultation ? "Cancel New Consultation" : "+ New Consultation"}
             </Button>

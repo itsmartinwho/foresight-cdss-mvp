@@ -63,6 +63,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         <Button
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent"
         >
           + New Consultation
         </Button>
@@ -103,8 +104,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
                     <Button
                       size="sm"
-                      onClick={() => onStartConsult(p)}
-                      className="gap-1 w-full mobile-card:w-full"
+                      className="bg-primary text-primary-foreground hover:bg-transparent hover:text-white gap-1 w-full mobile-card:w-full"
                     >
                       <PlayCircle className="h-[1em] w-[1em]" /> Start
                     </Button>
