@@ -63,7 +63,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         <Button
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
-          className="rounded-full bg-transparent text-white [--accent-primary:0_0%_0%] [--accent-secondary:0_0%_0%] [--accent-tertiary:0_0%_0%]"
+          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%]"
         >
           + New Consultation
         </Button>
@@ -104,7 +104,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
                     <Button
                       size="sm"
-                      className="bg-transparent text-white border border-black hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%] gap-1 w-full mobile-card:w-full"
+                      className="bg-gradient-to-r from-blue-200 via-indigo-200 to-pink-200 border border-black text-white hover:bg-transparent hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%] gap-1 w-full mobile-card:w-full"
                       onClick={() => onStartConsult(p)}
                     >
                       <PlayCircle className="h-[1em] w-[1em]" /> Start
