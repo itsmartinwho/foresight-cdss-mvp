@@ -298,15 +298,87 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
   };
 
   // JSX for rendering will be added here
-
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Consultation Notes & Transcript</CardTitle>
-        {/* Toolbar and save button will be added here */}
+        <CardTitle className="flex items-center justify-between gap-2">
+          Consultation Notes & Transcript
+          <div className="flex items-center gap-2">
+            {transcriptChanged && !isTranscribing && (
+              <Button variant="default" size="sm" onClick={handleSaveTranscript}>
+                <Save className="h-4 w-4 mr-2" /> Save
+              </Button>
+            )}
+            {!isTranscribing && selectedAdmission && (
+              <Button variant="ghost" size="icon" onClick={startTranscription} title="Start Transcription">
+                <Mic className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        </CardTitle>
+        
+        {isTranscribing && (
+          <div className="mt-2 p-2 border-b border-border flex items-center gap-2">
+            {!isPaused ? (
+              <Button variant="secondary" size="sm" onClick={pauseTranscription} title="Pause Transcription">
+                <PauseCircle className="h-4 w-4 mr-2" /> Pause
+              </Button>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={startTranscription} title="Resume Transcription">
+                <PlayCircle className="h-4 w-4 mr-2" /> Resume
+              </Button>
+            )}
+            <Button variant="destructive" size="sm" onClick={stopTranscriptionAndSave} title="Stop Transcription & Save">
+              Stop & Save
+            </Button>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {isPaused ? "Paused" : "Transcribing..."}
+            </span>
+          </div>
+        )}
+
+        {!isTranscribing && selectedAdmission && (
+           <div className="mt-2 p-2 border-b border-border flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => applyFormat('bold')} title="Bold">
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => applyFormat('italic')} title="Italic">
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List">
+              <List className="h-4 w-4" />
+            </Button>
+            <div className="mx-1 h-5 border-l border-border"></div> {/* Separator */}
+            <Button variant="outline" size="sm" onClick={() => applyFormat('undo')} title="Undo">
+              <Undo className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => applyFormat('redo')} title="Redo">
+              <Redo className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
       </CardHeader>
-      <CardContent>
-        {/* Transcript area and buttons will be added here */}
+      <CardContent className="flex-grow overflow-y-auto">
+        {(selectedAdmission || editableTranscript || isTranscribing) ? (
+          <div
+            ref={transcriptAreaRef}
+            contentEditable={!isTranscribing}
+            suppressContentEditableWarning
+            onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerHTML)}
+            onFocus={handleDivFocus}
+            onKeyUp={handleDivKeyUpOrMouseUp}
+            onMouseUp={handleDivKeyUpOrMouseUp}
+            className="whitespace-pre-wrap outline-none p-1 min-h-[300px] h-full border rounded-md"
+            dangerouslySetInnerHTML={{ __html: editableTranscript }}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p>
+              No transcript available. Select an admission or start a new consultation.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
