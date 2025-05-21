@@ -421,10 +421,10 @@ export default function AdvisorView() {
         }
           // Generic error handling if not gracefully ended
           console.error("EventSource encountered an error, and stream did not end gracefully or readyState is not CLOSED.");
-          setMessages(prevMessages => {
-            const prev = Array.isArray(prevMessages) ? prevMessages : [];
+          setMessages(prevMessagesFromState => { // Renamed for clarity
+            const safePrevMessages = Array.isArray(prevMessagesFromState) ? prevMessagesFromState : [];
             const assistantMessageId = currentAssistantMessageIdRef.current;
-            let updatedMessages = [...prev];
+            let updatedMessages = [...safePrevMessages]; // Use the safeguarded array
             const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
             if (existingAssistantMsgIndex !== -1) {
@@ -447,11 +447,10 @@ export default function AdvisorView() {
                     } as AssistantMessageContent,
                     isStreaming: false,
                 };
-                // Avoid adding duplicate error messages if one is already the last message for this ID
-                // Use the safe 'prev' here for lastMsg calculation
-                const lastMsg = prev.length > 0 ? prev[prev.length -1] : null;
+                // Use the safe 'safePrevMessages' here for lastMsg calculation
+                const lastMsg = safePrevMessages.length > 0 ? safePrevMessages[safePrevMessages.length -1] : null;
                 if (lastMsg && lastMsg.id === assistantMessageId && lastMsg.role === 'assistant' && (lastMsg.content as AssistantMessageContent).fallbackMarkdown?.includes("Connection issue or stream interrupted.")) {
-                    return prev; // Already handled, return the safe prev
+                    return safePrevMessages; // Already handled, return the safe array
                 }
                 updatedMessages.push(connectionErrorMessage);
             }
