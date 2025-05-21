@@ -1,101 +1,311 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
 
-const systemPrompt = `You are Foresight, a medical advisor helping US physicians.
-You MUST reply with a stream of newline-delimited JSON objects. Each JSON object MUST conform to ONE of the 'element' schemas or the 'references_object' schema defined below.
-Do NOT write Markdown outside of these JSON objects.
-The stream should consist of multiple 'element' JSONs, followed by a single 'references_object' JSON at the very end if there are any references.
+// 1. Model routing (default to gpt-4.1-mini)
+// 2. Define the streaming tool
+// 3. Invoke chat-completions with streaming
+// 4. Backend SSE parsing of tool calls
+// 5. Client-side rendering (handled by client)
+// 6. Markdown fallback triggers
+// 7. streamMarkdownOnly implementation
+// 8. Security and recovery (DOMPurify on client, discard empty tool args)
 
-SCHEMAS:
+const newSystemPromptBase = "You are Foresight, a medical advisor helping US physicians.";
 
-element =
-  | { "type": "paragraph", "text": "string" }
-  | { "type": "bold", "text": "string" }
-  | { "type": "italic", "text": "string" }
-  | { "type": "unordered_list", "items": "string[]" }
-  | { "type": "ordered_list", "items": "string[]" }
-  | { "type": "table", "header": "string[]", "rows": "string[][]" }
-  | { "type": "reference", "target": "string", "display": "string" }
-
-references_object =
-  | { "type": "references_container", "references": { [key: string]: string } } // Use this type for the final references object
-
-Ensure each JSON object is valid, complete, and UTF-8 encoded. Each complete JSON object, including those for lists or references, MUST be on a single line in the output stream, terminated by a single newline character. Do not use any newlines within a JSON object in a way that would split it across multiple lines in the raw output stream (e.g., for formatting items within a list or fields within an object).
-Your primary role is to provide medical advice to US physicians. Respond authoritatively, reason step-by-step for difficult queries, include inline citations (using the reference element type), then list 3 relevant follow-up questions (which can be part of a paragraph or list element).
-
-For inline citations (type: "reference"):
-- The "target" field MUST be a unique key (e.g., "ref1", "nejm2023").
-- The "display" field is the text shown inline (e.g., "Smith et al. 2023").
-- Each "target" key MUST have a corresponding entry in the "references" object (inside the "references_container" type) at the end of your response.
-
-For the "references_container" object at the end:
-- It must be the LAST object in the stream.
-- The "references" field within it contains the dictionary of all references.
-- Each key (e.g., "ref1", "nejm2023") MUST match a "target" used in an inline citation.
-- The string value for each key in "references" should be the full citation text or a single, complete URL. Do NOT put multiple URLs in a single reference string. If multiple sources are cited for one point, create distinct reference entries.
-`;
-
-export async function GET(req: NextRequest) {
-  try {
-    // Read payload from query parameter for SSE GET requests
-    const url = new URL(req.url);
-    const payloadParam = url.searchParams.get("payload");
-    if (!payloadParam) {
-      return new Response(JSON.stringify({ error: "Payload missing" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+const addElementTool = {
+  type: "function",
+  function: {
+    name: "add_element",
+    description: "Emit one UI block: paragraph, unordered_list, ordered_list, table, or references",
+    parameters: {
+      type: "object",
+      properties: {
+        element: { enum: ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const },
+        text: { type: "string", description: "Text content for paragraph." },
+        items: { type: "array", items: { type: "string" }, description: "Array of strings for list items." },
+        table: { 
+          type: "array", 
+          items: { type: "array", items: { type: "string" } }, 
+          description: "2D array for table data. First inner array is header, subsequent are rows." 
+        },
+        references: { 
+          type: "object", 
+          additionalProperties: { type: "string" }, 
+          description: "Key-value pairs for references, e.g., { \"ref1\": \"Citation text...\" }" 
+        }
+      },
+      required: ["element"]
     }
-    const { messages = [], model = "gpt-4.1" } = JSON.parse(payloadParam);
+  }
+} as const;
 
-    // console.log("Attempting to use OPENAI_API_KEY (first 5 chars):", process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 5) : "Not found");
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function bracesBalanced(str: string): boolean {
+  if (!str || str.trim() === "") return false;
+  let balance = 0;
+  for (const char of str) {
+    if (char === '{') balance++;
+    if (char === '}') balance--;
+    // Early exit if balance goes negative, meaning a '}' appeared before a matching '{'
+    if (balance < 0) return false; 
+  }
+  const trimmed = str.trim();
+  // Check if it starts with { and ends with } and balance is zero, and not just "{}" or "{ }"
+  return balance === 0 && trimmed.startsWith('{') && trimmed.endsWith('}') && trimmed.length > 2;
+}
 
-    const responseStream = await openai.chat.completions.create({
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function streamMarkdownOnly(
+  userInput: string, 
+  model: string, 
+  controller: ReadableStreamDefaultController,
+  systemMessageContent: string,
+  reqSignal: AbortSignal // Pass NextRequest's signal for cancellation
+) {
+  const encoder = new TextEncoder();
+  let openAIStreamClosed = false;
+
+  const cleanup = async () => {
+    if (openAIStreamClosed) return;
+    openAIStreamClosed = true;
+    if (!controller['_closed']) {
+        try { controller.close(); } catch(e) { /* console.warn("Controller already closed?", e) */ }
+        controller['_closed'] = true;
+    }
+  };
+
+  if (reqSignal.aborted) {
+    await cleanup();
+    return;
+  }
+  const clientDisconnectListener = async () => {
+    await cleanup(); 
+  };
+  reqSignal.addEventListener('abort', clientDisconnectListener, { once: true });
+
+  try {
+    const mdStream = await openai.chat.completions.create({
       model,
       stream: true,
       messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
+        { role: "system", content: systemMessageContent },
+        { role: "user", content: userInput }
       ],
     });
 
+    for await (const chunk of mdStream) {
+      if (reqSignal.aborted || openAIStreamClosed) {
+        break;
+      }
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (content) {
+        if (!controller['_closed']) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "markdown_chunk", content })}\n\n`));
+        } else {
+            break;
+        }
+      }
+    }
+  } catch (error: any) {
+    if (error.name === 'AbortError' || reqSignal.aborted) {
+    } else {
+      console.error("Error in streamMarkdownOnly:", error);
+      if (!controller['_closed']) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Markdown streaming failed" })}\n\n`));
+      }
+    }
+  } finally {
+    reqSignal.removeEventListener('abort', clientDisconnectListener);
+    await cleanup();
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const payloadParam = url.searchParams.get("payload");
+    
+    let userInput = "";
+    if (payloadParam) {
+        try {
+            const parsedPayload = JSON.parse(payloadParam);
+            const userMessage = parsedPayload.messages?.find((m: any) => m.role === 'user');
+            userInput = userMessage?.content || "";
+        } catch (e) {
+            console.error("Failed to parse payload:", payloadParam, e);
+             return new Response(JSON.stringify({ error: "Invalid payload format" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
+    } 
+
+    const thinkMode = url.searchParams.get("think") === "true";
+    const model = thinkMode ? "gpt-o3" : "gpt-4.1-mini";
+    const systemPromptForMarkdown = `${newSystemPromptBase} Respond in GitHub-flavored Markdown only.`;
+    const systemPromptForToolCalls = `${newSystemPromptBase} Stream each UI block via add_element.`;
+
+    const isGreetingOrTest = /^[ \t]*(hello|hi|help|test|ping)[!?.]?$/i.test(userInput);
     const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    let buffer = "";
 
     const stream = new ReadableStream({
       async start(controller) {
-        for await (const chunk of responseStream) {
-          const token = chunk.choices?.[0]?.delta?.content || "";
-          buffer += token;
+        controller['_closed'] = false;
 
-          let newlineIndex;
-          while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
-            const line = buffer.substring(0, newlineIndex).trim();
-            buffer = buffer.substring(newlineIndex + 1);
+        if (req.signal.aborted) {
+            if (!controller['_closed']) { try { controller.close(); } catch(e) {/*ignore*/} controller['_closed'] = true; }
+            return;
+        }
 
-            if (line) {
-              try {
-                JSON.parse(line);
-                controller.enqueue(encoder.encode(`data: ${line}\n\n`));
-              } catch (e) {
-                console.warn("Skipping invalid JSON line for SSE:", line, e);
+        if (!userInput && !isGreetingOrTest) { 
+          if (!controller['_closed']) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "User input missing for non-greeting/test query." })}\n\n`));
+            try { controller.close(); } catch(e) { /*ignore*/ } controller['_closed'] = true;
+          }
+          return;
+        }
+        
+        if (isGreetingOrTest) {
+          const greetingInput = userInput || url.searchParams.get("text") || "Hi";
+          await streamMarkdownOnly(greetingInput, model, controller, systemPromptForMarkdown, req.signal);
+          return; 
+        }
+
+        let fallbackTimeoutId: NodeJS.Timeout | null = null;
+        let tokenCount = 0;
+        const MAX_TOKENS_BEFORE_FALLBACK = 20;
+        const FALLBACK_TIMEOUT_MS = 150; 
+        
+        const buffers: { [key: string]: string } = {};
+        let fallbackStreamActive = false; 
+        let structuredStreamActive = true;
+        let firstBlockSentFromStructured = false;
+        let openAIStructuredStream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | null = null;
+
+        const cleanupResources = async (reason?: string) => {
+            if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
+            fallbackTimeoutId = null;
+            
+            structuredStreamActive = false;
+
+            if (!controller['_closed']) {
+                try { controller.close(); } catch (e) { /* console.warn("Controller close error in cleanup:", e) */ }
+                controller['_closed'] = true;
+            }
+        };
+
+        if (req.signal.aborted) {
+            await cleanupResources("Request aborted early");
+            return;
+        }
+        const clientDisconnectCleanup = () => {
+            cleanupResources("Client disconnected");
+        };
+        req.signal.addEventListener('abort', clientDisconnectCleanup, { once: true });
+
+
+        const startFallbackDueToErrorOrTimeout = async (reason: string) => {
+          if (fallbackStreamActive || controller['_closed']) return;
+          fallbackStreamActive = true;
+          structuredStreamActive = false;
+
+          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
+          fallbackTimeoutId = null;
+          
+          if (!controller['_closed']) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "fallback_initiated", reason })}\n\n`));
+          }
+          
+          await streamMarkdownOnly(userInput, model, controller, systemPromptForMarkdown, req.signal);
+        };
+
+        const resetOrStartFallbackTimer = () => {
+          if (fallbackStreamActive || controller['_closed']) return;
+          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
+          
+          fallbackTimeoutId = setTimeout(() => {
+            if (fallbackStreamActive || controller['_closed']) return;
+            startFallbackDueToErrorOrTimeout("Timeout: No complete block received within 150ms threshold");
+          }, FALLBACK_TIMEOUT_MS);
+        };
+
+        resetOrStartFallbackTimer();
+
+        try {
+          openAIStructuredStream = await openai.chat.completions.create({
+            model,
+            stream: true,
+            tools: [addElementTool],
+            tool_choice: { type: "function", function: { name: addElementTool.function.name } },
+            messages: [
+              { role: "system", content: systemPromptForToolCalls },
+              { role: "user", content: userInput }
+            ],
+          });
+
+          for await (const chunk of openAIStructuredStream) {
+            if (!structuredStreamActive || req.signal.aborted || controller['_closed']) {
+              break;
+            }
+
+            tokenCount++; 
+            const toolCallChunk = chunk.choices[0]?.delta?.tool_calls?.[0];
+
+            if (toolCallChunk?.function?.arguments) {
+              const id = toolCallChunk.id || "_tool_call_id_" + Date.now() + Math.random(); 
+              buffers[id] = (buffers[id] || "") + toolCallChunk.function.arguments;
+
+              if (bracesBalanced(buffers[id])) {
+                if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
+                firstBlockSentFromStructured = true; 
+
+                try {
+                  const parsedArgs = JSON.parse(buffers[id]);
+                  if (Object.keys(parsedArgs).length === 0 && parsedArgs.constructor === Object) {
+                  } else if (!parsedArgs.element) {
+                  } else {
+                    if (!controller['_closed']) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(parsedArgs)}
+
+`));
+                    } else { break; }
+                  }
+                } catch (e) {
+                  console.warn("Failed to parse buffered JSON from tool call:", buffers[id], e);
+                }
+                delete buffers[id];
+                if (!controller['_closed']) resetOrStartFallbackTimer();
+                else break;
               }
+            } else if (chunk.choices[0]?.delta?.content) {
+            }
+            
+            if (!firstBlockSentFromStructured && tokenCount >= MAX_TOKENS_BEFORE_FALLBACK) {
+                let hasAnyBufferContent = false;
+                for (const key in buffers) {
+                    if (buffers[key] && buffers[key].length > 0) {
+                        hasAnyBufferContent = true;
+                        break;
+                    }
+                }
+                if (!hasAnyBufferContent) {
+                    await startFallbackDueToErrorOrTimeout("Token limit before first block with no tool activity");
+                    break; 
+                }
             }
           }
-        }
-        const remainingLine = buffer.trim();
-        if (remainingLine) {
-          try {
-            JSON.parse(remainingLine);
-            controller.enqueue(encoder.encode(`data: ${remainingLine}\n\n`));
-          } catch (e) {
-            console.warn("Skipping invalid JSON from remaining buffer for SSE:", remainingLine, e);
+        } catch (error: any) {
+          if (req.signal.aborted || (error.name === 'AbortError' && structuredStreamActive === false) ) {
+          } else if (!fallbackStreamActive && structuredStreamActive) {
+            await startFallbackDueToErrorOrTimeout("Structured stream error");
           }
+        } finally {
+            req.signal.removeEventListener('abort', clientDisconnectCleanup);
+            if (!fallbackStreamActive && !controller['_closed']) {
+                await cleanupResources("Structured stream finally");
+            }
         }
-        controller.close();
-      },
+      }
     });
 
     return new Response(stream, {
@@ -106,17 +316,18 @@ export async function GET(req: NextRequest) {
         "X-Accel-Buffering": "no",
       },
     });
+
   } catch (error: unknown) {
-    console.error("/api/advisor error", error);
-    let errorMessage = "Unknown error";
+    console.error("/api/advisor global error caught in GET:", error);
+    let errorMessage = "An unexpected error occurred.";
     if (error instanceof Error) {
       errorMessage = error.message;
     } else if (typeof error === 'string') {
       errorMessage = error;
     }
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: "Failed to process request: " + errorMessage }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }
-} 
+}
