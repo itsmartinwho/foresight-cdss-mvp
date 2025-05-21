@@ -107,7 +107,7 @@ const fragmentShader = `
   ${noiseGLSL} // Include the noise function
 
   // Constants for plasma effect - tweak these!
-  const float PLASMA_SCALE = 1.5; // How zoomed in the noise pattern is
+  const float PLASMA_SCALE = 0.8; // DEBUG: broader, slower variation
   const float TIME_SPEED = 0.05; // How fast the pattern evolves
   // const float COLOR_FREQ_R = 0.8; // Original color settings commented out
   // const float COLOR_FREQ_G = 0.7;
@@ -140,7 +140,7 @@ const fragmentShader = `
 
     // Desaturate base hues to near‐silver
     vec3 silver = vec3(0.92);
-    vec3 finalColor = mix(silver, baseColor, 0.2);  
+    vec3 finalColor = mix(silver, baseColor, 0.5); // DEBUG: stronger base mix
 
     // Add specular lighting term (Blinn–Phong)
     // Assuming a simple normal (e.g., pointing out of the plane)
@@ -156,7 +156,7 @@ const fragmentShader = `
     // Tint micro‐highlights with pastel accents
     vec3 accentLav = vec3(0.847, 0.706, 0.996);
     vec3 accentTeal = vec3(0.6, 0.98, 0.89);
-    float highlightMask = smoothstep(0.8, 1.0, noiseValue); // Use original noiseValue
+    float highlightMask = smoothstep(0.9, 1.0, noiseValue); // DEBUG: highlight only brightest
     finalColor += highlightMask * mix(accentLav, accentTeal, mod(u_time * 0.1, 1.0)); // Slower accent modulation
 
     // Clamp final color
@@ -166,7 +166,7 @@ const fragmentShader = `
     float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
     finalColor *= vignette * 0.8 + 0.2; 
 
-    gl_FragColor = vec4(finalColor, 0.1); // New global alpha
+    gl_FragColor = vec4(finalColor, 0.35); // DEBUG: increased alpha for testing
   }
 `;
 
@@ -195,9 +195,8 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.height / 2,
     Math.max(canvas.width, canvas.height) / 1.5
   );
-  gradient.addColorStop(0, 'rgba(30,50,100,0.8)');
-  gradient.addColorStop(0.5, 'rgba(10,20,50,0.7)');
-  gradient.addColorStop(1, 'rgba(0,5,20,0.6)');
+  gradient.addColorStop(0, 'rgba(236,239,241,0.1)');
+  gradient.addColorStop(1, 'rgba(236,239,241,0.05)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
@@ -210,7 +209,7 @@ export default function PlasmaBackground() {
     // If already initialised, nothing to do
     if (globalAny.__plasmaSingleton) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReducedMotion = false; // DEBUG: force animated path
 
     const canvas = document.createElement('canvas');
     canvas.id = 'plasma-bg';
@@ -262,6 +261,8 @@ export default function PlasmaBackground() {
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       uniforms.u_time.value = clock.getElapsedTime();
+      // DEBUG logs for uniforms (noiseValue etc. must be examined via shader or GPU debugger)
+      console.log('u_time:', uniforms.u_time.value, 'resolution:', uniforms.u_resolution.value.x, uniforms.u_resolution.value.y, 'viewDir:', uniforms.u_viewDirection.value.x, uniforms.u_viewDirection.value.y, uniforms.u_viewDirection.value.z);
       renderer.render(scene, camera);
     };
     animate();
