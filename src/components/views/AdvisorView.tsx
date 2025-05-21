@@ -220,9 +220,11 @@ export default function AdvisorView() {
       let braceCount = 0;
       let inJson = false;
       let streamProperlyEnded = false; // Flag to track if stream_end was received
+      let eventIndex = 0; // Counter for SSE events
 
       eventSource.onmessage = (event) => {
         const rawData = event.data;
+        console.debug(`SSE #${++eventIndex}:`, rawData); // Log event with counter
 
         // Attempt to parse as JSON first
         let parsedData;
