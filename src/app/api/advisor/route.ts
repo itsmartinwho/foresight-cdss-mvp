@@ -183,10 +183,14 @@ export async function GET(req: NextRequest) {
     const messagesForToolCalls = [
         { role: "system" as const, content:
           `${newSystemPromptBase}
-           You must respond *exclusively* by making one or more calls to the 'add_element' function.
-           Break down your response into logical blocks (paragraphs, lists, tables, etc.). For each block, make a separate 'add_element' call.
-           For example, each paragraph should be its own 'add_element' call. Each item in a list can be part of a single 'unordered_list' or 'ordered_list' element with multiple items, or very long individual list items could be their own 'add_element' paragraph call if that makes sense for clarity.
-           Do not emit any direct text at any point. Ensure all content is delivered via 'add_element'.`
+           You are a medical advisor. Your response MUST be entirely constructed by making a sequence of 'add_element' function calls.
+           Do NOT output any text directly. ALL content must be within an 'add_element' call.
+           Break down your complete answer into logical UI blocks: paragraphs, lists, tables, or references.
+           For EACH block, make one 'add_element' function call.
+           After one 'add_element' call, if more information is needed to fully answer the user's query, you MUST make another 'add_element' call.
+           Continue making 'add_element' calls sequentially until the user's entire query is comprehensively answered.
+           For example, to answer a question requiring an introductory paragraph, then a list of symptoms, then a paragraph about treatments, you would make three 'add_element' calls in sequence.
+           Ensure all information is delivered via these function calls.`
         },
         ...messages.filter(m => m.role === "user" || m.role === "assistant")
     ];
