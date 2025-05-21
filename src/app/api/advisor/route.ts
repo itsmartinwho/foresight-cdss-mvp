@@ -55,33 +55,30 @@ function bracesBalanced(str: string): boolean {
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function streamMarkdownOnly(
-  userInput: string,
+  incomingMessages: Array<{ role: "system" | "user" | "assistant"; content: string }>, // Expect full message history
   model: string,
   controller: ReadableStreamDefaultController,
-  systemMessageContent: string,
-  reqSignal: AbortSignal // For handling client disconnects
+  // systemMessageContent: string, // System message is now part of incomingMessages
+  reqSignal: AbortSignal, // For handling client disconnects & main request abort
+  isControllerClosedRef: { value: boolean } // To check/update shared controller state
 ) {
   const encoder = new TextEncoder();
-  let streamEnded = false;
+  let streamEndedByThisFunction = false;
 
-  const cleanup = () => {
-    if (streamEnded) return;
-    streamEnded = true;
-    if (!controller['_closed']) {
-      try { controller.close(); } catch (e) { /* ignore */ }
-      controller['_closed'] = true;
-    }
+  const cleanupAndCloseController = () => {
+    if (isControllerClosedRef.value || streamEndedByThisFunction) return;
+    streamEndedByThisFunction = true;
+    isControllerClosedRef.value = true;
+    try { controller.close(); } catch (e) { /* ignore if already closed by another path */ }
   };
 
-  // If client disconnected before this function is even called or during its setup
   if (reqSignal.aborted) {
-    cleanup();
+    cleanupAndCloseController();
     return;
   }
 
   const clientDisconnectListener = () => {
-    // console.log("Markdown stream: client disconnected via req.signal");
-    cleanup();
+    cleanupAndCloseController();
   };
   reqSignal.addEventListener('abort', clientDisconnectListener, { once: true });
 
@@ -89,113 +86,124 @@ async function streamMarkdownOnly(
     const mdStream = await openai.chat.completions.create({
       model,
       stream: true,
-      messages: [
-        { role: "system", content: systemMessageContent },
-        { role: "user", content: userInput }
-      ],
-      // OpenAI SDK's `create` with `stream:true` might not directly use top-level `signal` for abort.
-      // Aborting is handled by breaking the loop when `reqSignal.aborted` is true.
-    });
+      messages: incomingMessages, // Pass full message history
+    }, 
+    { signal: reqSignal } // Pass signal in options bag
+    );
 
     for await (const chunk of mdStream) {
-      if (reqSignal.aborted || streamEnded) { // Check for client disconnect or if stream was already ended
+      if (reqSignal.aborted || isControllerClosedRef.value) {
         break;
       }
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
-        if (!controller['_closed']) {
-          // Send as { type: "markdown_chunk", content: ... }
+        if (!isControllerClosedRef.value) {
           const payload = { type: "markdown_chunk", content };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-        } else {
-          break; 
+          controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
         }
       }
     }
   } catch (error: any) {
-    if (error.name === 'AbortError' || reqSignal.aborted) {
-      // Expected if client disconnects or stream is intentionally aborted
-    } else {
+    if (!(error.name === 'AbortError' || reqSignal.aborted)) {
       console.error("Error in streamMarkdownOnly:", error);
-      if (!controller['_closed']) {
+      if (!isControllerClosedRef.value) {
         const errorPayload = { type: "error", message: "Markdown streaming failed" };
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorPayload)}\n\n`));
+        controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
       }
     }
   } finally {
     reqSignal.removeEventListener('abort', clientDisconnectListener);
-    cleanup(); // Ensures controller is closed
+    cleanupAndCloseController();
   }
 }
 
 export async function GET(req: NextRequest) {
-  const requestAbortController = new AbortController(); // Master AbortController for this request
+  const requestAbortController = new AbortController();
   req.signal.addEventListener('abort', () => {
-    // console.log("Client disconnected, aborting master controller for the request.");
     requestAbortController.abort();
   }, { once: true });
 
   try {
     const url = new URL(req.url);
     const payloadParam = url.searchParams.get("payload");
-    let userInput = "";
+    let messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [];
+    let userInputForGreetingCheck = "";
 
-    if (payloadParam) {
-      try {
-        const parsedPayload = JSON.parse(payloadParam);
-        userInput = parsedPayload.messages?.find((m: any) => m.role === 'user')?.content || "";
-      } catch (e) {
-        console.error("Failed to parse payload:", payloadParam, e);
-        return new Response(JSON.stringify({ error: "Invalid payload format" }), {
-          status: 400, headers: { "Content-Type": "application/json" },
-        });
+    if (!payloadParam) {
+      return new Response(JSON.stringify({ error: "Payload missing. Please provide messages in the 'payload' query parameter." }), {
+        status: 400, headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    try {
+      const parsedPayload = JSON.parse(payloadParam);
+      if (!Array.isArray(parsedPayload.messages) || parsedPayload.messages.length === 0) {
+        throw new Error("Messages array is missing or empty in payload.");
       }
+      messages = parsedPayload.messages;
+      const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+      userInputForGreetingCheck = lastUserMessage?.content || "";
+    } catch (e: any) {
+      console.error("Failed to parse payload or invalid messages format:", e.message);
+      return new Response(JSON.stringify({ error: `Invalid payload: ${e.message}` }), {
+        status: 400, headers: { "Content-Type": "application/json" },
+      });
     }
 
     const thinkMode = url.searchParams.get("think") === "true";
     const model = thinkMode ? "gpt-o3" : "gpt-4.1-mini";
-    const systemPromptForMarkdown = `${newSystemPromptBase} Respond in GitHub-flavored Markdown only.`;
-    const systemPromptForToolCalls = `${newSystemPromptBase} You must call the add_element function to stream each UI block.`;
     
-    const isGreetingOrTest = /^[ \t]*(hello|hi|help|test|ping)[!?.]?$/i.test(userInput);
+    // Prepare messages for OpenAI: prepend system prompt
+    const messagesForOpenAI = [
+        { role: "system" as const, content: newSystemPromptBase },
+        ...messages.filter(m => m.role === "user" || m.role === "assistant") // Ensure only user/assistant messages are spread
+    ];
+    const messagesForMarkdown = [
+        { role: "system" as const, content: `${newSystemPromptBase} Respond in GitHub-flavored Markdown only.` },
+        ...messages.filter(m => m.role === "user" || m.role === "assistant")
+    ];
+    const messagesForToolCalls = [
+        { role: "system" as const, content: `${newSystemPromptBase} You must call the add_element function to stream each UI block.` },
+        ...messages.filter(m => m.role === "user" || m.role === "assistant")
+    ];
+
+    const isGreetingOrTest = /^[ \t]*(hello|hi|help|test|ping)[!?.]?$/i.test(userInputForGreetingCheck);
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
       async start(controller) {
-        controller['_closed'] = false; // Custom flag to track controller state
+        let isControllerClosed = false; // Local variable to track controller state
+        const isControllerClosedRef = { value: false }; // Pass as ref to streamMarkdownOnly
+
+        const closeControllerOnce = () => {
+          if (!isControllerClosedRef.value) {
+            isControllerClosedRef.value = true;
+            try { controller.close(); } catch (e) { /*ignore*/ }
+          }
+        };
+
+        // Abort stream processing if main request is aborted
+        requestAbortController.signal.addEventListener('abort', closeControllerOnce, { once: true });
 
         if (requestAbortController.signal.aborted) {
-          if (!controller['_closed']) { try { controller.close(); } catch(e){/*ignore*/} controller['_closed'] = true; }
+          closeControllerOnce();
           return;
         }
-        
-        // Ensure request specific abort listener for this stream instance
-        const streamSpecificAbort = () => {
-            if(!controller['_closed']) {
-                try { controller.close(); } catch(e) {/*ignore*/}
-                controller['_closed'] = true;
-            }
-        };
-        requestAbortController.signal.addEventListener('abort', streamSpecificAbort, {once: true});
 
-
-        if (!userInput && !isGreetingOrTest) {
-          if (!controller['_closed']) {
-            const errPayload = { type: "error", message: "User input missing." };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(errPayload)}\n\n`));
-            try { controller.close(); } catch (e) { /*ignore*/ } controller['_closed'] = true;
+        if (messagesForOpenAI.filter(m=>m.role === 'user').length === 0 && !isGreetingOrTest) { 
+          if (!isControllerClosedRef.value) {
+            const errPayload = { type: "error", message: "User input missing in messages array." };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(errPayload)}\n\n`));
+            closeControllerOnce();
           }
           return;
         }
 
         if (isGreetingOrTest) {
-          const greetingInput = userInput || url.searchParams.get("text") || "Hi";
-          // Pass requestAbortController.signal directly to streamMarkdownOnly
-          await streamMarkdownOnly(greetingInput, model, controller, systemPromptForMarkdown, requestAbortController.signal);
-          return; // streamMarkdownOnly handles closing
+          await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
+          return; 
         }
 
-        // --- Structured Path with Fallback ---
         let structuredFunctionCallArgsBuffer = "";
         let fallbackTimeoutId: NodeJS.Timeout | null = null;
         let tokenCount = 0;
@@ -203,65 +211,54 @@ export async function GET(req: NextRequest) {
         const FALLBACK_TIMEOUT_MS = 150;
         let firstBlockSent = false;
         let fallbackEngaged = false;
-
-        // Abort controller specifically for the structured OpenAI stream
         const structuredStreamInternalAbortController = new AbortController();
-        
-        // Link external request abort to this internal one
-        requestAbortController.signal.addEventListener('abort', () => {
-            // console.log("Structured path: parent request aborted, aborting internal stream controller.");
-            structuredStreamInternalAbortController.abort();
-        }, {once: true});
 
+        requestAbortController.signal.addEventListener('abort', () => {
+          structuredStreamInternalAbortController.abort();
+        }, { once: true });
 
         const engageMarkdownFallback = async (reason: string) => {
-          if (fallbackEngaged || controller['_closed']) return;
+          if (fallbackEngaged || isControllerClosedRef.value) return;
           fallbackEngaged = true;
-          // console.log(Fallback engaged: ${reason});
-
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
           fallbackTimeoutId = null;
-          
-          structuredStreamInternalAbortController.abort(); // Attempt to abort the structured stream
+          structuredStreamInternalAbortController.abort();
 
-          if (!controller['_closed']) {
+          if (!isControllerClosedRef.value) {
             const fbPayload = { type: "fallback_initiated", reason };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(fbPayload)}\n\n`));
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(fbPayload)}\n\n`));
           }
-          // streamMarkdownOnly will use the main requestAbortController.signal for its own lifetime.
-          await streamMarkdownOnly(userInput, model, controller, systemPromptForMarkdown, requestAbortController.signal);
+          await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
         };
 
         const resetFallbackTimer = () => {
-          if (fallbackEngaged || controller['_closed']) return;
+          if (fallbackEngaged || isControllerClosedRef.value) return;
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
           fallbackTimeoutId = setTimeout(() => {
-            if (fallbackEngaged || controller['_closed']) return;
+            if (fallbackEngaged || isControllerClosedRef.value) return;
             engageMarkdownFallback("Timeout: No complete block/activity in 150ms");
           }, FALLBACK_TIMEOUT_MS);
         };
         
-        resetFallbackTimer(); // Initial timer
+        resetFallbackTimer();
 
         try {
           const structuredStream = await openai.chat.completions.create({
             model,
             stream: true,
-            messages: [
-              { role: "system", content: systemPromptForToolCalls },
-              { role: "user", content: userInput },
-            ],
+            messages: messagesForToolCalls,
             functions: [addElementFunctionDefinition],
             function_call: { name: addElementFunctionDefinition.name },
-            // signal: structuredStreamInternalAbortController.signal, // Removed due to linter/SDK version issue
-          });
+          },
+          { signal: structuredStreamInternalAbortController.signal } // Pass signal in options bag
+          );
 
           for await (const chunk of structuredStream) {
-            if (fallbackEngaged || structuredStreamInternalAbortController.signal.aborted || controller['_closed']) {
+            if (fallbackEngaged || structuredStreamInternalAbortController.signal.aborted || isControllerClosedRef.value) {
               break;
             }
             tokenCount++;
-            resetFallbackTimer(); // Activity detected, reset timer for next chunk or completion
+            resetFallbackTimer();
 
             const fcDelta = chunk.choices[0]?.delta?.function_call;
             if (fcDelta?.arguments) {
@@ -271,59 +268,39 @@ export async function GET(req: NextRequest) {
             if (bracesBalanced(structuredFunctionCallArgsBuffer)) {
               try {
                 const parsedArgs = JSON.parse(structuredFunctionCallArgsBuffer);
-                structuredFunctionCallArgsBuffer = ""; // Clear buffer after successful parse
-
-                // Skip empty {} tool arguments, but allow valid empty structures like items:[]
+                structuredFunctionCallArgsBuffer = "";
                 if (Object.keys(parsedArgs).length === 0 && parsedArgs.constructor === Object) {
-                  // console.log("Skipping empty {} tool arguments.");
+                  // Skip empty {} 
                 } else if (!parsedArgs.element) {
                   // console.warn("Parsed arguments missing 'element' field:", parsedArgs);
                 } else {
-                  if (!controller['_closed']) {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(parsedArgs)}\n\n`));
+                  if (!isControllerClosedRef.value) {
+                    controller.enqueue(encoder.encode(`data:${JSON.stringify(parsedArgs)}\n\n`));
                     firstBlockSent = true;
-                    // Fallback timer is already reset above for any activity,
-                    // so it correctly covers time until next block.
-                  } else { break; }
+                  }
                 }
               } catch (e) {
-                // JSON might be incomplete (more chunks to come) or truly malformed.
-                // If malformed and stream ends, it's an error. If incomplete, more chunks will fix.
-                // console.warn("Attempted to parse incomplete/malformed JSON from buffer:", structuredFunctionCallArgsBuffer, e.message);
-                // The bracesBalanced check should ideally prevent parsing attempts on clearly incomplete JSON.
-                // If it's balanced but still fails parse, could be malformed content from model.
-                // In this case, we continue accumulating; if it never resolves, timeout will trigger fallback.
+                // Continue accumulating if parse fails, timeout will handle persistent malformed data
               }
             }
             
-            // Fallback if 20 tokens arrive before *any* block is sent, AND no arguments are being buffered
             if (!firstBlockSent && tokenCount >= MAX_TOKENS_BEFORE_FALLBACK && structuredFunctionCallArgsBuffer.length === 0) {
               await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
               break;
             }
           }
         } catch (error: any) {
-          if (structuredStreamInternalAbortController.signal.aborted || requestAbortController.signal.aborted) {
-            // Expected abort (due to fallback, or client disconnect)
-            // If fallback not engaged yet, it might be a direct client disconnect aborting the internal controller
-            if (!fallbackEngaged && !controller['_closed']) {
-                // console.log("Structured stream aborted by signal, but fallback not engaged. Closing controller if open.");
+          if (!(error.name === 'AbortError' || structuredStreamInternalAbortController.signal.aborted)) {
+            if (!fallbackEngaged && !isControllerClosedRef.value) {
+              console.error("Error in structured OpenAI stream:", error);
+              await engageMarkdownFallback("Structured stream error");
             }
-          } else if (!fallbackEngaged && !controller['_closed']) {
-            console.error("Error in structured OpenAI stream:", error);
-            await engageMarkdownFallback("Structured stream error");
           }
         } finally {
-          // console.log("Structured path: finally block. Fallback engaged: ", fallbackEngaged, "Controller closed: ", controller['_closed']);
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
-          // If fallback was engaged, it's responsible for closing the controller.
-          // If not engaged and controller still open, means structured stream finished or errored locally.
-          if (!fallbackEngaged && !controller['_closed']) {
-            try { controller.close(); } catch(e){/*ignore*/}
-            controller['_closed'] = true;
+          if (!fallbackEngaged && !isControllerClosedRef.value) {
+            closeControllerOnce();
           }
-          // remove stream specific abort, main one on requestAbortController will still be there for other potential ops
-          requestAbortController.signal.removeEventListener('abort', streamSpecificAbort); 
         }
       }
     });
@@ -333,18 +310,12 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    // console.error("/api/advisor global error caught in GET:", error);
-    // This outer try-catch is for synchronous errors during initial setup
-    // or if new Response itself throws.
     let errorMessage = "An unexpected error occurred processing the request.";
     if (error instanceof Error) errorMessage = error.message;
     else if (typeof error === 'string') errorMessage = error;
-    
-    // Ensure that requestAbortController is cleaned up if it was set.
     if (!requestAbortController.signal.aborted) {
-        requestAbortController.abort("Global error cleanup");
+        requestAbortController.abort();
     }
-
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
