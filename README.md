@@ -145,6 +145,9 @@ _For a comprehensive understanding of the current architecture, including the AI
 *   **Language:** TypeScript
 *   **Backend:** Supabase (PostgreSQL) for data; Next.js API Routes for custom logic (e.g., `/api/advisor` for Tool A).
 *   **Styling:** Tailwind CSS, global styles.
+*   **Static Assets:**
+    *   **Favicon:** The project uses `src/app/favicon.ico`, which is automatically picked up by Next.js (App Router convention). No explicit `<link>` tag is needed in `layout.tsx`.
+    *   **Loading Animation:** The primary loading animation GIF (`public/slower-load-animation.gif`) is preloaded in `src/app/layout.tsx` for performance and displayed by `src/components/LoadingAnimation.tsx`.
 *   **AI Tools Overview:**
     *   **Tool A (Advisor):** Live, uses OpenAI via `/api/advisor`.
     *   **Tools B, D, F:** Aspirational, with some placeholder UI and mock data. `clinical_engine.py` is a non-integrated prototype for Tool B.
