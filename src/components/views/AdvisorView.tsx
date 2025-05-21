@@ -175,21 +175,24 @@ export default function AdvisorView() {
 
     // Add only the new user message to the state for now.
     // The assistant message will be added when the first structured_block is received.
-    setMessages(prevMessages => [
-      ...prevMessages,
-      newUserMessage
-    ]);
-    // Log message state after adding user message
-    // console.log('Updated messages state (after user send):', messages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
+    setMessages(prevMessages => {
+      if (!Array.isArray(prevMessages)) return prevMessages || [];
+      const assistantMessageId = currentAssistantMessageIdRef.current;
+      let updatedMessages = [...prevMessages, newUserMessage];
+      // Log message state after adding user message
+      // console.log('Updated messages state (after user send):', messages.map(m => m.role + "#" + m.id + (m.isStreaming ? "-streaming" : "")));
 
-    setInput("");
-    setIsSending(true);
-    setUserHasScrolledUp(false); 
+      setInput("");
+      setIsSending(true);
+      setUserHasScrolledUp(false); 
 
-    requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-      }
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+        }
+      });
+
+      return updatedMessages;
     });
 
     try {
@@ -247,8 +250,9 @@ export default function AdvisorView() {
         }
 
         setMessages(prevMessages => {
-          let updatedMessages = [...prevMessages];
+          if (!Array.isArray(prevMessages)) return prevMessages || [];
           const assistantMessageId = currentAssistantMessageIdRef.current;
+          let updatedMessages = [...prevMessages];
 
           if (!assistantMessageId) {
             console.error("No currentAssistantMessageIdRef.current available for SSE processing.");
