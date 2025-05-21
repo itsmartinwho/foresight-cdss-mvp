@@ -20,7 +20,7 @@ const addElementFunctionDefinition = {
   parameters: {
     type: "object",
     properties: {
-      element: { enum: ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const },
+      element: { type: "string", enum: ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const },
       text: { type: "string", description: "Text content for paragraph." },
       items: { type: "array", items: { type: "string" }, description: "Array of strings for list items." },
       table: {
@@ -131,6 +131,7 @@ async function streamMarkdownOnly(
 }
 
 export async function GET(req: NextRequest) {
+  console.log("GET /api/advisor called"); // Added log
   const requestAbortController = new AbortController();
   req.signal.addEventListener('abort', () => {
     requestAbortController.abort();
@@ -258,7 +259,7 @@ export async function GET(req: NextRequest) {
         };
 
         const resetFallbackTimer = () => {
-          // If fallback already engaged, controller closed, or first block sent, this timer is no longer needed.
+          // If fallback already engaged, controller closed, or firstBlockSent is true, this timer is no longer needed.
           if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) {
             // If the timer was set before firstBlockSent became true, clear it now.
             if (fallbackTimeoutId) {
@@ -270,15 +271,16 @@ export async function GET(req: NextRequest) {
           
           // This part only runs if firstBlockSent is false.
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
-          fallbackTimeoutId = setTimeout(() => {
-            if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
-            // engageMarkdownFallback("Timeout: Initial block not received in 500ms"); // Fallback DEFINITIVELY disabled
-          }, FALLBACK_TIMEOUT_MS);
+          // fallbackTimeoutId = setTimeout(() => { // Fallback DEFINITIVELY disabled
+          //   if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
+          //   // engageMarkdownFallback("Timeout: Initial block not received in 500ms"); // Fallback DEFINITIVELY disabled
+          // }, FALLBACK_TIMEOUT_MS);
         };
         
         // resetFallbackTimer(); // Fallback DEFINITIVELY disabled
 
         try {
+          console.log("Attempting structured stream with OpenAI..."); // Added log
           const structuredStream = await openai.chat.completions.create({
             model,
             stream: true,

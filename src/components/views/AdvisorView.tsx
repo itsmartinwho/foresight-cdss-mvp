@@ -49,6 +49,7 @@ export default function AdvisorView() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const userHasScrolledUpRef = useRef(userHasScrolledUp); // Ref to hold the latest userHasScrolledUp
+  const streamEndedGracefully = useRef(false); // Added streamEndedGracefully ref
   const [dictating, setDictating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [includePapers, setIncludePapers] = useState(false);
@@ -225,6 +226,7 @@ export default function AdvisorView() {
       let braceCount = 0;
       let inJson = false;
       let streamProperlyEnded = false; // Flag to track if stream_end was received
+      streamEndedGracefully.current = false; // Reset for each new stream
       let eventIndex = 0; // Counter for SSE events
 
       eventSource.onmessage = (event) => {
@@ -344,6 +346,7 @@ export default function AdvisorView() {
               updatedMessages[existingAssistantMsgIndex].isStreaming = false;
             }
             streamProperlyEnded = true;
+            streamEndedGracefully.current = true; // Mark as gracefully ended
             eventSource.close();
             setIsSending(false);
           }
@@ -358,39 +361,67 @@ export default function AdvisorView() {
       eventSource.onerror = (err) => {
         console.error("EventSource failed:", err);
         // Check readyState AFTER console.error, as err might be misleading for deliberate client-side closes
-        if (eventSource.readyState === EventSource.CLOSED && streamProperlyEnded) {
-            console.log("EventSource closed normally after stream_end.");
-            // eventSource.close(); // Already closed if streamProperlyEnded is true
-            setIsSending(false); // Ensure UI is updated
-            return; // Do not proceed to show error
+        console.log("onerror - eventSource.readyState at error time:", eventSource.readyState); // Direct access to eventSource here
+        console.log("onerror - streamEndedGracefully.current:", streamEndedGracefully.current);
+
+        setIsSending(false); // Moved setIsSending to be called earlier
+
+        if (streamEndedGracefully.current) {
+          console.log("onerror was called, but stream_end was already processed. This might be a normal post-closure event.");
+          // Optionally, ensure the stream is closed if not already, though stream_end should handle it
+          if (eventSource.readyState !== EventSource.CLOSED) {
+            eventSource.close();
+          }
+          return; // Do not proceed to show error or modify messages further
+        } else if (eventSource.readyState === EventSource.CLOSED) {
+          console.log("EventSource state is CLOSED at time of error. Stream might have closed abruptly or this is how the browser reports a server-initiated close without a prior client close().");
+          // If it closed abruptly and stream_end wasn't processed, it's still an issue.
+          // We will fall through to the generic error handling unless streamProperlyEnded (legacy) is true
+          // This condition might be redundant if streamEndedGracefully.current covers all good closures.
         }
+          // Generic error handling if not gracefully ended
+          console.error("EventSource encountered an error, and stream did not end gracefully or readyState is not CLOSED.");
+          setMessages(prevMessages => {
+            const assistantMessageId = currentAssistantMessageIdRef.current;
+            let updatedMessages = [...prevMessages];
+            const existingAssistantMsgIndex = updatedMessages.findIndex(msg => msg.id === assistantMessageId);
 
-        setMessages(prevMessages => {
-          const lastMsgIndex = prevMessages.length - 1;
-          // Ensure we are targeting the correct assistant message using the ref
-          const assistantMessageId = currentAssistantMessageIdRef.current;
-
-          if (lastMsgIndex >=0 && assistantMessageId && prevMessages[lastMsgIndex].id === assistantMessageId) {
-            const updatedMessages = [...prevMessages];
-            updatedMessages[lastMsgIndex].isStreaming = false;
-            
-            if (!streamProperlyEnded) { // Only show connection error if stream did not end properly
-              if (typeof updatedMessages[lastMsgIndex].content !== 'string') {
-                  (updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown = 
-                      ((updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown || "") + 
-                      "\n**Error:** Connection failed.";
-                  (updatedMessages[lastMsgIndex].content as AssistantMessageContent).isFallback = true;
-              }
+            if (existingAssistantMsgIndex !== -1) {
+                const msgToUpdate = { ...updatedMessages[existingAssistantMsgIndex] };
+                if (typeof msgToUpdate.content === 'object') {
+                    msgToUpdate.content.isFallback = true;
+                    msgToUpdate.content.fallbackMarkdown = (msgToUpdate.content.fallbackMarkdown || "") + "\\n**Error:** Connection issue or stream interrupted.";
+                }
+                msgToUpdate.isStreaming = false;
+                updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
+            } else if (assistantMessageId) { // Only add new error message if there was an attempt to stream for an ID
+                 const connectionErrorMessage: ChatMessage = {
+                    id: assistantMessageId, // Use the current ref ID
+                    role: "assistant",
+                    content: {
+                        content: [],
+                        references: {},
+                        isFallback: true,
+                        fallbackMarkdown: "**Error:** Connection issue or stream interrupted.",
+                    } as AssistantMessageContent,
+                    isStreaming: false,
+                };
+                // Avoid adding duplicate error messages if one is already the last message for this ID
+                const lastMsg = prevMessages.length > 0 ? prevMessages[prevMessages.length -1] : null;
+                if (lastMsg && lastMsg.id === assistantMessageId && lastMsg.role === 'assistant' && (lastMsg.content as AssistantMessageContent).fallbackMarkdown?.includes("Connection issue or stream interrupted.")) {
+                    return prevMessages; // Already handled
+                }
+                updatedMessages.push(connectionErrorMessage);
             }
             return updatedMessages;
-          }
-          return prevMessages;
-        });
+          });
+        
+
         // Ensure it's closed here too, especially if error occurred before stream_end
         if (eventSource.readyState !== EventSource.CLOSED) {
             eventSource.close();
         }
-        setIsSending(false);
+        // setIsSending(false); // Already called above
       };
 
     } catch (error: any) {
