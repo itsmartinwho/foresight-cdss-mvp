@@ -17,12 +17,15 @@ export default function GlassHeader() {
           />
         </Link>
       </div>
-      <div className="flex items-center gap-4">
-        <QuickSearch
-          className="w-64"
-          portal
-          inputClassName="h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
-        />
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-5xl">
+          <QuickSearch
+            portal
+            inputClassName="h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3 unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 w-full"
+          />
+        </div>
+      </div>
+      <div className="flex items-center">
         <Popover>
           <PopoverTrigger asChild>
             <img
