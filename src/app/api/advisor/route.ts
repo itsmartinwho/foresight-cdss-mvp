@@ -37,6 +37,8 @@ const addElementFunctionDefinition = {
   }
 } as const; // Use 'as const' for stricter type inference
 
+const VALID_ELEMENT_TYPES = ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const;
+
 // Refined bracesBalanced: checks for a syntactically complete JSON object structure
 function bracesBalanced(str: string): boolean {
   if (!str) return false;
@@ -205,7 +207,7 @@ export async function GET(req: NextRequest) {
         }
 
         let structuredFunctionCallArgsBuffer = "";
-        let fallbackTimeoutId: NodeJS.Timeout | null = null;
+        let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null;
         let tokenCount = 0;
         const MAX_TOKENS_BEFORE_FALLBACK = 20;
         const FALLBACK_TIMEOUT_MS = 150;
@@ -250,7 +252,7 @@ export async function GET(req: NextRequest) {
             functions: [addElementFunctionDefinition],
             function_call: { name: addElementFunctionDefinition.name },
           },
-          { signal: structuredStreamInternalAbortController.signal } // Pass signal in options bag
+          { signal: structuredStreamInternalAbortController.signal }
           );
 
           for await (const chunk of structuredStream) {
@@ -271,8 +273,11 @@ export async function GET(req: NextRequest) {
                 structuredFunctionCallArgsBuffer = "";
                 if (Object.keys(parsedArgs).length === 0 && parsedArgs.constructor === Object) {
                   // Skip empty {} 
-                } else if (!parsedArgs.element) {
-                  // console.warn("Parsed arguments missing 'element' field:", parsedArgs);
+                } else if (
+                  typeof parsedArgs.element !== 'string' ||
+                  !VALID_ELEMENT_TYPES.includes(parsedArgs.element as typeof VALID_ELEMENT_TYPES[number])
+                ) {
+                  console.warn("Invalid or missing 'element' field:", parsedArgs);
                 } else {
                   if (!isControllerClosedRef.value) {
                     controller.enqueue(encoder.encode(`data:${JSON.stringify(parsedArgs)}\n\n`));
