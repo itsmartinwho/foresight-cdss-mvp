@@ -49,47 +49,97 @@ export default function ConsultationTab({
   const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   const transcriptAreaRef = useRef<HTMLDivElement | null>(null);
 
+  const admissionStateForAutoSaveRef = useRef<{
+    patientId: string | undefined;
+    admissionId: string | undefined;
+    transcriptToSave: string;
+    lastSaved: string;
+  } | null>(null);
+
   useEffect(() => {
     const initialTranscript = currentDetailedAdmission?.transcript || "";
     setEditableTranscript(initialTranscript);
     setLastSavedTranscript(initialTranscript);
     setTranscriptChanged(false);
-  }, [currentDetailedAdmission?.transcript, selectedAdmission]);
+
+    admissionStateForAutoSaveRef.current = {
+      patientId: patient?.id,
+      admissionId: currentDetailedAdmission?.id,
+      transcriptToSave: initialTranscript,
+      lastSaved: initialTranscript,
+    };
+  }, [currentDetailedAdmission?.id, currentDetailedAdmission?.transcript, patient?.id]);
+
+  useEffect(() => {
+    if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === currentDetailedAdmission?.id) {
+      admissionStateForAutoSaveRef.current.transcriptToSave = editableTranscript;
+      admissionStateForAutoSaveRef.current.lastSaved = lastSavedTranscript; // Keep ref in sync with actual last saved state
+    }
+  }, [editableTranscript, lastSavedTranscript, currentDetailedAdmission?.id]);
+
 
   const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
   const socketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  const performSave = async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
+    if (transcriptToSave !== currentLastSaved) {
+      console.log(`Attempting to save. Changed: ${transcriptToSave !== currentLastSaved}. To Save: "${transcriptToSave.substring(0,100)}...", Last Saved: "${currentLastSaved.substring(0,100)}..."`);
+      try {
+        await supabaseDataService.updateAdmissionTranscript(patientId, admissionId, transcriptToSave);
+        // Only update component state if this save pertains to the currently viewed admission
+        if (admissionId === currentDetailedAdmission?.id) {
+            setLastSavedTranscript(transcriptToSave);
+            setTranscriptChanged(false);
+        }
+        // Always update the ref if it was for this admission, to mark it as saved in the ref too
+        if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === admissionId) {
+            admissionStateForAutoSaveRef.current.lastSaved = transcriptToSave;
+        }
+        console.log("Transcript saved successfully via performSave for admission:", admissionId);
+        return true;
+      } catch (error) {
+        console.error("Error saving transcript via performSave for admission:", admissionId, error);
+        return false;
+      }
+    } else {
+        // If no actual change, but transcriptChanged was true for the current admission, reset it.
+        if (transcriptChanged && admissionId === currentDetailedAdmission?.id){
+            setTranscriptChanged(false);
+        }
+    }
+    return false;
+  };
+  
   const handleSaveTranscript = async () => {
-    if (!patient || !currentDetailedAdmission) {
-      console.warn("Cannot save: Patient or admission data missing.");
+    if (!patient?.id || !currentDetailedAdmission?.id) {
+      console.warn("Cannot save: Patient or admission data missing for current view.");
       return;
     }
-    if (editableTranscript !== lastSavedTranscript) {
-      try {
-        await supabaseDataService.updateAdmissionTranscript(patient.id, currentDetailedAdmission.id, editableTranscript);
-        setLastSavedTranscript(editableTranscript);
-        setTranscriptChanged(false);
-        console.log("Transcript saved.");
-      } catch (error) {
-        console.error("Error saving transcript:", error);
-      }
-    }
+    performSave(patient.id, currentDetailedAdmission.id, editableTranscript, lastSavedTranscript);
   };
-
+  
   useEffect(() => {
-    return () => {
-      if (transcriptChanged) {
-        handleSaveTranscript();
+    const autoSaveOnCleanup = () => {
+      const stateToSave = admissionStateForAutoSaveRef.current;
+      if (stateToSave && stateToSave.patientId && stateToSave.admissionId && (stateToSave.transcriptToSave !== stateToSave.lastSaved)) {
+        console.log(`Auto-saving transcript for previous/unmounting admission ${stateToSave.admissionId}`);
+        // Fire and forget for cleanup
+        performSave(stateToSave.patientId, stateToSave.admissionId, stateToSave.transcriptToSave, stateToSave.lastSaved);
       }
     };
-  }, [transcriptChanged, selectedAdmission]);
+    return autoSaveOnCleanup;
+  }, [currentDetailedAdmission?.id]); // This effect's primary trigger for cleanup is currentDetailedAdmission.id changing
 
   const getCursorPosition = () => {
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && transcriptAreaRef.current && transcriptAreaRef.current.contains(selection.anchorNode)) {
+    const editor = transcriptAreaRef.current;
+    if (selection && selection.rangeCount > 0 && editor && editor.contains(selection.anchorNode)) {
       const range = selection.getRangeAt(0);
-      return range.startOffset;
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editor);
+      preCaretRange.setEnd(range.startContainer, range.startOffset);
+      return preCaretRange.toString().length;
     }
     return null;
   };
@@ -101,11 +151,9 @@ export default function ConsultationTab({
     }
     if (isTranscribing && !isPaused) return;
 
-    if (document.activeElement === transcriptAreaRef.current) {
-      setCursorPosition(getCursorPosition());
-    } else {
-      setCursorPosition(null);
-    }
+    const currentCursor = getCursorPosition();
+    setCursorPosition(currentCursor);
+    console.log("Starting transcription, cursor at:", currentCursor);
 
     let admissionToUse = currentDetailedAdmission;
 
@@ -116,16 +164,10 @@ export default function ConsultationTab({
         return;
       }
       admissionToUse = newAdmission;
-      if (!admissionToUse && selectedAdmission){
-        admissionToUse = selectedAdmission;
-      }
-      if (!admissionToUse) {
-         alert("Error: Could not determine active admission for new transcription.");
-         return;
-      }
       setEditableTranscript("");
       setLastSavedTranscript("");
       setTranscriptChanged(false);
+      setCursorPosition(0);
     } else if (!admissionToUse) {
         alert("No active consultation selected. Cannot start transcription.");
         return;
@@ -134,9 +176,10 @@ export default function ConsultationTab({
     if (isPaused) {
        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
         mediaRecorderRef.current.resume();
+        setIsPaused(false);
+        setIsTranscribing(true);
+        console.log("Resumed transcription");
       }
-      setIsPaused(false);
-      setIsTranscribing(true);
       return;
     }
 
@@ -144,7 +187,7 @@ export default function ConsultationTab({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const ws = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true',
+        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=false',
         ['token', apiKey]
       );
       socketRef.current = ws;
@@ -153,24 +196,28 @@ export default function ConsultationTab({
       ws.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
-          if (data && data.channel && data.is_final) {
-            const newTextChunk = data.channel.alternatives[0]?.transcript || '';
-            if (newTextChunk) {
-              setEditableTranscript((prev) => {
-                const currentText = prev || '';
-                let finalText;
-                if (cursorPosition !== null && cursorPosition <= currentText.length) {
-                  finalText = currentText.slice(0, cursorPosition) + newTextChunk + ' ' + currentText.slice(cursorPosition);
-                  setCursorPosition(cursorPosition + newTextChunk.length + 1);
+          if (data && data.channel && data.is_final && data.channel.alternatives[0].transcript) {
+            const newTextChunk = data.channel.alternatives[0].transcript;
+            if (newTextChunk.trim() !== '') {
+              setEditableTranscript((prevText) => {
+                const currentText = prevText || ''; // Ensure currentText is not null
+                let newComposedText;
+                let nextCursorPos = cursorPosition; // Use the state value of cursorPosition at the time of this update
+
+                if (nextCursorPos !== null && nextCursorPos >= 0 && nextCursorPos <= currentText.length) {
+                  newComposedText = currentText.slice(0, nextCursorPos) + newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ') + currentText.slice(nextCursorPos);
+                  nextCursorPos = nextCursorPos + newTextChunk.length + (newTextChunk.endsWith(' ') ? 0 : 1);
                 } else {
-                  finalText = (currentText ? currentText + '\n' : '') + newTextChunk;
+                  newComposedText = currentText + (currentText.length > 0 && !currentText.endsWith(' ') && !newTextChunk.startsWith(' ') ? ' ' : '') + newTextChunk;
+                  nextCursorPos = newComposedText.length;
                 }
+                setCursorPosition(nextCursorPos); // Update for the *next* chunk or user interaction
                 setTranscriptChanged(true);
-                return finalText;
+                return newComposedText;
               });
             }
           }
-        } catch (_) {}
+        } catch (_) { /* console.error("Error processing ws message", _); */ }
       };
 
       ws.onopen = () => {
@@ -182,15 +229,36 @@ export default function ConsultationTab({
         mediaRecorder.start(250);
         setIsTranscribing(true);
         setIsPaused(false);
+        console.log("Transcription started via WebSocket.");
       };
 
-      ws.onclose = () => {
-        mediaRecorder.stop();
-        stream.getTracks().forEach(track => track.stop());
+      ws.onclose = (event) => {
+        console.log("WebSocket closed", event.reason, event.code);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.stop();
+        }
+        if (stream && typeof stream.getTracks === 'function') { // Check if stream and getTracks exist
+            stream.getTracks().forEach(track => track.stop());
+        }
+        setIsTranscribing(false);
+        setIsPaused(false);
       };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setIsTranscribing(false);
+        setIsPaused(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.stop();
+        }
+        if (stream && typeof stream.getTracks === 'function') {
+            stream.getTracks().forEach(track => track.stop());
+        }
+      }
+
     } catch (err: unknown) {
-      console.error('Error starting transcription', err);
-      alert(`Error starting transcription: ${err instanceof Error ? err.message : String(err)}`);
+      console.error('Error starting transcription system', err);
+      alert(`Error starting transcription system: ${err instanceof Error ? err.message : String(err)}`);
       setIsTranscribing(false);
       setIsPaused(false);
     }
@@ -200,20 +268,27 @@ export default function ConsultationTab({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
+      console.log("Transcription paused.");
     }
   };
 
   const stopTranscriptionAndSave = () => {
-    if (mediaRecorderRef.current) {
+    console.log("Stop & Save initiated.");
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify({ type: 'CloseStream' }));
-      socketRef.current.close();
+      // ws.onclose will handle setIsTranscribing(false), setIsPaused(false)
+      socketRef.current.close(); 
+    } else {
+      setIsTranscribing(false);
+      setIsPaused(false);
     }
-    setIsTranscribing(false);
-    setIsPaused(false);
-    handleSaveTranscript();
+    
+    setTimeout(() => {
+      handleSaveTranscript();
+    }, 250); // Increased delay further, ensure all state updates from WS close/stop are processed
   };
 
   const handleTranscriptChange = (newText: string) => {
@@ -222,22 +297,28 @@ export default function ConsultationTab({
       setTranscriptChanged(true);
     }
   };
+  
+  useEffect(() => {
+    // This effect attempts to manage cursor position after programmatic changes to contentEditable.
+    // It is inherently tricky with dangerouslySetInnerHTML.
+    // The primary goal here is to ensure the div is focusable and basic interaction is possible.
+    // Advanced cursor management might require a more robust rich text editor solution.
+    if (transcriptAreaRef.current && cursorPosition !== null && document.activeElement === transcriptAreaRef.current) {
+        // No explicit action needed here for now if using innerText for onInput and selectionchange for cursor tracking
+        // as dangerouslySetInnerHTML will overwrite the DOM.
+        // The cursor logic in `startTranscription` and `ws.onmessage` tries to handle insertion points.
+    }
+  }, [editableTranscript, cursorPosition]); // Rerun when transcript or target cursor changes.
 
   const showStartTranscriptionOverlay = !isStartingNewConsultation && !currentDetailedAdmission?.transcript && !editableTranscript && !isTranscribing;
 
-  const handleSelectionChange = () => {
-    if (transcriptAreaRef.current && document.activeElement === transcriptAreaRef.current) {
-        const pos = getCursorPosition();
-        if (pos !== null) setCursorPosition(pos);
-    }
+  const handleDivFocus = () => {
+    setCursorPosition(getCursorPosition());
   };
 
-  useEffect(() => {
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-    };
-  }, [transcriptAreaRef.current]);
+  const handleDivKeyUpOrMouseUp = () => { // Combined for simplicity
+    setCursorPosition(getCursorPosition());
+  };
 
   return (
     <div className={cn("p-6 grid lg:grid-cols-3 gap-6", isStartingNewConsultation ? "lg:grid-cols-1" : "")}>
@@ -345,6 +426,9 @@ export default function ConsultationTab({
               contentEditable={!isTranscribing}
               suppressContentEditableWarning
               onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerText)}
+              onFocus={handleDivFocus}
+              onKeyUp={handleDivKeyUpOrMouseUp}
+              onMouseUp={handleDivKeyUpOrMouseUp}
               className="whitespace-pre-wrap outline-none p-1 min-h-[calc(60vh-40px)]"
               dangerouslySetInnerHTML={{ __html: editableTranscript }}
             />
