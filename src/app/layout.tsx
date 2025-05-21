@@ -3,13 +3,11 @@
 import React from 'react';
 import './globals.css';
 import { Metadata } from 'next';
-import dynamic from 'next/dynamic';
+
 import PlasmaBackground from '../components/PlasmaBackground';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
 import MotionWrapper from '../components/MotionWrapper';
-
-const IridescentBg = dynamic(() => import('../components/IridescentCanvas'));
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -39,7 +37,6 @@ export default function RootLayout({
             </React.Suspense>
           </main>
         </div>
-        {process.env.NEXT_PUBLIC_ENABLE_NEW_UI !== 'false' && <IridescentBg />}
       </body>
     </html>
   );

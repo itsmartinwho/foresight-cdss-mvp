@@ -56,9 +56,6 @@ module.exports = {
           2: "hsl(var(--surface-2) / <alpha-value>)",
           3: "hsl(var(--surface-3) / <alpha-value>)",
         },
-        "accent-secondary": "hsl(var(--accent-secondary) / <alpha-value>)",
-        "accent-tertiary": "hsl(var(--accent-tertiary) / <alpha-value>)",
-        /* --------------------------------------------------------------- */
         glass: "rgba(255, 255, 255, 0.15)",
         glassHover: "rgba(255, 255, 255, 0.18)",
         neon: "#5ff3ff",

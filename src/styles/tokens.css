@@ -4,6 +4,21 @@
   /* These values are taken from the new UI brief (see conversation).  */
   /* ------------------------------------------------------------------*/
 
+  /* ----- New surface tokens (UI refresh) ----- */
+  --surface-0: 218 16% 10%;   /* near black (dialogs etc) */
+  --surface-1: 218 16% 15%;   /* dark grey (cards etc) */
+  --surface-2: 218 16% 20%;   /* medium grey (hovers etc) */
+  --surface-3: 218 16% 25%;   /* light grey (borders etc) */
+
+  /* ----- New accent tokens (UI refresh) ----- */
+  /* Primary is still --accent / --neon-val */
+  
+  
+  
+
+  /* Legacy colors (gradual phase-out) */
+  --legacy-blue-primary: 217 89% 61%;
+
   /* Neutral surface stack (light theme) */
   --surface-0: 0 0% 100%;     /* pure white – intended to be used with /alpha */
   --surface-1: 210 20% 99%;   /* very light cool gray */
@@ -11,9 +26,9 @@
   --surface-3: 210 14% 93%;   /* mid-light cool gray */
 
   /* Accent / brand hues (iridescent triad) */
-  --accent-primary: 178 77% 55%;    /* #30e6e0 converted to HSL */
-  --accent-secondary: 260 100% 86%; /* soft lavender */
-  --accent-tertiary: 24 100% 86%;   /* soft peach */
+  
+  
+  
 
   /* Shadow colour (used for translucent shadows) */
   --shadow: 210 10% 34%;
