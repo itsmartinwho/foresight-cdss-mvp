@@ -1,3 +1,5 @@
+'use client';
+
 import ForesightApp from "@/components/ForesightApp";
 import React from 'react';
 
