@@ -12,6 +12,49 @@ const AdvisorView: React.FC = () => {
   // Store the EventSource instance
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  // Helper to append a structured element to the streaming assistant message
+  const appendStructuredElement = (element: ContentElement) => {
+    setMessages((prevMessages) => {
+      const lastAssistantIndex = prevMessages.findIndex(
+        (m) => m.role === "assistant" && m.isStreaming
+      );
+      if (lastAssistantIndex === -1) {
+        // If no streaming assistant message is found, it might be that the placeholder wasn't added
+        // or the stream started sending data before the placeholder was set.
+        // Create a new streaming message.
+        console.warn("No streaming assistant message found, creating new one to append structured element.");
+        const newStreamingMessage: ChatMessage = {
+          id: `msg-${Date.now()}-streaming-recovery-${prevMessages.length}`,
+          role: "assistant",
+          content: {
+            content: [element],
+            isFallback: false,
+            fallbackMarkdown: "",
+          } as AssistantMessageContent,
+          isStreaming: true,
+        };
+        return [...prevMessages, newStreamingMessage];
+      }
+      const messagesCopy = [...prevMessages];
+      const targetMsg = messagesCopy[lastAssistantIndex];
+      const currentContent = targetMsg.content as AssistantMessageContent;
+      const updatedContent: AssistantMessageContent = {
+        ...currentContent,
+        content: Array.isArray(currentContent.content)
+          ? [...currentContent.content, element]
+          : [element],
+        isFallback: false, // Ensure fallback is off when a structured element arrives
+        fallbackMarkdown: "", // Clear any fallback markdown
+      };
+      messagesCopy[lastAssistantIndex] = {
+        ...targetMsg,
+        content: updatedContent,
+        isStreaming: true,
+      };
+      return messagesCopy;
+    });
+  };
+
   // Function to close the EventSource - Defined in component scope
   const closeEventSource = () => {
     if (eventSourceRef.current) {
@@ -44,9 +87,7 @@ const AdvisorView: React.FC = () => {
       const apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
 
       try {
-        // const eventSource = new EventSource(
-        //   "http://localhost:3001/api/v1/advisor/events" // Old hardcoded URL
-        // );
+        console.debug("Opening SSE to", apiUrl);
         const eventSource = new EventSource(apiUrl);
 
         eventSourceRef.current = eventSource;
@@ -71,9 +112,26 @@ const AdvisorView: React.FC = () => {
           try {
             const data = JSON.parse(ev.data);
 
-            // Handle structured elements directly by checking for data.element
-            if (data.element && VALID_ELEMENT_TYPES.includes(data.element)) {
-                // This is a structured element
+            // 1. New branch – handle server-wrapped structured blocks
+            if (data.type === "structured_block" && data.element) {
+              appendStructuredElement(data.element as ContentElement);
+              return; // handled
+            }
+
+            // 2. Legacy direct-element support (if server ever sends raw element objects)
+            if (
+              data.element &&
+              typeof data.element === "string" &&
+              (VALID_ELEMENT_TYPES as readonly string[]).includes(data.element)
+            ) {
+              appendStructuredElement(data as ContentElement);
+              return; // handled
+            }
+
+            // 3. Handle the rest by data.type switch
+            switch (data.type) {
+              case "fallback_initiated": {
+                // Find the index of the last assistant message
                 const lastAssistantMessageIndex = messages.findIndex(
                   (msg) => msg.role === "assistant" && msg.isStreaming
                 );
@@ -82,189 +140,140 @@ const AdvisorView: React.FC = () => {
                   setMessages((prevMessages) => {
                     const prevMessagesCopy = [...prevMessages];
                     const lastAssistantMessage = prevMessagesCopy[lastAssistantMessageIndex];
+
+                     // Ensure the content property is treated as AssistantMessageContent
                     const currentContent = lastAssistantMessage.content as AssistantMessageContent;
 
+                    // Mark the message as fallback
                     const updatedContent: AssistantMessageContent = {
                         ...currentContent,
-                        content: Array.isArray(currentContent.content) ? [...currentContent.content, data] : [data], // data is the element itself
-                        isFallback: false,
-                        fallbackMarkdown: ""
+                        content: Array.isArray(currentContent.content) ? currentContent.content : [], // Preserve structured content if any
+                        isFallback: true, // Engage fallback
+                        fallbackMarkdown: currentContent.fallbackMarkdown || "" // Keep existing or initialize
                     };
 
+                     // Update the message in the array
                     prevMessagesCopy[lastAssistantMessageIndex] = {
                         ...lastAssistantMessage,
                          content: updatedContent,
-                         isStreaming: true,
+                         isStreaming: true, // Still streaming until stream_end
                     };
+
                     return prevMessagesCopy;
                   });
                 } else {
-                   // This case should ideally be covered by the placeholder message added when EventSource opens
-                   console.warn("Structured block received but no streaming assistant message found. This might indicate an issue.");
-                   // Fallback: Create a new message if necessary, though the placeholder should prevent this.
-                   const newAssistantMessage: ChatMessage = {
-                        id: `msg-${Date.now()}-structured-unexpected-${messages.length}`,
+                  // If no streaming assistant message found, create a new fallback message
+                   const newFallbackMessage: ChatMessage = {
+                        id: `msg-${Date.now()}-fallback-${messages.length}`,
                         role: "assistant",
                         content: {
-                            content: [data], // data is the element
-                            isFallback: false,
+                            content: [],
+                            isFallback: true,
                             fallbackMarkdown: ""
-                        } as AssistantMessageContent,
+                        } as AssistantMessageContent, // Cast to AssistantMessageContent
                         isStreaming: true,
                    }
-                   setMessages((prevMessages) => [...prevMessages, newAssistantMessage]);
+                   setMessages((prevMessages) => [...prevMessages, newFallbackMessage]);
                 }
-            } else {
-                // Handle other event types based on data.type
-                switch (data.type) {
-                  // case "structured_block": // This case is now handled by the if (data.element) block above
-                  //   break;
+                break;
+              }
 
-                  case "fallback_initiated": {
-                    // Find the index of the last assistant message
-                    const lastAssistantMessageIndex = messages.findIndex(
-                      (msg) => msg.role === "assistant" && msg.isStreaming
-                    );
+              case "markdown_chunk": {
+                 // Find the index of the last assistant message which is in fallback mode and streaming
+                const lastFallbackMessageIndex = messages.findIndex(
+                  (msg) => msg.role === "assistant" && (msg.content as AssistantMessageContent).isFallback && msg.isStreaming
+                );
 
-                    if (lastAssistantMessageIndex !== -1) {
-                      setMessages((prevMessages) => {
-                        const prevMessagesCopy = [...prevMessages];
-                        const lastAssistantMessage = prevMessagesCopy[lastAssistantMessageIndex];
+                if (lastFallbackMessageIndex !== -1) {
+                   setMessages((prevMessages) => {
+                    const prevMessagesCopy = [...prevMessages];
+                    const lastFallbackMessage = prevMessagesCopy[lastFallbackMessageIndex];
 
-                         // Ensure the content property is treated as AssistantMessageContent
-                        const currentContent = lastAssistantMessage.content as AssistantMessageContent;
+                    // Ensure the content property is treated as AssistantMessageContent
+                    const currentContent = lastFallbackMessage.content as AssistantMessageContent;
 
-                        // Mark the message as fallback
-                        const updatedContent: AssistantMessageContent = {
-                            ...currentContent,
-                            content: Array.isArray(currentContent.content) ? currentContent.content : [], // Preserve structured content if any
-                            isFallback: true, // Engage fallback
-                            fallbackMarkdown: currentContent.fallbackMarkdown || "" // Keep existing or initialize
-                        };
+                    // Append markdown content
+                    const updatedContent: AssistantMessageContent = {
+                        ...currentContent,
+                        fallbackMarkdown: (currentContent.fallbackMarkdown || "") + data.content, // Append markdown chunk
+                    };
 
-                         // Update the message in the array
-                        prevMessagesCopy[lastAssistantMessageIndex] = {
-                            ...lastAssistantMessage,
-                             content: updatedContent,
-                             isStreaming: true, // Still streaming until stream_end
-                        };
+                    // Update the message in the array
+                    prevMessagesCopy[lastFallbackMessageIndex] = {
+                         ...lastFallbackMessage,
+                         content: updatedContent,
+                         isStreaming: true, // Still streaming until stream_end
+                    };
 
-                        return prevMessagesCopy;
-                      });
-                    } else {
-                      // If no streaming assistant message found, create a new fallback message
-                       const newFallbackMessage: ChatMessage = {
-                            id: `msg-${Date.now()}-fallback-${messages.length}`,
-                            role: "assistant",
-                            content: {
-                                content: [],
-                                isFallback: true,
-                                fallbackMarkdown: ""
-                            } as AssistantMessageContent, // Cast to AssistantMessageContent
-                            isStreaming: true,
-                       }
-                       setMessages((prevMessages) => [...prevMessages, newFallbackMessage]);
+                    return prevMessagesCopy;
+                  });
+                } else {
+                    // This case shouldn't ideally happen if fallback_initiated is sent first,
+                    // but if a markdown chunk arrives without a preceding fallback_initiated,
+                    // create a new fallback message.
+                    const newMarkdownMessage: ChatMessage = {
+                        id: `msg-${Date.now()}-markdown-chunk-${messages.length}`,
+                        role: "assistant",
+                         content: {
+                            content: [],
+                            isFallback: true,
+                            fallbackMarkdown: data.content,
+                        } as AssistantMessageContent, // Cast to AssistantMessageContent
+                        isStreaming: true,
                     }
-                    break;
-                  }
-
-                  case "markdown_chunk": {
-                     // Find the index of the last assistant message which is in fallback mode and streaming
-                    const lastFallbackMessageIndex = messages.findIndex(
-                      (msg) => msg.role === "assistant" && (msg.content as AssistantMessageContent).isFallback && msg.isStreaming
-                    );
-
-                    if (lastFallbackMessageIndex !== -1) {
-                       setMessages((prevMessages) => {
-                        const prevMessagesCopy = [...prevMessages];
-                        const lastFallbackMessage = prevMessagesCopy[lastFallbackMessageIndex];
-
-                        // Ensure the content property is treated as AssistantMessageContent
-                        const currentContent = lastFallbackMessage.content as AssistantMessageContent;
-
-                        // Append markdown content
-                        const updatedContent: AssistantMessageContent = {
-                            ...currentContent,
-                            fallbackMarkdown: (currentContent.fallbackMarkdown || "") + data.content, // Append markdown chunk
-                        };
-
-                        // Update the message in the array
-                        prevMessagesCopy[lastFallbackMessageIndex] = {
-                             ...lastFallbackMessage,
-                             content: updatedContent,
-                             isStreaming: true, // Still streaming until stream_end
-                        };
-
-                        return prevMessagesCopy;
-                      });
-                    } else {
-                        // This case shouldn't ideally happen if fallback_initiated is sent first,
-                        // but if a markdown chunk arrives without a preceding fallback_initiated,
-                        // create a new fallback message.
-                        const newMarkdownMessage: ChatMessage = {
-                            id: `msg-${Date.now()}-markdown-chunk-${messages.length}`,
-                            role: "assistant",
-                             content: {
-                                content: [],
-                                isFallback: true,
-                                fallbackMarkdown: data.content,
-                            } as AssistantMessageContent, // Cast to AssistantMessageContent
-                            isStreaming: true,
-                        }
-                        setMessages((prevMessages) => [...prevMessages, newMarkdownMessage]);
-                    }
-                    break;
-                  }
-
-                  case "error": {
-                    // Handle errors from the server
-                    console.error("Server error message:", data.message);
-                     const errorMessage: ChatMessage = {
-                       id: `msg-${Date.now()}-error-${messages.length}`,
-                       role: "assistant",
-                       content: {
-                           content: [],
-                           isFallback: true,
-                           fallbackMarkdown: `Error: ${data.message}` // Display error as markdown
-                       } as AssistantMessageContent,
-                       isStreaming: false, // Streaming stops on error
-                     }
-                     setMessages((prevMessages) => [...prevMessages, errorMessage]);
-                    setIsLoading(false);
-                    closeEventSource(); // Close the stream on error
-                    break;
-                  }
-
-                  case "stream_end": {
-                    // The stream has ended gracefully
-                    console.log("Stream ended.");
-                    // Find the index of the last assistant message that is streaming
-                    const lastStreamingMessageIndex = messages.findIndex(
-                      (msg) => msg.role === "assistant" && msg.isStreaming
-                    );
-
-                    if (lastStreamingMessageIndex !== -1) {
-                       setMessages((prevMessages) => {
-                        const prevMessagesCopy = [...prevMessages];
-                        const lastStreamingMessage = prevMessagesCopy[lastStreamingMessageIndex];
-
-                        // Mark the message as not streaming
-                        prevMessagesCopy[lastStreamingMessageIndex] = {
-                             ...lastStreamingMessage,
-                             isStreaming: false,
-                        };
-                        return prevMessagesCopy;
-                      });
-                    }
-
-                    setIsLoading(false);
-                    closeEventSource(); // Close the stream when done
-                    break;
-                  }
-
-                  default:
-                    console.warn("Unknown event type:", data.type);
+                    setMessages((prevMessages) => [...prevMessages, newMarkdownMessage]);
                 }
+                break;
+              }
+
+              case "error": {
+                // Handle errors from the server
+                console.error("Server error message:", data.message);
+                 const errorMessage: ChatMessage = {
+                   id: `msg-${Date.now()}-error-${messages.length}`,
+                   role: "assistant",
+                   content: {
+                       content: [],
+                       isFallback: true,
+                       fallbackMarkdown: `Error: ${data.message}` // Display error as markdown
+                   } as AssistantMessageContent,
+                   isStreaming: false, // Streaming stops on error
+                 }
+                 setMessages((prevMessages) => [...prevMessages, errorMessage]);
+                setIsLoading(false);
+                closeEventSource(); // Close the stream on error
+                break;
+              }
+
+              case "stream_end": {
+                // The stream has ended gracefully
+                console.log("Stream ended.");
+                // Find the index of the last assistant message that is streaming
+                const lastStreamingMessageIndex = messages.findIndex(
+                  (msg) => msg.role === "assistant" && msg.isStreaming
+                );
+
+                if (lastStreamingMessageIndex !== -1) {
+                   setMessages((prevMessages) => {
+                    const prevMessagesCopy = [...prevMessages];
+                    const lastStreamingMessage = prevMessagesCopy[lastStreamingMessageIndex];
+
+                    // Mark the message as not streaming
+                    prevMessagesCopy[lastStreamingMessageIndex] = {
+                         ...lastStreamingMessage,
+                         isStreaming: false,
+                    };
+                    return prevMessagesCopy;
+                  });
+                }
+
+                setIsLoading(false);
+                closeEventSource(); // Close the stream when done
+                break;
+              }
+
+              default:
+                console.warn("Unknown event type:", data.type);
             }
           } catch (parseError) {
             console.error("Failed to parse SSE data:", ev.data, parseError);
