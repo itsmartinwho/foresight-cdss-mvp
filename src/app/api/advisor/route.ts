@@ -1,59 +1,14 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
-import { VALID_ELEMENT_TYPES } from "@/components/advisor/chat-types"; // Import from chat-types
 
 // 1. Model routing (default to gpt-4.1-mini)
-// 2. Define the streaming tool
-// 3. Invoke chat-completions with streaming
-// 4. Backend SSE parsing of tool calls
-// 5. Client-side rendering (handled by client)
-// 6. Markdown fallback triggers
-// 7. streamMarkdownOnly implementation
-// 8. Security and recovery (DOMPurify on client, discard empty tool args)
+// 2. Invoke chat-completions with streaming
+// 3. Client-side rendering (handled by client)
+// 4. Markdown fallback triggers
+// 5. streamMarkdownOnly implementation
+// 6. Security and recovery (DOMPurify on client, discard empty tool args)
 
-const newSystemPromptBase = "You are Foresight, a medical advisor helping US physicians.";
-
-// Corrected Tool Definition (OpenAI expects the 'function' object directly in the array)
-const addElementFunctionDefinition = {
-  name: "add_element",
-  description: "Emit one UI block: paragraph, unordered_list, ordered_list, table, or references",
-  parameters: {
-    type: "object",
-    properties: {
-      element: { type: "string", enum: ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const },
-      text: { type: "string", description: "Text content for paragraph." },
-      items: { type: "array", items: { type: "string" }, description: "Array of strings for list items." },
-      table: {
-        type: "array",
-        items: { type: "array", items: { type: "string" } },
-        description: "2D array for table data. First inner array is header, subsequent are rows."
-      },
-      references: {
-        type: "object",
-        additionalProperties: { type: "string" },
-        description: "Key-value pairs for references, e.g., { \"ref1\": \"Citation text...\" }"
-      }
-    },
-    required: ["element"]
-  }
-} as const; // Use 'as const' for stricter type inference
-
-// const VALID_ELEMENT_TYPES = ["paragraph", "unordered_list", "ordered_list", "table", "references"] as const; // Remove local definition
-
-// Refined bracesBalanced: checks for a syntactically complete JSON object structure
-function bracesBalanced(str: string): boolean {
-  if (!str) return false;
-  const trimmed = str.trim();
-  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return false;
-
-  let balance = 0;
-  for (const char of trimmed) {
-    if (char === '{') balance++;
-    if (char === '}') balance--;
-    if (balance < 0) return false; // Closing brace before an opening one
-  }
-  return balance === 0; // True if braces are balanced and structure seems complete
-}
+const systemPrompt = "You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -172,30 +127,11 @@ export async function GET(req: NextRequest) {
     const model = "gpt-4.1";
     
     // Prepare messages for OpenAI: prepend system prompt
-    const messagesForOpenAI = [
-        { role: "system" as const, content: newSystemPromptBase },
-        ...messages.filter(m => m.role === "user" || m.role === "assistant") // Ensure only user/assistant messages are spread
-    ];
     const messagesForMarkdown = [
-        { role: "system" as const, content: `${newSystemPromptBase} Respond in GitHub-flavored Markdown only.` },
-        ...messages.filter(m => m.role === "user" || m.role === "assistant")
-    ];
-    const messagesForToolCalls = [
-        { role: "system" as const, content:
-          `${newSystemPromptBase}
-           You are a medical advisor. Your response MUST be entirely constructed by making a sequence of 'add_element' function calls.
-           Do NOT output any text directly. ALL content must be within an 'add_element' call.
-           Break down your complete answer into logical UI blocks: paragraphs, lists, tables, or references.
-           For EACH block, make one 'add_element' function call.
-           After one 'add_element' call, if more information is needed to fully answer the user's query, you MUST make another 'add_element' call.
-           Continue making 'add_element' calls sequentially until the user's entire query is comprehensively answered.
-           For example, to answer a question requiring an introductory paragraph, then a list of symptoms, then a paragraph about treatments, you would make three 'add_element' calls in sequence.
-           Ensure all information is delivered via these function calls.`
-        },
+        { role: "system" as const, content: systemPrompt },
         ...messages.filter(m => m.role === "user" || m.role === "assistant")
     ];
 
-    const isGreetingOrTest = /^[ \t]*(hello|hi|help|test|ping)[!?.]?$/i.test(userInputForGreetingCheck);
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({

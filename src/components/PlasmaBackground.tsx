@@ -99,6 +99,8 @@ const vertexShader = `
 
 const fragmentShader = `
   precision highp float; // Necessary for some mobile devices
+  #extension GL_OES_standard_derivatives : enable
+
   uniform vec2 u_resolution;
   uniform float u_time;
   uniform vec3 u_viewDirection; // Added for specular calculation
@@ -106,67 +108,62 @@ const fragmentShader = `
 
   ${noiseGLSL} // Include the noise function
 
-  // Constants for plasma effect - tweak these!
-  const float PLASMA_SCALE = 0.8; // DEBUG: broader, slower variation
-  const float TIME_SPEED = 0.05; // How fast the pattern evolves
-  // const float COLOR_FREQ_R = 0.8; // Original color settings commented out
-  // const float COLOR_FREQ_G = 0.7;
-  // const float COLOR_FREQ_B = 0.9;
-  // const float COLOR_PHASE_R = 0.0;
-  // const float COLOR_PHASE_G = 1.0; 
-  // const float COLOR_PHASE_B = 2.0;
-  // const float BRIGHTNESS = 1.5; 
-  // const float CONTRAST = 0.4; 
+  // Fractal Brownian Motion
+  float fbm(vec3 p) {
+    float v = 0.0;
+    float amp = 0.5;
+    // Loop unrolling for older GLSL versions / performance
+    v += amp * snoise(p); p *= 2.0; amp *= 0.5;
+    v += amp * snoise(p); p *= 2.0; amp *= 0.5;
+    v += amp * snoise(p); p *= 2.0; amp *= 0.5;
+    v += amp * snoise(p); // p *= 2.0; amp *= 0.5; // 4 octaves
+    return v;
+  }
+
+  // HSL to RGB conversion
+  // Source: https://stackoverflow.com/a/17897228/131264
+  vec3 hsl2rgb(vec3 c) {
+    vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
+    return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
+  }
+
 
   void main() {
-    vec2 scaledUv = vUv * PLASMA_SCALE; 
-    float time = u_time * TIME_SPEED;
+    // Use FBM for noise
+    float n = fbm(vec3(vUv * 1.2, u_time * 0.03)); // Adjusted scale and speed for FBM
 
-    float noiseValue = snoise(vec3(scaledUv * 2.0, time));
+    // Dynamic Pastel Hue Mapping
+    float hueBase = 0.65;      // tealish base (0.0-1.0)
+    float hueRange = 0.1;      // ± variation
+    float hue = mod(hueBase + (n - 0.5) * hueRange + u_time * 0.02, 1.0);
+    vec3 baseColor = hsl2rgb(vec3(hue, 0.6, 0.8)); // Saturation 0.6, Lightness 0.8
 
-    // Original color calculation commented out
-    // float r = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
-    // float g = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
-    // float b = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
-    // vec3 color = vec3(r, g, b);
-    // color = (color - 0.5) * (1.0 + CONTRAST) + 0.5; 
-    // color *= BRIGHTNESS; 
-    // color = clamp(color, 0.0, 1.0);
+    // Animated Specular Sheen
+    vec3 lightDir = normalize(vec3(sin(u_time * 0.1), cos(u_time * 0.1), 0.6));
+    vec3 viewDir = normalize(u_viewDirection);
 
-    // --- New Metallic-Sheen Logic ---
+    // Normals from FBM derivatives
+    // Ensure GL_OES_standard_derivatives is enabled
+    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.05)); // Small Z component to avoid flat normal if n is flat.
+                                                        // May need adjustment based on how n varies.
+                                                        // Alternative: vec3(dFdx(n * some_scalar), dFdy(n * some_scalar), 1.0)
 
-    // Base color from noise (can be simpler than original multi-channel)
-    vec3 baseColor = vec3(noiseValue * 0.5 + 0.5); // Simple grayscale from noise
-
-    // Desaturate base hues to near‐silver
-    vec3 silver = vec3(0.92);
-    vec3 finalColor = mix(silver, baseColor, 0.5); // DEBUG: stronger base mix
-
-    // Add specular lighting term (Blinn–Phong)
-    // Assuming a simple normal (e.g., pointing out of the plane)
-    // For a 2D plane in UV space, normal would be (0,0,1)
-    vec3 normal = normalize(vec3(vUv * 2.0 - 1.0, 1.0)); // Simple pseudo-normal based on UV
-                                                       // or just vec3 normal = vec3(0.0, 0.0, 1.0);
-    vec3 lightDir = normalize(vec3(1.0, 1.0, 0.5));
-    vec3 viewDir = normalize(u_viewDirection); // Use uniform
     vec3 halfVec = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfVec), 0.0), 64.0);
-    finalColor += spec * 0.2;  // boost sheen
+    float spec = pow(max(dot(norm, halfVec), 0.0), 32.0); // Specular power 32
+    
+    vec3 finalColor = baseColor + spec * 0.3; // Additive specular
 
-    // Tint micro‐highlights with pastel accents
-    vec3 accentLav = vec3(0.847, 0.706, 0.996);
-    vec3 accentTeal = vec3(0.6, 0.98, 0.89);
-    float highlightMask = smoothstep(0.9, 1.0, noiseValue); // DEBUG: highlight only brightest
-    finalColor += highlightMask * mix(accentLav, accentTeal, mod(u_time * 0.1, 1.0)); // Slower accent modulation
+    // Optional contrast boost
+    finalColor = mix(vec3(0.5), finalColor, 1.2); // Boost mid-tones
 
-    // Clamp final color
+    // Clamp final color before vignette
     finalColor = clamp(finalColor, 0.0, 1.0);
 
-    // Subtle vignette effect (can be kept or adjusted)
+    // Subtle vignette effect (applied last to combined color)
     float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
     finalColor *= vignette * 0.8 + 0.2; 
 
-    gl_FragColor = vec4(finalColor, 0.35); // DEBUG: increased alpha for testing
+    gl_FragColor = vec4(finalColor, 0.4); // Initial alpha for testing
   }
 `;
 
@@ -195,8 +192,9 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.height / 2,
     Math.max(canvas.width, canvas.height) / 1.5
   );
-  gradient.addColorStop(0, 'rgba(236,239,241,0.1)');
-  gradient.addColorStop(1, 'rgba(236,239,241,0.05)');
+  gradient.addColorStop(0, 'rgba(214,191,254,0.2)');   // lavender
+  gradient.addColorStop(0.5, 'rgba(236,239,241,0.1)'); // silver
+  gradient.addColorStop(1, 'rgba(153,246,228,0.2)');   // teal
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
@@ -206,10 +204,9 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
 // ------------------
 export default function PlasmaBackground() {
   useEffect(() => {
-    // If already initialised, nothing to do
     if (globalAny.__plasmaSingleton) return;
 
-    const prefersReducedMotion = false; // DEBUG: force animated path
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; // Restored check
 
     const canvas = document.createElement('canvas');
     canvas.id = 'plasma-bg';
@@ -258,14 +255,22 @@ export default function PlasmaBackground() {
 
     const clock = new THREE.Clock();
     let frameId: number;
+
     const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      uniforms.u_time.value = clock.getElapsedTime();
-      // DEBUG logs for uniforms (noiseValue etc. must be examined via shader or GPU debugger)
-      console.log('u_time:', uniforms.u_time.value, 'resolution:', uniforms.u_resolution.value.x, uniforms.u_resolution.value.y, 'viewDir:', uniforms.u_viewDirection.value.x, uniforms.u_viewDirection.value.y, uniforms.u_viewDirection.value.z);
-      renderer.render(scene, camera);
+      // Throttle to ~30 FPS
+      frameId = window.setTimeout(() => {
+        // Check if component might have been unmounted or canvas removed
+        if (!globalAny.__plasmaSingleton || !globalAny.__plasmaSingleton.canvas.isConnected) {
+          return;
+        }
+        uniforms.u_time.value = clock.getElapsedTime();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate); // Call RAF for next "setTimeout gate"
+      }, 33); 
     };
-    animate();
+    
+    // Initial call to start the throttled loop
+    requestAnimationFrame(animate);
 
     const handleResize = () => {
       renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -274,7 +279,7 @@ export default function PlasmaBackground() {
     window.addEventListener('resize', handleResize);
 
     const destroy = () => {
-      cancelAnimationFrame(frameId);
+      clearTimeout(frameId); // Clear timeout on destroy
       window.removeEventListener('resize', handleResize);
       geometry.dispose();
       material.dispose();
