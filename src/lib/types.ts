@@ -125,33 +125,6 @@ export interface DiagnosticResult {
   clinicalTrialMatches: ClinicalTrial[];
 }
 
-export interface TranscriptSegment {
-  speaker: "doctor" | "patient";
-  text: string;
-  timestamp: string;
-}
-
-export interface Transcript {
-  id: string;
-  patientId: string;
-  segments: TranscriptSegment[];
-  startTime: string;
-  endTime?: string;
-  status: "in-progress" | "completed";
-}
-
-export interface ClinicalNote {
-  id: string;
-  patientId: string;
-  transcriptId: string;
-  createdAt: string;
-  updatedAt: string;
-  subjective: string;
-  objective: string;
-  assessment: string;
-  plan: string;
-}
-
 export interface PriorAuthorization {
   patientInformation: {
     name: string;

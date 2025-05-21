@@ -48,16 +48,16 @@ CREATE TABLE IF NOT EXISTS public.visits (
 );
 
 -- Transcripts Table (Separate from visits.transcript for more detailed/versioned transcripts if needed later)
-CREATE TABLE IF NOT EXISTS public.transcripts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  visit_supabase_id UUID REFERENCES public.visits(id) ON DELETE CASCADE, -- FK to visits table internal Supabase UUID
-  -- Alternatively, could link via admission_id if preferred, but internal UUID is safer for DB relations
-  -- admission_id TEXT REFERENCES public.visits(admission_id) ON DELETE CASCADE, 
-  text TEXT,
-  language TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+-- CREATE TABLE IF NOT EXISTS public.transcripts (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   visit_supabase_id UUID REFERENCES public.visits(id) ON DELETE CASCADE, -- FK to visits table internal Supabase UUID
+--   -- Alternatively, could link via admission_id if preferred, but internal UUID is safer for DB relations
+--   -- admission_id TEXT REFERENCES public.visits(admission_id) ON DELETE CASCADE, 
+--   text TEXT,
+--   language TEXT,
+--   created_at TIMESTAMPTZ DEFAULT now(),
+--   updated_at TIMESTAMPTZ DEFAULT now()
+-- );
 
 -- Create a function to update the updated_at column
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
@@ -99,20 +99,20 @@ BEGIN
 END
 $$;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_trigger
-    WHERE tgname = 'set_transcripts_updated_at' AND tgrelid = 'public.transcripts'::regclass
-  ) THEN
-    CREATE TRIGGER set_transcripts_updated_at
-    BEFORE UPDATE ON public.transcripts
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_set_timestamp();
-  END IF;
-END
-$$;
+-- DO $$
+-- BEGIN
+--   IF NOT EXISTS (
+--     SELECT 1
+--     FROM pg_trigger
+--     WHERE tgname = 'set_transcripts_updated_at' AND tgrelid = 'public.transcripts'::regclass
+--   ) THEN
+--     CREATE TRIGGER set_transcripts_updated_at
+--     BEFORE UPDATE ON public.transcripts
+--     FOR EACH ROW
+--     EXECUTE FUNCTION trigger_set_timestamp();
+--   END IF;
+-- END
+-- $$;
 
 -- Ensure the visits.admission_id is not globally unique but is unique per patient.
 DO $$
