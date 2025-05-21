@@ -168,8 +168,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const thinkMode = url.searchParams.get("think") === "true";
-    const model = thinkMode ? "gpt-o3" : "gpt-4.1";
+    const thinkMode = url.searchParams.get("think") === "true"; // Currently unused, always use gpt-4.1
+    const model = "gpt-4.1";
     
     // Prepare messages for OpenAI: prepend system prompt
     const messagesForOpenAI = [
@@ -306,9 +306,9 @@ export async function GET(req: NextRequest) {
             const structuredStream = await openai.chat.completions.create({
               model,
               stream: true,
-              messages: currentMessagesForToolCalls, // Use the potentially updated messages array
-              functions: [addElementFunctionDefinition],
-              function_call: { name: addElementFunctionDefinition.name }, 
+              messages: currentMessagesForToolCalls,
+              tools: [ { type: "function", function: addElementFunctionDefinition } ],
+              tool_choice: { type: "function", function: { name: addElementFunctionDefinition.name } },
             },
             { signal: structuredStreamInternalAbortController.signal }
             );
