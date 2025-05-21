@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import DatePicker from 'react-datepicker';
@@ -7,8 +7,10 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { cn } from "@/lib/utils";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Mic } from "lucide-react";
 
-// Consultation Tab (copied from ForesightApp.tsx, approx lines 544-608, now from PatientWorkspaceView.tsx)
+// Consultation Tab
 export default function ConsultationTab({
   patient,
   allAdmissions,
@@ -34,19 +36,26 @@ export default function ConsultationTab({
   onNewConsultationDateChange?: (date: Date | null) => void;
   newConsultationDuration?: number | null;
   onNewConsultationDurationChange?: (duration: number | null) => void;
-  onStartTranscriptionForNewConsult?: () => Promise<Admission | null>; // Returns the new admission or null
+  onStartTranscriptionForNewConsult?: () => Promise<Admission | null>;
 }) {
   const availableAdmissions = allAdmissions.map(ad => ad.admission);
   const currentDetailedAdmission = !isStartingNewConsultation ? allAdmissions.find(ad => ad.admission.id === selectedAdmission?.id)?.admission : null;
 
-  // NEW STATE FOR LIVE TRANSCRIPTION
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [liveTranscript, setLiveTranscript] = useState<string>('');
+  const [editableTranscript, setEditableTranscript] = useState<string>("");
+
+  useEffect(() => {
+    if (currentDetailedAdmission?.transcript) {
+      setEditableTranscript(currentDetailedAdmission.transcript);
+    } else {
+      setEditableTranscript("");
+    }
+  }, [currentDetailedAdmission?.transcript, selectedAdmission]);
 
   const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-  const socketRef = React.useRef<WebSocket | null>(null);
-  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const startTranscription = async () => {
     if (!apiKey) {
@@ -54,7 +63,7 @@ export default function ConsultationTab({
       return;
     }
 
-    let currentAdmissionToUse = selectedAdmission;
+    let admissionToUse = currentDetailedAdmission;
 
     if (isStartingNewConsultation && onStartTranscriptionForNewConsult) {
       const newAdmission = await onStartTranscriptionForNewConsult();
@@ -62,16 +71,22 @@ export default function ConsultationTab({
         alert("Failed to create new consultation entry. Cannot start transcription.");
         return;
       }
-      currentAdmissionToUse = newAdmission;
+      admissionToUse = newAdmission;
+      if (!admissionToUse && selectedAdmission){
+        admissionToUse = selectedAdmission;
+      }
+      if (!admissionToUse) {
+         alert("Error: Could not determine active admission for new transcription.");
+         return;
+      }
+      setEditableTranscript("");
     }
     
-    if (!currentAdmissionToUse) {
+    if (!admissionToUse) {
         alert("No active consultation selected. Cannot start transcription.");
         return;
     }
 
-    // Reset live transcript for a fresh run – user can still undo via browser undo if needed.
-    setLiveTranscript('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -88,7 +103,7 @@ export default function ConsultationTab({
           if (data && data.channel && data.is_final) {
             const alt = data.channel.alternatives[0];
             if (alt && alt.transcript) {
-              setLiveTranscript((prev) => (prev ? prev + '\\n' + alt.transcript : alt.transcript));
+              setEditableTranscript((prev) => (prev ? prev + '\n' + alt.transcript : alt.transcript));
             }
           }
         } catch (_) {}
@@ -107,9 +122,11 @@ export default function ConsultationTab({
 
       ws.onclose = () => {
         mediaRecorder.stop();
+        stream.getTracks().forEach(track => track.stop());
       };
     } catch (err: unknown) {
       console.error('Error starting transcription', err);
+      alert(`Error starting transcription: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -135,21 +152,27 @@ export default function ConsultationTab({
     }
     setIsTranscribing(false);
     setIsPaused(false);
-    // Persist transcript to patient data service
-    // Ensure we use the correct admission ID, especially after a new one is created.
-    const admissionToSaveTo = isStartingNewConsultation ? selectedAdmission : currentDetailedAdmission;
+    
+    const admissionToSaveTo = currentDetailedAdmission || selectedAdmission;
 
     if (patient && admissionToSaveTo) {
-      supabaseDataService.updateAdmissionTranscript(patient.id, admissionToSaveTo.id, liveTranscript);
-    } else if (patient && selectedAdmission) { // Fallback for safety, though above should cover
-        supabaseDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, liveTranscript);
+      supabaseDataService.updateAdmissionTranscript(patient.id, admissionToSaveTo.id, editableTranscript);
+    } else {
+      console.warn("Could not save transcript: patient or admission data missing.");
     }
   };
 
-  const displayTranscript = isStartingNewConsultation ? liveTranscript : (currentDetailedAdmission?.transcript || liveTranscript);
+  const handleTranscriptChange = (text: string) => {
+    setEditableTranscript(text);
+    if (!isTranscribing && patient && currentDetailedAdmission) {
+      supabaseDataService.updateAdmissionTranscript(patient.id, currentDetailedAdmission.id, text);
+    }
+  };
+
+  const showStartTranscriptionOverlay = !isStartingNewConsultation && !currentDetailedAdmission?.transcript && !isTranscribing;
 
   return (
-    <div className="p-6 grid lg:grid-cols-3 gap-6">
+    <div className={cn("p-6 grid lg:grid-cols-3 gap-6", isStartingNewConsultation ? "lg:grid-cols-1" : "")}>
       {isStartingNewConsultation ? (
         <div className="lg:col-span-3 space-y-4 mb-4">
           <div>
@@ -193,71 +216,85 @@ export default function ConsultationTab({
           <span className="font-semibold">Current Visit:</span> {new Date(selectedAdmission.scheduledStart).toLocaleString()} &nbsp;—&nbsp; {selectedAdmission.reason || 'N/A'}
         </div>
       )}
-      <Card className="lg:col-span-2 bg-glass glass-dense backdrop-blur-lg relative">
-        {/* Overlay when not transcribing & no transcript */}
-        {!displayTranscript && !isTranscribing && (
+      
+      <Card className={cn("lg:col-span-2 bg-glass glass-dense backdrop-blur-lg", isStartingNewConsultation ? "lg:col-span-3" : "")}>
+        {showStartTranscriptionOverlay && (
           <button
             onClick={startTranscription}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 backdrop-blur-md text-neon hover:brightness-125 transition"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 backdrop-blur-md text-neon hover:brightness-125 transition z-10"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3 text-neon animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 1a4 4 0 00-4 4v6a4 4 0 008 0V5a4 4 0 00-4-4z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 10v2a7 7 0 01-14 0v-2" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19v4m-4 0h8" />
-            </svg>
+            <Mic size={48} className="mb-3 text-neon animate-pulse" />
             <span className="text-step-0 font-semibold">Start Transcription</span>
           </button>
         )}
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-step-0"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span> Live Transcript</CardTitle>
+          <CardTitle className="flex items-center justify-between gap-2 text-step-0">
+            <div className="flex items-center gap-2">
+              <span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9-1.87 0-3.61-.57-5.07-1.54L3 21l1.54-3.93A8.967 8.967 0 013 12c0-4.97 4.03-9 9-9s9 4.03 9 9z'/></svg></span>
+              Live Transcript
+            </div>
+            {!isTranscribing && !isStartingNewConsultation && currentDetailedAdmission?.transcript && (
+              <Button variant="ghost" size="icon" onClick={startTranscription} title="Start/Restart Transcription">
+                <Mic className="h-5 w-5 text-neon" />
+              </Button>
+            )}
+          </CardTitle>
+          {!isTranscribing && (isStartingNewConsultation || currentDetailedAdmission?.transcript) && (
+            <div className="mt-2 p-2 border-b border-border">
+              <span className="text-xs text-muted-foreground">Editing tools (TODO)</span>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="h-[60vh] overflow-y-auto space-y-2 text-sm">
-          {displayTranscript ?
+          {(isStartingNewConsultation || currentDetailedAdmission?.transcript || isTranscribing || editableTranscript) ? (
             <div
               contentEditable={!isTranscribing}
               suppressContentEditableWarning
-              onInput={(e) => {
-                const text = (e.currentTarget as HTMLDivElement).innerText;
-                if (!isTranscribing && patient && selectedAdmission) {
-                  supabaseDataService.updateAdmissionTranscript(patient.id, selectedAdmission.id, text);
-                }
-              }}
-              className="whitespace-pre-wrap outline-none"
-            >
-              {displayTranscript}
-            </div>
-            :
-            <p className="text-muted-foreground">No transcript available for this consultation.</p>
-          }
+              onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerText)}
+              className="whitespace-pre-wrap outline-none p-1 min-h-[50px]"
+              dangerouslySetInnerHTML={{ __html: editableTranscript }}
+            />
+          ) : (
+            <p className="text-muted-foreground text-center py-10">
+              {isStartingNewConsultation ? "Begin typing or start transcription." : "No transcript available for this consultation. Click Start Transcription."}
+            </p>
+          )}
         </CardContent>
-        {/* Controls */}
         {isTranscribing ? (
-          <div className="absolute bottom-2 right-4 flex gap-4">
-            <button onClick={pauseTranscription} className="rounded-full bg-purple-600 text-white px-4 py-1 text-xs shadow hover:bg-purple-500 transition">
+          <div className="absolute bottom-4 right-4 flex gap-4 z-20">
+            <Button onClick={pauseTranscription} variant="secondary" size="sm" className="rounded-full">
               {isPaused ? 'Resume' : 'Pause'}
-            </button>
-            <button onClick={endTranscription} className="rounded-full bg-red-600 text-white px-4 py-1 text-xs shadow hover:bg-red-500 transition">
+            </Button>
+            <Button onClick={endTranscription} variant="destructive" size="sm" className="rounded-full">
               End
-            </button>
+            </Button>
           </div>
         ) : (
-          <div className="absolute bottom-2 right-4">
-            <button onClick={startTranscription} className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none w-[140px] h-[40px] flex items-center justify-center">
-              Start transcription
-            </button>
-          </div>
+          isStartingNewConsultation && !editableTranscript && (
+            <div className="absolute bottom-4 right-4 z-20">
+              <Button 
+                onClick={startTranscription} 
+                className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none w-[140px] h-[40px] flex items-center justify-center"
+              >
+                Start Transcription
+              </Button>
+            </div>
+          )
         )}
       </Card>
-      <Card className="bg-glass glass-dense backdrop-blur-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-step-0"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span> Structured Note (SOAP)</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
-          {currentDetailedAdmission?.soapNote ?
-            currentDetailedAdmission.soapNote.split('\\n').map((line, i) => <p key={i} className="text-step-0">{line}</p>) :
-            <p className="text-muted-foreground">No SOAP note available for this consultation.</p>}
-        </CardContent>
-      </Card>
+
+      {!isStartingNewConsultation && (
+        <Card className="bg-glass glass-dense backdrop-blur-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-step-0"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span> Structured Note (SOAP)</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
+            {currentDetailedAdmission?.soapNote ?
+              currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i} className="text-step-0">{line}</p>) :
+              <p className="text-muted-foreground">No SOAP note available for this consultation.</p>}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 } 
