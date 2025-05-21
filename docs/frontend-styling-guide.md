@@ -131,16 +131,27 @@ All route-level pages must render their contents inside exactly one `<ContentSur
 
 Never nest glass surfaces—`utils.css` contains a guard (`.glass .glass{background:transparent!important}`) that automatically neutralises accidental second-level surfaces.
 
-## Exception: Lighter Placeholder in Navbar Search
+## Navbar Search Bar
 
-The top navbar uses a glassmorphic/dark background, so its search input placeholder needs to be much lighter for readability. To ensure the search input looks identical, add the shared class `unified-search-input` *and* the following Tailwind placeholder utilities to the `<Input>` component (or `inputClassName` prop for `QuickSearch`):
+The top navbar contains a search input that shares some visual characteristics with other inputs but has specific layout considerations due to its placement in the global header.
+
+**Layout and Sizing:**
+- The navbar search bar is designed to occupy the central, available horizontal space in the navbar.
+- It is horizontally centered within the navbar.
+- Its maximum width is constrained to `max-w-5xl` (1024px), similar to the advisor chat input, to maintain a comfortable reading line for search results and consistency in wide-input scenarios.
+- On desktop screens (`md` and larger), the input field takes the full width of this container.
+- On smaller screens, a search icon is displayed, which, when clicked, opens a full-width search input in a sheet overlay.
+
+**Styling:**
+- The navbar uses a glassmorphic/dark background. To ensure readability, its search input placeholder needs to be much lighter than standard input placeholders.
+- To achieve this, the `<Input>` component for the navbar search (both desktop and mobile sheet versions) uses the shared class `unified-search-input` along with specific Tailwind placeholder utilities:
 
 ```tsx
-// Example for Navbar.tsx or QuickSearch inputClassName:
+// Example for Navbar.tsx (desktop search and mobile sheet search):
 className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 ...other_classes..."
 ```
 
-This combination of the `unified-search-input` class (for semantic grouping, though its CSS ::placeholder rules are now commented out for this specific case) and direct Tailwind utilities for `placeholder:text-[#F0F0F0]` and `placeholder:opacity-75` is the most robust way to enforce the correct placeholder color (`#F0F0F0`) and opacity (`0.75`) on the navbar search input.
+This combination ensures the correct placeholder color (`#F0F0F0`) and opacity (`0.75`) for the navbar search input, distinguishing it from other inputs in the application that might be on lighter backgrounds.
 
 # Foresight Frontend Styling Guide
 
