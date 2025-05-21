@@ -219,6 +219,7 @@ export default function AdvisorView() {
       let accumulatedArgs = '';
       let braceCount = 0;
       let inJson = false;
+      let streamProperlyEnded = false; // Flag to track if stream_end was received
 
       eventSource.onmessage = (event) => {
         const rawData = event.data;
@@ -270,7 +271,8 @@ export default function AdvisorView() {
              assistantContent.isFallback = true; // Force fallback rendering for errors
           } else if (parsedData.type === "stream_end") {
             currentAssistantMessage.isStreaming = false;
-            eventSource.close(); // Cleanly close the connection
+            streamProperlyEnded = true; // Mark that stream ended correctly
+            eventSource.close(); // Cleanly close the connection HERE
             setIsSending(false); // Reset sending state
           } else if (parsedData.element && !assistantContent.isFallback) {
             // This is a structured element
@@ -299,23 +301,36 @@ export default function AdvisorView() {
 
       eventSource.onerror = (err) => {
         console.error("EventSource failed:", err);
+        // Check readyState AFTER console.error, as err might be misleading for deliberate client-side closes
+        if (eventSource.readyState === EventSource.CLOSED && streamProperlyEnded) {
+            console.log("EventSource closed normally after stream_end.");
+            // eventSource.close(); // Already closed if streamProperlyEnded is true
+            setIsSending(false); // Ensure UI is updated
+            return; // Do not proceed to show error
+        }
+
         setMessages(prevMessages => {
           const lastMsgIndex = prevMessages.length - 1;
           if (lastMsgIndex >=0 && prevMessages[lastMsgIndex].id === assistantMessageId) {
             const updatedMessages = [...prevMessages];
             updatedMessages[lastMsgIndex].isStreaming = false;
-            // Optionally indicate an error in the message content
-             if (typeof updatedMessages[lastMsgIndex].content !== 'string') {
-                (updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown = 
-                    ((updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown || "") + 
-                    "\n**Error:** Connection failed.";
-                (updatedMessages[lastMsgIndex].content as AssistantMessageContent).isFallback = true;
+            
+            if (!streamProperlyEnded) { // Only show connection error if stream did not end properly
+              if (typeof updatedMessages[lastMsgIndex].content !== 'string') {
+                  (updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown = 
+                      ((updatedMessages[lastMsgIndex].content as AssistantMessageContent).fallbackMarkdown || "") + 
+                      "\n**Error:** Connection failed.";
+                  (updatedMessages[lastMsgIndex].content as AssistantMessageContent).isFallback = true;
+              }
             }
             return updatedMessages;
           }
           return prevMessages;
         });
-        eventSource.close();
+        // Ensure it's closed here too, especially if error occurred before stream_end
+        if (eventSource.readyState !== EventSource.CLOSED) {
+            eventSource.close();
+        }
         setIsSending(false);
       };
 

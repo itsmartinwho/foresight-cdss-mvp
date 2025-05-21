@@ -180,7 +180,11 @@ export async function GET(req: NextRequest) {
         ...messages.filter(m => m.role === "user" || m.role === "assistant")
     ];
     const messagesForToolCalls = [
-        { role: "system" as const, content: `${newSystemPromptBase} You must call the add_element function to stream each UI block.` },
+        { role: "system" as const, content:
+          `${newSystemPromptBase}
+           You must respond *exclusively* via add_element calls. 
+           After each call, if any content remains, immediately start another add_element invocation. 
+           For lists or tables, emit one element per list item or table row. Do not emit any direct text at any point.` },
         ...messages.filter(m => m.role === "user" || m.role === "assistant")
     ];
 
@@ -266,11 +270,11 @@ export async function GET(req: NextRequest) {
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
           fallbackTimeoutId = setTimeout(() => {
             if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
-            // engageMarkdownFallback("Timeout: Initial block not received in 500ms"); // Fallback temporarily disabled
+            // engageMarkdownFallback("Timeout: Initial block not received in 500ms"); // Fallback DEFINITIVELY disabled
           }, FALLBACK_TIMEOUT_MS);
         };
         
-        // resetFallbackTimer(); // Fallback temporarily disabled
+        // resetFallbackTimer(); // Fallback DEFINITIVELY disabled
 
         try {
           const structuredStream = await openai.chat.completions.create({
@@ -326,7 +330,7 @@ export async function GET(req: NextRequest) {
             }
             
             if (!firstBlockSent && tokenCount >= MAX_TOKENS_BEFORE_FALLBACK && structuredFunctionCallArgsBuffer.length === 0) {
-              // await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`); // Fallback temporarily disabled
+              // await engageMarkdownFallback(`Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`); // Fallback DEFINITIVELY disabled
               console.warn(`Fallback suppressed: Token limit (${MAX_TOKENS_BEFORE_FALLBACK}) reached before first block and no partial args.`);
               break;
             }
@@ -341,7 +345,7 @@ export async function GET(req: NextRequest) {
               console.log("SSE send (structured stream error):", JSON.stringify(errorPayload));
               controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
               
-              // await engageMarkdownFallback(detailedErrorReason); // Fallback temporarily disabled
+              // await engageMarkdownFallback(detailedErrorReason); // Fallback DEFINITIVELY disabled
               console.warn(`Fallback suppressed: Structured stream error: ${detailedErrorReason}`);
             }
           }
