@@ -47,18 +47,6 @@ CREATE TABLE IF NOT EXISTS public.visits (
   extra_data JSONB -- For any other miscellaneous original fields from admissions TSV
 );
 
--- Transcripts Table (Separate from visits.transcript for more detailed/versioned transcripts if needed later)
--- CREATE TABLE IF NOT EXISTS public.transcripts (
---   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
---   visit_supabase_id UUID REFERENCES public.visits(id) ON DELETE CASCADE, -- FK to visits table internal Supabase UUID
---   -- Alternatively, could link via admission_id if preferred, but internal UUID is safer for DB relations
---   -- admission_id TEXT REFERENCES public.visits(admission_id) ON DELETE CASCADE, 
---   text TEXT,
---   language TEXT,
---   created_at TIMESTAMPTZ DEFAULT now(),
---   updated_at TIMESTAMPTZ DEFAULT now()
--- );
-
 -- Create a function to update the updated_at column
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
