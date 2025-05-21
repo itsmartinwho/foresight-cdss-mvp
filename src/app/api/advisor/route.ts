@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        const isControllerClosedRef = { value: false }; // Pass as ref to streamMarkdownOnly
+        const isControllerClosedRef = { value: false }; 
 
         const closeControllerOnce = () => {
           if (!isControllerClosedRef.value) {
@@ -186,35 +186,35 @@ export async function GET(req: NextRequest) {
             try { controller.close(); } catch (e) { /*ignore*/ }
           }
         };
-
-        // Abort stream processing if main request is aborted
-        requestAbortController.signal.addEventListener('abort', closeControllerOnce, { once: true });
+        
+        const mainAbortListener = () => { closeControllerOnce(); };
+        requestAbortController.signal.addEventListener('abort', mainAbortListener, { once: true });
 
         if (requestAbortController.signal.aborted) {
           closeControllerOnce();
-          // Ensure listener is removed if it didn't fire and self-remove due to {once:true}
-          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
           return;
         }
-
-        if (messagesForOpenAI.filter(m=>m.role === 'user').length === 0 && !isGreetingOrTest) { 
+        
+        const hasUserMessages = messages.some(m => m.role === 'user');
+        if (!hasUserMessages && !isGreetingOrTest) { 
           if (!isControllerClosedRef.value) {
             const errPayload = { type: "error", message: "User input missing in messages array." };
             controller.enqueue(encoder.encode(`data:${JSON.stringify(errPayload)}\n\n`));
             closeControllerOnce();
           }
-          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
           return;
         }
 
         if (isGreetingOrTest) {
           await streamMarkdownOnly(messagesForMarkdown, model, controller, requestAbortController.signal, isControllerClosedRef);
-          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
           return; 
         }
 
         let structuredFunctionCallArgsBuffer = "";
-        let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null;
+        let fallbackTimeoutId: ReturnType<typeof setTimeout> | null = null; 
         let tokenCount = 0;
         const MAX_TOKENS_BEFORE_FALLBACK = 20;
         const FALLBACK_TIMEOUT_MS = 150;
@@ -240,11 +240,21 @@ export async function GET(req: NextRequest) {
         };
 
         const resetFallbackTimer = () => {
-          if (fallbackEngaged || isControllerClosedRef.value) return;
+          // If fallback already engaged, controller closed, or first block sent, this timer is no longer needed.
+          if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) {
+            // If the timer was set before firstBlockSent became true, clear it now.
+            if (fallbackTimeoutId) {
+                clearTimeout(fallbackTimeoutId);
+                fallbackTimeoutId = null;
+            }
+            return;
+          }
+          
+          // This part only runs if firstBlockSent is false.
           if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
           fallbackTimeoutId = setTimeout(() => {
-            if (fallbackEngaged || isControllerClosedRef.value) return;
-            engageMarkdownFallback("Timeout: No complete block/activity in 150ms");
+            if (fallbackEngaged || isControllerClosedRef.value || firstBlockSent) return; // Re-check state inside timeout
+            engageMarkdownFallback("Timeout: Initial block not received in 150ms");
           }, FALLBACK_TIMEOUT_MS);
         };
         
@@ -256,7 +266,7 @@ export async function GET(req: NextRequest) {
             stream: true,
             messages: messagesForToolCalls,
             functions: [addElementFunctionDefinition],
-            function_call: { name: addElementFunctionDefinition.name },
+            function_call: { name: addElementFunctionDefinition.name }, 
           },
           { signal: structuredStreamInternalAbortController.signal }
           );
@@ -266,7 +276,8 @@ export async function GET(req: NextRequest) {
               break;
             }
             tokenCount++;
-            resetFallbackTimer();
+            resetFallbackTimer(); // Reset timer on any activity before the first block.
+                                // If firstBlockSent is true, this will now be a no-op for setting a new timer.
 
             const fcDelta = chunk.choices[0]?.delta?.function_call;
             if (fcDelta?.arguments) {
@@ -287,11 +298,19 @@ export async function GET(req: NextRequest) {
                 } else {
                   if (!isControllerClosedRef.value) {
                     controller.enqueue(encoder.encode(`data:${JSON.stringify(parsedArgs)}\n\n`));
-                    firstBlockSent = true;
+                    if (!firstBlockSent) { // This ensures the following block runs only once
+                        firstBlockSent = true;
+                        // Successfully sent the first block, explicitly clear and nullify the initial block fallback timer.
+                        // Subsequent calls to resetFallbackTimer() will also do nothing due to firstBlockSent being true.
+                        if (fallbackTimeoutId) {
+                            clearTimeout(fallbackTimeoutId);
+                            fallbackTimeoutId = null;
+                        }
+                    }
                   }
                 }
               } catch (e) {
-                // Continue accumulating if parse fails, timeout will handle persistent malformed data
+                // Continue accumulating
               }
             }
             
@@ -308,12 +327,12 @@ export async function GET(req: NextRequest) {
             }
           }
         } finally {
-          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
+          if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId); // Final cleanup for any reason
           requestAbortController.signal.removeEventListener('abort', structuredStreamAbortListener);
           if (!fallbackEngaged && !isControllerClosedRef.value) {
-            closeControllerOnce();
+            closeControllerOnce(); 
           }
-          requestAbortController.signal.removeEventListener('abort', closeControllerOnce);
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
         }
       }
     });
