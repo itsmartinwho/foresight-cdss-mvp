@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
     }
     const { messages = [], model = "gpt-4.1" } = JSON.parse(payloadParam);
 
+    console.log("Attempting to use OPENAI_API_KEY (first 5 chars):", process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 5) : "Not found");
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const responseStream = await openai.chat.completions.create({
