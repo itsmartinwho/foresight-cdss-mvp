@@ -3,8 +3,7 @@ import { EventSource } from "event-source-polyfill";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ChatMessage, AssistantMessageContent } from "@/components/advisor/chat-types";
-import ContentElementRenderer from "@/components/views/advisor/ContentElementRenderer";
+import { ChatMessage, AssistantMessageContent, ContentElement, ContentElementParagraph, ContentElementUnorderedList, ContentElementOrderedList, ContentElementTable, ContentElementReferencesContainer } from "@/components/advisor/chat-types";
 
 const AdvisorView: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -357,6 +356,69 @@ const AdvisorView: React.FC = () => {
       ))}
     </div>
   );
+};
+
+// Define ContentElementRenderer within this file
+const ContentElementRenderer: React.FC<{ element: ContentElement }> = ({ element }) => {
+  switch (element.element) {
+    case "paragraph":
+      return <p>{(element as ContentElementParagraph).text}</p>;
+    case "unordered_list":
+      return (
+        <ul>
+          {(element as ContentElementUnorderedList).items.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      );
+    case "ordered_list":
+      return (
+        <ol>
+          {(element as ContentElementOrderedList).items.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ol>
+      );
+    case "table":
+      const tableData = element as ContentElementTable;
+      return (
+        <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+          <thead>
+            <tr>
+              {tableData.header.map((headerText, index) => (
+                <th key={index} className="px-3 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white">{headerText}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+            {tableData.rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cellText, cellIndex) => (
+                  <td key={cellIndex} className="whitespace-nowrap px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{cellText}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    case "references":
+        const referencesData = element as ContentElementReferencesContainer;
+        return (
+            <div className="references-block mt-4 p-2 border-t border-gray-300 dark:border-gray-700">
+                <h4 className="text-sm font-semibold mb-1">References:</h4>
+                <ul className="list-none pl-0">
+                    {Object.entries(referencesData.references).map(([key, value]) => (
+                        <li key={key} className="text-xs mb-1">
+                            <span className="font-medium">[{key}]</span> {value}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        );
+    // Add cases for other element types (bold, italic, reference) as needed
+    default:
+      return <div className="text-red-500">Unsupported element type: {element.element}</div>;
+  }
 };
 
 function AssistantMessageRenderer({
