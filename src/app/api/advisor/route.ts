@@ -169,7 +169,7 @@ export async function GET(req: NextRequest) {
     }
 
     const thinkMode = url.searchParams.get("think") === "true";
-    const model = thinkMode ? "gpt-o3" : "gpt-4.1-mini";
+    const model = thinkMode ? "gpt-o3" : "gpt-4.1";
     
     // Prepare messages for OpenAI: prepend system prompt
     const messagesForOpenAI = [
