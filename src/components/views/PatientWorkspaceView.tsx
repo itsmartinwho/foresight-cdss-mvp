@@ -236,7 +236,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
               <span className="mr-4">DOB: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
               <span>Gender: {patient.gender || 'N/A'}</span>
             </div>
-            <button
+            <Button
               onClick={async () => {
                 if (isStartingNewConsultation) {
                   setIsStartingNewConsultation(false);
@@ -255,10 +255,10 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
                   setActiveTab('consult');
                 }
               }}
-              className="ml-6 inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+              size="sm"
             >
               {isStartingNewConsultation ? "Cancel New Consultation" : "+ New Consultation"}
-            </button>
+            </Button>
           </div>
         </div>
         <div className="ml-auto flex-shrink-0 flex items-center gap-2">

@@ -435,9 +435,9 @@ export default function AdvisorView() {
                 }
                 msgToUpdate.isStreaming = false;
                 updatedMessages[existingAssistantMsgIndex] = msgToUpdate;
-            } else if (assistantMessageId) { // Only add new error message if there was an attempt to stream for an ID
+            } else if (assistantMessageId) { 
                  const connectionErrorMessage: ChatMessage = {
-                    id: assistantMessageId, // Use the current ref ID
+                    id: assistantMessageId, 
                     role: "assistant",
                     content: {
                         content: [],
@@ -448,9 +448,10 @@ export default function AdvisorView() {
                     isStreaming: false,
                 };
                 // Avoid adding duplicate error messages if one is already the last message for this ID
-                const lastMsg = prevMessages.length > 0 ? prevMessages[prevMessages.length -1] : null;
+                // Use the safe 'prev' here for lastMsg calculation
+                const lastMsg = prev.length > 0 ? prev[prev.length -1] : null;
                 if (lastMsg && lastMsg.id === assistantMessageId && lastMsg.role === 'assistant' && (lastMsg.content as AssistantMessageContent).fallbackMarkdown?.includes("Connection issue or stream interrupted.")) {
-                    return prevMessages; // Already handled
+                    return prev; // Already handled, return the safe prev
                 }
                 updatedMessages.push(connectionErrorMessage);
             }

@@ -172,13 +172,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     <ContentSurface fullBleed className="p-6 flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <CardTitle className="text-slate-100 text-step-1">All Consultations</CardTitle>
-        <button
+        <Button
           onClick={() => setShowNewConsultModal(true)}
-          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 h-8 px-4 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none"
+          size="sm"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
           New Consultation
-        </button>
+        </Button>
       </div>
       {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
       {renderTable("Past Consultations", sortedRows.past, 'past')}
