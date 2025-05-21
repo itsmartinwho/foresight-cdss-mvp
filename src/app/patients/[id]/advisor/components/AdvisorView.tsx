@@ -32,12 +32,40 @@ const AdvisorView: React.FC = () => {
   useEffect(() => {
     // Function to open the EventSource
     const openEventSource = async () => {
+      // Ensure there are messages to send, especially the user's input
+      if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
+        // console.log("Skipping EventSource: No user input or messages empty.");
+        // return; // Or handle as appropriate, maybe show a message to type something
+      }
+
+      // Construct the payload and URL
+      const thinkMode = false; // Placeholder for thinkMode logic
+      const payload = { messages }; // Send the whole messages array, server will filter
+      const encodedPayload = encodeURIComponent(JSON.stringify(payload));
+      const apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
+
       try {
-        const eventSource = new EventSource(
-          "http://localhost:3001/api/v1/advisor/events"
-        );
+        // const eventSource = new EventSource(
+        //   "http://localhost:3001/api/v1/advisor/events" // Old hardcoded URL
+        // );
+        const eventSource = new EventSource(apiUrl);
 
         eventSourceRef.current = eventSource;
+
+        // Add a new assistant message placeholder when the stream starts
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: `msg-${Date.now()}-streaming-${prevMessages.length}`,
+            role: "assistant",
+            content: {
+              content: [],
+              isFallback: false,
+              fallbackMarkdown: "",
+            } as AssistantMessageContent,
+            isStreaming: true,
+          },
+        ]);
 
         eventSource.onmessage = (ev) => {
           console.debug("SSE recv:", ev.data); // Log raw received data
