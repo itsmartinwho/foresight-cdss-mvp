@@ -6,8 +6,6 @@ import { MagnifyingGlass as Search } from '@phosphor-icons/react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from "@/components/ui/button";
-import GlobalSearch from "./ui/GlobalSearch";
-import QuickSearch from "./ui/QuickSearch";
 
 interface NavbarProps {
   currentPath: string;
