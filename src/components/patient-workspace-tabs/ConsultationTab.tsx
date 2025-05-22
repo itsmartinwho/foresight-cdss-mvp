@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Microphone as Mic, FloppyDisk as Save, Pause as PauseIcon, Play as PlayIcon, TextBold as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from 'phosphor-react';
+import { Textarea } from "@/components/ui/textarea";
+import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextBolder as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from 'phosphor-react';
+import { getSupabaseClient } from '@/lib/supabaseClient';
 
 // Consultation Tab
 export default function ConsultationTab({
@@ -391,11 +393,11 @@ export default function ConsultationTab({
             <div className="mt-2 p-2 border-b border-border flex items-center gap-2">
               {!isPaused ? (
                 <Button variant="secondary" size="sm" onClick={pauseTranscription} title="Pause Transcription">
-                  <PauseIcon className="h-4 w-4 mr-2" /> Pause
+                  <PauseCircle className="h-4 w-4 mr-2" /> Pause
                 </Button>
               ) : (
                 <Button variant="secondary" size="sm" onClick={startTranscription} title="Resume Transcription">
-                  <PlayIcon className="h-4 w-4 mr-2" /> Resume
+                  <PlayCircle className="h-4 w-4 mr-2" /> Resume
                 </Button>
               )}
               <Button variant="destructive" size="sm" onClick={stopTranscriptionAndSave} title="Stop Transcription & Save">
