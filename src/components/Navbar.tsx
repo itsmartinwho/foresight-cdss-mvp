@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MagnifyingGlass as Search } from '@phosphor-icons/react';
+import { MagnifyingGlass as Search, UserCircle as UserIcon } from '@phosphor-icons/react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from "@/components/ui/button";
@@ -78,29 +78,32 @@ export default function Navbar({ currentPath }: NavbarProps) {
             {/* This button now primarily serves to open the Sheet, as the input itself is part of the Sheet on mobile. */}
             {/* For consistency, we ensure this button is part of the central cluster, but it's hidden when desktop search is visible. */}
             <div className="md:hidden flex justify-end w-full">
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 aria-label="Open search"
-                className="p-2 rounded-full hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-neon"
                 onClick={() => setSearchOpen(true)}
+                className="text-white hover:bg-white/10 focus-visible:ring-neon"
               >
                 <Search className="h-[1em] w-[1em] text-white" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
         {/* Right cluster (User Avatar): Kept to the right */}
         <div className="flex items-center">
-          <div className="ml-3 relative">
-            <button
-              type="button"
-              className="bg-white/0 flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-neon"
+          <div className="ml-3 relative"> 
+            <Button 
+              variant="ghost"
+              size="icon" 
+              className="focus:ring-2 focus:ring-neon rounded-full h-8 w-8 p-0"
             >
               <span className="sr-only">Open user menu</span>
-              <div className="h-8 w-8 rounded-full bg-neon/20 flex items-center justify-center">
-                <span className="text-neon font-medium">DR</span>
+              <div className="h-full w-full rounded-full bg-neon/20 flex items-center justify-center">
+                <span className="text-neon font-medium text-xs">DR</span>
               </div>
-            </button>
+            </Button>
           </div>
         </div>
 

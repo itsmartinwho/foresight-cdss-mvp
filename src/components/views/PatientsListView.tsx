@@ -5,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission } from "@/lib/types";
-import { ArrowUp, ArrowDown, PlusCircle } from '@phosphor-icons/react';
+import { ArrowUp, ArrowDown, PlusCircle, PlayCircle } from '@phosphor-icons/react';
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';
@@ -327,8 +327,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
                   <TableCell>{visit.reason ?? "—"}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-neon hover:text-neon/80 hover:bg-neon/10">
-                      View Details
+                    <Button 
+                      variant="secondary"
+                      iconLeft={<PlayCircle />}
+                      size="sm"
+                      onClick={() => router.push(`/patients/${(visit.patient as Patient)?.id}?tab=consult&ad=${visit.id}`)}
+                    >
+                      Start
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -365,12 +370,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
               All Consultations
             </TabsTrigger>
           </TabsList>
-          <Button
+          <Button 
+            variant="default"
+            iconLeft={<PlusCircle />}
             onClick={() => setShowNewConsultModal(true)}
             size="sm"
-            className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent"
+            className="ml-auto rounded-full"
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
             New Consultation
           </Button>
         </div>

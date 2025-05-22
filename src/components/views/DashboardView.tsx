@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { PlayCircle } from '@phosphor-icons/react';
+import { PlayCircle, PlusCircle } from '@phosphor-icons/react';
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
@@ -60,11 +60,13 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           <h1 className="text-step-1 font-semibold">Upcoming Consultations</h1>
         </div>
         <Button
+          variant="default"
+          iconLeft={<PlusCircle />}
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
-          className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white before:opacity-0 before:rounded-full hover:before:opacity-90 hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%] sm:ml-auto"
+          className="rounded-full sm:ml-auto"
         >
-          + New Consultation
+          New Consultation
         </Button>
       </div>
 
@@ -102,11 +104,13 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   </TableCell>
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
                     <Button
+                      variant="secondary"
+                      iconLeft={<PlayCircle />}
                       size="sm"
                       onClick={() => onStartConsult(p)}
-                      className="bg-gradient-to-r from-blue-200 via-indigo-200 to-pink-200 text-white border border-black before:opacity-0 hover:before:opacity-90 hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%] gap-1 w-full mobile-card:w-full"
+                      className="gap-1 w-full mobile-card:w-full"
                     >
-                      <PlayCircle className="h-[1em] w-[1em]" /> Start
+                      Start
                     </Button>
                   </TableCell>
                 </TableRow>

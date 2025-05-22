@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const SIDEBAR_EXPANDED_WIDTH_REM = 14;
 const SIDEBAR_COLLAPSED_WIDTH_REM = 4.5;
@@ -72,17 +73,19 @@ export default function GlassSidebar() {
       <TooltipProvider delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={collapsed ? "Maximize menu" : "Minimize menu"}
               onClick={toggle}
-              className={`sidebar-button-bg rounded-full w-8 h-8 flex items-center mb-4 ${collapsed ? 'self-center justify-center' : 'self-start justify-center ml-1'}`}
+              className={`sidebar-button-bg rounded-full w-8 h-8 mb-4 ${collapsed ? 'self-center' : 'self-start ml-1'} hover:bg-white/20`}
             >
               {collapsed ? (
                 <PanelLeftOpen strokeWidth={1.5} className="h-5 w-5 text-white/50" />
               ) : (
                 <PanelLeftClose strokeWidth={1.5} className="h-5 w-5 text-white/50" />
               )}
-            </button>
+            </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
             <p>{collapsed ? "Maximize menu" : "Minimize menu"}</p>
