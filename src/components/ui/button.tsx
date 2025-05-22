@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-black dark:text-white bg-white/80 dark:bg-black/80 backdrop-blur-sm border-transparent before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:p-[1px] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin focus-visible:ring-[hsl(var(--neon-teal))]",
+          "text-black dark:text-white bg-white/10 dark:bg-black/10 backdrop-blur-sm border-transparent relative before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[1px] after:rounded-[4px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.4),transparent_50%)] after:z-[-1] focus-visible:ring-[hsl(var(--neon-teal))]",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-white/20 dark:bg-black/20 backdrop-blur-sm text-black dark:text-white relative before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[1px] after:rounded-[4px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.2),transparent_50%)] after:z-[-1] focus-visible:ring-[hsl(var(--neon-teal))]",
+          "text-black dark:text-white bg-[rgba(255,255,255,0.10)] dark:bg-[rgba(0,0,0,0.10)] backdrop-blur-sm relative before:absolute before:-inset-[2px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[2px] after:rounded-[6px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.25),rgba(255,255,255,0.10)_60%,transparent_100%)] after:opacity-80 after:z-[-1] focus-visible:ring-[hsl(var(--neon-teal))]",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
