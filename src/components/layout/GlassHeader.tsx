@@ -8,12 +8,11 @@ export default function GlassHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-40 h-16 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-lg border-b border-[rgba(255,255,255,0.12)] bg-transparent">
       <div className="flex items-center gap-2">
-        <Link href="/" className="flex items-center gap-2">
-          <img src="/images/foresight-icon.png" alt="Foresight Icon" className="h-6 w-6 py-0.5" />
+        <Link href="/" className="flex items-center gap-0">
           <img
             src="/images/word-logo.png"
             alt="Foresight Logo"
-            className="h-6 py-0.5 translate-y-[3px]"
+            className="h-8 py-0.5 translate-y-[2px]"
           />
         </Link>
       </div>

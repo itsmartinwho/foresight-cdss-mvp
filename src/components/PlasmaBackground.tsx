@@ -107,60 +107,55 @@ const fragmentShader = `
 
   // Constants for plasma effect - tweak these!
   const float PLASMA_SCALE = 1.5; // How zoomed in the noise pattern is
-  const float TIME_SPEED = 0.05; // How fast the pattern evolves
+  const float TIME_SPEED = 0.015; // How fast the pattern evolves (slower)
   const float COLOR_FREQ_R = 0.8;
   const float COLOR_FREQ_G = 0.7;
   const float COLOR_FREQ_B = 0.9;
   const float COLOR_PHASE_R = 0.0;
   const float COLOR_PHASE_G = 1.0; // Phase shifts create color variation
   const float COLOR_PHASE_B = 2.0;
-  const float BRIGHTNESS = 1.25; // Overall brightness (~25% over original)
-  const float CONTRAST = 0.4; // Contrast adjustment
+  const float BRIGHTNESS = 1.25; // Overall brightness of control signals
+  const float CONTRAST = 0.4; // Contrast adjustment of control signals
 
   void main() {
     vec2 scaledUv = vUv * PLASMA_SCALE; // Scale UV coordinates
     float time = u_time * TIME_SPEED;
 
     // Calculate noise value - using 3D noise with time as the third dimension
-    // Using snoise requires period and alpha, let's use arbitrary large period and 0 alpha
     float noiseValue = snoise(vec3(scaledUv * 2.0, time));
 
-    // Add another layer of noise (octave) for more detail - optional
-    // float noiseValue2 = psrdnoise(vec3(scaledUv * 2.5, time * 1.5), period, 0.0);
-    // noiseValue = (noiseValue + noiseValue2 * 0.5) / 1.5;
+    // Map noise value to color components using sine waves (these become control signals)
+    float r_control = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
+    float g_control = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
+    float b_control = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
 
-    // Map noise value to color components using sine waves
-    float r = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
-    float g = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
-    float b = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
+    // Apply brightness and contrast to control signals
+    vec3 control_signals = vec3(r_control, g_control, b_control);
+    control_signals = (control_signals - 0.5) * (1.0 + CONTRAST) + 0.5; // Contrast
+    control_signals *= BRIGHTNESS; // Brightness
 
-    // Apply brightness and contrast
-    vec3 color = vec3(r, g, b);
-    color = (color - 0.5) * (1.0 + CONTRAST) + 0.5; // Contrast
-    color *= BRIGHTNESS; // Brightness
+    // Clamp control signals to valid range
+    control_signals = clamp(control_signals, 0.0, 1.0);
 
-    // Clamp colors to valid range
-    color = clamp(color, 0.0, 1.0);
+    // Define base colors (Light & Ethereal Pastel Palette)
+    vec3 color1 = vec3(0.98, 0.88, 0.92); // Soft Pastel Pink (approx #FADBEB)
+    vec3 color2 = vec3(0.85, 0.92, 0.99); // Soft Baby Blue (approx #D9EBFD)
+    vec3 color3 = vec3(0.96, 0.97, 0.99); // Extremely Pale Cool White (approx #F5F7FD)
+    vec3 color4 = vec3(1.0, 1.0, 1.0);    // White (for highlights)
 
-    // Define base colors (adjust these for desired palette)
-    vec3 color1 = vec3(0.0, 0.3, 0.5); // Brighter blue/purple
-    vec3 color2 = vec3(0.2, 0.6, 0.9); // Brighter cyan/blue
-    vec3 color3 = vec3(0.9, 0.3, 0.7); // Brighter magenta/pink
-    vec3 color4 = vec3(1.0, 0.8, 0.4); // Brighter orange/yellow highlight
 
-    // Blend colors based on noise value components (example blending)
-    // This part requires significant tweaking to get the filament look
-    vec3 finalColor = mix(color1, color2, color.r);
-    finalColor = mix(finalColor, color3, color.g * 0.6); // Mix in magenta less strongly
-    // Add subtle highlights based on blue component
-    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, color.b) * 0.3); 
+    // Blend colors based on noise-derived control signals
+    vec3 finalColor = mix(color1, color2, control_signals.r);
+    finalColor = mix(finalColor, color3, control_signals.g * 0.6); // Mix in pale cool white less strongly
+    // Add subtle white highlights based on blue control signal
+    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, control_signals.b) * 0.3); 
 
 
     // Subtle vignette effect
     float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
     finalColor *= vignette * 0.8 + 0.2; // Apply vignette
 
-    gl_FragColor = vec4(finalColor, 0.65); // Increased opacity
+    gl_FragColor = vec4(finalColor, 0.65); // Opacity
   }
 `;
 
@@ -189,9 +184,11 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.height / 2,
     Math.max(canvas.width, canvas.height) / 1.5
   );
-  gradient.addColorStop(0, 'rgba(30,50,100,0.8)');
-  gradient.addColorStop(0.5, 'rgba(10,20,50,0.7)');
-  gradient.addColorStop(1, 'rgba(0,5,20,0.6)');
+  // Light & Ethereal Pastel theme for static gradient
+  gradient.addColorStop(0, 'rgba(250, 219, 235, 0.6)');    // Soft Pastel Pink (center)
+  gradient.addColorStop(0.5, 'rgba(217, 235, 253, 0.5)');  // Soft Baby Blue (mid)
+  gradient.addColorStop(1, 'rgba(245, 247, 253, 0.4)');    // Extremely Pale Cool White (outer)
+  
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
@@ -280,4 +277,4 @@ export default function PlasmaBackground() {
   }, []);
 
   return null; // React renders nothing
-} 
+}

@@ -21,6 +21,11 @@ module.exports = {
         ring: "hsl(var(--ring) / <alpha-value>)",
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
+        text: {
+          DEFAULT: "#000000", // Black for main text
+          placeholder: "#64748b", // slate-500 for placeholder text
+          darkUİ: "#FFFFFF", // White for text on dark UI elements
+        },
         primary: {
           DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
