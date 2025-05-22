@@ -56,14 +56,11 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div>
           <h1 className="text-step-1 font-semibold">Upcoming Consultations</h1>
-          <p className="text-step-0 text-muted-foreground/80">
-            Select a patient to start consultation
-          </p>
         </div>
         <Button
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
-          className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white before:opacity-0 before:rounded-full hover:before:opacity-90 hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%]"
+          className="rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white before:opacity-0 before:rounded-full hover:before:opacity-90 hover:[--accent-primary:0_0%_0%] hover:[--accent-secondary:0_0%_0%] hover:[--accent-tertiary:0_0%_0%] sm:ml-auto"
         >
           + New Consultation
         </Button>
@@ -101,7 +98,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
                     {visit.reason}
                   </TableCell>
-                  <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell">
+                  <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
                     <Button
                       size="sm"
                       onClick={() => onStartConsult(p)}
