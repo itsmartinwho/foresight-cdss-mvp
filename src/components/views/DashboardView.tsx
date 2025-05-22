@@ -52,7 +52,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
   }
 
   return (
-    <ContentSurface fullBleed className="p-6 flex flex-col relative">
+    <ContentSurface className="p-6 flex flex-col relative">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div>
           <h1 className="text-step-1 font-semibold">Upcoming Consultations</h1>
