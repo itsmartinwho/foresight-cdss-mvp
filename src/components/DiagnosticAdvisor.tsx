@@ -201,7 +201,7 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
             <Button
               type="button"
               onClick={handleAddSymptom}
-              variant="primary"
+              variant="default"
               className="rounded-l-none"
             >
                Add
