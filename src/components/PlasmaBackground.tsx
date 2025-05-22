@@ -157,7 +157,8 @@ const fragmentShader = `
     // Contrast & Glow
     col = pow(col * 1.3, vec3(1.15));
 
-    gl_FragColor = vec4(col, 0.22);
+    // DEBUG - Output raw noise value 'n'
+    gl_FragColor = vec4(vec3(n), 1.0);
   }
 `;
 
