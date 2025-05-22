@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { DiagnosticPlan, DiagnosticStep, DiagnosticResult, ClinicalTrial } from '@/lib/types';
 import { clinicalEngineService } from '@/lib/clinicalEngineService';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface DiagnosticAdvisorProps {
   patientId?: string;
@@ -187,7 +189,7 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
             Add Symptoms
           </label>
           <div className="flex">
-            <input
+            <Input
               type="text"
               id="symptom"
               className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -196,13 +198,14 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
               onChange={(e) => setSymptomInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddSymptom()}
             />
-            <button
+            <Button
               type="button"
               onClick={handleAddSymptom}
-              className="px-4 py-2 border border-transparent text-sm font-medium rounded-r-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              variant="primary"
+              className="rounded-l-none"
             >
-              Add
-            </button>
+               Add
+            </Button>
           </div>
           
           {/* Symptom tags */}
@@ -213,19 +216,21 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
                 className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
               >
                 {symptom}
-                <button
+                <Button
                   type="button"
                   onClick={() => handleRemoveSymptom(symptom)}
-                  className="ml-2 inline-flex text-blue-400 hover:text-blue-600 focus:outline-none"
-                >
-                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
+                  variant="ghost"
+                  size="icon"
+                  className="ml-2 h-5 w-5 p-0 text-blue-400 hover:text-blue-600"
+                 >
+                   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                     <path
+                       fillRule="evenodd"
+                       d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                       clipRule="evenodd"
+                     />
+                   </svg>
+                </Button>
               </div>
             ))}
           </div>
@@ -237,18 +242,13 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
           )}
           
           <div className="mt-4">
-            <button
+            <Button
               type="button"
               onClick={handleGeneratePlan}
               disabled={loading || symptoms.length === 0}
-              className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                loading || symptoms.length === 0
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }`}
             >
-              {loading ? 'Generating...' : 'Generate Diagnostic Plan'}
-            </button>
+               {loading ? 'Generating...' : 'Generate Diagnostic Plan'}
+            </Button>
           </div>
         </div>
         
@@ -256,8 +256,9 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
         {diagnosticPlan && (
           <div className="border-b border-gray-200 mb-6">
             <nav className="flex -mb-px">
-              <button
-                className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+              <Button
+                variant="ghost"
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm rounded-none ${
                   activeTab === 'plan'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -265,9 +266,10 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
                 onClick={() => setActiveTab('plan')}
               >
                 Diagnostic Plan
-              </button>
-              <button
-                className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+              </Button>
+              <Button
+                variant="ghost"
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm rounded-none ${
                   activeTab === 'result'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -276,9 +278,10 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
                 disabled={!diagnosticResult}
               >
                 Diagnostic Result
-              </button>
-              <button
-                className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+              </Button>
+              <Button
+                variant="ghost"
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm rounded-none ${
                   activeTab === 'trials'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -287,7 +290,7 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
                 disabled={clinicalTrials.length === 0}
               >
                 Clinical Trials
-              </button>
+              </Button>
             </nav>
           </div>
         )}
@@ -302,18 +305,14 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
             
             <div className="mb-4 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900">Diagnostic Steps</h3>
-              <button
+              <Button
                 type="button"
                 onClick={handleExecutePlan}
                 disabled={planExecuting}
-                className={`px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                  planExecuting
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-                }`}
-              >
-                {planExecuting ? `Executing (${currentStep}/${diagnosticPlan.steps.length})` : 'Execute Plan'}
-              </button>
+                variant={planExecuting ? "secondary" : "default"}
+               >
+                 {planExecuting ? `Executing (${currentStep}/${diagnosticPlan.steps.length})` : 'Execute Plan'}
+              </Button>
             </div>
             
             <div className="space-y-4">
@@ -354,19 +353,20 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
                     </div>
                     {step.completed && (
                       <div className="ml-4 flex-shrink-0">
-                        <button
+                        <Button
                           type="button"
-                          onClick={() => {
-                            const detailsEl = document.getElementById(`step-details-${step.id}`);
-                            if (detailsEl) {
-                              detailsEl.classList.toggle('hidden');
-                            }
-                          }}
-                          className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          View Details
-                        </button>
-                      </div>
+                           onClick={() => {
+                             const detailsEl = document.getElementById(`step-details-${step.id}`);
+                             if (detailsEl) {
+                               detailsEl.classList.toggle('hidden');
+                             }
+                           }}
+                          variant="link"
+                          className="text-sm"
+                         >
+                           View Details
+                        </Button>
+                       </div>
                     )}
                   </div>
                   
@@ -522,20 +522,20 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
             </div>
             
             <div className="flex space-x-4">
-              <button
+              <Button
                 type="button"
                 onClick={handleGeneratePriorAuth}
-                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                variant="secondary"
               >
                 Generate Prior Authorization
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleGenerateReferral}
-                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                variant="secondary"
               >
                 Generate Specialist Referral
-              </button>
+              </Button>
             </div>
           </div>
         )}
