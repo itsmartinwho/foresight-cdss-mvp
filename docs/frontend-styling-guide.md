@@ -7,7 +7,7 @@ This guide outlines the strategy and conventions used in the Foresight CDSS proj
 The application now uses Phosphor Icons (`phosphor-react`) for all iconography. Icons should be imported from `phosphor-react` and aliased if necessary to maintain existing usage names. For example:
 
 ```tsx
-import { MagnifyingGlass as Search, House as Home } from 'phosphor-react';
+import { MagnifyingGlass as Search, House as Home } from '@phosphor-icons/react';
 ```
 
 Avoid using `lucide-react`, as it has been replaced by `phosphor-react`.

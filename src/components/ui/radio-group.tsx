@@ -2,9 +2,8 @@
 
 import * as React from "react"
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
-import { Circle } from 'phosphor-react';
-
 import { cn } from "@/lib/utils"
+import { Circle } from '@phosphor-icons/react';
 
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,

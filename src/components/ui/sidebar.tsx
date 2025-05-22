@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { ArrowSquareLeft as PanelLeft } from 'phosphor-react';
+import { ArrowSquareLeft as PanelLeft } from '@phosphor-icons/react';
 import { motion } from "framer-motion"
 import { usePathname } from 'next/navigation'
 
@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useSidebar } from "@/hooks/useSidebar"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7

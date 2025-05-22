@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { X } from 'phosphor-react';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { X } from '@phosphor-icons/react';
 import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
 import type { ComplexCaseAlert } from "@/lib/types";
 

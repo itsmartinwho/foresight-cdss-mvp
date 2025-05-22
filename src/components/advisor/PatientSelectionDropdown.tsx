@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { Patient } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
-import { X, Upload } from 'phosphor-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { X, Upload } from '@phosphor-icons/react';
 import {
   DropdownMenu,
   DropdownMenuContent,

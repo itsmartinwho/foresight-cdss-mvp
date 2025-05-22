@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { WarningCircle as AlertTriangle } from 'phosphor-react';
+import { WarningCircle as AlertTriangle } from '@phosphor-icons/react';
 
 interface ErrorDisplayProps {
   message: string | null | undefined;

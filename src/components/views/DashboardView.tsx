@@ -1,14 +1,15 @@
 'use client';
 import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { PlayCircle } from 'phosphor-react';
+import { PlayCircle } from '@phosphor-icons/react';
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import ContentSurface from '@/components/layout/ContentSurface';
+import { Progress } from "@/components/ui/progress";
 
 // Import shared UI components
 import LikelihoodBadge from "@/components/ui/LikelihoodBadge";

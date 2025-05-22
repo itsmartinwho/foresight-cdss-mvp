@@ -1,11 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from 'phosphor-react';
 import { DayPicker } from "react-day-picker"
+import { buttonVariants } from "@/components/ui/button"
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from '@phosphor-icons/react'
 
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 

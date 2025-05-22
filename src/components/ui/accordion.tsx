@@ -2,9 +2,8 @@
 
 import * as React from "react"
 import * as AccordionPrimitive from "@radix-ui/react-accordion"
-import { CaretDown as ChevronDown } from 'phosphor-react';
-
 import { cn } from "@/lib/utils"
+import { CaretDown as ChevronDown } from '@phosphor-icons/react';
 
 const Accordion = AccordionPrimitive.Root
 

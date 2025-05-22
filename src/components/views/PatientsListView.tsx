@@ -5,12 +5,16 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission } from "@/lib/types";
-import { ArrowUp, ArrowDown, PlusCircle } from 'phosphor-react';
+import { ArrowUp, ArrowDown, PlusCircle } from '@phosphor-icons/react';
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';
 import ContentSurface from '@/components/layout/ContentSurface';
 import LoadingAnimation from "@/components/LoadingAnimation";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Image from 'next/image';
+import Link from 'next/link';
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate' | 'reason';

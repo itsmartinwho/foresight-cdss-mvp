@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Bell } from 'phosphor-react';
+import { Bell } from '@phosphor-icons/react';
 
 export default function NotificationBell({ count, onClick }: { count: number; onClick: () => void }) {
   return (

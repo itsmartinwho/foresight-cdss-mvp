@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft, Trash as Trash2 } from 'phosphor-react';
+import { Users, CaretLeft as ChevronLeft, Trash as Trash2 } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, AdmissionDetailsWrapper, ComplexCaseAlert } from "@/lib/types";
@@ -22,6 +22,7 @@ import HistoryTab from "@/components/patient-workspace-tabs/HistoryTab";
 import AllDataViewTab from "@/components/patient-workspace-tabs/AllDataViewTab";
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PatientWorkspaceProps {
   patient: Patient;

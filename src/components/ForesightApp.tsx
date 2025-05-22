@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft } from 'phosphor-react';
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useUser } from "@/hooks/useUser";
+import { Users, CaretLeft as ChevronLeft } from '@phosphor-icons/react';
+import { Toaster } from "@/components/ui/sonner";
 
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, ComplexCaseAlert } from "@/lib/types";

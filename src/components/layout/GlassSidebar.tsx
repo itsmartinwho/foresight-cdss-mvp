@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House as Home, Users, BellRinging as BellRing, ArrowSquareLeft as PanelLeftClose, ArrowSquareRight as PanelLeftOpen, Lightning as Zap } from 'phosphor-react';
+import { House as Home, Users, BellRinging as BellRing, ArrowSquareLeft as PanelLeftClose, ArrowSquareRight as PanelLeftOpen, Lightning as Zap } from '@phosphor-icons/react';
 import React, { useEffect } from "react";
 import {
   Tooltip,

@@ -2,9 +2,8 @@
 
 import * as React from "react"
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { Check } from 'phosphor-react';
-
 import { cn } from "@/lib/utils"
+import { Check } from '@phosphor-icons/react';
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,

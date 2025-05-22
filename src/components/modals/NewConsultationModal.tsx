@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, forwardRef } from 'react';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import type { Patient } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { X } from 'phosphor-react';
+import { X } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PlusCircle, UserPlus, Search } from "lucide-react";

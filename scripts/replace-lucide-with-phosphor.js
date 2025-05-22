@@ -88,7 +88,7 @@ function processFile(filePath) {
     }
     return `${phosName} as ${localName}`;
   });
-  const newImport = `import { ${mappedImports.join(', ')} } from 'phosphor-react';`;
+  const newImport = `import { ${mappedImports.join(', ')} } from '@phosphor-icons/react';`;
   content = content.replace(importRegex, newImport);
   fs.writeFileSync(filePath, content, 'utf8');
   console.log(`Updated icons in: ${filePath}`);
