@@ -137,6 +137,8 @@ pnpm run test:e2e
 1.  **Node-gyp errors on `pnpm install`**: Ensure build tools are installed (Xcode Command Line Tools on macOS, `build-essential` on Linux, or Visual Studio Build Tools on Windows).
 2.  **Port 3000 is in use**: Run `pnpm run dev -- -p <other_port>` (e.g., `pnpm run dev -- -p 3001`).
 3.  **Type mis-matches**: Run `pnpm run lint` (which should include type checking via `tsc --noEmit` as part of its script or a pre-lint step if configured) or `pnpm exec tsc --noEmit` directly.
+4.  **Deployment/Build Issues with Icons**: The project migrated from `phosphor-react` to `@phosphor-icons/react` due to build errors. Ensure all icon imports use `@phosphor-icons/react`. If `Module not found: Can't resolve 'phosphor-react'` or similar errors occur, double-check all import statements.
+5.  **ESLint Version Incompatibility**: The project is pinned to ESLint v8.57.1. If you encounter ESLint errors like "Invalid Options: - Unknown options: useEslintrc, extensions", ensure you are using this version or that your ESLint configuration is compatible with v9+ if you upgrade.
 
 ## Technical Architecture Summary
 

@@ -203,11 +203,12 @@ These development dependencies do not impact the size of the production client b
     *   **CI (GitHub Actions):** PNPM caching should be enabled (e.g., using `pnpm/action-setup` with `cache: true`).
     *   **Local:** PNPM automatically caches packages globally (e.g., `~/Library/pnpm/store`). Use `pnpm store prune` to remove old versions.
 2.  **Selective Builds:** Avoid running full Cloudflare worker builds (`pnpm run preview`) during general development if not specifically testing worker functionality. Standard `pnpm dev` and `pnpm build` are usually sufficient.
+3.  **ESLint Version:** The project uses ESLint v8.57.1. Downgrading from v9 was necessary to resolve compatibility issues with existing configurations during deployment.
 
 ### Future Performance Enhancements (Potential)
 
 *   **Lazy Loading:** Investigate dynamic imports for heavy libraries like `recharts` to load them only on relevant pages.
-*   **Icon Optimization:** The project now uses native imports from `phosphor-react`, which supports tree-shaking via ES modules.
+*   **Icon Optimization:** The project now uses native imports from `@phosphor-icons/react`, which supports tree-shaking via ES modules. This change was made to resolve build issues encountered with `phosphor-react`.
 *   **Locale Stripping:** Explore options to remove unused locales from `date-fns` via webpack or Next.js configuration.
 *   **Cloudflare Worker Evaluation:** Continue to evaluate if the full Cloudflare Worker build/deployment model is essential for the project's long-term goals or if simpler deployment targets suffice.
 
@@ -317,3 +318,15 @@ The Advisor Chat enables physicians to interact with an AI medical advisor in re
 ```
 
 *(Further architectural details for other features will be added as they are developed.)* 
+
+### Icon Optimization:
+*   The project now uses native imports from `@phosphor-icons/react`, which supports tree-shaking via ES modules. This change was made to resolve build issues encountered with `phosphor-react`.
+*   Ensure all icon imports are updated to `@phosphor-icons/react` if further changes are made.
+*   **ESLint Version:** The project uses ESLint v8.57.1. Downgrading from v9 was necessary to resolve compatibility issues with existing configurations during deployment.
+
+---
+
+> **Cross-reference:**
+> - For the standalone Tool B prototype, see [../clinical_engine.py](../clinical_engine.py).
+> - For detailed notes on the prototype and its integration, see [../.cursor/rules/python.md](../.cursor/rules/python.md).
+> - Keep this file, [../.cursor/rules/python.md](../.cursor/rules/python.md), and [../clinical_engine.py](../clinical_engine.py) in sync regarding Tool B's vision and integration plans. 
