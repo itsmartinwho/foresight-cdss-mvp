@@ -5,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission } from "@/lib/types";
-import { ArrowUp, ArrowDown, PlusCircle, PlayCircle } from '@phosphor-icons/react';
+import { ArrowUp, ArrowDown, PlusCircle, PlayCircle, Eye, Calendar } from '@phosphor-icons/react';
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';
@@ -256,9 +256,10 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                           {patientAdmissions.slice(0, 3).map(admission => (
                             <li key={admission.id}>
                               <Button
-                                variant="link"
+                                variant="secondary"
                                 size="sm"
-                                className="text-neon hover:text-neon/80 p-0 h-auto truncate"
+                                iconLeft={<Calendar />}
+                                className="truncate text-xs"
                                 onClick={() => router.push(`/patients/${patient.id}?ad=${admission.id}`)}
                                 title={new Date(admission.scheduledStart).toLocaleString()}
                               >
@@ -329,11 +330,11 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   <TableCell className="text-right">
                     <Button 
                       variant="secondary"
-                      iconLeft={<PlayCircle />}
+                      iconLeft={tableType === 'upcoming' ? <PlayCircle /> : <Eye />}
                       size="sm"
-                      onClick={() => router.push(`/patients/${(visit.patient as Patient)?.id}?tab=consult&ad=${visit.id}`)}
+                      onClick={() => router.push(`/patients/${patient?.id}?tab=consult&ad=${visit.id}`)}
                     >
-                      Start
+                      {tableType === 'upcoming' ? 'Start' : 'View'}
                     </Button>
                   </TableCell>
                 </TableRow>
