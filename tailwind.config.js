@@ -80,7 +80,7 @@ module.exports = {
         card: "1.25rem",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Manrope", "sans-serif"],
       },
       fontSize: {
         base: "1.25rem",

@@ -197,7 +197,7 @@ This combination ensures the correct placeholder color (`#F0F0F0`) and opacity (
 - Main content should always align with the padding and spacing provided by `ContentSurface`.
 
 ## Typography
-- (Details to be filled in if a specific typography scale is defined, e.g., from Tailwind config or global CSS. Currently, `font-sans` (Inter) is the base, and `text-step--1` is used for smaller input-like text.)
+- (Details to be filled in if a specific typography scale is defined, e.g., from Tailwind config or global CSS. Currently, `font-sans` (Manrope) is the base, and `text-step--1` is used for smaller input-like text.)
 
 ## Accessibility & Responsiveness
 - Use semantic HTML for headings and sections.
