@@ -301,10 +301,10 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
             <Button 
               variant="destructive" 
               onClick={handleDeleteInitiate} 
-              iconLeft={<Trash2 />} // Ensure Trash2 (or Trash) is imported
-              className="h-8 w-8 mt-4"
+              iconLeft={<Trash2 />}
+              className="mt-4"
               aria-label="Delete selected visit"
-              size="icon"
+              size="sm"
             >
               Delete
             </Button>

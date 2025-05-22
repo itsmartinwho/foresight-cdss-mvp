@@ -12,7 +12,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { X } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { PlusCircle, UserPlus, MagnifyingGlass } from "@phosphor-icons/react";
+import { PlusCircle, UserPlus, MagnifyingGlass, PlayCircle } from "@phosphor-icons/react";
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import type { Admission } from '@/lib/types';
 
@@ -374,7 +374,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 px-4 py-1 text-xs font-medium text-white shadow-sm transition hover:brightness-110 focus:outline-none">
+          <Button variant="default" iconLeft={<PlayCircle />} onClick={handleCreate}>
             Start Consultation
           </Button>
         </div>
