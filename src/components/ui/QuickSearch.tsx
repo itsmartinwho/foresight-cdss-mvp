@@ -264,7 +264,8 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
           />
         ) : (
           <div className="h-6 w-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-medium text-white">
-            {result.patient.name?.charAt(0).toUpperCase() || "?"}
+            {(result.patient.firstName?.charAt(0) || "").toUpperCase()}
+            {(result.patient.lastName?.charAt(0) || "").toUpperCase() || "?"}
           </div>
         )}
         <div className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
