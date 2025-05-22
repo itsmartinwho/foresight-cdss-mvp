@@ -181,13 +181,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           <TabsList className="bg-transparent p-0">
             <TabsTrigger 
               value="allPatients" 
-              className="text-step-1 px-3 data-[state=active]:bg-neon/40 data-[state=active]:font-semibold data-[state=inactive]:font-normal data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-700"
+              className="text-step-1 px-4 py-2 rounded-md data-[state=active]:bg-neon/40 data-[state=active]:font-semibold data-[state=active]:text-slate-900 data-[state=active]:shadow-none data-[state=active]:rounded-full data-[state=inactive]:font-normal data-[state=inactive]:text-slate-700"
             >
               All Patients
             </TabsTrigger>
             <TabsTrigger 
               value="allConsultations" 
-              className="text-step-1 px-3 data-[state=active]:bg-neon/40 data-[state=active]:font-semibold data-[state=inactive]:font-normal data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-700"
+              className="text-step-1 px-4 py-2 rounded-md data-[state=active]:bg-neon/40 data-[state=active]:font-semibold data-[state=active]:text-slate-900 data-[state=active]:shadow-none data-[state=active]:rounded-full data-[state=inactive]:font-normal data-[state=inactive]:text-slate-700"
             >
               All Consultations
             </TabsTrigger>
