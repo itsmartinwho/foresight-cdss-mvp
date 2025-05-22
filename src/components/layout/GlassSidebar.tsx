@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, BellRing, PanelLeftClose, PanelLeftOpen, Zap } from "lucide-react";
+import { House as Home, Users, BellRinging as BellRing, ArrowSquareLeft as PanelLeftClose, ArrowSquareRight as PanelLeftOpen, Lightning as Zap } from 'phosphor-react';
 import React, { useEffect } from "react";
 import {
   Tooltip,
@@ -96,7 +96,7 @@ export default function GlassSidebar() {
           <Link
             href="/advisor"
             aria-label="Open Advisor chat"
-            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isAdvisorActive ? 'bg-neon/10 text-neon font-semibold' : 'hover:bg-white/10'}`}
+            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isAdvisorActive ? 'bg-neon/40 text-text font-semibold' : 'hover:bg-white/10'}`}
             title={collapsed ? 'Advisor' : undefined}
           >
             <Zap
@@ -111,7 +111,7 @@ export default function GlassSidebar() {
                 className={cn(
                   'truncate',
                   isAdvisorActive
-                    ? 'text-neon font-semibold'
+                    ? 'text-text font-semibold'
                     : 'bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen'
                 )}
               >
@@ -128,7 +128,7 @@ export default function GlassSidebar() {
           <Link
             key={key}
             href={href}
-            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/10 text-neon font-semibold" : "hover:bg-white/10"}`}
+            className={`flex items-center h-10 ${collapsed ? 'justify-center' : 'gap-3'} mb-1 rounded-md px-3 py-2 transition-colors ${isActive ? "bg-neon/40 text-text font-semibold" : "hover:bg-white/10"}`}
             title={collapsed ? label : undefined}
           >
             <Icon className="h-[1.125em] w-[1.125em] flex-shrink-0" />

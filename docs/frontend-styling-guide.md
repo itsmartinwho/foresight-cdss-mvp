@@ -2,6 +2,16 @@
 
 This guide outlines the strategy and conventions used in the Foresight CDSS project to ensure consistent styling for input fields, their placeholder text, and selected values, particularly within modals and forms.
 
+## Icon Library
+
+The application now uses Phosphor Icons (`phosphor-react`) for all iconography. Icons should be imported from `phosphor-react` and aliased if necessary to maintain existing usage names. For example:
+
+```tsx
+import { MagnifyingGlass as Search, House as Home } from 'phosphor-react';
+```
+
+Avoid using `lucide-react`, as it has been replaced by `phosphor-react`.
+
 ## Core Principle
 
 The primary goal is to have a uniform visual language for user interactions:

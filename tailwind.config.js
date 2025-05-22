@@ -93,6 +93,7 @@ module.exports = {
       boxShadow: {
         card: "0 6px 18px rgba(0,0,0,.14)",
         "card-dark": "0 6px 18px rgba(0,0,0,.25)",
+        "inner-glow": "inset 0 0 8px rgba(255,255,255,0.1)",
       },
       backdropBlur: {
         none: '0',

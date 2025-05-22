@@ -9,7 +9,7 @@ import type { Patient } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { X } from 'lucide-react';
+import { X } from 'phosphor-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PlusCircle, UserPlus, Search } from "lucide-react";

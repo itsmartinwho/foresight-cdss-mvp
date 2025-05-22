@@ -188,7 +188,7 @@ This section covers aspects related to the project's build process, performance 
 The project utilizes `pnpm` for package management. The `node_modules` directory can be large (several hundred MB) due to development-time dependencies that include pre-compiled binaries. Key contributors include:
 *   `next` and its SWC compiler: Essential for the Next.js framework.
 *   `@cloudflare/workerd`: Required for previewing and building Cloudflare Worker bundles.
-*   Large libraries like `date-fns` (all locales) and `lucide-react` (all icons): Tree-shaking significantly reduces their size in the final client bundle.
+*   Large libraries like `date-fns` (all locales) and `phosphor-react` (all icons): Tree-shaking significantly reduces their size in the final client bundle.
 
 These development dependencies do not impact the size of the production client bundles, which are typically small.
 
@@ -207,7 +207,7 @@ These development dependencies do not impact the size of the production client b
 ### Future Performance Enhancements (Potential)
 
 *   **Lazy Loading:** Investigate dynamic imports for heavy libraries like `recharts` to load them only on relevant pages.
-*   **Icon Optimization:** Consider migrating `lucide-react` to native imports if further optimization is needed.
+*   **Icon Optimization:** The project now uses native imports from `phosphor-react`, which supports tree-shaking via ES modules.
 *   **Locale Stripping:** Explore options to remove unused locales from `date-fns` via webpack or Next.js configuration.
 *   **Cloudflare Worker Evaluation:** Continue to evaluate if the full Cloudflare Worker build/deployment model is essential for the project's long-term goals or if simpler deployment targets suffice.
 

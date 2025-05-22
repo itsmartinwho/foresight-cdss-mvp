@@ -3,16 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { Patient } from '@/lib/types';
-import {
-  Mic,
-  Send,
-  BookOpen,
-  Sparkles,
-  Waves,
-  Plus,
-  Upload,
-  X,
-} from "lucide-react";
+import { Microphone as Mic, PaperPlaneRight as Send, BookOpen, Sparkle as Sparkles, WaveSine as Waves, Plus, Upload, X } from 'phosphor-react';
 import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
 import { v4 as uuidv4 } from 'uuid';

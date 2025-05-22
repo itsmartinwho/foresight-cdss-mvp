@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Mic, Save, Pause as PauseIcon, Play as PlayIcon, Bold, Italic, List, Undo, Redo } from "lucide-react";
+import { Microphone as Mic, FloppyDisk as Save, Pause as PauseIcon, Play as PlayIcon, TextBold as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from 'phosphor-react';
 
 // Consultation Tab
 export default function ConsultationTab({

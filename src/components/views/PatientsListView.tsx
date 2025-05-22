@@ -5,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission } from "@/lib/types";
-import { ArrowUp, ArrowDown, PlusCircle } from "lucide-react";
+import { ArrowUp, ArrowDown, PlusCircle } from 'phosphor-react';
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';

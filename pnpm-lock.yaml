@@ -140,6 +140,9 @@ importers:
       openai:
         specifier: ^4.28.3
         version: 4.100.0(ws@8.18.2)(zod@3.25.7)
+      phosphor-react:
+        specifier: ^1.4.1
+        version: 1.4.1(react@18.2.0)
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -6462,6 +6465,12 @@ packages:
   phin@3.7.1:
     resolution: {integrity: sha512-GEazpTWwTZaEQ9RhL7Nyz0WwqilbqgLahDM3D0hxWwmVDI52nXEybHqiN6/elwpkJBhcuj+WbBu+QfT0uhPGfQ==}
     engines: {node: '>= 8'}
+
+  phosphor-react@1.4.1:
+    resolution: {integrity: sha512-gO5j7U0xZrdglTAYDYPACU4xDOFBTJmptrrB/GeR+tHhCZF3nUMyGmV/0hnloKjuTrOmpSFlbfOY78H39rgjUQ==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=16'
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -15616,6 +15625,10 @@ snapshots:
       centra: 2.7.0
     transitivePeerDependencies:
       - debug
+
+  phosphor-react@1.4.1(react@18.2.0):
+    dependencies:
+      react: 18.2.0
 
   picocolors@1.1.1: {}
 

@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X } from 'phosphor-react';
 import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
 import type { ComplexCaseAlert } from "@/lib/types";
 

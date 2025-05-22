@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea was used, or a contentEditable div
-import { Mic, Save, PauseCircle, PlayCircle, Bold, Italic, List, Undo, Redo } from 'lucide-react';
+import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextBold as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from 'phosphor-react';
 import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import
 import { Admission, Patient } from '@/lib/types'; // Assuming types path, Import Patient type
 import { supabaseDataService } from '@/lib/supabaseDataService'; // Import supabaseDataService

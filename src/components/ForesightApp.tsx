@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Users, ChevronLeft } from "lucide-react";
+import { Users, CaretLeft as ChevronLeft } from 'phosphor-react';
 
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, ComplexCaseAlert } from "@/lib/types";

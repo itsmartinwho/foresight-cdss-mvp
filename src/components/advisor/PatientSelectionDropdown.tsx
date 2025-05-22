@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { Patient } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
-import { X, Upload } from 'lucide-react';
+import { X, Upload } from 'phosphor-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
