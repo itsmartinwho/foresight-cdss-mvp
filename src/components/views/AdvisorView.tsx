@@ -197,13 +197,27 @@ export default function AdvisorView() {
       }
     });
 
-    // Build payload with only past user messages (strings) and the new user message to avoid OpenAI type errors
-    const apiPayloadMessages = [
-      ...messages
-        .filter(m => m.role === 'user' && typeof m.content === 'string')
-        .map(m => ({ role: 'user' as const, content: m.content as string })),
-      { role: 'user' as const, content: queryContent }
-    ];
+    // Build payload with past user messages (strings), assistant responses (rendered text), and the new user message.
+    const apiPayloadMessages = messages.reduce((acc, msg) => {
+      if (msg.role === 'user' && typeof msg.content === 'string') {
+        acc.push({ role: 'user' as const, content: msg.content });
+      } else if (msg.role === 'assistant' && typeof msg.content === 'object') {
+        // Attempt to get rendered text from the markdownRootDiv for previous assistant messages
+        const rootDiv = markdownRootsRef.current[msg.id];
+        if (rootDiv && rootDiv.innerText) {
+          acc.push({ role: 'assistant' as const, content: rootDiv.innerText });
+        } else if ((msg.content as AssistantMessageContent).isFallback && (msg.content as AssistantMessageContent).fallbackMarkdown) {
+          // If it was a fallback, use that markdown
+          acc.push({ role: 'assistant' as const, content: (msg.content as AssistantMessageContent).fallbackMarkdown! });
+        } 
+        // Optionally, add a placeholder if no content can be extracted, e.g.:
+        // else { acc.push({ role: 'assistant' as const, content: "[Assistant provided a response]" }); }
+      }
+      return acc;
+    }, [] as Array<{role: 'user' | 'assistant', content: string}>);
+
+    // Add the current user's new message
+    apiPayloadMessages.push({ role: 'user' as const, content: queryContent });
 
     const eventSource = new EventSource(`/api/advisor?payload=${encodeURIComponent(JSON.stringify({ messages: apiPayloadMessages }))}&think=${thinkMode}`);
 

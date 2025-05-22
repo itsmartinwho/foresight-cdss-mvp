@@ -72,13 +72,13 @@ test.describe('Foresight CDSS E2E Tests', () => {
     await page.fill('textarea', 'Test message');
     await page.click('button:has(svg[data-lucide="Send"])');
     await page.waitForTimeout(500); // Wait for request
-    expect(modelUsed).toBe('gpt-4.1');
+    expect(modelUsed).toBe('gpt-4.1-mini');
 
     // Enable Think mode
     await page.click('button:has(svg[data-lucide="Sparkles"])');
     await page.fill('textarea', 'Test message 2');
     await page.click('button:has(svg[data-lucide="Send"])');
     await page.waitForTimeout(500); // Wait for request
-    expect(modelUsed).toBe('o3-mini');
+    expect(modelUsed).toBe('o3');
   });
 }); 

@@ -21,6 +21,7 @@ The vision includes several advanced aspirational AI tools:
 *   **Dynamic Data Loading:** The application fetches data from Supabase at runtime.
 *   **Tool A - Foresight Advisor:** Dedicated `/advisor` tab offering an AI medical advisor chat (powered by OpenAI models via `/api/advisor`).
     *   Features include citations, follow-up questions, voice dictation for input, and voice playback for responses.
+    *   Responses are streamed as Markdown and rendered progressively for a responsive UI (see "Advisor Tab: Streaming Markdown Responses" section below for details).
     *   Defaults to `gpt-4.1` model; **Think** mode switches to `o3-mini` for different reasoning tasks (details in [docs/architecture.md](docs/architecture.md)).
 *   **Placeholder UI for Future AI Tools:**
     *   **Tool B (Diagnosis/Treatment):** UI elements exist for displaying diagnoses, treatment plans, and generated documents (referrals, prior auth), currently with mock data or empty.
@@ -174,12 +175,23 @@ Specific guidelines and rules are also present in:
 
 Refer to these documents for a comprehensive understanding of the project.
 
-## Advisor Tab: Rich Chat Rendering
+## Advisor Tab: Streaming Markdown Responses
 
-The Advisor tab now streams and renders AI responses in a structured, user-friendly format. Instead of raw Markdown, the backend requests JSON-formatted responses from OpenAI, which are parsed and rendered as React components. Supported features:
+The Advisor tab (`src/components/views/AdvisorView.tsx`) provides an AI-powered chat interface that streams responses from the backend and renders them with rich Markdown formatting.
 
-- **Paragraphs, bold, italic, lists, and tables** are rendered natively for clarity and accessibility.
-- **References** are clickable: URLs open in a new tab, while text/footnote references scroll to a footnote section at the end of the chat.
-- **Streaming**: As soon as a valid JSON object is received, the UI updates, providing a responsive experience.
+**Key aspects of the implementation:**
 
-This approach ensures robust, secure, and accessible medical advice presentation for users.
+- **Server-Sent Events (SSE):** The backend API route (`src/app/api/advisor/route.ts`) streams responses from the LLM (e.g., OpenAI GPT models) to the client using SSE.
+- **`markdown_chunk` Events:** The server sends messages of type `markdown_chunk`, each containing a piece of the overall Markdown response.
+- **Server-Side Buffering:** To improve readability and reduce the "telegraph-y" effect of token-by-token streaming, the server buffers tokens from the LLM. It flushes these buffers as more complete Markdown segments (e.g., paragraphs, content before a double newline) to the client. This helps maintain Markdown structure integrity during the streaming process.
+- **`stream_end` Event:** A `stream_end` message signals the completion of the full response.
+- **Client-Side Rendering with `streaming-markdown`:**
+    - The `AdvisorView.tsx` component utilizes the `streaming-markdown` library (from `src/components/advisor/streaming-markdown/smd.js`).
+    - When an assistant message stream begins, a new HTML `div` is created for that message.
+    - An `smd.js` parser instance is initialized with a `default_renderer` that targets this `div`.
+    - As `markdown_chunk` events arrive, their content is fed to the `smd_parser_write` function. The library progressively parses the Markdown and appends/updates the corresponding HTML elements directly within the target `div`.
+    - This allows for dynamic rendering of headings, lists, bold text, tables, and other Markdown features as the data streams in.
+- **Contextual Conversation:** The chat maintains conversation history. The client constructs a payload including previous user messages and the extracted text content of previous assistant responses (from their rendered Markdown) to send to the API, enabling follow-up questions.
+- **Error Handling:** The system includes mechanisms to handle and display errors that might occur during the SSE connection or streaming process.
+
+This approach provides a responsive user experience by displaying content incrementally while ensuring that complex Markdown structures are rendered correctly.

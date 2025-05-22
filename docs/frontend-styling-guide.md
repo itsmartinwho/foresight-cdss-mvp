@@ -226,4 +226,42 @@ To ensure a consistent look and feel across the application, all dropdown menus 
 - **Background and Blur:** `backdrop-blur-lg bg-[rgba(255,255,255,0.1)]`
 - **Border:** `border-[rgba(255,255,255,0.12)]` (Note: The original components already have a border, this specific class ensures the color matches the navbar's panel).
 
-These styles provide a glassmorphic effect consistent with other key UI elements like the navbar and sidebars. The size of the dropdown/select panel will vary based on its content and specific implementation context, but the visual treatment (blur, background color, border) is standardized. 
+These styles provide a glassmorphic effect consistent with other key UI elements like the navbar and sidebars. The size of the dropdown/select panel will vary based on its content and specific implementation context, but the visual treatment (blur, background color, border) is standardized.
+
+# Frontend Styling Guide
+
+This document provides guidelines and conventions for styling frontend components in the Foresight CDSS MVP project.
+
+## Core Principles
+
+- **Consistency:** Strive for a consistent visual language across the application.
+- **Clarity:** Ensure that UI elements are clear, readable, and intuitive.
+- **Responsiveness:** Design components to adapt gracefully to different screen sizes.
+- **Accessibility:** Adhere to accessibility best practices (WCAG AA as a minimum target).
+
+## Technologies
+
+- **Tailwind CSS:** Utility-first CSS framework for rapid UI development.
+- **Radix UI (Headless Components):** For accessible and unstyled primitives for UI components like dropdowns, dialogs, etc. (if used).
+- **Lucide Icons:** For clear and consistent iconography.
+
+## General Guidelines
+
+- **Theme:** Adhere to the project's color palette, typography, and spacing scales defined in `tailwind.config.js`.
+- **Component-Based Styling:** Styles should generally be co-located with their components or defined within global styles if they are truly universal.
+- **Utility Classes:** Prefer Tailwind's utility classes for most styling needs. Use custom CSS sparingly and only when necessary (e.g., for complex animations or very specific selectors not easily achieved with utilities).
+- **Dark Mode:** (If applicable) Ensure components are styled for a seamless experience in both light and dark modes.
+
+## Specific Component Styling Notes
+
+### Advisor Chat & Streaming Markdown
+
+- **Markdown Container:** Assistant messages containing streamed Markdown are rendered into a `div` within the `AssistantMessageRenderer` component. This `div` is given the Tailwind CSS class `prose` (and `prose-sm max-w-none`) by default in `AssistantMessageRenderer`.
+- **`prose` Styling:** The `prose` class from `@tailwindcss/typography` provides sensible defaults for rendering HTML generated from Markdown (headings, paragraphs, lists, blockquotes, code blocks, tables, etc.).
+- **Customization:**
+    - If further customization of Markdown elements is needed beyond what `prose` provides by default, these styles can be added either by extending the `prose` theme in `tailwind.config.js` or by targeting specific HTML elements within the `.prose` scope using global CSS.
+    - For example, `h1`, `h2`, `p`, `ul`, `table` styles within the chat bubbles are primarily governed by the `prose` classes.
+- **Code Blocks:** Code blocks within Markdown are typically rendered as `<pre><code>...</code></pre>`. The `prose` plugin styles these, but further syntax highlighting themes can be applied if desired (e.g., using a library like `highlight.js` and theming its output).
+- **Tables:** Tables generated from Markdown will also be styled by `prose`. Ensure they are responsive and readable.
+
+*(More specific component styling guidelines will be added as the UI evolves.)* 

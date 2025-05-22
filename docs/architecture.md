@@ -213,8 +213,8 @@ These development dependencies do not impact the size of the production client b
 
 ## Advisor Tab Model Selection
 
-- The Advisor tab defaults to the `gpt-4.1` model for general queries.
-- When the user enables **Think** mode, the model switches to `o3-mini` for more advanced reasoning tasks.
+- The Advisor tab defaults to the `gpt-4.1-mini` model for general queries.
+- When the user enables **Think** mode, the model switches to `o3` for more advanced reasoning tasks.
 
 ## Advisor Chat Rendering Pipeline
 
@@ -238,4 +238,82 @@ These development dependencies do not impact the size of the production client b
 > **Cross-reference:**
 > - For the standalone Tool B prototype, see [../clinical_engine.py](../clinical_engine.py).
 > - For detailed notes on the prototype and its integration, see [../.cursor/rules/python.md](../.cursor/rules/python.md).
-> - Keep this file, [../.cursor/rules/python.md](../.cursor/rules/python.md), and [../clinical_engine.py](../clinical_engine.py) in sync regarding Tool B's vision and integration plans. 
+> - Keep this file, [../.cursor/rules/python.md](../.cursor/rules/python.md), and [../clinical_engine.py](../clinical_engine.py) in sync regarding Tool B's vision and integration plans.
+
+# System Architecture
+
+This document outlines the architecture of the Foresight CDSS MVP, with a focus on its key components and interactions.
+
+## Core Components
+
+- **Frontend (Next.js/React):** The user interface is built with Next.js and React, providing a responsive and interactive experience for physicians.
+- **Backend (Next.js API Routes):** Server-side logic, including LLM interaction, is handled via Next.js API routes.
+- **Large Language Model (OpenAI GPT):** The primary AI engine for processing medical queries and generating responses.
+
+## Feature Architectures
+
+### 1. Advisor Chat
+
+The Advisor Chat enables physicians to interact with an AI medical advisor in real-time.
+
+**Workflow:**
+
+1.  **User Input (`src/components/views/AdvisorView.tsx`):**
+    *   The user types a query into the chat interface.
+    *   On send, the `AdvisorView` component captures the input.
+
+2.  **Payload Construction (`src/components/views/AdvisorView.tsx`):**
+    *   A history of messages is constructed for the API. This includes:
+        *   Previous user messages (as strings).
+        *   The textual content of previous assistant responses. This text is extracted from the `innerText` of the HTML `div` elements that the `streaming-markdown` library populated for each assistant message, or from fallback Markdown content if applicable.
+        *   The new user query (as a string).
+    *   This message list is JSON stringified and URL-encoded as a `payload` query parameter.
+
+3.  **API Request (SSE) (`src/components/views/AdvisorView.tsx`):**
+    *   An `EventSource` connection is established to `/api/advisor?payload=...`.
+
+4.  **Backend Processing (`src/app/api/advisor/route.ts`):**
+    *   **Request Handling:** The `GET` handler in the API route receives the request.
+    *   **Payload Parsing:** The `payload` is parsed to extract the message history.
+    *   **System Prompting:** A system prompt is prepended to the message history. This prompt guides the LLM to act as a medical advisor and to format its responses in GitHub-flavored Markdown suitable for streaming.
+    *   **LLM Interaction (`streamMarkdownOnly` function):**
+        *   A streaming chat completion request is made to the OpenAI API (e.g., GPT-4.1).
+        *   The LLM streams back tokens.
+    *   **Server-Side Buffering:** Tokens from the LLM are accumulated in a server-side buffer. This buffer is flushed (sent to the client) when:
+        *   A Markdown paragraph boundary (`\n\n`) is detected.
+        *   The buffer exceeds a certain length threshold (e.g., 600 characters).
+    This strategy ensures that more structurally complete Markdown chunks are sent, reducing the "telegraph-y" effect and preserving formatting integrity.
+    *   **SSE Message Sending:** Each flushed buffer content is sent to the client as a JSON object: `data: {"type":"markdown_chunk","content":"..."}\n\n`.
+    *   **Stream Termination:** When the LLM finishes, a `data: {"type":"stream_end"}\n\n` message is sent. Errors are sent as `data: {"type":"error","message":"..."}\n\n`.
+
+5.  **Client-Side Rendering (`src/components/views/AdvisorView.tsx` & `streaming-markdown`):**
+    *   **New Message Placeholder:** When a user sends a message, an assistant message placeholder is immediately added to the chat UI, and a new `div` is created to host the incoming Markdown.
+    *   **Parser Initialization:** An instance of the `streaming-markdown` parser (`smd_parser`) is initialized, configured with a `default_renderer` that targets this new `div`.
+    *   **SSE `onmessage` Handler:**
+        *   Receives `markdown_chunk` events.
+        *   The `content` of each chunk is passed to `smd_parser_write(parserInstance, chunkContent)`. The `streaming-markdown` library parses the Markdown incrementally and appends the corresponding HTML elements to the target `div`.
+        *   On `stream_end`, the parser is finalized (`smd_parser_end`), and the message is marked as no longer streaming.
+        *   Error events are handled by displaying an error message.
+    *   **Dynamic Display:** The `AssistantMessageRenderer` component in `AdvisorView.tsx` ensures that the `div` (populated by `streaming-markdown`) is correctly displayed within the chat message bubble. React's reconciliation handles updating the view as the `div`'s content changes.
+
+**Data Flow Diagram (Simplified):**
+
+```
+[User @ AdvisorView.tsx] --(Input)--> [AdvisorView.tsx]
+        |
+        --(Payload Prep)-->
+        |
+[EventSource API Call] --(HTTP GET w/ Payload)--> [API Route: /api/advisor/route.ts]
+        |
+        --(OpenAI Stream Request)--> [OpenAI GPT]
+        |
+        <--(Token Stream)-- [OpenAI GPT]
+        |
+[API Route: Buffering] --(SSE: markdown_chunk/stream_end)--> [EventSource @ AdvisorView.tsx]
+        |
+        --(smd_parser_write)--> [streaming-markdown lib]
+        |
+        --(DOM Update in target div)--> [React UI]
+```
+
+*(Further architectural details for other features will be added as they are developed.)* 
