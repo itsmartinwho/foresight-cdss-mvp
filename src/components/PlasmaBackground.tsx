@@ -88,44 +88,8 @@ float snoise(vec3 v)
   }
 `;
 
-
-const vertexShader = `
-#version 300 es
-precision highp float;
-
-// GLSL 3.00 ES: 'varying' is replaced by 'in' (vertex) and 'out' (fragment)
-// However, for compatibility with ShaderMaterial defaults, we can often still use 'varying'
-// and Three.js handles the upgrade. If issues arise, change to 'out vec2 vUv_out;'
-// and use 'vUv_out' in fragment shader as 'in vec2 vUv_in;'.
-// For simplicity now, keeping 'varying'.
-varying vec2 vUv;
-
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
-
-const fragmentShader = `
-#version 300 es
-precision highp float;
-
-out vec4 out_FragColor; // GLSL 3.00 ES output
-
-uniform vec2 u_resolution;
-uniform float u_time;
-uniform vec3 u_viewDirection; // Will be used later
-
-// GLSL 3.00 ES: 'varying' is replaced by 'in'
-// See note in vertex shader.
-varying vec2 vUv; 
-
-// Noise functions (like snoise, fbm) would be here if used
-// For now, main is simplified for testing.
-// ${noiseGLSL} // noise (commented out for initial test)
-
-// Fractal Brownian Motion (commented out for initial test)
-/*
+// Fractal Brownian Motion for more complex noise
+const fbmGLSL = `
 float fbm(vec3 p) {
   float v = 0.0;
   float amp = 0.5;
@@ -135,11 +99,127 @@ float fbm(vec3 p) {
   v += amp * snoise(p);
   return v;
 }
-*/
+`;
+
+const vertexShader = `
+precision highp float;
+varying vec2 vUv;
 
 void main() {
-  // DEBUG - Output UV gradient
-  out_FragColor = vec4(vUv, 0.0, 1.0);
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const fragmentShader = `
+#ifdef GL_OES_standard_derivatives
+#extension GL_OES_standard_derivatives : enable
+#endif
+
+precision highp float;
+
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform vec3 u_viewDirection;
+
+varying vec2 vUv;
+
+${noiseGLSL}
+${fbmGLSL}
+
+// Constants for the metallic sheen plasma effect
+const float PLASMA_SCALE = 1.2;     // Broader noise pattern
+const float TIME_SPEED = 0.03;      // Slower animation
+const float SPECULAR_POWER = 48.0;  // Sharpness of highlights
+const float SPECULAR_WEIGHT = 0.3;  // Intensity of highlights
+
+void main() {
+  vec2 scaledUv = vUv * PLASMA_SCALE;
+  float time = u_time * TIME_SPEED;
+
+  // Domain warping for more complex patterns
+  vec2 q = vec2(
+    fbm(vec3(scaledUv + vec2(0.0, 0.0), time)),
+    fbm(vec3(scaledUv + vec2(5.2, 1.3), time))
+  );
+  
+  vec2 r = vec2(
+    fbm(vec3(scaledUv + 4.0 * q + vec2(1.7, 9.2), time)),
+    fbm(vec3(scaledUv + 4.0 * q + vec2(8.3, 2.8), time))
+  );
+
+  // Generate layered noise
+  float coarseNoise = fbm(vec3(scaledUv + 2.0 * r, time));
+  float fineNoise = fbm(vec3(scaledUv * 3.0 + r, time * 1.5));
+  
+  // Combine noise layers
+  float combinedNoise = (coarseNoise + fineNoise * 0.4) / 1.4;
+  
+  // Normalize and enhance contrast
+  float noiseValue = clamp((combinedNoise + 1.0) * 0.5, 0.0, 1.0);
+  noiseValue = clamp((noiseValue - 0.35) * 2.0, 0.0, 1.0);
+
+  // Base silver color with subtle desaturation
+  vec3 silver = vec3(0.88, 0.90, 0.92);
+  vec3 baseColor = mix(silver, vec3(noiseValue), 0.15);
+
+  // Calculate normals from noise for specular lighting
+  vec2 texelSize = 1.0 / u_resolution;
+  float noiseL = fbm(vec3((vUv + vec2(-texelSize.x, 0.0)) * PLASMA_SCALE + 2.0 * r, time));
+  float noiseR = fbm(vec3((vUv + vec2(texelSize.x, 0.0)) * PLASMA_SCALE + 2.0 * r, time));
+  float noiseD = fbm(vec3((vUv + vec2(0.0, -texelSize.y)) * PLASMA_SCALE + 2.0 * r, time));
+  float noiseU = fbm(vec3((vUv + vec2(0.0, texelSize.y)) * PLASMA_SCALE + 2.0 * r, time));
+  
+  vec3 normal = normalize(vec3((noiseL - noiseR) * 20.0, (noiseD - noiseU) * 20.0, 1.0));
+
+  // Animated lighting direction
+  vec3 lightDir = normalize(vec3(
+    sin(time * 0.7) * 0.8 + 0.2,
+    cos(time * 0.5) * 0.6 + 0.4,
+    0.8
+  ));
+  
+  vec3 viewDir = normalize(u_viewDirection);
+  vec3 halfVec = normalize(lightDir + viewDir);
+  
+  // Blinn-Phong specular calculation
+  float specular = pow(max(dot(normal, halfVec), 0.0), SPECULAR_POWER) * SPECULAR_WEIGHT;
+  
+  // Apply specular highlights
+  vec3 finalColor = baseColor + vec3(specular);
+
+  // Pastel accent colors that cycle
+  vec3 accentLavender = vec3(0.847, 0.706, 0.996);
+  vec3 accentTeal = vec3(0.6, 0.98, 0.89);
+  vec3 accentPeach = vec3(1.0, 0.85, 0.7);
+  
+  // Cycle between accent colors
+  float huePhase = mod(time * 0.08, 3.0);
+  vec3 currentAccent;
+  if (huePhase < 1.0) {
+    currentAccent = mix(accentLavender, accentTeal, huePhase);
+  } else if (huePhase < 2.0) {
+    currentAccent = mix(accentTeal, accentPeach, huePhase - 1.0);
+  } else {
+    currentAccent = mix(accentPeach, accentLavender, huePhase - 2.0);
+  }
+  
+  // Apply pastel highlights to bright areas
+  float highlightMask = smoothstep(0.75, 0.95, noiseValue);
+  finalColor = mix(finalColor, currentAccent, highlightMask * 0.2);
+
+  // Subtle vignette effect
+  float vignette = smoothstep(0.9, 0.3, length(vUv - 0.5));
+  finalColor *= vignette * 0.7 + 0.3;
+
+  // Gamma correction for better color reproduction
+  finalColor = pow(finalColor, vec3(0.8));
+  
+  // Clamp to valid range
+  finalColor = clamp(finalColor, 0.0, 1.0);
+
+  // Final output with metallic sheen alpha
+  gl_FragColor = vec4(finalColor, 0.18);
 }
 `;
 
@@ -168,10 +248,10 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.height / 2,
     Math.max(canvas.width, canvas.height) / 1.5
   );
-  gradient.addColorStop(0.0, 'rgba(214,191,254,0.3)');   // lavender
-  gradient.addColorStop(0.25,'rgba(179,209,255,0.15)'); // blue-lavender
-  gradient.addColorStop(0.75,'rgba(236,239,241,0.1)');  // silver
-  gradient.addColorStop(1.0, 'rgba(153,246,228,0.3)');   // teal
+  gradient.addColorStop(0.0, 'rgba(214,191,254,0.15)');   // lavender
+  gradient.addColorStop(0.25,'rgba(179,209,255,0.12)');   // blue-lavender
+  gradient.addColorStop(0.75,'rgba(236,239,241,0.08)');   // silver
+  gradient.addColorStop(1.0, 'rgba(153,246,228,0.15)');   // teal
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
@@ -209,7 +289,7 @@ export default function PlasmaBackground() {
     }
 
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     renderer.setClearColor(0x000000, 0);
 
@@ -223,33 +303,50 @@ export default function PlasmaBackground() {
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
       u_viewDirection: { value: new THREE.Vector3(0, 0, 1) }
     };
-    // Relying on #version 300 es in shader strings, so glslVersion option removed.
-    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
-    material.blending = THREE.NormalBlending;
+    
+    const material = new THREE.ShaderMaterial({ 
+      vertexShader, 
+      fragmentShader, 
+      uniforms, 
+      transparent: true,
+      blending: THREE.NormalBlending
+    });
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
+    // Expose for debugging
     (canvas as any).__plasmaUniforms = uniforms;
 
     const clock = new THREE.Clock();
     let frameId: number;
+    let lastTime = 0;
+    const targetFPS = 30; // Throttle to 30fps for performance
+    const frameInterval = 1000 / targetFPS;
 
-    function animateLoop() {
+    function animateLoop(currentTime: number = 0) {
       if (!globalAny.__plasmaSingleton || !globalAny.__plasmaSingleton.canvas.isConnected) {
         if (frameId) cancelAnimationFrame(frameId);
         return;
       }
+      
+      frameId = requestAnimationFrame(animateLoop);
+      
+      // Throttle rendering
+      if (currentTime - lastTime < frameInterval) return;
+      lastTime = currentTime;
+      
       uniforms.u_time.value = clock.getElapsedTime();
       renderer.render(scene, camera);
-      frameId = requestAnimationFrame(animateLoop);
     }
     
     frameId = requestAnimationFrame(animateLoop);
 
     const handleResize = () => {
-      renderer.setSize(window.innerWidth, window.innerHeight, false);
-      uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height, false);
+      uniforms.u_resolution.value.set(width, height);
     };
     window.addEventListener('resize', handleResize);
 
