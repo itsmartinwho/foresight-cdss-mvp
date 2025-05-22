@@ -4,13 +4,13 @@ This guide outlines the strategy and conventions used in the Foresight CDSS proj
 
 ## Icon Library
 
-The application now uses Phosphor Icons (`phosphor-react`) for all iconography. Icons should be imported from `phosphor-react` and aliased if necessary to maintain existing usage names. For example:
+The application now uses Phosphor Icons (`@phosphor-icons/react`) for all iconography. Icons should be imported from `@phosphor-icons/react` and aliased if necessary to maintain existing usage names. For example:
 
 ```tsx
 import { MagnifyingGlass as Search, House as Home } from '@phosphor-icons/react';
 ```
 
-Avoid using `lucide-react`, as it has been replaced by `phosphor-react`.
+Avoid using `lucide-react`, as it has been replaced by `@phosphor-icons/react`.
 
 ## Core Principle
 
@@ -259,7 +259,7 @@ This document provides guidelines and conventions for styling frontend component
 
 - **Tailwind CSS:** Utility-first CSS framework for rapid UI development.
 - **Radix UI (Headless Components):** For accessible and unstyled primitives for UI components like dropdowns, dialogs, etc. (if used).
-- **Lucide Icons:** For clear and consistent iconography.
+- **Phosphor Icons:** For clear and consistent iconography.
 
 ## General Guidelines
 
