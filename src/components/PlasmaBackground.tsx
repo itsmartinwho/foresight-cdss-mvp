@@ -98,8 +98,8 @@ const vertexShader = `
 `;
 
 const fragmentShader = `
+  #extension GL_OES_standard_derivatives : enable
   precision highp float; // Necessary for some mobile devices
-  #extension GL_OES_standard_derivatives : enable // Re-enabled for dFdx/dFdy
 
   uniform vec2 u_resolution;
   uniform float u_time;
@@ -120,17 +120,13 @@ const fragmentShader = `
     return v;
   }
 
-  // HSL to RGB conversion
-  // Source: https://stackoverflow.com/a/17897228/131264
-  vec3 hsl2rgb(vec3 c) {
-    vec3 rgb = clamp(abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0,0.0,1.0);
-    return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
-  }
-
+  // --- end utility functions ---
 
   void main() {
-    // Domain Warping
-    vec2 warp = fbm(vec3(vUv * 1.1, u_time * 0.04)).xy * 0.35;
+    // Domain Warping – create 2-D offset via two fbm samples
+    float warpX = fbm(vec3(vUv * 1.1, u_time * 0.04));
+    float warpY = fbm(vec3(vUv * 1.1 + 100.0, u_time * 0.04)); // Offset constant decorrelates
+    vec2 warp = vec2(warpX, warpY) * 0.35;
 
     // Three independent ridged noise masks with domain warping
     float m1 = abs(snoise(vec3(vUv * 0.8 + warp,  u_time * 0.05)));
@@ -139,26 +135,25 @@ const fragmentShader = `
     float n  = (m1 * 0.5 + m2 * 0.3 + m3 * 0.2); // Balanced weights
 
     // Piece-wise Palette
-    vec3 washedTeal    = vec3(0.4, 0.7, 0.7);
-    vec3 softLavender  = vec3(0.7, 0.6, 0.85);
-    vec3 nearWhite     = vec3(0.9, 0.9, 0.95);
+    vec3 washedTeal    = vec3(0.38, 0.72, 0.72);
+    vec3 softLavender  = vec3(0.75, 0.65, 0.9);
+    vec3 nearWhite     = vec3(0.95, 0.95, 0.97);
 
-    vec3 finalColor = mix(washedTeal, softLavender, smoothstep(0.2, 0.5, n));
-    finalColor      = mix(finalColor, nearWhite, smoothstep(0.6, 0.85, n));
+    vec3 finalColor = mix(washedTeal, softLavender, smoothstep(0.25, 0.55, n));
+    finalColor      = mix(finalColor, nearWhite, smoothstep(0.65, 0.9, n));
 
     // Animated Specular Sheen with moving light & derivative normals
     vec3 lightDir = normalize(vec3(sin(u_time * 0.1), cos(u_time * 0.1), 0.6));
     vec3 viewDir = normalize(u_viewDirection);
-    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.1)); // Using derivatives, small Z for robustness
+    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.1));
 
     vec3 halfVec = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfVec), 0.0), 48.0); // Specular power 48
-    finalColor += spec * 0.35; // Existing specular weight
+    float spec = pow(max(dot(norm, halfVec), 0.0), 48.0);
+    finalColor += spec * 0.35;
 
-    // Clamp final color before setting alpha
     finalColor = clamp(finalColor, 0.0, 1.0);
 
-    gl_FragColor = vec4(finalColor, 0.18); // New global alpha
+    gl_FragColor = vec4(finalColor, 0.18);
   }
 `;
 
