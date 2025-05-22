@@ -446,10 +446,20 @@ export default function AdvisorView() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Upload */}
-                  <Button size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()}>
-                    <Plus className="h-[14px] w-[14px] text-foreground" />
-                  </Button>
+                  {/* Context and File Upload Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost">
+                        <Plus className="h-[14px] w-[14px] text-foreground" />
+                        <span className="sr-only">Add context</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <PatientSelectionDropdown
+                      onPatientSelect={handlePatientSelectForContext}
+                      onFileUpload={handleFileUpload}
+                    />
+                  </DropdownMenu>
+                  {/* Hidden File Input for onFileUpload handler */}
                   <input
                     ref={fileInputRef}
                     type="file"
