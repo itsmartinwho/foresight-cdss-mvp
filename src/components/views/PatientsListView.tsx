@@ -24,6 +24,13 @@ interface SortConfig {
   direction: 'ascending' | 'descending';
 }
 
+// Define AllPatientsSortableKey and AllPatientsSortConfig types
+type AllPatientsSortableKey = keyof Patient | 'consultationsCount'; // Add more specific patient keys if needed
+interface AllPatientsSortConfig {
+  key: AllPatientsSortableKey;
+  direction: 'ascending' | 'descending';
+}
+
 interface PatientsListViewProps {
   onSelect: (patient: Patient) => void;
 }
@@ -31,9 +38,11 @@ interface PatientsListViewProps {
 export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const [upcomingRowsData, setUpcomingRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
   const [pastRowsData, setPastRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
+  const [allPatientsData, setAllPatientsData] = useState<Patient[]>([]); // Added state for all patients
   const [isLoading, setIsLoading] = useState(true);
   const [upcomingSortConfig, setUpcomingSortConfig] = useState<SortConfig | null>(null);
   const [pastSortConfig, setPastSortConfig] = useState<SortConfig | null>(null);
+  const [allPatientsSortConfig, setAllPatientsSortConfig] = useState<AllPatientsSortConfig | null>(null); // Added state for all patients table sort config
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
   const [activeTab, setActiveTab] = useState<"allPatients" | "allConsultations">("allPatients");
   const router = useRouter();
@@ -41,6 +50,9 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const fetchData = async () => {
     setIsLoading(true);
     await supabaseDataService.loadPatientData();
+    const allPatients = supabaseDataService.getAllPatients();
+    setAllPatientsData(allPatients);
+
     const now = new Date();
     const upcoming: { patient: Patient | null; visit: Admission }[] = [];
     const past: { patient: Patient | null; visit: Admission }[] = [];
@@ -85,6 +97,37 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     setSortConfigAction({ key, direction });
   };
 
+  const requestAllPatientsSort = (key: AllPatientsSortableKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (allPatientsSortConfig && allPatientsSortConfig.key === key && allPatientsSortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setAllPatientsSortConfig({ key, direction });
+  };
+
+  const sortedAllPatients = useMemo(() => {
+    if (!allPatientsSortConfig) return allPatientsData;
+    return [...allPatientsData].sort((a, b) => {
+      const key = allPatientsSortConfig.key;
+      let aValue: any = a[key as keyof Patient];
+      let bValue: any = b[key as keyof Patient];
+
+      // Handle specific sort cases if needed, e.g., for dates or numbers
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+      
+      // if (key === 'consultationsCount') { // Example for a derived value
+      //   aValue = supabaseDataService.getPatientAdmissions(a.id)?.length || 0;
+      //   bValue = supabaseDataService.getPatientAdmissions(b.id)?.length || 0;
+      // }
+
+
+      if (aValue < bValue) return allPatientsSortConfig.direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return allPatientsSortConfig.direction === 'ascending' ? 1 : -1;
+      return 0;
+    });
+  }, [allPatientsData, allPatientsSortConfig]);
+
   const sortedRows = useMemo(() => {
     const sortData = (data: { patient: Patient | null; visit: Admission }[], sortConfig: SortConfig | null) => {
       if (!sortConfig) return data;
@@ -115,6 +158,107 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       past: sortData(pastRowsData, pastSortConfig),
     };
   }, [upcomingRowsData, pastRowsData, upcomingSortConfig, pastSortConfig, displayName]);
+
+  const renderAllPatientsTable = () => {
+    const patientFields: { key: keyof Patient; header: string; sortable?: boolean }[] = [
+      { key: "id", header: "Patient ID", sortable: true },
+      { key: "firstName", header: "First Name", sortable: true },
+      { key: "lastName", header: "Last Name", sortable: true },
+      // { key: "name", header: "Full Name" }, // Prefer firstName, lastName
+      { key: "gender", header: "Gender", sortable: true },
+      { key: "dateOfBirth", header: "Date of Birth", sortable: true },
+      // Consultations column will be handled separately
+      { key: "race", header: "Race", sortable: true },
+      { key: "maritalStatus", header: "Marital Status", sortable: true },
+      { key: "language", header: "Language", sortable: true },
+      { key: "povertyPercentage", header: "Poverty %", sortable: true },
+      // { key: "photo", header: "Photo" }, // Display image directly
+      { key: "primaryDiagnosis", header: "Primary Diagnosis", sortable: true },
+      // { key: "diagnosis", header: "Diagnosis" }, // Often same as primary
+      { key: "nextAppointment", header: "Next Appointment", sortable: true },
+      { key: "reason", header: "General Reason", sortable: true },
+    ];
+
+    if (isLoading) {
+      return <LoadingAnimation />;
+    }
+    
+    if (sortedAllPatients.length === 0 && !isLoading) {
+        return <p className="text-sm text-slate-400">No patients found.</p>;
+    }
+
+    return (
+      <Card className="bg-glass-sidebar backdrop-blur-lg border-slate-700/20 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-slate-900">All Patient Records</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table className="text-slate-200 text-step-0">
+            <TableHeader>
+              <TableRow className="border-slate-700/50">
+                {patientFields.map(field => (
+                  <TableHead 
+                    key={field.key}
+                    onClick={field.sortable ? () => requestAllPatientsSort(field.key as AllPatientsSortableKey) : undefined}
+                    className={field.sortable ? "cursor-pointer hover:text-neon" : ""}
+                  >
+                    {field.header}
+                    {field.sortable && allPatientsSortConfig?.key === field.key && (
+                      allPatientsSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />
+                    )}
+                  </TableHead>
+                ))}
+                <TableHead 
+                  onClick={() => requestAllPatientsSort('consultationsCount')}
+                  className={"cursor-pointer hover:text-neon"}
+                >
+                  Consultations
+                  {allPatientsSortConfig?.key === 'consultationsCount' && (
+                    allPatientsSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />
+                  )}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedAllPatients.map((patient) => {
+                const patientAdmissions = supabaseDataService.getPatientAdmissions(patient.id) || [];
+                return (
+                  <TableRow 
+                    key={patient.id} 
+                    className="border-slate-700/50 hover:bg-slate-700/30 transition-colors duration-150 ease-in-out"
+                  >
+                    {patientFields.map(field => (
+                      <TableCell key={`${patient.id}-${field.key}`}>
+                        {patient[field.key] ? String(patient[field.key]) : "—"}
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      {patientAdmissions.length > 0 ? (
+                        <ul className="list-none p-0 m-0 space-y-1">
+                          {patientAdmissions.map(admission => (
+                            <li key={admission.id}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="text-neon hover:text-neon/80 p-0 h-auto"
+                                onClick={() => router.push(`/patients/${patient.id}?ad=${admission.id}`)}
+                              >
+                                {new Date(admission.scheduledStart).toLocaleString()}
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : "No consultations"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderTable = (
     title: string,
@@ -203,7 +347,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         </div>
         <TabsContent value="allPatients" className="mt-0 flex-grow">
           {/* Placeholder for All Patients table */}
-          <p className="text-slate-900">This is where the 'All Patients' table will be displayed.</p>
+          {/* <p className="text-slate-900">This is where the 'All Patients' table will be displayed.</p> */}
+          {renderAllPatientsTable()}
         </TabsContent>
         <TabsContent value="allConsultations" className="mt-0 flex-grow">
           {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
