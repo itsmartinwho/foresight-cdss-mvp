@@ -11,6 +11,7 @@ import {
   Waves,
   Plus,
   Upload,
+  X,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
@@ -178,12 +179,10 @@ export default function AdvisorView() {
     let queryContent = input.trim();
     if (includePapers) queryContent += "\n\nInclude recent peer-reviewed medical papers.";
 
+    // Prepare user message and assistant placeholder
     const userMessage: ChatMessage = { id: uuidv4(), role: "user", content: queryContent };
-
-    // Prepare assistant placeholder
     const assistantId = uuidv4();
     currentAssistantMessageIdRef.current = assistantId;
-
     const markdownRootDiv = document.createElement('div');
     markdownRootsRef.current[assistantId] = markdownRootDiv;
     parsersRef.current[assistantId] = smd_parser(smd_default_renderer(markdownRootDiv));
@@ -194,19 +193,17 @@ export default function AdvisorView() {
       content: { isMarkdownStream: true } as AssistantMessageContent,
       isStreaming: true,
     }]);
-
     setInput("");
     setIsSending(true);
     setUserHasScrolledUp(false);
-
     requestAnimationFrame(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
       }
     });
 
-    // Build payload with past user messages (strings), assistant responses (rendered text), and the new user message.
-    const apiPayloadMessages = messages.reduce((acc, msg) => {
+    // Build payload with optional patient context, past messages, and new user message.
+    const existingPayload = messages.reduce((acc, msg) => {
       if (msg.role === 'user' && typeof msg.content === 'string') {
         acc.push({ role: 'user' as const, content: msg.content });
       } else if (msg.role === 'assistant' && typeof msg.content === 'object') {
@@ -224,6 +221,17 @@ export default function AdvisorView() {
       return acc;
     }, [] as Array<{role: 'user' | 'assistant', content: string}>);
 
+    // Insert patient context at the beginning if present
+    const apiPayloadMessages = [] as Array<{role: 'system' | 'user' | 'assistant', content: string}>;
+    if (selectedPatientForContext) {
+      // Attach patient context as a system message
+      apiPayloadMessages.push({
+        role: 'system' as const,
+        content: JSON.stringify({ patient: selectedPatientForContext }),
+      });
+    }
+    // Append existing conversation history
+    apiPayloadMessages.push(...existingPayload);
     // Add the current user's new message
     apiPayloadMessages.push({ role: 'user' as const, content: queryContent });
 
@@ -233,22 +241,22 @@ export default function AdvisorView() {
       try {
         const data = JSON.parse(ev.data);
         if (data.type === "markdown_chunk" && data.content) {
-          smd_parser_write(parsersRef.current[assistantId], data.content);
+          smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
         } else if (data.type === "stream_end") {
-          if (parsersRef.current[assistantId]) {
-            smd_parser_end(parsersRef.current[assistantId]);
-            delete parsersRef.current[assistantId];
+          if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
+            smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
+            delete parsersRef.current[currentAssistantMessageIdRef.current!];
           }
-          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, isStreaming: false } : m));
+          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false } : m));
           setIsSending(false);
           eventSource.close();
         } else if (data.type === "error") {
           console.error("SSE Error:", data.message);
-          if (parsersRef.current[assistantId]) {
-            smd_parser_end(parsersRef.current[assistantId]);
-            delete parsersRef.current[assistantId];
+          if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
+            smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
+            delete parsersRef.current[currentAssistantMessageIdRef.current!];
           }
-          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: `**Error:** ${data.message}` } } : m));
+          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: `**Error:** ${data.message}` } } : m));
           setIsSending(false);
           eventSource.close();
         }
@@ -259,11 +267,11 @@ export default function AdvisorView() {
 
     eventSource.onerror = (err) => {
       console.error("EventSource failed:", err);
-      if (parsersRef.current[assistantId]) {
-        smd_parser_end(parsersRef.current[assistantId]);
-        delete parsersRef.current[assistantId];
+      if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
+        smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
+        delete parsersRef.current[currentAssistantMessageIdRef.current!];
       }
-      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: "**Error:** Connection issue or stream interrupted." } } : m));
+      setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: "**Error:** Connection issue or stream interrupted." } } : m));
       setIsSending(false);
       eventSource.close();
     };
@@ -285,28 +293,15 @@ export default function AdvisorView() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // TODO: Implement actual file processing and context injection
       console.log("Selected file:", file.name);
-      // Example: Add a message to the chat indicating a file was added
-      const fileContextMessage: ChatMessage = {
-        id: uuidv4(),
-        role: "user",
-        content: `[File uploaded: ${file.name}]`,
-      };
-      setMessages((prevMessages) => [...prevMessages, fileContextMessage]);
+      // TODO: Implement file attachment state and UI similar to patient context
     }
   };
 
   const handlePatientSelectForContext = (patient: Patient) => {
+    // Set patient context attachment
     setSelectedPatientForContext(patient);
-    // Example: Add a message to the chat indicating a patient was selected for context
-    const patientContextMessage: ChatMessage = {
-      id: uuidv4(),
-      role: "user",
-      content: `[Context added for patient: ${patient.name || patient.id}]`,
-    };
-    setMessages((prevMessages) => [...prevMessages, patientContextMessage]);
-    // Close dropdown or handle UI changes as needed
+    // Close dropdown automatically handled by Radix on item click
   };
 
   return (
@@ -403,6 +398,17 @@ export default function AdvisorView() {
             <div
               className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-6 py-4 flex flex-col gap-3 pointer-events-auto shadow-lg"
             >
+              {/* Patient context attachment tag */}
+              {selectedPatientForContext && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center bg-muted/20 text-step--1 rounded-full px-3 py-1">
+                    {selectedPatientForContext.name || `${selectedPatientForContext.firstName ?? ''} ${selectedPatientForContext.lastName ?? ''}`.trim() || selectedPatientForContext.id}
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-2" onClick={() => setSelectedPatientForContext(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </div>
+              )}
               {/* Textarea input */}
               <Textarea
                 value={input}
