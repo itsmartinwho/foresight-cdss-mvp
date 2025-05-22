@@ -332,7 +332,7 @@ export default function AdvisorView() {
                   {msg.role === "system" && typeof msg.content === 'string' && (
                     msg.content === "Ask Foresight" ? (
                       <div className="flex justify-center items-center">
-                        <span className="bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen">
+                        <span className="bg-gradient-to-br from-teal-400 to-yellow-400 bg-clip-text text-transparent font-medium sheen">
                           {msg.content}
                         </span>
                       </div>
