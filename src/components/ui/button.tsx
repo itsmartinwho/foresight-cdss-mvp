@@ -16,7 +16,17 @@ const buttonVariants = cva(
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "text-black dark:text-white bg-[rgba(255,255,255,0.10)] dark:bg-[rgba(0,0,0,0.10)] backdrop-blur-sm relative before:absolute before:-inset-[2px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[2px] after:rounded-[6px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.25),rgba(255,255,255,0.10)_60%,transparent_100%)] after:opacity-80 after:z-[-1] focus-visible:ring-[hsl(var(--neon-teal))]",
+          "relative inline-flex items-center justify-center gap-2 whitespace-nowrap \\\
+rounded-md text-sm font-medium isolate overflow-hidden \\\
+focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--neon-teal))] \\\
+disabled:pointer-events-none disabled:opacity-50 \\\
+/* glass interior */ \\\
+bg-white/10 dark:bg-black/10 backdrop-blur-sm \\\
+/* static teal→yellow rim */ \\\
+border-[2px] border-transparent \\\
+[border-image:linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))_1] \\\
+/* permanent edge shine */ \\\
+shadow-[inset_0_0_8px_0_rgba(255,255,255,0.35)]",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
