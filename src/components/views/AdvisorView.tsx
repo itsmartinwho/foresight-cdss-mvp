@@ -423,41 +423,68 @@ export default function AdvisorView() {
 
               {/* Action row */}
               <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant={includePapers ? "default" : "secondary"}
-                    className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
-                    onClick={() => setIncludePapers((v) => !v)}
-                  >
-                    <BookOpen className="h-3.5 w-3.5" />
-                    Papers
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={thinkMode ? "default" : "secondary"}
-                    className="rounded-full text-[0.65rem] uppercase h-7 px-3 flex items-center gap-1"
-                    onClick={() => setThinkMode((v) => !v)}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Think
-                  </Button>
+                <div className="flex gap-2 items-center">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant={includePapers ? "default" : "ghost"}
+                          onClick={() => setIncludePapers((v) => !v)}
+                          className="group"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                          <span className="group-hover:ml-2 group-hover:block hidden">Papers</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Papers</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant={thinkMode ? "default" : "ghost"}
+                          onClick={() => setThinkMode((v) => !v)}
+                          className="group"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          <span className="group-hover:ml-2 group-hover:block hidden">Think</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Think</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
 
                 <div className="flex items-center gap-2">
                   {/* Context and File Upload Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="icon" variant="ghost">
-                        <Plus className="h-[14px] w-[14px] text-foreground" />
-                        <span className="sr-only">Add context</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <PatientSelectionDropdown
-                      onPatientSelect={handlePatientSelectForContext}
-                      onFileUpload={handleFileUpload}
-                    />
-                  </DropdownMenu>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="group">
+                              <Plus className="h-[14px] w-[14px] text-foreground" />
+                              <span className="group-hover:ml-2 group-hover:block hidden">Attach</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <PatientSelectionDropdown
+                            onPatientSelect={handlePatientSelectForContext}
+                            onFileUpload={handleFileUpload}
+                          />
+                        </DropdownMenu>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Attach</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   {/* Hidden File Input for onFileUpload handler */}
                   <input
                     ref={fileInputRef}
@@ -470,24 +497,54 @@ export default function AdvisorView() {
                   {/* Dictation (if not in voice mode) */}
                   {!voiceMode && typeof window !== "undefined" &&
                     ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) && (
-                      <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation}>
-                        <Mic className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation} className="group">
+                              <Mic className="h-4 w-4" />
+                              <span className="group-hover:ml-2 group-hover:block hidden">Dictate</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Dictate</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   {/* Voice or Send based on input */}
                   {input.trim().length > 0 ? (
-                    <Button
-                      size="icon"
-                      onClick={() => handleSend()}
-                      disabled={isSending}
-                      className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            onClick={() => handleSend()}
+                            disabled={isSending}
+                            className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white group"
+                          >
+                            <Send className="h-4 w-4" />
+                            <span className="group-hover:ml-2 group-hover:block hidden">Send</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Send</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   ) : (
-                    <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)}>
-                      <Waves className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)} className="group">
+                            <Waves className="h-4 w-4" />
+                            <span className="group-hover:ml-2 group-hover:block hidden">Voice Mode</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Voice Mode</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                 </div>
               </div>
