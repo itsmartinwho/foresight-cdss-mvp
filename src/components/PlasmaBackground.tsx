@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import ** THREE from 'three';
+import * as THREE from 'three';
 
 // Keep noiseGLSL for later
 const noiseGLSL = `
