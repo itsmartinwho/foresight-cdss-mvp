@@ -21,6 +21,7 @@ class ClinicalEngineService {
   async generateDiagnosticPlan(symptoms: string[], patientId?: string): Promise<DiagnosticPlan> {
     try {
       // In production, this would call the API endpoint
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/generate-plan)
       // For the MVP, we'll simulate the response
       
       // Simulate API call delay
@@ -221,6 +222,7 @@ class ClinicalEngineService {
   async executeDiagnosticStep(step: DiagnosticStep, patientId?: string): Promise<DiagnosticStep> {
     try {
       // In production, this would call the API endpoint
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/execute-step)
       // For the MVP, we'll simulate the response
       
       // Simulate API call delay
@@ -324,6 +326,8 @@ class ClinicalEngineService {
   async executeDiagnosticPlan(plan: DiagnosticPlan, patientId?: string, updateCallback?: (plan: DiagnosticPlan) => void): Promise<DiagnosticPlan> {
     try {
       const updatedSteps: DiagnosticStep[] = [];
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/execute-plan)
+      // This mock implementation executes steps sequentially. The backend might do this in parallel batches.
       
       // Execute each step sequentially
       for (const step of plan.steps) {
@@ -359,6 +363,7 @@ class ClinicalEngineService {
   async generateDiagnosticResult(symptoms: string[], plan: DiagnosticPlan): Promise<DiagnosticResult> {
     try {
       // In production, this would call the API endpoint
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/generate-result)
       // For the MVP, we'll simulate the response
       
       // Simulate API call delay
@@ -503,6 +508,7 @@ class ClinicalEngineService {
   async matchClinicalTrials(diagnosis: string, patientId?: string): Promise<ClinicalTrial[]> {
     try {
       // In production, this would call the API endpoint
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/match-trials)
       // For the MVP, we'll simulate the response
       
       // Simulate API call delay
@@ -570,6 +576,7 @@ class ClinicalEngineService {
   async generatePriorAuthorization(diagnosis: string, treatment: string, patientId: string): Promise<PriorAuthorization> {
     try {
       // In production, this would call the API endpoint
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/prior-authorization)
       // For the MVP, we'll simulate the response
       
       // Simulate API call delay
@@ -618,6 +625,7 @@ class ClinicalEngineService {
   async generateSpecialistReferral(diagnosis: string, specialistType: string, patientId: string): Promise<SpecialistReferral> {
     try {
       // In production, this would call the API endpoint
+      // TODO: call actual Tool B backend here when available (e.g., using fetch or axios to /api/clinical-engine/specialist-referral)
       // For the MVP, we'll simulate the response
       
       // Simulate API call delay

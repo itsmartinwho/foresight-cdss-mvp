@@ -151,6 +151,38 @@ The architecture is designed with the following future AI-powered capabilities i
     *   **Future Enhancement:** Parse novel clinical research (academic papers) from the internet to inform its diagnosis and treatment recommendations.
     *   **Prototyping:** The `clinical_engine.py` script serves as an initial, standalone prototype for the logic of this engine. Future development might involve evolving this Python code and exposing it via an API, or re-implementing the logic in TypeScript within the Next.js backend.
 
+    *   **Clinical Engine Pipeline (Refactored `clinical_engine.py`):**
+        The `clinical_engine.py` prototype has been refactored to follow a clear, modular pipeline structure, preparing it for future integration. This structure mirrors the high-level vision for Tool B.
+
+        **Pipeline Stages:**
+        1.  **Input Processing (Symptom Extraction):** Raw consultation input (transcript and notes) is processed. For example, `extract_symptoms_from_transcript(transcript: str) -> List[str]` converts unstructured text into a structured symptom list using keyword matching (or a future AI model).
+        2.  **Plan Creation (`generate_diagnostic_plan`):** Based on the extracted symptoms and patient data, a `DiagnosticPlan` (a series of `DiagnosticStep` objects) is generated. This stage focuses purely on creating the plan structure and does not involve execution.
+        3.  **Plan Execution (`execute_diagnostic_plan` via `PlanExecutor`):** The steps in the `DiagnosticPlan` are executed. This is an asynchronous process, often involving parallel execution of steps (e.g., querying guidelines, patient data). Each step populates its `findings`. The `PlanExecutor` class manages this execution.
+        4.  **Diagnosis Synthesis (`generate_diagnostic_result`):** The completed plan (with all findings) is taken as input to produce a final `DiagnosticResult`. This stage synthesizes all prior information into conclusions (primary diagnosis, differentials, recommended tests/treatments).
+        5.  **Output Document Generation (Optional Utilities):** Post-diagnosis utilities like `generate_prior_authorization`, `generate_specialist_referral`, and `match_clinical_trials` can be called. These are separate from the core diagnostic flow.
+
+        **Conceptual Flow:**
+        ```
+        engine = ClinicalEngine(...)
+        # Patient data would be fetched from Supabase and passed as a Pydantic Patient model
+        patient_model = Patient(**patient_data_from_supabase, raw_data=patient_data_from_supabase)
+
+        symptoms = engine.extract_symptoms_from_transcript(transcript_text) # Stage 1
+        plan = await engine.generate_diagnostic_plan(symptoms, patient_model) # Stage 2
+        executed_plan, sources = await engine.execute_diagnostic_plan(plan, patient_model) # Stage 3
+        result = await engine.generate_diagnostic_result(symptoms, executed_plan, sources, patient_model) # Stage 4
+        
+        if result.diagnosis_name and result.diagnosis_name not in ["Unable to Process", "Undifferentiated Inflammatory Condition"]:
+            referral = await engine.generate_specialist_referral(result.diagnosis_name, "RelevantSpecialty", patient_model) # Stage 5 (optional)
+            trials = await engine.match_clinical_trials(result.diagnosis_name, patient_model) # Stage 5 (optional)
+        ```
+
+        **Key Characteristics:**
+        *   **Data Input:** The engine now expects patient data (demographics, history, etc.) to be passed into its methods (e.g., as a Pydantic `Patient` model with a `raw_data` field), rather than loading from local files. This data would be fetched from the EMR (Supabase) by the backend service calling the engine.
+        *   **Asynchronous Operations:** Plan execution and potentially other steps are asynchronous (`async/await`) to handle I/O-bound tasks like API calls or database queries efficiently.
+        *   **Stepwise UI Support:** This modular pipeline is designed to support a stepwise user interface. For example, the application could generate and display the diagnostic plan first, allow for user input or modifications, or pause for lab results before proceeding to execution and final diagnosis synthesis.
+        *   **Integration Entry Point:** The `run_full_diagnostic(patient_id: str, transcript: str, patient_data_dict: Dict[str, Any], ...)` coroutine in `clinical_engine.py` provides a high-level entry point for running the entire pipeline, suitable for an API call.
+
 *   **Tool C (Medical Co-pilot):** A real-time AI assistant during live consultations.
     *   **Functionality:** Listens to the consultation in real-time and provides discrete, high-confidence nudges (e.g., silent notifications) to the physician about questions to ask, tests to consider, etc., if it detects potential omissions.
     *   **Technology:** Would likely require real-time audio processing, speech-to-text, and a fast, responsive AI model. Integration might involve WebSockets or similar real-time communication.

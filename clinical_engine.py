@@ -21,6 +21,7 @@ import os
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional, Any
 import uuid
+import re # Added for symptom extraction
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +42,7 @@ class Patient(BaseModel):
     marital_status: str
     language: str
     poverty_percentage: float
+    raw_data: Optional[Dict[str, Any]] = None
 
 class Admission(BaseModel):
     id: str
@@ -83,14 +85,14 @@ class DiagnosticPlan(BaseModel):
     rationale: str
 
 class DiagnosticResult(BaseModel):
-    diagnosis_name: str
-    diagnosis_code: Optional[str] = None
-    confidence: float
-    supporting_evidence: List[str]
-    differential_diagnoses: List[Dict[str, Any]] = []
-    recommended_tests: List[str] = []
-    recommended_treatments: List[str] = []
-    clinical_trial_matches: List[Dict[str, Any]] = []
+    diagnosis_name: str # The primary diagnosis determined by the engine.
+    diagnosis_code: Optional[str] = None # The ICD-10 or other relevant code for the diagnosis.
+    confidence: float # A numerical value (e.g., 0.0 to 1.0) indicating the engine's confidence in the primary diagnosis.
+    supporting_evidence: List[str] # A list of key findings or reasons that support the primary diagnosis.
+    differential_diagnoses: List[Dict[str, Any]] = [] # A list of alternative diagnoses considered, potentially with likelihoods or distinguishing factors.
+    recommended_tests: List[str] = [] # A list of suggested further tests to confirm the diagnosis or rule out differentials.
+    recommended_treatments: List[str] = [] # A list of potential treatment options based on the diagnosis and guidelines.
+    clinical_trial_matches: List[Dict[str, Any]] = [] # A list of relevant clinical trials the patient might be eligible for.
     
 class DebugLogger:
     """Simple debug logger for the clinical engine"""
@@ -127,6 +129,49 @@ class DebugLogger:
 # Initialize debug logger
 debug_logger = DebugLogger()
 
+class PlanExecutor:
+    """Executes a diagnostic plan, managing concurrency of diagnostic steps."""
+
+    def __init__(self, engine: 'ClinicalEngine', patient: Optional[Patient] = None):
+        self.engine = engine
+        self.patient = patient
+
+    async def execute_plan(self, plan: DiagnosticPlan, update_callback=None) -> Tuple[DiagnosticPlan, List[ClinicalSource]]:
+        """
+        Executes the diagnostic steps (queries guidelines, patient data, etc.) in parallel batches,
+        populating each step's findings.
+        """
+        logger.info("Starting diagnostic plan execution via PlanExecutor")
+        all_sources: List[ClinicalSource] = []
+
+        async def execute_step_task(step_to_execute: DiagnosticStep):
+            # Correctly call execute_diagnostic_step on the engine instance
+            updated_step = await self.engine.execute_diagnostic_step(step_to_execute, self.patient)
+            return updated_step
+
+        steps = plan.steps.copy()
+        updated_steps: List[DiagnosticStep] = []
+
+        for i in range(0, len(steps), MAX_PARALLEL_PROCESSES):
+            batch = steps[i:i + MAX_PARALLEL_PROCESSES]
+            tasks = [execute_step_task(step) for step in batch]
+            batch_results = await asyncio.gather(*tasks)
+            updated_steps.extend(batch_results)
+
+            current_plan_state = DiagnosticPlan(
+                steps=[*updated_steps, *steps[i + MAX_PARALLEL_PROCESSES:]],
+                rationale=plan.rationale
+            )
+            if update_callback:
+                await update_callback(current_plan_state)
+        
+        plan.steps = updated_steps
+        for step in plan.steps:
+            all_sources.extend(step.sources)
+        
+        logger.info("Diagnostic plan execution completed by PlanExecutor")
+        return plan, all_sources
+
 class ClinicalEngine:
     """Core clinical decision support engine functionality"""
     
@@ -135,145 +180,64 @@ class ClinicalEngine:
         self.guidelines = guideline_client
         self.clinical_trials = clinical_trial_client
         self.current_session_id = str(uuid.uuid4())
-        
-        # Patient data storage
-        self.patients = {}
-        self.admissions = {}
-        self.diagnoses = {}
-        self.lab_results = {}
     
-    def load_patient_data(self, patient_data_dir: str):
-        """Load patient data from the provided directory"""
-        logger.info(f"Loading patient data from: {patient_data_dir}")
+    def extract_symptoms_from_transcript(self, transcript: str) -> List[str]:
+        """
+        Extracts key symptoms from a raw consultation transcript.
+        This method converts unstructured notes/transcript into a structured symptom list for the planner.
+        Currently uses simple keyword matching. Future improvements could involve an AI model.
+        """
+        logger.info("Extracting symptoms from transcript")
+        # Simple keyword matching for now. This should be replaced with a more robust NLP/AI solution.
+        # Keywords are case-insensitive.
+        # This is a placeholder implementation.
+        known_symptoms = [
+            "fatigue", "joint pain", "weight loss", "abdominal pain", "fever", 
+            "headache", "nausea", "vomiting", "diarrhea", "constipation", 
+            "cough", "shortness of breath", "chest pain", "dizziness", "rash"
+        ]
         
-        # Load patient core data
-        patient_file = os.path.join(patient_data_dir, "PatientCorePopulatedTable.txt")
-        if os.path.exists(patient_file):
-            with open(patient_file, 'r', encoding='utf-8-sig') as f:
-                lines = f.readlines()
-                headers = lines[0].strip().split('\t')
-                for line in lines[1:]:
-                    values = line.strip().split('\t')
-                    patient_data = dict(zip(headers, values))
-                    patient = Patient(
-                        id=patient_data['PatientID'],
-                        gender=patient_data['PatientGender'],
-                        date_of_birth=patient_data['PatientDateOfBirth'],
-                        race=patient_data['PatientRace'],
-                        marital_status=patient_data['PatientMaritalStatus'],
-                        language=patient_data['PatientLanguage'],
-                        poverty_percentage=float(patient_data['PatientPopulationPercentageBelowPoverty'])
-                    )
-                    self.patients[patient.id] = patient
+        extracted_symptoms = []
+        # Normalize transcript to lower case for case-insensitive matching
+        normalized_transcript = transcript.lower()
         
-        # Load admissions data
-        admissions_file = os.path.join(patient_data_dir, "AdmissionsCorePopulatedTable.txt")
-        if os.path.exists(admissions_file):
-            with open(admissions_file, 'r', encoding='utf-8-sig') as f:
-                lines = f.readlines()
-                headers = lines[0].strip().split('\t')
-                for line in lines[1:]:
-                    values = line.strip().split('\t')
-                    admission_data = dict(zip(headers, values))
-                    admission = Admission(
-                        id=admission_data['AdmissionID'],
-                        patient_id=admission_data['PatientID'],
-                        start_date=admission_data['AdmissionStartDate'],
-                        end_date=admission_data['AdmissionEndDate']
-                    )
-                    if admission.patient_id not in self.admissions:
-                        self.admissions[admission.patient_id] = []
-                    self.admissions[admission.patient_id].append(admission)
+        for symptom in known_symptoms:
+            # Use regex word boundaries to match whole words to avoid partial matches (e.g., "pain" in "paint")
+            if re.search(r'\b' + re.escape(symptom) + r'\b', normalized_transcript):
+                extracted_symptoms.append(symptom)
         
-        # Load diagnoses data
-        diagnoses_file = os.path.join(patient_data_dir, "AdmissionsDiagnosesCorePopulatedTable.txt")
-        if os.path.exists(diagnoses_file):
-            with open(diagnoses_file, 'r', encoding='utf-8-sig') as f:
-                lines = f.readlines()
-                headers = lines[0].strip().split('\t')
-                for line in lines[1:]:
-                    values = line.strip().split('\t')
-                    diagnosis_data = dict(zip(headers, values))
-                    diagnosis = Diagnosis(
-                        patient_id=diagnosis_data['PatientID'],
-                        admission_id=diagnosis_data['AdmissionID'],
-                        code=diagnosis_data['PrimaryDiagnosisCode'],
-                        description=diagnosis_data['PrimaryDiagnosisDescription']
-                    )
-                    key = f"{diagnosis.patient_id}_{diagnosis.admission_id}"
-                    if key not in self.diagnoses:
-                        self.diagnoses[key] = []
-                    self.diagnoses[key].append(diagnosis)
-        
-        # Load lab results data
-        labs_file = os.path.join(patient_data_dir, "LabsCorePopulatedTable.txt")
-        if os.path.exists(labs_file):
-            with open(labs_file, 'r', encoding='utf-8-sig') as f:
-                lines = f.readlines()
-                headers = lines[0].strip().split('\t')
-                for line in lines[1:]:
-                    values = line.strip().split('\t')
-                    lab_data = dict(zip(headers, values))
-                    try:
-                        lab_result = LabResult(
-                            patient_id=lab_data['PatientID'],
-                            admission_id=lab_data['AdmissionID'],
-                            name=lab_data['LabName'],
-                            value=float(lab_data['LabValue']),
-                            units=lab_data['LabUnits'],
-                            date_time=lab_data['LabDateTime']
-                        )
-                        key = f"{lab_result.patient_id}_{lab_result.admission_id}"
-                        if key not in self.lab_results:
-                            self.lab_results[key] = []
-                        self.lab_results[key].append(lab_result)
-                    except ValueError:
-                        # Skip lab results with non-numeric values
-                        logger.warning(f"Skipping lab result with non-numeric value: {lab_data}")
-        
-        logger.info(f"Loaded {len(self.patients)} patients, {sum(len(admissions) for admissions in self.admissions.values())} admissions, "
-                   f"{sum(len(diagnoses) for diagnoses in self.diagnoses.values())} diagnoses, "
-                   f"{sum(len(labs) for labs in self.lab_results.values())} lab results")
-    
-    def get_patient_data(self, patient_id: str) -> Dict[str, Any]:
-        """Get comprehensive data for a specific patient"""
-        if patient_id not in self.patients:
-            return {"error": "Patient not found"}
-        
-        patient = self.patients[patient_id]
-        patient_admissions = self.admissions.get(patient_id, [])
-        
-        # Get diagnoses and lab results for each admission
-        admission_details = []
-        for admission in patient_admissions:
-            admission_key = f"{patient_id}_{admission.id}"
-            admission_diagnoses = self.diagnoses.get(admission_key, [])
-            admission_labs = self.lab_results.get(admission_key, [])
-            
-            admission_details.append({
-                "admission_id": admission.id,
-                "start_date": admission.start_date,
-                "end_date": admission.end_date,
-                "diagnoses": [{"code": d.code, "description": d.description} for d in admission_diagnoses],
-                "lab_results": [{"name": l.name, "value": l.value, "units": l.units, "date_time": l.date_time} for l in admission_labs]
-            })
-        
-        return {
-            "patient": patient.dict(),
-            "admissions": admission_details
-        }
-    
-    async def generate_diagnostic_plan(self, symptoms: List[str], patient_id: str = None) -> DiagnosticPlan:
-        """Generate a diagnostic plan based on symptoms and patient data"""
+        if not extracted_symptoms and transcript: # If no known symptoms found, use first few words as a placeholder
+            logger.warning("No known symptoms matched in transcript. Using placeholder.")
+            # Fallback: take the first 5 words as a proxy if the transcript is short, or a snippet.
+            # This is a very naive fallback.
+            # extracted_symptoms = transcript.split()[:5] 
+            # For now, let's return an empty list if no specific symptoms are found to avoid noisy inputs downstream
+            # Or, a more sophisticated NLP model would handle this.
+
+        logger.info(f"Extracted symptoms: {extracted_symptoms}")
+        return list(set(extracted_symptoms)) # Return unique symptoms
+
+    def get_patient_data(self, patient_id: str, patient_data_dict: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """Get comprehensive data for a specific patient from the provided dictionary."""
+        if not patient_data_dict or patient_data_dict.get("patient", {}).get("id") != patient_id:
+            logger.warning(f"Patient data for {patient_id} not provided or ID mismatch.")
+            return None
+        return patient_data_dict
+
+    async def generate_diagnostic_plan(self, symptoms: List[str], patient: Optional[Patient] = None) -> DiagnosticPlan:
+        """
+        Generate a diagnostic plan structure based on symptoms and patient data.
+        This method is responsible only for creating the plan structure (DiagnosticPlan with steps).
+        It does not execute any reasoning beyond listing steps.
+        This corresponds to the "create a diagnostic plan with workstreams" step of Tool B.
+        """
         logger.info(f"Generating diagnostic plan for symptoms: {symptoms}")
         
-        # Get patient data if provided
         patient_context = ""
-        if patient_id and patient_id in self.patients:
-            patient_data = self.get_patient_data(patient_id)
+        if patient and patient.raw_data:
             patient_context = f"""
             PATIENT CONTEXT:
-            {json.dumps(patient_data, indent=2)}
+            {json.dumps(patient.raw_data, indent=2)}
             """
         
         # Generate plan using LLM
@@ -413,7 +377,7 @@ class ClinicalEngine:
                 rationale=f"Fallback diagnostic plan to evaluate {', '.join(symptoms)} systematically"
             )
     
-    async def execute_diagnostic_step(self, step: DiagnosticStep, patient_id: str = None) -> DiagnosticStep:
+    async def execute_diagnostic_step(self, step: DiagnosticStep, patient: Optional[Patient] = None) -> DiagnosticStep:
         """Execute a single diagnostic step"""
         logger.info(f"Executing diagnostic step: {step.id} - {step.description}")
         
@@ -425,9 +389,9 @@ class ClinicalEngine:
             step.findings = ""
         
         # Get patient data if provided
-        patient_data = None
-        if patient_id and patient_id in self.patients:
-            patient_data = self.get_patient_data(patient_id)
+        patient_raw_data = None
+        if patient and patient.raw_data:
+            patient_raw_data = patient.raw_data # Use the raw_data field
         
         # Query clinical guidelines based on the step query
         guideline_results = await self.guidelines.search(step.query, MAX_SOURCES_PER_STEP)
@@ -446,12 +410,12 @@ class ClinicalEngine:
             sources.append(source)
         
         # If patient data is available, add it as a source
-        if patient_data:
+        if patient_raw_data:
             patient_source = ClinicalSource(
                 type="patient_data",
-                id=patient_id,
-                title=f"Patient Data for {patient_id}",
-                content=json.dumps(patient_data, indent=2),
+                id=patient.id, # Use patient.id
+                title=f"Patient Data for {patient.id}", # Use patient.id
+                content=json.dumps(patient_raw_data, indent=2),
                 relevance_score=1.0,
                 access_time=datetime.now().isoformat()
             )
@@ -558,48 +522,27 @@ class ClinicalEngine:
         
         return step
     
-    async def execute_diagnostic_plan(self, plan: DiagnosticPlan, patient_id: str = None, update_callback=None) -> Tuple[DiagnosticPlan, List[ClinicalSource]]:
-        """Execute the entire diagnostic plan"""
-        logger.info("Starting diagnostic plan execution")
-        
-        all_sources = []
-        
-        # Execute steps in parallel with a limit on concurrency
-        async def execute_step_task(step):
-            updated_step = await self.execute_diagnostic_step(step, patient_id)
-            return updated_step
-        
-        # Process steps in batches to limit concurrency
-        steps = plan.steps.copy()
-        updated_steps = []
-        
-        for i in range(0, len(steps), MAX_PARALLEL_PROCESSES):
-            batch = steps[i:i + MAX_PARALLEL_PROCESSES]
-            tasks = [execute_step_task(step) for step in batch]
-            batch_results = await asyncio.gather(*tasks)
-            updated_steps.extend(batch_results)
-            
-            # Update plan with completed steps so far
-            current_plan = DiagnosticPlan(
-                steps=[*updated_steps, *steps[i + MAX_PARALLEL_PROCESSES:]],
-                rationale=plan.rationale
-            )
-            
-            # Call the callback with the updated plan if provided
-            if update_callback:
-                await update_callback(current_plan)
-        
-        # Update plan with completed steps
-        plan.steps = updated_steps
-        
-        # Collect all sources
-        for step in plan.steps:
-            all_sources.extend(step.sources)
-        
-        return plan, all_sources
-    
-    async def generate_diagnostic_result(self, symptoms: List[str], plan: DiagnosticPlan, sources: List[ClinicalSource]) -> DiagnosticResult:
-        """Generate a diagnostic result based on the executed plan"""
+    async def execute_diagnostic_plan(self, plan: DiagnosticPlan, patient: Optional[Patient] = None, update_callback=None) -> Tuple[DiagnosticPlan, List[ClinicalSource]]:
+        """
+        Executes the diagnostic plan using the PlanExecutor.
+        This method acts as a thin wrapper around the PlanExecutor.
+        Executes the diagnostic steps (queries guidelines, patient data, etc.) in parallel batches, 
+        populating each step's findings.
+        """
+        logger.info("ClinicalEngine delegating diagnostic plan execution to PlanExecutor")
+        executor = PlanExecutor(engine=self, patient=patient)
+        return await executor.execute_plan(plan, update_callback)
+
+    async def generate_diagnostic_result(self, symptoms: List[str], plan: DiagnosticPlan, sources: List[ClinicalSource], patient: Optional[Patient] = None) -> DiagnosticResult:
+        """
+        Synthesizes a diagnostic result from the completed plan, symptoms, and sources.
+        This method takes the findings from all executed diagnostic steps and produces a final DiagnosticResult.
+        It is responsible for interpreting the aggregated information to determine a primary diagnosis,
+        consider differential diagnoses, and suggest recommendations.
+        The content of DiagnosticResult (diagnosis_name, diagnosis_code, confidence, supporting_evidence,
+        differential_diagnoses, recommended_tests, recommended_treatments, clinical_trial_matches) is
+        generated here, potentially by an LLM or other sophisticated logic in a production system.
+        """
         logger.info("Generating diagnostic result")
         
         # Prepare findings from all steps
@@ -750,41 +693,42 @@ class ClinicalEngine:
         
         return result
     
-    async def match_clinical_trials(self, diagnosis: str, patient_id: str = None) -> List[Dict[str, Any]]:
-        """Match patient to relevant clinical trials based on diagnosis"""
+    async def match_clinical_trials(self, diagnosis: str, patient: Optional[Patient] = None) -> List[Dict[str, Any]]:
+        """
+        Match patient to relevant clinical trials based on diagnosis. 
+        Call this after obtaining a final diagnosis. This is an optional post-diagnosis utility.
+        """
         logger.info(f"Matching clinical trials for diagnosis: {diagnosis}")
         
         # Get patient data if provided
-        patient_data = None
-        if patient_id and patient_id in self.patients:
-            patient_data = self.get_patient_data(patient_id)
+        patient_raw_data = None # Renamed to avoid conflict
+        if patient and patient.raw_data:
+            patient_raw_data = patient.raw_data # Use raw_data field
         
         # Query clinical trials database
         trial_results = await self.clinical_trials.search(diagnosis, MAX_SOURCES_PER_STEP)
         
         # Filter trials based on patient eligibility if patient data is available
-        if patient_data:
+        if patient_raw_data: # Check patient_raw_data
             # This would implement actual eligibility matching logic
             # For now, we'll return all trials
             pass
         
         return trial_results
     
-    async def generate_prior_authorization(self, diagnosis: str, treatment: str, patient_id: str) -> Dict[str, Any]:
-        """Generate prior authorization request for insurance"""
+    async def generate_prior_authorization(self, diagnosis: str, treatment: str, patient: Patient) -> Dict[str, Any]:
+        """
+        Generate prior authorization request for insurance. 
+        Call this after obtaining a final diagnosis. This is an optional post-diagnosis utility.
+        """
         logger.info(f"Generating prior authorization for {treatment} for diagnosis {diagnosis}")
-        
-        if patient_id not in self.patients:
-            return {"error": "Patient not found"}
-        
-        patient = self.patients[patient_id]
         
         # Basic prior authorization template
         auth_request = {
             "patient_information": {
-                "name": f"Patient {patient_id[:8]}",  # Using part of ID as name for demo
+                "name": f"Patient {patient.id[:8]}",  # Using part of ID as name for demo
                 "date_of_birth": patient.date_of_birth,
-                "insurance_id": f"INS{patient_id[:8]}",  # Simulated insurance ID
+                "insurance_id": f"INS{patient.id[:8]}",  # Simulated insurance ID
                 "gender": patient.gender
             },
             "provider_information": {
@@ -803,7 +747,7 @@ class ClinicalEngine:
                 "duration": "3 months",
                 "frequency": self._get_treatment_frequency(treatment)
             },
-            "clinical_justification": self._generate_clinical_justification(diagnosis, treatment, patient_id),
+            "clinical_justification": self._generate_clinical_justification(diagnosis, treatment, patient),
             "supporting_documentation": [
                 "Clinical notes from patient encounter",
                 "Relevant laboratory results",
@@ -813,22 +757,34 @@ class ClinicalEngine:
         
         return auth_request
     
-    async def generate_specialist_referral(self, diagnosis: str, specialist_type: str, patient_id: str) -> Dict[str, Any]:
-        """Generate specialist referral letter"""
+    async def generate_specialist_referral(self, diagnosis: str, specialist_type: str, patient: Patient) -> Dict[str, Any]:
+        """
+        Generate specialist referral letter. 
+        Call this after obtaining a final diagnosis to get a draft referral letter. 
+        This is an optional post-diagnosis utility.
+        """
         logger.info(f"Generating referral to {specialist_type} for diagnosis {diagnosis}")
         
-        if patient_id not in self.patients:
-            return {"error": "Patient not found"}
-        
-        patient = self.patients[patient_id]
-        
-        # Get recent lab results if available
+        # Get recent lab results if available from patient.raw_data
+        recent_labs_data = []
+        if patient.raw_data and "admissions" in patient.raw_data:
+            for admission_data_item in patient.raw_data.get("admissions", []): # Renamed to avoid conflict
+                # Ensure admission_data_item is a dictionary before calling .get()
+                if isinstance(admission_data_item, dict):
+                    recent_labs_data.extend(admission_data_item.get("lab_results", []))
+                else:
+                    logger.warning(f"Skipping admission data item, not a dictionary: {admission_data_item}")
+
+
         recent_labs = []
-        for admission_id in self.admissions.get(patient_id, []):
-            key = f"{patient_id}_{admission_id.id}"
-            if key in self.lab_results:
-                recent_labs.extend(self.lab_results[key])
-        
+        for lab_data in recent_labs_data:
+             try:
+                # Assuming lab_data is a dictionary that can be unpacked into LabResult
+                lab_result = LabResult(**lab_data)
+                recent_labs.append(lab_result)
+             except Exception as e: # Broad exception to catch Pydantic validation errors or others
+                logger.warning(f"Skipping lab result due to data issue: {lab_data}. Error: {e}")
+
         # Sort labs by date (most recent first)
         recent_labs.sort(key=lambda x: x.date_time, reverse=True)
         
@@ -847,11 +803,11 @@ class ClinicalEngine:
                 "facility": f"{specialist_type} Specialty Center"
             },
             "patient_information": {
-                "name": f"Patient {patient_id[:8]}",  # Using part of ID as name for demo
+                "name": f"Patient {patient.id[:8]}",  # Using part of ID as name for demo
                 "date_of_birth": patient.date_of_birth,
                 "gender": patient.gender,
                 "contact_phone": "555-987-6543",  # Simulated
-                "insurance": f"Insurance Plan {patient_id[-4:]}"  # Simulated
+                "insurance": f"Insurance Plan {patient.id[-4:]}"  # Simulated
             },
             "referral_reason": {
                 "diagnosis": diagnosis,
@@ -859,10 +815,10 @@ class ClinicalEngine:
                 "reason_for_referral": self._get_referral_reason(diagnosis, specialist_type)
             },
             "clinical_information": {
-                "history_of_present_illness": self._generate_history_of_present_illness(diagnosis, patient_id),
-                "relevant_past_medical_history": self._generate_past_medical_history(patient_id),
-                "current_medications": self._generate_current_medications(patient_id),
-                "allergies": self._generate_allergies(patient_id),
+                "history_of_present_illness": self._generate_history_of_present_illness(diagnosis, patient),
+                "relevant_past_medical_history": self._generate_past_medical_history(patient),
+                "current_medications": self._generate_current_medications(patient),
+                "allergies": self._generate_allergies(patient),
                 "physical_examination": self._generate_physical_exam(diagnosis),
                 "recent_lab_results": [
                     {
@@ -917,10 +873,10 @@ class ClinicalEngine:
         else:
             return "As directed"
     
-    def _generate_clinical_justification(self, diagnosis: str, treatment: str, patient_id: str) -> str:
+    def _generate_clinical_justification(self, diagnosis: str, treatment: str, patient: Patient) -> str:
         """Generate clinical justification for prior authorization"""
         # This would be more sophisticated in production
-        return f"Patient presents with {diagnosis} confirmed by clinical evaluation and laboratory testing. Standard first-line therapies have been ineffective or contraindicated. The requested treatment ({treatment}) is medically necessary according to current clinical guidelines and is expected to improve patient outcomes and quality of life."
+        return f"Patient {patient.id} presents with {diagnosis} confirmed by clinical evaluation and laboratory testing. Standard first-line therapies have been ineffective or contraindicated. The requested treatment ({treatment}) is medically necessary according to current clinical guidelines and is expected to improve patient outcomes and quality of life."
     
     def _get_referral_reason(self, diagnosis: str, specialist_type: str) -> str:
         """Get reason for referral based on diagnosis and specialist type"""
@@ -931,28 +887,35 @@ class ClinicalEngine:
         else:
             return f"Evaluation and management of {diagnosis}"
     
-    def _generate_history_of_present_illness(self, diagnosis: str, patient_id: str) -> str:
+    def _generate_history_of_present_illness(self, diagnosis: str, patient: Patient) -> str:
         """Generate history of present illness based on diagnosis"""
         if "Rheumatoid Arthritis" in diagnosis:
-            return "Patient presents with a 3-month history of progressive joint pain and swelling, primarily affecting the small joints of the hands bilaterally. Associated symptoms include morning stiffness lasting >1 hour, fatigue, and occasional low-grade fever. Symptoms have significantly impacted daily activities and quality of life."
+            return f"Patient {patient.id} presents with a 3-month history of progressive joint pain and swelling, primarily affecting the small joints of the hands bilaterally. Associated symptoms include morning stiffness lasting >1 hour, fatigue, and occasional low-grade fever. Symptoms have significantly impacted daily activities and quality of life."
         elif "Leukemia" in diagnosis:
-            return "Patient presents with a 2-month history of progressive fatigue, unintentional weight loss (15 pounds), night sweats, and easy bruising. Physical examination revealed splenomegaly and laboratory studies showed leukocytosis with left shift, prompting further evaluation."
+            return f"Patient {patient.id} presents with a 2-month history of progressive fatigue, unintentional weight loss (15 pounds), night sweats, and easy bruising. Physical examination revealed splenomegaly and laboratory studies showed leukocytosis with left shift, prompting further evaluation."
         else:
-            return f"Patient presents with symptoms consistent with {diagnosis}. Detailed evaluation was performed in the primary care setting, and findings warrant specialist assessment."
+            return f"Patient {patient.id} presents with symptoms consistent with {diagnosis}. Detailed evaluation was performed in the primary care setting, and findings warrant specialist assessment."
     
-    def _generate_past_medical_history(self, patient_id: str) -> List[str]:
+    def _generate_past_medical_history(self, patient: Patient) -> List[str]:
         """Generate past medical history for patient"""
-        # This would pull from actual patient data in production
+        # This would pull from actual patient data in production (patient.raw_data)
+        # For now, returning a placeholder
+        if patient.raw_data and patient.raw_data.get("past_medical_history"): # Example access
+             return patient.raw_data.get("past_medical_history")
         return ["Hypertension", "Hyperlipidemia", "Appendectomy (2010)"]
     
-    def _generate_current_medications(self, patient_id: str) -> List[str]:
+    def _generate_current_medications(self, patient: Patient) -> List[str]:
         """Generate current medications for patient"""
-        # This would pull from actual patient data in production
+        # This would pull from actual patient data in production (patient.raw_data)
+        if patient.raw_data and patient.raw_data.get("current_medications"): # Example access
+             return patient.raw_data.get("current_medications")
         return ["Lisinopril 10mg daily", "Atorvastatin 20mg daily", "Aspirin 81mg daily"]
     
-    def _generate_allergies(self, patient_id: str) -> List[str]:
+    def _generate_allergies(self, patient: Patient) -> List[str]:
         """Generate allergies for patient"""
-        # This would pull from actual patient data in production
+        # This would pull from actual patient data in production (patient.raw_data)
+        if patient.raw_data and patient.raw_data.get("allergies"): # Example access
+             return patient.raw_data.get("allergies")
         return ["Penicillin (hives)", "Sulfa drugs (rash)"]
     
     def _generate_physical_exam(self, diagnosis: str) -> str:
@@ -1019,3 +982,81 @@ class ClinicalEngine:
         # Default to normal if reference range not defined
         threshold = low_thresholds.get(lab_name, float('-inf'))
         return value < threshold
+
+# Integration Hooks and API Design
+async def run_full_diagnostic(
+    patient_id: str, 
+    transcript: str, 
+    patient_data_dict: Dict[str, Any], # Patient data from Supabase/EMR
+    llm_client: Any, 
+    guideline_client: Any, 
+    clinical_trial_client: Any
+) -> DiagnosticResult:
+    """
+    High-level function to run the full diagnostic pipeline.
+    This would be the function an API route could call.
+    It takes patient_id, transcript, and the full patient_data_dict (expected from EMR/Supabase),
+    along with necessary client instances.
+    """
+    engine = ClinicalEngine(llm_client, guideline_client, clinical_trial_client)
+    
+    # Create Patient Pydantic model instance
+    # Ensure patient_data_dict["patient"] exists and has an 'id'
+    if not patient_data_dict.get("patient") or not patient_data_dict["patient"].get("id"):
+        raise ValueError("Patient data dictionary must contain 'patient' with an 'id'.")
+    
+    # Construct Patient model, assuming patient_data_dict["patient"] has the necessary fields
+    # This might need more robust error handling or mapping if the dict structure varies
+    try:
+        patient_model_data = patient_data_dict["patient"]
+        # Add the full patient_data_dict to raw_data field
+        patient_model_data['raw_data'] = patient_data_dict 
+        patient = Patient(**patient_model_data)
+
+    except Exception as e:
+        logger.error(f"Error creating Patient model from patient_data_dict: {e}")
+        # Fallback or re-raise, depending on desired error handling
+        # For now, let's create a patient with minimal data if primary fields are missing,
+        # though this might affect downstream logic that expects complete patient info.
+        # A more robust solution would be to ensure patient_data_dict structure is as expected.
+        patient = Patient(
+            id=patient_id, 
+            gender="Unknown", 
+            date_of_birth="Unknown", 
+            race="Unknown", 
+            marital_status="Unknown", 
+            language="Unknown", 
+            poverty_percentage=0.0,
+            raw_data=patient_data_dict # Still store the raw data
+        )
+        logger.warning(f"Created Patient model with default values for patient_id: {patient_id} due to missing fields in input dict.")
+
+
+    # Stage 1: Input processing
+    symptoms = engine.extract_symptoms_from_transcript(transcript)
+    if not symptoms:
+        # Handle cases where no symptoms are extracted, perhaps return a specific result or raise error
+        logger.warning(f"No symptoms extracted for patient {patient_id} from transcript. Aborting diagnostic.")
+        # Example: return a DiagnosticResult indicating this issue
+        return DiagnosticResult(
+            diagnosis_name="Unable to Process",
+            confidence=0.0,
+            supporting_evidence=["No symptoms could be extracted from the provided transcript."],
+            recommended_tests=["Review consultation transcript and ensure clarity of reported symptoms."]
+        )
+
+    # Stage 2: Plan creation
+    plan = await engine.generate_diagnostic_plan(symptoms, patient)
+    
+    # Stage 3: Plan execution
+    executed_plan, sources = await engine.execute_diagnostic_plan(plan, patient)
+    
+    # Stage 4: Diagnosis synthesis
+    result = await engine.generate_diagnostic_result(symptoms, executed_plan, sources, patient)
+    
+    # Stage 5 (optional): Match clinical trials if a diagnosis is made
+    if result.diagnosis_name and result.diagnosis_name != "Unable to Process" and result.diagnosis_name != "Undifferentiated Inflammatory Condition": # Avoid matching for generic/error cases
+        trial_matches = await engine.match_clinical_trials(result.diagnosis_name, patient)
+        result.clinical_trial_matches = trial_matches
+        
+    return result
