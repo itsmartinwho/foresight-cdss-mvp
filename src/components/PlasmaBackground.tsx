@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three'; // Corrected import
 
 // Keep noiseGLSL for later
 const noiseGLSL = `
@@ -58,20 +58,17 @@ float snoise(vec3 v)
   }
 `;
 
-// Explicit GLSL 3.00 ES Vertex Shader - NO LEADING SPACE before #version
+// Vertex Shader for RawShaderMaterial
 const vertexShader = `#version 300 es
 precision highp float;
 
-// Attributes from THREE.PlaneGeometry (Three.js provides these if #version is detected correctly)
-// If using RawShaderMaterial, you'd declare them yourself.
-// With ShaderMaterial and a correct #version pragma, Three.js should still map
-// its standard attribute names (position, uv) if they exist in your shader.
-in vec3 position;
-in vec2 uv;
+// Attributes provided by PlaneGeometry
+in vec3 position; // YOU must declare this for RawShaderMaterial
+in vec2 uv;       // YOU must declare this for RawShaderMaterial
 
-// Uniforms from Three.js
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
+// Uniforms YOU must declare and Three.js will provide standard ones if names match
+uniform mat4 modelViewMatrix;  // Provided by Three.js
+uniform mat4 projectionMatrix; // Provided by Three.js
 
 // Varying to pass UV to fragment shader
 out vec2 vUv; 
@@ -82,19 +79,23 @@ void main() {
 }
 `;
 
-// Explicit GLSL 3.00 ES Fragment Shader - NO LEADING SPACE before #version
+// Fragment Shader for RawShaderMaterial
 const fragmentShader = `#version 300 es
 precision highp float;
 
+// Varying received from vertex shader
 in vec2 vUv;
 
-uniform vec2 u_resolution;
-uniform float u_time;
-// uniform vec3 u_viewDirection;
+// Custom uniforms YOU must declare
+uniform vec2 u_resolution; // Your custom uniform
+uniform float u_time;     // Your custom uniform
+// uniform vec3 u_viewDirection; // Your custom uniform
 
+// Output fragment color
 out vec4 out_FragColor;
 
 void main() {
+  // Simple UV gradient test
   out_FragColor = vec4(vUv.x, vUv.y, 0.0, 1.0); 
 }
 `;
@@ -125,32 +126,16 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
 
 export default function PlasmaBackground() {
   useEffect(() => {
-    // The double initialization logs ("Initializing WebGL for PlasmaBackground.")
-    // are likely due to React.StrictMode in development, which runs effects twice.
-    // This is usually fine and for debugging. The singleton check *should* ideally
-    // prevent full re-initialization on the second run, but HMR can complicate this.
-    // Let's ensure the destroy logic is robust.
-
     if (globalAny.__plasmaSingleton) {
-      console.log("PlasmaSingleton exists. Forcing destroy for HMR / StrictMode testing.");
-      // To handle React StrictMode's double invoke or HMR,
-      // ensure previous instance is cleaned up if re-running.
-      // This is aggressive for dev, might remove if it causes issues.
-      // globalAny.__plasmaSingleton.destroy(); 
-      // For now, let's rely on the HMR dispose below or manual refresh for clean state.
-      // If you still see double init *without* HMR or strict mode issues later,
-      // then the singleton check needs strengthening.
-      // For now, we just return if it exists to avoid problems, the main issue is shader.
-      return; 
+      // This log was "Forcing destroy for HMR / StrictMode testing."
+      // Let's be more precise about why it's returning.
+      console.log("PlasmaSingleton exists. Component useEffect run again (Strict Mode or HMR), returning to prevent re-init of existing singleton.");
+      return;
     }
     console.log("No PlasmaSingleton, proceeding with init.");
 
-
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // --- FOR DEBUGGING: ---
-    // const prefersReducedMotion = false; 
-    // console.log("Prefers Reduced Motion (DEBUG):", prefersReducedMotion);
-
+    // const prefersReducedMotion = false; // DEBUG
 
     const canvas = document.createElement('canvas');
     canvas.id = 'plasma-bg';
@@ -161,16 +146,15 @@ export default function PlasmaBackground() {
     canvas.style.zIndex = '0';
     canvas.style.pointerEvents = 'none';
 
-    // Defensively remove old canvas if any, before prepending new one
     const existingCanvas = document.getElementById('plasma-bg');
     if (existingCanvas) {
-        console.log("Removing existing plasma-bg canvas.");
+        console.log("Removing existing plasma-bg canvas before prepending new one.");
         existingCanvas.remove();
     }
     document.body.prepend(canvas);
 
     if (prefersReducedMotion) {
-      console.log("Painting static gradient.");
+      console.log("Painting static gradient due to prefers-reduced-motion.");
       paintStaticGradient(canvas);
       globalAny.__plasmaSingleton = {
         canvas,
@@ -193,7 +177,6 @@ export default function PlasmaBackground() {
     console.log("Using WebGL 2:", isWebGL2);
     if (!isWebGL2) {
         console.error("CRITICAL: WebGL2 is NOT available. GLSL 3.00 ES shaders will fail.");
-        // Fallback or error handling
         paintStaticGradient(canvas);
         globalAny.__plasmaSingleton = { canvas, destroy: () => { if (canvas.parentElement) canvas.parentElement.removeChild(canvas); globalAny.__plasmaSingleton = null; } };
         return;
@@ -204,20 +187,29 @@ export default function PlasmaBackground() {
     camera.position.z = 1;
 
     const geometry = new THREE.PlaneGeometry(2, 2);
+    
+    // Define uniforms for RawShaderMaterial
+    // Three.js will automatically provide values for standard uniforms like
+    // projectionMatrix, modelViewMatrix, normalMatrix IF they are declared in your shader.
+    // Your custom uniforms must also be defined here.
     const uniforms = {
       u_time: { value: 0.0 },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      // For RawShaderMaterial, you don't *need* to declare modelViewMatrix, projectionMatrix here
+      // if you declare them in the shader, Three.js provides them. But it's good practice for clarity.
+      // modelViewMatrix: { value: camera.modelViewMatrix }, // Will be updated by Three.js
+      // projectionMatrix: { value: camera.projectionMatrix } // Will be updated by Three.js
     };
 
-    const material = new THREE.ShaderMaterial({
+    // USE RawShaderMaterial
+    const material = new THREE.RawShaderMaterial({
       vertexShader,
       fragmentShader,
       uniforms,
       transparent: true,
-      // No glslVersion needed if #version is correct in strings
+      glslVersion: THREE.GLSL3 // It's good practice to specify for RawShaderMaterial
     });
     material.blending = THREE.NormalBlending;
-
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
@@ -228,9 +220,8 @@ export default function PlasmaBackground() {
     let frameId: number;
 
     function animateLoop() {
-      // Robust check if singleton still matches THIS instance's canvas
       if (!globalAny.__plasmaSingleton || globalAny.__plasmaSingleton.canvas !== canvas || !canvas.isConnected) {
-        console.log("Animation loop stopping: Singleton changed, canvas detached, or destroyed.");
+        console.log("Animation loop stopping: Singleton/canvas state invalid.");
         if (frameId) cancelAnimationFrame(frameId);
         return;
       }
@@ -251,7 +242,7 @@ export default function PlasmaBackground() {
     window.addEventListener('resize', handleResize);
 
     const destroy = () => {
-      console.log("Destroying PlasmaBackground (WebGL instance). ID: plasma-bg");
+      console.log("Destroying PlasmaBackground (WebGL instance). Canvas ID: plasma-bg");
       if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
       geometry.dispose();
@@ -259,23 +250,20 @@ export default function PlasmaBackground() {
       if (renderer) renderer.dispose();
       if (canvas.parentElement) canvas.parentElement.removeChild(canvas);
       
-      // Only nullify if THIS instance is the one being destroyed
       if (globalAny.__plasmaSingleton && globalAny.__plasmaSingleton.canvas === canvas) {
         globalAny.__plasmaSingleton = null;
-        console.log("Global __plasmaSingleton nulled.");
+        console.log("Global __plasmaSingleton nulled for this instance.");
       }
     };
 
     globalAny.__plasmaSingleton = { canvas, destroy, renderer } as PlasmaSingleton;
     window.addEventListener('beforeunload', destroy, { once: true });
     
-    // HMR Cleanup for Next.js
-    // This is a bit tricky with singletons. The goal is to clean up the *old* instance.
-    const currentModule = module; // Capture current module
+    const currentModule = module; 
     if (currentModule.hot) {
         currentModule.hot.dispose(() => {
-            console.log("HMR disposing old PlasmaBackground instance.");
-            destroy(); // This will destroy the instance associated with the *old* module
+            console.log("HMR disposing old PlasmaBackground instance from module.");
+            destroy(); 
         });
     }
 
