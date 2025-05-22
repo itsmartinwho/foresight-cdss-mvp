@@ -103,7 +103,7 @@ export default function AlertsScreenView({ onAlertClick, allAlerts: rawAlerts }:
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">Sort by:</span>
           <Button
-            variant={sortBy === 'likelihood' ? "teal" : "outline"}
+            variant={sortBy === 'likelihood' ? "secondary" : "outline"}
             size="sm"
             onClick={() => setSortBy('likelihood')}
             className="text-step--1"
@@ -111,7 +111,7 @@ export default function AlertsScreenView({ onAlertClick, allAlerts: rawAlerts }:
             Priority
           </Button>
           <Button
-            variant={sortBy === 'date' ? "teal" : "outline"}
+            variant={sortBy === 'date' ? "secondary" : "outline"}
             size="sm"
             onClick={() => setSortBy('date')}
             className="text-step--1"
