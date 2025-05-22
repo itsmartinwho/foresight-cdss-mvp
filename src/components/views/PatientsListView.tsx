@@ -160,33 +160,31 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   }, [upcomingRowsData, pastRowsData, upcomingSortConfig, pastSortConfig, displayName]);
 
   const renderAllPatientsTable = () => {
-    const patientFields: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
-      { key: "id", header: "Patient ID", sortable: true, className: "w-[200px]" },
-      { key: "firstName", header: "First Name", sortable: true, className: "w-[120px]" },
-      { key: "lastName", header: "Last Name", sortable: true, className: "w-[120px]" },
+    // Core columns in required order
+    const coreColumns: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
+      { key: "firstName", header: "First Name", sortable: true, className: "w-[140px] truncate" },
+      { key: "lastName", header: "Last Name", sortable: true, className: "w-[140px] truncate" },
       { key: "gender", header: "Gender", sortable: true, className: "w-[100px]" },
       { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[150px]" },
-      { key: "race", header: "Race", sortable: true, className: "w-[100px]" },
-      { key: "maritalStatus", header: "Marital Status", sortable: true, className: "w-[120px]" },
-      { key: "language", header: "Language", sortable: true, className: "w-[100px]" },
-      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[100px]" },
-      { key: "primaryDiagnosis", header: "Primary Diagnosis", sortable: true, className: "w-[200px] truncate" },
-      { key: "nextAppointment", header: "Next Appointment", sortable: true, className: "w-[150px]" },
-      { key: "reason", header: "General Reason", sortable: true, className: "w-[200px] truncate" },
     ];
 
-    const dobIndex = patientFields.findIndex(field => field.key === "dateOfBirth");
-    const consultationsColumnHeader = {
-      key: "consultationsCount" as AllPatientsSortableKey,
-      header: "Consultations",
-      sortable: true,
-      className: "w-[250px]"
-    };
+    const additionalColumns: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
+      { key: "race", header: "Race", sortable: true, className: "w-[110px] truncate" },
+      { key: "maritalStatus", header: "Marital Status", sortable: true, className: "w-[140px] truncate" },
+      { key: "language", header: "Language", sortable: true, className: "w-[110px] truncate" },
+      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[110px]" },
+      { key: "primaryDiagnosis", header: "Primary Diagnosis", sortable: true, className: "w-[220px] truncate" },
+      { key: "nextAppointment", header: "Next Appointment", sortable: true, className: "w-[180px] truncate" },
+      { key: "reason", header: "General Reason", sortable: true, className: "w-[220px] truncate" },
+    ];
 
-    const tableHeaders = [...patientFields];
-    if (dobIndex !== -1) {
-      tableHeaders.splice(dobIndex + 1, 0, consultationsColumnHeader as any);
-    }
+    // Assemble headers: Avatar(blank) + core + consultations + rest
+    const tableHeaders: (typeof coreColumns[number] | { key: AllPatientsSortableKey; header: string; sortable?: boolean; className?: string })[] = [
+      { key: "avatar" as any, header: "", sortable: false, className: "w-[60px]" },
+      ...coreColumns,
+      { key: "consultationsCount" as AllPatientsSortableKey, header: "Consultations", sortable: true, className: "w-[260px]" },
+      ...additionalColumns,
+    ];
 
     if (isLoading) {
       return <LoadingAnimation />;
@@ -227,21 +225,30 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     key={patient.id} 
                     className="border-slate-700/50 hover:bg-slate-700/30 transition-colors duration-150 ease-in-out"
                   >
-                    {patientFields.map(field => (
-                      <TableCell key={`${patient.id}-${field.key}`} className={field.className?.includes('truncate') ? 'truncate' : ''}>
-                        {field.key === 'id' ? (
-                          <div className="flex items-center gap-2">
-                            {patient.photo && (
-                              <Image src={patient.photo} alt={displayName(patient)} width={24} height={24} className="rounded-full" />
-                            )}
-                            <span>{patient[field.key] ? String(patient[field.key]) : "—"}</span>
-                          </div>
-                        ) : (
-                          patient[field.key] ? String(patient[field.key]) : "—"
-                        )}
+                    {/* Avatar Cell */}
+                    <TableCell className="w-[60px]">
+                      {patient.photo ? (
+                        <Image src={patient.photo} alt={displayName(patient)} width={32} height={32} className="rounded-full" />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-slate-500/40 flex items-center justify-center text-xs text-white">
+                          {patient.firstName?.charAt(0) ?? "?"}{patient.lastName?.charAt(0) ?? ""}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    {/* Core columns */}
+                    {coreColumns.map(field => (
+                      <TableCell 
+                        key={`${patient.id}-${field.key}`} 
+                        className={`${field.className ?? ''} cursor-pointer truncate`} 
+                        onClick={() => router.push(`/patients/${patient.id}`)}
+                      >
+                        {patient[field.key] ? String(patient[field.key]) : "—"}
                       </TableCell>
                     ))}
-                    <TableCell className={consultationsColumnHeader.className}>
+
+                    {/* Consultations column */}
+                    <TableCell className="w-[260px]">
                       {patientAdmissions.length > 0 ? (
                         <ul className="list-none p-0 m-0 space-y-1">
                           {patientAdmissions.slice(0, 3).map(admission => (
@@ -263,6 +270,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                         </ul>
                       ) : "No consultations"}
                     </TableCell>
+
+                    {/* Additional columns */}
+                    {additionalColumns.map(field => (
+                      <TableCell key={`${patient.id}-${field.key}`} className={`${field.className ?? ''} truncate`}>
+                        {patient[field.key] ? String(patient[field.key]) : "—"}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 );
               })}
