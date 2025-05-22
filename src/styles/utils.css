@@ -8,7 +8,7 @@
 }
 
 .glass-soft {
-  background: hsla(var(--surface-1) / .10);
+  background: hsla(var(--surface-1) / .50);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border: 1px solid hsla(var(--surface-1) / .25);
