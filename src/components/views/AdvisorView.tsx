@@ -374,7 +374,7 @@ export default function AdvisorView() {
               <Waves className="h-16 w-16 text-teal-300" />
             </div>
             <p className="text-lg mb-4">Ask your question aloud</p>
-            <Button variant="secondary" onClick={() => setVoiceMode(false)}>✕ Exit voice mode</Button>
+            <Button variant="secondary" iconLeft={<X />} onClick={() => setVoiceMode(false)}>Exit voice mode</Button>
           </div>
         )}
       </ContentSurface>

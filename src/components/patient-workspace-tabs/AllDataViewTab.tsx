@@ -3,6 +3,7 @@ import React from 'react';
 import type { Patient, Admission, Diagnosis, LabResult, AdmissionDetailsWrapper } from "@/lib/types";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ArrowCounterClockwise, Trash } from '@phosphor-icons/react';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { supabaseDataService } from "@/lib/supabaseDataService"; // For restore/delete
 
@@ -103,8 +104,8 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
               <CardDescription className="text-xs">Deleted at {adm.deletedAt ? new Date(adm.deletedAt).toLocaleString() : '—'}</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={()=>handleRestore(adm)}>Restore</Button>
-              <Button variant="destructive" size="sm" onClick={()=>handlePermanentDelete(adm)}>Delete permanently</Button>
+              <Button variant="outline" size="sm" iconLeft={<ArrowCounterClockwise />} onClick={()=>handleRestore(adm)}>Restore</Button>
+              <Button variant="destructive" size="sm" iconLeft={<Trash />} onClick={()=>handlePermanentDelete(adm)}>Delete permanently</Button>
             </CardContent>
           </Card>
         );

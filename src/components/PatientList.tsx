@@ -5,6 +5,7 @@ import { supabaseDataService } from '@/lib/supabaseDataService';
 import Link from 'next/link';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from '@/lib/utils';
 import { LoadingSpinner } from './LoadingSpinner';
@@ -138,7 +139,7 @@ export const PatientList = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Button type="submit" onClick={() => {}}>Search</Button>
+          <Button type="submit" iconLeft={<MagnifyingGlass />} onClick={() => {}}>Search</Button>
         </div>
       </div>
 

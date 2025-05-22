@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft, Trash as Trash2 } from '@phosphor-icons/react';
+import { Users, CaretLeft as ChevronLeft, Trash as Trash2, PlusCircle, X } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, AdmissionDetailsWrapper, ComplexCaseAlert } from "@/lib/types";
@@ -239,28 +239,33 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
               <span>Gender: {patient.gender || 'N/A'}</span>
             </div>
             <Button
+              variant="default" // Use the new default gradient style
+              iconLeft={isStartingNewConsultation ? <X /> : <PlusCircle />} // Conditional icon: X for cancel, PlusCircle for new
               onClick={async () => {
                 if (isStartingNewConsultation) {
                   setIsStartingNewConsultation(false);
+                  // If cancelling, try to reselect the previously selected (or first available) admission
                   if (activeAdmissionDetails && activeAdmissionDetails.length > 0) {
-                    const firstActiveWrapper = activeAdmissionDetails.find(adWrapper => !adWrapper.admission.isDeleted);
-                    setSelectedAdmissionForConsultation(selectedAdmissionForConsultation || firstActiveWrapper?.admission || null);
+                    const previouslySelectedId = selectedAdmissionForConsultation?.id;
+                    // It's important to clear the selection first if your logic relies on it for form reset elsewhere
+                    setSelectedAdmissionForConsultation(null); 
+                    const reselectAdmission = previouslySelectedId 
+                      ? activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === previouslySelectedId && !adWrapper.admission.isDeleted)?.admission
+                      : activeAdmissionDetails.find(adWrapper => !adWrapper.admission.isDeleted)?.admission;
+                    setSelectedAdmissionForConsultation(reselectAdmission || null);
                   } else {
                     setSelectedAdmissionForConsultation(null);
                   }
                 } else {
+                  // If starting a new one, clear previous selection to allow the new consult form to show correctly
+                  setSelectedAdmissionForConsultation(null); 
                   setIsStartingNewConsultation(true);
-                  setNewConsultationReason('');
-                  setNewConsultationDate(new Date());
-                  setNewConsultationDuration(null);
-                  setSelectedAdmissionForConsultation(null);
-                  setActiveTab('consult');
+                  setActiveTab('consult'); // Switch to consult tab for the new form
                 }
               }}
-              size="sm"
-              className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent ml-6"
+              className="ml-auto" // Keeps it aligned to the right if that was intended
             >
-              {isStartingNewConsultation ? "Cancel New Consultation" : "+ New Consultation"}
+              {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
             </Button>
           </div>
         </div>
@@ -270,12 +275,16 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
               <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
               <select
                 id="consultation-select-main"
-                className="block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm"
+                className={cn(
+                  "block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm",
+                  !selectedAdmissionForConsultation ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
+                )}
                 value={selectedAdmissionForConsultation?.id || ""}
                 onChange={(e) => {
-                  const admissionId = e.target.value;
-                  const selected = activeAdmissionDetails.find(adWrap => adWrap.admission.id === admissionId)?.admission || null;
-                  setSelectedAdmissionForConsultation(selected);
+                  const adId = e.target.value;
+                  const foundAd = activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === adId)?.admission || null;
+                  setSelectedAdmissionForConsultation(foundAd);
+                  if(foundAd) setActiveTab('consult');
                 }}
                 disabled={showDeleteConfirmation || isStartingNewConsultation}
               >
@@ -289,14 +298,15 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
             </div>
           )}
           {selectedAdmissionForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 h-8 w-8 mt-4"
-              onClick={handleDeleteInitiate}
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteInitiate} 
+              iconLeft={<Trash2 />} // Ensure Trash2 (or Trash) is imported
+              className="h-8 w-8 mt-4"
               aria-label="Delete selected visit"
+              size="icon"
             >
-              <Trash2 className="h-4 w-4" />
+              Delete
             </Button>
           )}
         </div>

@@ -363,13 +363,14 @@ export default function ConsultationTab({
       
       <Card className={cn("lg:col-span-2 bg-glass glass-dense backdrop-blur-lg relative", isStartingNewConsultation ? "lg:col-span-3" : "")}>
         {showStartTranscriptionOverlay && (
-          <button
+          <Button
+            variant="ghost"
             onClick={startTranscription}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 backdrop-blur-md text-neon hover:brightness-125 transition z-10"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 backdrop-blur-md text-neon hover:brightness-125 transition z-10 h-auto p-8"
           >
             <Mic size={48} className="mb-3 text-neon animate-pulse" />
             <span className="text-step-0 font-semibold">Start Transcription</span>
-          </button>
+          </Button>
         )}
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2 text-step-0">

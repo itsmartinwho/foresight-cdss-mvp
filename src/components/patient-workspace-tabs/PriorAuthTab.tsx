@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FileText } from '@phosphor-icons/react';
 import LoadingAnimation from "@/components/LoadingAnimation";
 
 export default function PriorAuthTab({ patient: currentPatientInfo, allAdmissions }: { 
@@ -102,7 +103,7 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allAdmission
                 className="mt-1 block w-full shadow-sm sm:text-sm border-border rounded-md h-24 bg-muted/30 p-2"
               />
             </div>
-            <Button className="mt-3 text-step--1" size="sm">Generate PDF (Placeholder)</Button>
+            <Button className="mt-3 text-step--1" size="sm" iconLeft={<FileText />}>Generate PDF (Placeholder)</Button>
           </CardContent>
         </Card>
       ) : (

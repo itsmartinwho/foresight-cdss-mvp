@@ -6,6 +6,7 @@ import { supabaseDataService } from '@/lib/supabaseDataService';
 import Link from 'next/link';
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import { Button } from "@/components/ui/button";
+import { FileText } from '@phosphor-icons/react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface PatientDetailProps {
@@ -369,7 +370,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                         </div>
                       </div>
                       <div className="border-t border-gray-200 pt-5 flex justify-center">
-                        <Button variant="primary" className="px-6 py-2.5">
+                        <Button variant="default" iconLeft={<FileText />} className="px-6 py-2.5">
                           Generate PDF Draft
                         </Button>
                       </div>
