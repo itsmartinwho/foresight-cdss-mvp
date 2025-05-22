@@ -14,11 +14,128 @@ class SupabaseDataService {
   private isLoaded = false;
   private isLoading = false; // This will be managed by loadPromise
   private loadPromise: Promise<void> | null = null;
+  private singlePatientLoadPromises: Map<string, Promise<void>> = new Map(); // Added for single patient loads
   private patients: Record<string, Patient> = {}; // key = original PatientID (e.g., "1", "FB2ABB...")
   private admissions: Record<string, Admission> = {}; // key = composite `${patientId}_${originalAdmissionID}`
   private admissionsByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite admission keys
   /** Simple pub-sub so UI layers can refresh after data-mutating calls */
   private changeSubscribers: Array<() => void> = [];
+
+  // Method to load data for a single patient
+  private async loadSinglePatientData(patientId: string): Promise<void> {
+    if (this.patients[patientId]) { // Already loaded
+      return Promise.resolve();
+    }
+    if (this.singlePatientLoadPromises.has(patientId)) { // Load already in progress
+      return this.singlePatientLoadPromises.get(patientId);
+    }
+
+    console.log(`SupabaseDataService (Prod Debug): Initiating new data load for single patient ${patientId}.`);
+    const promise = (async () => {
+      try {
+        // Fetch patient details
+        const { data: patientRow, error: pErr } = await this.supabase
+          .from('patients')
+          .select('*')
+          .eq('patient_id', patientId)
+          .single();
+
+        if (pErr) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching patient ${patientId}:`, pErr);
+          throw pErr;
+        }
+        if (!patientRow) {
+          throw new Error(`Patient ${patientId} not found.`);
+        }
+
+        // Process patient data (similar to loadPatientData but for one patient)
+        const patient: Patient = {
+          id: patientRow.patient_id,
+          name: patientRow.name,
+          firstName: patientRow.first_name,
+          lastName: patientRow.last_name,
+          gender: patientRow.gender,
+          dateOfBirth: patientRow.dob ? new Date(patientRow.dob).toISOString().split('T')[0] : undefined,
+          photo: patientRow.photo_url,
+          race: patientRow.race,
+          maritalStatus: patientRow.marital_status,
+          language: patientRow.language,
+          povertyPercentage: patientRow.poverty_percentage !== null ? Number(patientRow.poverty_percentage) : undefined,
+          alerts: (() => { // Simplified alerts parsing for brevity, ensure it matches full load
+            const src = patientRow.alerts || patientRow.alerts_json || (patientRow as any).alertsJSON || patientRow.extra_data?.alerts || patientRow.extra_data?.alertsJSON;
+            if (!src) return [];
+            try {
+              if (Array.isArray(src)) return src as ComplexCaseAlert[];
+              if (typeof src === 'string') {
+                let s = src.trim();
+                if ((s.startsWith('\"') && s.endsWith('\"')) || (s.startsWith("'") && s.endsWith("'"))) {
+                  s = s.substring(1, s.length - 1);
+                }
+                s = s.replace(/""/g, '"');
+                const parsed = JSON.parse(s);
+                return Array.isArray(parsed) ? parsed as ComplexCaseAlert[] : [];
+              }
+            } catch (e) { console.warn('SupabaseDataService: Unable to parse alerts for patient', patientRow.patient_id, e); }
+            return [];
+          })(),
+          primaryDiagnosis: patientRow.primary_diagnosis_description,
+          diagnosis: patientRow.general_diagnosis_details,
+          nextAppointment: patientRow.next_appointment_date ? new Date(patientRow.next_appointment_date).toISOString() : undefined,
+          reason: patientRow.patient_level_reason,
+        };
+        this.patients[patient.id] = patient;
+        if (!this.admissionsByPatient[patient.id]) {
+          this.admissionsByPatient[patient.id] = [];
+        }
+
+        // Fetch visits for this patient
+        // Important: Ensure 'visits' table has a way to filter by patient_id
+        // Assuming 'visits' table has 'patient_id_fk' or similar that matches 'patients.patient_id'
+        // This query might need adjustment based on your actual schema for visits
+        const { data: visitRows, error: vErr } = await this.supabase
+          .from('visits')
+          .select('*')
+          .eq('extra_data->>PatientID', patientId); // Querying based on the existing pattern in loadPatientData
+
+        if (vErr) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching visits for patient ${patientId}:`, vErr);
+          throw vErr;
+        }
+
+        if (visitRows) {
+          visitRows.forEach((row) => {
+            const compositeKey = `${patientId}_${row.admission_id}`;
+            const admission: Admission = {
+              id: compositeKey,
+              patientId: patientId,
+              scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
+              scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
+              actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
+              actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
+              reason: row.reason_for_visit,
+              transcript: row.transcript,
+              soapNote: row.soap_note,
+              treatments: row.treatments || undefined,
+              priorAuthJustification: row.prior_auth_justification,
+              isDeleted: !!row.is_deleted,
+            };
+            this.admissions[compositeKey] = admission;
+            if (!this.admissionsByPatient[patientId].includes(compositeKey)) {
+               this.admissionsByPatient[patientId].push(compositeKey);
+            }
+          });
+        }
+        this.emitChange(); // Notify subscribers
+      } catch (error) {
+        console.error(`SupabaseDataService (Prod Debug): Exception during single patient data fetch for ${patientId}:`, error);
+        throw error; // Re-throw
+      } finally {
+        this.singlePatientLoadPromises.delete(patientId); // Clear promise once done (success or fail)
+      }
+    })();
+    this.singlePatientLoadPromises.set(patientId, promise);
+    return promise;
+  }
 
   async loadPatientData(): Promise<void> {
     if (this.isLoaded) {
@@ -214,31 +331,44 @@ class SupabaseDataService {
   }
 
   getPatient(patientId: string): Patient | null {
-    // console.log(`SupabaseDataService (Prod Debug): getPatient called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
-    if (!this.isLoaded && !this.isLoading) {
-        console.error(`SupabaseDataService: getPatient(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);
-    }
+    // No need to trigger load here, getPatientData will handle it.
+    // This method becomes a simple cache accessor.
     return this.patients[patientId] ?? null;
   }
 
   getPatientAdmissions(patientId: string): Admission[] {
-    if (!this.isLoaded && !this.isLoading) {
-        this.loadPatientData().catch(() => {/* handled elsewhere */});
-        return [];
-    }
+    // If patient data isn't loaded at all, this might return empty
+    // but getPatientData should ensure data is loaded before this is relied upon heavily.
     const admissionKeys = this.admissionsByPatient[patientId] || [];
     return admissionKeys.map(key => this.admissions[key]).filter(Boolean) as Admission[];
   }
 
-  getPatientData(patientId: string): PatientDataPayload | null {
+  async getPatientData(patientId: string): Promise<PatientDataPayload | null> {
     // console.log(`SupabaseDataService (Prod Debug): getPatientData called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
-    if (!this.isLoaded && !this.isLoading) {
-       console.error(`SupabaseDataService: getPatientData(${patientId}) called when data not loaded and not currently loading. THIS IS A BUG.`);
-       return null; 
+    
+    // If the specific patient is not in cache, try to load them.
+    if (!this.patients[patientId] && !this.singlePatientLoadPromises.has(patientId)) {
+      console.log(`SupabaseDataService (Prod Debug): Patient ${patientId} not in cache. Attempting single load.`);
+      try {
+        await this.loadSinglePatientData(patientId);
+      } catch (error) {
+        console.error(`SupabaseDataService (Prod Debug): Failed to load single patient ${patientId} in getPatientData:`, error);
+        return null; // Failed to load, return null
+      }
+    } else if (this.singlePatientLoadPromises.has(patientId)) {
+      // If a load is in progress for this patient, await it
+      console.log(`SupabaseDataService (Prod Debug): Patient ${patientId} load in progress. Awaiting...`);
+      try {
+        await this.singlePatientLoadPromises.get(patientId);
+      } catch (error) {
+         console.error(`SupabaseDataService (Prod Debug): Existing load for single patient ${patientId} failed:`, error);
+        return null;
+      }
     }
-    const patient = this.getPatient(patientId);
+
+    // After attempting to load, check cache again
+    const patient = this.patients[patientId];
     if (!patient) {
-        // Warning already in getPatient if not loaded. This is if loaded but patient specifically not found.
         console.warn(`SupabaseDataService (Prod Debug): getPatientData - Patient ${patientId} not found in cache (after load attempt).`);
         return null;
     }

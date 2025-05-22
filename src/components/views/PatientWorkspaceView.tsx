@@ -65,10 +65,9 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
     }
     setIsLoading(true);
     try {
-      await supabaseDataService.loadPatientData();
-      const data = supabaseDataService.getPatientData(initialPatientStub.id);
+      const data = await supabaseDataService.getPatientData(initialPatientStub.id);
       if (data) {
-        setDetailedPatientData(data as DetailedPatientDataType);
+        setDetailedPatientData(data);
         const paramAd = searchParams?.get('ad');
         const admissionsToSearch = data.admissions || [];
         const firstActiveNonDeleted = admissionsToSearch.find(aWrapper => !aWrapper.admission.isDeleted)?.admission || null;
@@ -95,7 +94,9 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
   }, [loadData]);
 
   useEffect(() => {
-    const cb = () => loadData();
+    const cb = async () => {
+      await loadData();
+    }
     supabaseDataService.subscribe(cb);
     return () => {
       supabaseDataService.unsubscribe(cb);
