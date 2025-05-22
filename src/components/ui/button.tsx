@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-black dark:text-black bg-white/80 dark:bg-white/80 backdrop-blur-sm border-transparent before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:p-[1px] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin focus-visible:ring-[hsl(var(--neon-teal))]",
+          "text-black dark:text-white bg-white/80 dark:bg-black/80 backdrop-blur-sm border-transparent before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:p-[1px] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin focus-visible:ring-[hsl(var(--neon-teal))]",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "border border-transparent text-black dark:text-black before:absolute before:-inset-[0px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] before:bg-[length:200%_200%] before:opacity-100 before:transition-transform before:duration-\[0ms\] hover:before:animate-conic-spin focus-visible:ring-[hsl(var(--neon-teal))]",
+          "bg-white/20 dark:bg-black/20 backdrop-blur-sm text-black dark:text-white relative before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[1px] after:rounded-[4px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.2),transparent_50%)] after:z-[-1] focus-visible:ring-[hsl(var(--neon-teal))]",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
