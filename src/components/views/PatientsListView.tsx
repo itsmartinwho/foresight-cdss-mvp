@@ -179,8 +179,18 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "allPatients" | "allConsultations")} className="flex flex-col flex-grow">
         <div className="flex justify-between items-center mb-6">
           <TabsList>
-            <TabsTrigger value="allPatients" className="text-step-1 px-3">All Patients</TabsTrigger>
-            <TabsTrigger value="allConsultations" className="text-step-1 px-3">All Consultations</TabsTrigger>
+            <TabsTrigger 
+              value="allPatients" 
+              className="text-step-1 px-3 data-[state=active]:bg-neon/40 data-[state=active]:font-semibold data-[state=inactive]:font-normal data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-700"
+            >
+              All Patients
+            </TabsTrigger>
+            <TabsTrigger 
+              value="allConsultations" 
+              className="text-step-1 px-3 data-[state=active]:bg-neon/40 data-[state=active]:font-semibold data-[state=inactive]:font-normal data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-700"
+            >
+              All Consultations
+            </TabsTrigger>
           </TabsList>
           <Button
             onClick={() => setShowNewConsultModal(true)}
