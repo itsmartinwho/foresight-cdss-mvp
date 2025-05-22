@@ -176,30 +176,30 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
 
   return (
     <ContentSurface fullBleed className="p-6 flex flex-col">
-      <div className="flex justify-between items-center mb-6">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "allPatients" | "allConsultations")} className="w-auto">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "allPatients" | "allConsultations")} className="flex flex-col flex-grow">
+        <div className="flex justify-between items-center mb-6">
           <TabsList>
             <TabsTrigger value="allPatients" className="text-step-1 px-3">All Patients</TabsTrigger>
             <TabsTrigger value="allConsultations" className="text-step-1 px-3">All Consultations</TabsTrigger>
           </TabsList>
-        </Tabs>
-        <Button
-          onClick={() => setShowNewConsultModal(true)}
-          size="sm"
-          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Consultation
-        </Button>
-      </div>
-      <TabsContent value="allPatients" className="mt-0">
-        {/* Placeholder for All Patients table */}
-        <p className="text-slate-900">This is where the 'All Patients' table will be displayed.</p>
-      </TabsContent>
-      <TabsContent value="allConsultations" className="mt-0">
-        {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
-        {renderTable("Past Consultations", sortedRows.past, 'past')}
-      </TabsContent>
+          <Button
+            onClick={() => setShowNewConsultModal(true)}
+            size="sm"
+            className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white hover:bg-transparent"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            New Consultation
+          </Button>
+        </div>
+        <TabsContent value="allPatients" className="mt-0 flex-grow">
+          {/* Placeholder for All Patients table */}
+          <p className="text-slate-900">This is where the 'All Patients' table will be displayed.</p>
+        </TabsContent>
+        <TabsContent value="allConsultations" className="mt-0 flex-grow">
+          {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
+          {renderTable("Past Consultations", sortedRows.past, 'past')}
+        </TabsContent>
+      </Tabs>
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}
