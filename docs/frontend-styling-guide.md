@@ -239,7 +239,8 @@ To ensure a consistent look and feel across the application, all dropdown menus 
 
 **Styling:**
 - **Background and Blur:** `backdrop-blur-lg bg-[rgba(255,255,255,0.1)]`
-- **Border:** `border-[rgba(255,255,255,0.12)]` (Note: The original components already have a border, this specific class ensures the color matches the navbar's panel).
+- **Border:** `border-glass` (`border: 1px solid rgba(255,255,255,0.15)`)  
+- **Inner Glow (optional):** `shadow-inner-glow` (`box-shadow: inset 0 0 8px rgba(255,255,255,0.1)`)
 
 These styles provide a glassmorphic effect consistent with other key UI elements like the navbar and sidebars. The size of the dropdown/select panel will vary based on its content and specific implementation context, but the visual treatment (blur, background color, border) is standardized.
 
