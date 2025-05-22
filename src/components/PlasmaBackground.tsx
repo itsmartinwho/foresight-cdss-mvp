@@ -98,68 +98,31 @@ const vertexShader = `
 `;
 
 const fragmentShader = `
-  #extension GL_OES_standard_derivatives : enable
-  precision highp float;
+#extension GL_OES_standard_derivatives : enable
+precision highp float;
 
-  uniform vec2 u_resolution;
-  uniform float u_time;
-  uniform vec3 u_viewDirection;
-  varying vec2 vUv;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform vec3 u_viewDirection;
+varying vec2 vUv;
 
-  ${noiseGLSL} // noise
+${noiseGLSL} // noise
 
-  // Fractal Brownian Motion
-  float fbm(vec3 p) {
-    float v = 0.0;
-    float amp = 0.5;
-    v += amp * snoise(p); p *= 2.0; amp *= 0.5;
-    v += amp * snoise(p); p *= 2.0; amp *= 0.5;
-    v += amp * snoise(p); p *= 2.0; amp *= 0.5;
-    v += amp * snoise(p);
-    return v;
-  }
+// Fractal Brownian Motion
+float fbm(vec3 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  v += amp * snoise(p); p *= 2.0; amp *= 0.5;
+  v += amp * snoise(p); p *= 2.0; amp *= 0.5;
+  v += amp * snoise(p); p *= 2.0; amp *= 0.5;
+  v += amp * snoise(p);
+  return v;
+}
 
-  void main() {
-    // Domain-Warped Ridged FBM
-    float warpX = fbm(vec3(vUv * 1.1, u_time * 0.04));
-    float warpY = fbm(vec3(vUv * 1.1 + 100.0, u_time * 0.04));
-    vec2 warp = vec2(warpX, warpY) * 0.8;
-
-    float m1 = abs(snoise(vec3(vUv * 0.9 + warp,  u_time * 0.05)));
-    float m2 = abs(snoise(vec3(vUv * 2.1 + warp,  u_time * 0.07)));
-    float m3 = abs(snoise(vec3(vUv * 4.3 + warp,  u_time * 0.09)));
-    float m4 = abs(snoise(vec3(vUv * 8.7 + warp,  u_time * 0.11))) * 0.12;
-    float n  = m1 * 0.30 + m2 * 0.26 + m3 * 0.22 + m4;
-
-    // Force full luminance spread
-    n = clamp((n - 0.35) * 2.4, 0.0, 1.0);
-
-    // Animated Pastel Palette
-    float drift   = sin(u_time * 0.04) * 0.08;
-    vec3 teal     = vec3(0.32 + drift, 0.82, 0.80);
-    vec3 blueLav  = vec3(0.52 + drift, 0.72, 0.88);
-    vec3 lavender = vec3(0.78 + drift, 0.64, 0.92);
-    vec3 iceWhite = vec3(0.98);
-    vec3 col = n < 0.33 
-      ? mix(teal, blueLav, n / 0.33)
-      : n < 0.66
-      ? mix(blueLav, lavender, (n - 0.33) / 0.33)
-      : mix(lavender, iceWhite, (n - 0.66) / 0.34);
-
-    // Specular Flare
-    vec3 viewDir_n = normalize(u_viewDirection);
-    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.35));
-    vec3 lDir = normalize(vec3(sin(u_time * 0.12), 0.8, 0.6));
-    vec3 hVec = normalize(lDir + viewDir_n);
-    float spec = pow(max(dot(norm, hVec), 0.0), 48.0);
-    col += spec * 0.45;
-
-    // Contrast & Glow
-    col = pow(col * 1.3, vec3(1.15));
-
-    // DEBUG - Output raw noise value 'n'
-    gl_FragColor = vec4(vec3(n), 1.0);
-  }
+void main() {
+  // DEBUG - Output UV gradient
+  gl_FragColor = vec4(vUv, 0.0, 1.0);
+}
 `;
 
 // ------------------
