@@ -136,7 +136,8 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const payloadParam = url.searchParams.get("payload");
-    let messagesFromClient: Array<{ role: "user" | "assistant"; content: string }> = [];
+    let messagesFromClient: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
+    let patientContextString: string | null = null;
 
     if (!payloadParam) {
       if (!requestAbortController.signal.aborted) requestAbortController.abort();
@@ -151,6 +152,44 @@ export async function GET(req: NextRequest) {
         throw new Error("Messages array is missing or empty in payload.");
       }
       messagesFromClient = parsedPayload.messages;
+
+      // Extract patient context if present as the first system message
+      if (messagesFromClient.length > 0 && messagesFromClient[0].role === 'system') {
+        try {
+          const patientData = JSON.parse(messagesFromClient[0].content);
+          if (patientData.patient) {
+            const { name, dateOfBirth, gender } = patientData.patient;
+            let contextParts = [];
+            if (name) contextParts.push(name);
+            if (dateOfBirth) contextParts.push(`DOB: ${dateOfBirth}`);
+            if (gender) contextParts.push(`Gender: ${gender}`);
+            // Add more fields from patientData.patient as needed for context
+            if (contextParts.length > 0) {
+              patientContextString = `Regarding patient: ${contextParts.join(', ')}.\n\n`;
+            }
+            messagesFromClient.shift(); // Remove the system message with patient JSON
+          }
+        } catch (e) {
+          console.warn("Could not parse patient context from system message:", e);
+          // Optionally, remove the unparseable system message or leave it
+          // For now, we'll leave it if it's not parsable as patient data
+        }
+      }
+
+      // If patient context was extracted, prepend it to the last user message
+      if (patientContextString && messagesFromClient.length > 0) {
+        let lastUserMessageIndex = -1;
+        for (let i = messagesFromClient.length - 1; i >= 0; i--) {
+          if (messagesFromClient[i].role === 'user') {
+            lastUserMessageIndex = i;
+            break;
+          }
+        }
+        if (lastUserMessageIndex !== -1) {
+          messagesFromClient[lastUserMessageIndex].content = patientContextString + messagesFromClient[lastUserMessageIndex].content;
+        }
+      }
+
     } catch (e: any) {
       console.error("Failed to parse payload or invalid messages format:", e.message);
       if (!requestAbortController.signal.aborted) requestAbortController.abort();
