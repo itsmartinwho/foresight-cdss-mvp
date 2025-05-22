@@ -122,7 +122,7 @@ In complex layouts (especially with glassmorphism, backdrop filters, or transfor
 
 ## Chat Bubble Styling
 
-- **User messages**: Translucent teal background (`bg-foresight-teal/30`) and black text (`text-black`).
+- **User messages**: Translucent neon teal background (`bg-neon/30`) and black text (`text-black`).
 - **Assistant messages**: White background with 90% opacity (`bg-white/90`) and gray-800 text (`text-gray-800`).
 
 # Frontend Styling Guide: Outer Layout & Containers
