@@ -11,6 +11,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.56.4(react@18.2.0))
+      '@phosphor-icons/react':
+        specifier: ^2.0.0
+        version: 2.1.10(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@radix-ui/react-accordion':
         specifier: ^1.2.2
         version: 1.2.11(@types/react-dom@18.3.7(@types/react@18.3.21))(@types/react@18.3.21)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -140,9 +143,6 @@ importers:
       openai:
         specifier: ^4.28.3
         version: 4.100.0(ws@8.18.2)(zod@3.25.7)
-      phosphor-react:
-        specifier: ^1.4.1
-        version: 1.4.1(react@18.2.0)
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -2124,6 +2124,13 @@ packages:
     hasBin: true
     peerDependencies:
       wrangler: ^3.103.0
+
+  '@phosphor-icons/react@2.1.10':
+    resolution: {integrity: sha512-vt8Tvq8GLjheAZZYa+YG/pW7HDbov8El/MANW8pOAz4eGxrwhnbfrQZq0Cp4q8zBEu8NIhHdnr+r8thnfRSNYA==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>= 16.8'
+      react-dom: '>= 16.8'
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -6450,12 +6457,6 @@ packages:
     resolution: {integrity: sha512-GEazpTWwTZaEQ9RhL7Nyz0WwqilbqgLahDM3D0hxWwmVDI52nXEybHqiN6/elwpkJBhcuj+WbBu+QfT0uhPGfQ==}
     engines: {node: '>= 8'}
 
-  phosphor-react@1.4.1:
-    resolution: {integrity: sha512-gO5j7U0xZrdglTAYDYPACU4xDOFBTJmptrrB/GeR+tHhCZF3nUMyGmV/0hnloKjuTrOmpSFlbfOY78H39rgjUQ==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      react: '>=16'
-
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -10344,6 +10345,11 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
       - supports-color
+
+  '@phosphor-icons/react@2.1.10(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
@@ -15618,10 +15624,6 @@ snapshots:
       centra: 2.7.0
     transitivePeerDependencies:
       - debug
-
-  phosphor-react@1.4.1(react@18.2.0):
-    dependencies:
-      react: 18.2.0
 
   picocolors@1.1.1: {}
 

@@ -9,7 +9,7 @@ import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Admission, Diagnosis, LabResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextBolder as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from 'phosphor-react';
+import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextBolder as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from '@phosphor-icons/react';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 
 // Consultation Tab
