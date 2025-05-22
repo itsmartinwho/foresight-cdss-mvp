@@ -74,11 +74,11 @@ float snoise(vec3 v)
   vec3 p3 = vec3(a1.zw,h.w);
 
   // Normalise gradients
-  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-  p0 *= norm.x;
-  p1 *= norm.y;
-  p2 *= norm.z;
-  p3 *= norm.w;
+  vec4 normVal = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0 *= normVal.x;
+  p1 *= normVal.y;
+  p2 *= normVal.z;
+  p3 *= normVal.w;
 
   // Mix contributions from corners
   vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
@@ -90,24 +90,42 @@ float snoise(vec3 v)
 
 
 const vertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
+#version 300 es
+precision highp float;
+
+// GLSL 3.00 ES: 'varying' is replaced by 'in' (vertex) and 'out' (fragment)
+// However, for compatibility with ShaderMaterial defaults, we can often still use 'varying'
+// and Three.js handles the upgrade. If issues arise, change to 'out vec2 vUv_out;'
+// and use 'vUv_out' in fragment shader as 'in vec2 vUv_in;'.
+// For simplicity now, keeping 'varying'.
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
 `;
 
 const fragmentShader = `
- precision highp float;
- 
-   uniform vec2 u_resolution;
+#version 300 es
+precision highp float;
+
+out vec4 out_FragColor; // GLSL 3.00 ES output
+
+uniform vec2 u_resolution;
 uniform float u_time;
-uniform vec3 u_viewDirection;
-varying vec2 vUv;
+uniform vec3 u_viewDirection; // Will be used later
 
-${noiseGLSL} // noise
+// GLSL 3.00 ES: 'varying' is replaced by 'in'
+// See note in vertex shader.
+varying vec2 vUv; 
 
-// Fractal Brownian Motion
+// Noise functions (like snoise, fbm) would be here if used
+// For now, main is simplified for testing.
+// ${noiseGLSL} // noise (commented out for initial test)
+
+// Fractal Brownian Motion (commented out for initial test)
+/*
 float fbm(vec3 p) {
   float v = 0.0;
   float amp = 0.5;
@@ -117,10 +135,11 @@ float fbm(vec3 p) {
   v += amp * snoise(p);
   return v;
 }
+*/
 
 void main() {
   // DEBUG - Output UV gradient
-  gl_FragColor = vec4(vUv, 0.0, 1.0);
+  out_FragColor = vec4(vUv, 0.0, 1.0);
 }
 `;
 
@@ -164,7 +183,7 @@ export default function PlasmaBackground() {
   useEffect(() => {
     if (globalAny.__plasmaSingleton) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches; // Restored check
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const canvas = document.createElement('canvas');
     canvas.id = 'plasma-bg';
@@ -175,7 +194,7 @@ export default function PlasmaBackground() {
     canvas.style.zIndex = '0';
     canvas.style.pointerEvents = 'none';
 
-    document.body.prepend(canvas); // ensure it is the first child so always behind
+    document.body.prepend(canvas);
 
     if (prefersReducedMotion) {
       paintStaticGradient(canvas);
@@ -186,10 +205,9 @@ export default function PlasmaBackground() {
           globalAny.__plasmaSingleton = null;
         },
       } as PlasmaSingleton;
-      return; // Done – static only
+      return; 
     }
 
-    // ------------------  Three.js init  ------------------
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -205,30 +223,28 @@ export default function PlasmaBackground() {
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
       u_viewDirection: { value: new THREE.Vector3(0, 0, 1) }
     };
-    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true, glslVersion: THREE.GLSL3 });
+    // Relying on #version 300 es in shader strings, so glslVersion option removed.
+    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
     material.blending = THREE.NormalBlending;
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    // Expose for DevTools debugging
     (canvas as any).__plasmaUniforms = uniforms;
 
     const clock = new THREE.Clock();
     let frameId: number;
 
     function animateLoop() {
-      // Check if component might have been unmounted or canvas removed
       if (!globalAny.__plasmaSingleton || !globalAny.__plasmaSingleton.canvas.isConnected) {
-        if (frameId) cancelAnimationFrame(frameId); // Stop further calls if unmounted
+        if (frameId) cancelAnimationFrame(frameId);
         return;
       }
       uniforms.u_time.value = clock.getElapsedTime();
       renderer.render(scene, camera);
-      frameId = requestAnimationFrame(animateLoop); // Plain RAF loop
+      frameId = requestAnimationFrame(animateLoop);
     }
     
-    // Initial call to start the loop
     frameId = requestAnimationFrame(animateLoop);
 
     const handleResize = () => {
@@ -251,5 +267,5 @@ export default function PlasmaBackground() {
     window.addEventListener('beforeunload', destroy, { once: true });
   }, []);
 
-  return null; // React renders nothing
-} 
+  return null;
+}

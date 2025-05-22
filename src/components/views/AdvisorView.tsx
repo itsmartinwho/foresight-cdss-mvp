@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import type { Patient } from '@/lib/types';
 import {
   Mic,
   Send,
@@ -9,6 +10,7 @@ import {
   Sparkles,
   Waves,
   Plus,
+  Upload,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
@@ -18,6 +20,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { parser as smd_parser, default_renderer as smd_default_renderer, parser_write as smd_parser_write, parser_end as smd_parser_end } from '../advisor/streaming-markdown/smd';
+import PatientSelectionDropdown from "@/components/advisor/PatientSelectionDropdown";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -56,6 +63,7 @@ export default function AdvisorView() {
   const [thinkMode, setThinkMode] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [selectedPatientForContext, setSelectedPatientForContext] = useState<Patient | null>(null);
 
   // Refs for streaming-markdown (one parser + root div per assistant message)
   const parsersRef = useRef<Record<string, any>>({});
@@ -270,6 +278,37 @@ export default function AdvisorView() {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // TODO: Implement actual file processing and context injection
+      console.log("Selected file:", file.name);
+      // Example: Add a message to the chat indicating a file was added
+      const fileContextMessage: ChatMessage = {
+        id: uuidv4(),
+        role: "user",
+        content: `[File uploaded: ${file.name}]`,
+      };
+      setMessages((prevMessages) => [...prevMessages, fileContextMessage]);
+    }
+  };
+
+  const handlePatientSelectForContext = (patient: Patient) => {
+    setSelectedPatientForContext(patient);
+    // Example: Add a message to the chat indicating a patient was selected for context
+    const patientContextMessage: ChatMessage = {
+      id: uuidv4(),
+      role: "user",
+      content: `[Context added for patient: ${patient.name || patient.id}]`,
+    };
+    setMessages((prevMessages) => [...prevMessages, patientContextMessage]);
+    // Close dropdown or handle UI changes as needed
+  };
+
   return (
     <>
       <ContentSurface fullBleed className="">
@@ -417,18 +456,7 @@ export default function AdvisorView() {
                     accept="image/*,application/pdf,application/msword,text/plain"
                     multiple={false}
                     className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setMessages(prev => {
-                        if (!Array.isArray(prev)) return prev || [];
-                        return [
-                          ...prev,
-                          { id: uuidv4(), role: "user", content: `[Uploaded ${file.name}]` },
-                        ];
-                      });
-                      e.target.value = "";
-                    }}
+                    onChange={handleFileChange}
                   />
                   {/* Dictation (if not in voice mode) */}
                   {!voiceMode && typeof window !== "undefined" &&
