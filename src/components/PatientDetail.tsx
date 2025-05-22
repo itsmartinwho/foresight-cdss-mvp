@@ -5,6 +5,8 @@ import { Patient, Admission, Diagnosis, LabResult, Treatment, AdmissionDetailsWr
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import Link from 'next/link';
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
+import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface PatientDetailProps {
   patientId: string;
@@ -132,19 +134,28 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
             
             {admissionsWithDetails && admissionsWithDetails.length > 0 && (
               <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 w-full md:w-auto md:max-w-xs">
-                <label htmlFor="visitSelector" className="block text-sm font-medium text-gray-700 mb-1">Select Visit:</label>
-                <select
-                  id="visitSelector"
-                  className="w-full border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                <label htmlFor="visitSelector" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Visit:
+                </label>
+                <Select
                   value={selectedAdmissionId || ''}
-                  onChange={(e) => setSelectedAdmissionId(e.target.value)}
+                  onValueChange={(val) => setSelectedAdmissionId(val)}
                 >
-                  {admissionsWithDetails.map((adWrapper: AdmissionDetailsWrapper) => (
-                    <option key={adWrapper.admission.id} value={adWrapper.admission.id}>
-                      {formatDateTime(adWrapper.admission.scheduledStart)} - {adWrapper.admission.reason || 'Visit'}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="visitSelector" className="w-full">
+                    <SelectValue placeholder="Select visit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {admissionsWithDetails.map((adWrapper: AdmissionDetailsWrapper) => (
+                      <SelectItem
+                        key={adWrapper.admission.id}
+                        value={adWrapper.admission.id}
+                      >
+                        {formatDateTime(adWrapper.admission.scheduledStart)} -{' '}
+                        {adWrapper.admission.reason || 'Visit'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
@@ -164,8 +175,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                 { key: 'history', label: 'Patient History' },
                 { key: 'all_data', label: 'All Data' },
               ].map(tab => (
-                <button
+                <Button
                   key={tab.key}
+                  variant="ghost"
                   className={`py-3 px-3 md:px-4 text-center border-b-2 font-medium text-sm transition-colors duration-150 ease-in-out whitespace-nowrap hover:bg-gray-100 hover:text-blue-600 ${
                     activeTab === tab.key
                       ? 'border-blue-500 text-blue-600'
@@ -174,7 +186,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                   onClick={() => setActiveTab(tab.key)}
                 >
                   {tab.label}
-                </button>
+                </Button>
               ))}
             </nav>
           </div>
@@ -357,9 +369,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                         </div>
                       </div>
                       <div className="border-t border-gray-200 pt-5 flex justify-center">
-                        <button className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <Button variant="primary" className="px-6 py-2.5">
                           Generate PDF Draft
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
