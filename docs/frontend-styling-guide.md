@@ -214,4 +214,16 @@ The Foresight CDSS frontend uses a **mixed approach** for UI components:
 - By default, use native browser scroll areas for all main content and panels. This ensures consistent styling and avoids complexity.
 - Only use Radix ScrollArea if you have a clear, documented need.
 
-See [docs/architecture.md](architecture.md#ui-library-usage-and-scroll-area-policy) for rationale and more details. 
+See [docs/architecture.md](architecture.md#ui-library-usage-and-scroll-area-policy) for rationale and more details.
+
+## Standardized Component Styling
+
+### Dropdown and Select Menus
+
+To ensure a consistent look and feel across the application, all dropdown menus (`DropdownMenuContent` from `src/components/ui/dropdown-menu.tsx`) and select menus (`SelectContent` from `src/components/ui/select.tsx`) are styled to match the appearance of the navbar search results panel.
+
+**Styling:**
+- **Background and Blur:** `backdrop-blur-lg bg-[rgba(255,255,255,0.1)]`
+- **Border:** `border-[rgba(255,255,255,0.12)]` (Note: The original components already have a border, this specific class ensures the color matches the navbar's panel).
+
+These styles provide a glassmorphic effect consistent with other key UI elements like the navbar and sidebars. The size of the dropdown/select panel will vary based on its content and specific implementation context, but the visual treatment (blur, background color, border) is standardized. 

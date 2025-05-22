@@ -99,61 +99,65 @@ const vertexShader = `
 
 const fragmentShader = `
   #extension GL_OES_standard_derivatives : enable
-  precision highp float; // Necessary for some mobile devices
+  precision highp float;
 
   uniform vec2 u_resolution;
   uniform float u_time;
-  uniform vec3 u_viewDirection; // Added for specular calculation
+  uniform vec3 u_viewDirection;
   varying vec2 vUv;
 
-  ${noiseGLSL} // Include the noise function
+  ${noiseGLSL} // noise
 
   // Fractal Brownian Motion
   float fbm(vec3 p) {
     float v = 0.0;
     float amp = 0.5;
-    // Loop unrolling for older GLSL versions / performance
     v += amp * snoise(p); p *= 2.0; amp *= 0.5;
     v += amp * snoise(p); p *= 2.0; amp *= 0.5;
     v += amp * snoise(p); p *= 2.0; amp *= 0.5;
-    v += amp * snoise(p); // p *= 2.0; amp *= 0.5; // 4 octaves
+    v += amp * snoise(p);
     return v;
   }
 
-  // --- end utility functions ---
-
   void main() {
-    // Domain Warping – create 2-D offset via two fbm samples
+    // Domain-Warped Ridged FBM
     float warpX = fbm(vec3(vUv * 1.1, u_time * 0.04));
-    float warpY = fbm(vec3(vUv * 1.1 + 100.0, u_time * 0.04)); // Offset constant decorrelates
-    vec2 warp = vec2(warpX, warpY) * 0.35;
+    float warpY = fbm(vec3(vUv * 1.1 + 100.0, u_time * 0.04));
+    vec2 warp = vec2(warpX, warpY) * 0.8;
 
-    // Three independent ridged noise masks with domain warping
-    float m1 = abs(snoise(vec3(vUv * 0.8 + warp,  u_time * 0.05)));
-    float m2 = abs(snoise(vec3(vUv * 1.7 + warp, u_time * 0.07)));
-    float m3 = abs(snoise(vec3(vUv * 3.4 + warp, u_time * 0.09)));
-    float n  = (m1 * 0.5 + m2 * 0.3 + m3 * 0.2); // Balanced weights
+    float m1 = abs(snoise(vec3(vUv * 0.9 + warp,  u_time * 0.05)));
+    float m2 = abs(snoise(vec3(vUv * 2.1 + warp,  u_time * 0.07)));
+    float m3 = abs(snoise(vec3(vUv * 4.3 + warp,  u_time * 0.09)));
+    float m4 = abs(snoise(vec3(vUv * 8.7 + warp,  u_time * 0.11))) * 0.12;
+    float n  = m1 * 0.30 + m2 * 0.26 + m3 * 0.22 + m4;
 
-    // Piece-wise Palette
-    vec3 washedTeal    = vec3(0.38, 0.72, 0.72);
-    vec3 softLavender  = vec3(0.75, 0.65, 0.9);
-    vec3 nearWhite     = vec3(0.95, 0.95, 0.97);
+    // Force full luminance spread
+    n = clamp((n - 0.35) * 2.4, 0.0, 1.0);
 
-    vec3 finalColor = mix(washedTeal, softLavender, smoothstep(0.25, 0.55, n));
-    finalColor      = mix(finalColor, nearWhite, smoothstep(0.65, 0.9, n));
+    // Animated Pastel Palette
+    float drift   = sin(u_time * 0.04) * 0.08;
+    vec3 teal     = vec3(0.32 + drift, 0.82, 0.80);
+    vec3 blueLav  = vec3(0.52 + drift, 0.72, 0.88);
+    vec3 lavender = vec3(0.78 + drift, 0.64, 0.92);
+    vec3 iceWhite = vec3(0.98);
+    vec3 col = n < 0.33 
+      ? mix(teal, blueLav, n / 0.33)
+      : n < 0.66
+      ? mix(blueLav, lavender, (n - 0.33) / 0.33)
+      : mix(lavender, iceWhite, (n - 0.66) / 0.34);
 
-    // Animated Specular Sheen with moving light & derivative normals
-    vec3 lightDir = normalize(vec3(sin(u_time * 0.1), cos(u_time * 0.1), 0.6));
-    vec3 viewDir = normalize(u_viewDirection);
-    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.1));
+    // Specular Flare
+    vec3 viewDir_n = normalize(u_viewDirection);
+    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.35));
+    vec3 lDir = normalize(vec3(sin(u_time * 0.12), 0.8, 0.6));
+    vec3 hVec = normalize(lDir + viewDir_n);
+    float spec = pow(max(dot(norm, hVec), 0.0), 48.0);
+    col += spec * 0.45;
 
-    vec3 halfVec = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfVec), 0.0), 48.0);
-    finalColor += spec * 0.35;
+    // Contrast & Glow
+    col = pow(col * 1.3, vec3(1.15));
 
-    finalColor = clamp(finalColor, 0.0, 1.0);
-
-    gl_FragColor = vec4(finalColor, 0.18);
+    gl_FragColor = vec4(col, 0.22);
   }
 `;
 
@@ -226,6 +230,7 @@ export default function PlasmaBackground() {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -238,6 +243,7 @@ export default function PlasmaBackground() {
       u_viewDirection: { value: new THREE.Vector3(0, 0, 1) }
     };
     const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
+    material.blending = THREE.NormalBlending;
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
