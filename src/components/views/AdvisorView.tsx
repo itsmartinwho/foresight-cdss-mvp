@@ -321,9 +321,9 @@ export default function AdvisorView() {
                     msg.role === "user"
                       ? "max-w-[66.666%] w-fit bg-neon/30 text-black p-6"
                       : msg.role === "assistant"
-                      ? "max-w-full w-fit bg-white/90 text-gray-800 p-6"
+                      ? "max-w-full w-full bg-white/90 text-gray-800 p-6"
                       : msg.role === "system"
-                      ? "max-w-full w-fit bg-white/90 text-gray-800 p-6"
+                      ? "max-w-full w-full bg-white/90 text-gray-800 p-6"
                       : "hidden",
                     "rounded-lg text-sm shadow-sm"
                   )}
