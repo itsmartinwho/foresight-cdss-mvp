@@ -158,14 +158,17 @@ export async function GET(req: NextRequest) {
         try {
           const patientData = JSON.parse(messagesFromClient[0].content);
           if (patientData.patient) {
-            const { name, dateOfBirth, gender } = patientData.patient;
-            let contextParts = [];
-            if (name) contextParts.push(name);
-            if (dateOfBirth) contextParts.push(`DOB: ${dateOfBirth}`);
-            if (gender) contextParts.push(`Gender: ${gender}`);
-            // Add more fields from patientData.patient as needed for context
-            if (contextParts.length > 0) {
-              patientContextString = `Regarding patient: ${contextParts.join(', ')}.\n\n`;
+            // Dynamically build context string from all patient fields
+            const patientDetails = Object.entries(patientData.patient)
+              .map(([key, value]) => {
+                // Prettify common keys for better readability
+                const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                return `${formattedKey}: ${value}`;
+              })
+              .join(', ');
+            
+            if (patientDetails) {
+              patientContextString = `Regarding patient: ${patientDetails}.\n\n`;
             }
             messagesFromClient.shift(); // Remove the system message with patient JSON
           }
