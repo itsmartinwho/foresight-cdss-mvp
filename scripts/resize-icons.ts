@@ -14,8 +14,18 @@ async function main() {
   const originalIco = path.join(publicDir, 'favicon.ico');
 
   // Backup original files
-  await fs.copyFile(originalPng, path.join(imagesDir, 'foresight-icon.original.png'));
-  await fs.copyFile(originalIco, path.join(publicDir, 'favicon.original.ico'));
+  try {
+    await fs.access(originalPng);
+    await fs.copyFile(originalPng, path.join(imagesDir, 'foresight-icon.original.png'));
+  } catch (error) {
+    console.warn(`Original PNG not found at ${originalPng}, skipping backup.`);
+  }
+  try {
+    await fs.access(originalIco);
+    await fs.copyFile(originalIco, path.join(publicDir, 'favicon.original.ico'));
+  } catch (error) {
+    console.warn(`Original ICO not found at ${originalIco}, skipping backup.`);
+  }
 
   // Resize PNG for apple touch icon (180x180)
   await sharp(path.join(imagesDir, 'foresight-icon.original.png'))
@@ -26,7 +36,7 @@ async function main() {
   const fullWordLogo = path.join(imagesDir, 'word-logo-full.png');
   await sharp(fullWordLogo)
     .trim()
-    .resize({ height: 24, fit: 'contain' })
+    .resize({ height: 32, fit: 'contain' })
     .png()
     .toFile(path.join(imagesDir, 'word-logo.png'));
 
