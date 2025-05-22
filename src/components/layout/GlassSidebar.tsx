@@ -115,7 +115,7 @@ export default function GlassSidebar() {
                   'truncate',
                   isAdvisorActive
                     ? 'text-text font-semibold'
-                    : 'bg-gradient-to-br from-teal-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent font-medium sheen'
+                    : 'bg-gradient-to-br from-teal-400 to-yellow-400 bg-clip-text text-transparent font-medium sheen'
                 )}
               >
                 Advisor

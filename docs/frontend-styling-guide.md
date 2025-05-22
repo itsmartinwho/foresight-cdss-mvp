@@ -284,7 +284,7 @@ This document provides guidelines and conventions for styling frontend component
 
 ## Button Styles: Primary vs. Secondary
 
-### Secondary Button (2024 Glassy Gradient Update)
+### Secondary Button (2025 Glassy Gradient Update)
 
 - **Inside:** Always glassy/translucent, using `bg-[rgba(255,255,255,0.10)]` (light mode) or `bg-[rgba(0,0,0,0.10)]` (dark mode) and `backdrop-blur-sm`.
 - **Border/Edge:** Always displays a teal-to-yellow gradient border using a `before` pseudo-element (`before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))]`).
