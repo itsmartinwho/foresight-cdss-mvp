@@ -193,7 +193,6 @@
   #navbar-desktop-search::placeholder,
   #navbar-mobile-search::placeholder {
     @apply text-text-placeholder; /* Use the new placeholder color */
-    opacity: 0.75 !important;
     font-size: var(--step--1) !important; /* Consistent with other placeholders */
     font-weight: 300 !important;        /* Consistent with other placeholders */
     font-family: inherit !important;   /* Consistent with other placeholders */
@@ -231,7 +230,7 @@
 @layer utilities {
   /* Utility class for elements (e.g., select, custom inputs) that need placeholder-style text */
   .placeholder-like {
-    color: var(--placeholder-color) !important;
+    @apply text-text-placeholder; /* Use the new placeholder color */
     opacity: 0.6 !important;
     font-size: var(--step--1) !important;
     font-weight: 300 !important;
