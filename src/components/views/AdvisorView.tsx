@@ -428,36 +428,44 @@ export default function AdvisorView() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="icon"
                           variant={includePapers ? "default" : "ghost"}
+                          size="icon"
                           onClick={() => setIncludePapers((v) => !v)}
-                          className="group"
+                          className={cn(
+                            "group",
+                            includePapers && "w-auto px-3", // Active state
+                            "hover:w-auto hover:px-3"     // Hover state
+                          )}
                         >
                           <BookOpen className="h-4 w-4" />
-                          <span className="group-hover:ml-2 group-hover:block hidden">Papers</span>
+                          <span className={cn("ml-2 whitespace-nowrap", includePapers ? "inline" : "hidden", "group-hover:inline")}>
+                            Papers
+                          </span>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Papers</p>
-                      </TooltipContent>
+                      <TooltipContent><p>Papers</p></TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="icon"
                           variant={thinkMode ? "default" : "ghost"}
+                          size="icon"
                           onClick={() => setThinkMode((v) => !v)}
-                          className="group"
+                          className={cn(
+                            "group",
+                            thinkMode && "w-auto px-3", // Active state
+                            "hover:w-auto hover:px-3"    // Hover state
+                          )}
                         >
                           <Sparkles className="h-4 w-4" />
-                          <span className="group-hover:ml-2 group-hover:block hidden">Think</span>
+                          <span className={cn("ml-2 whitespace-nowrap", thinkMode ? "inline" : "hidden", "group-hover:inline")}>
+                            Think
+                          </span>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Think</p>
-                      </TooltipContent>
+                      <TooltipContent><p>Think</p></TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
@@ -469,9 +477,18 @@ export default function AdvisorView() {
                       <TooltipTrigger asChild>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="group">
-                              <Plus className="h-[14px] w-[14px] text-foreground" />
-                              <span className="group-hover:ml-2 group-hover:block hidden">Attach</span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className={cn(
+                                "group",
+                                "hover:w-auto hover:px-3" // Hover state only for this button
+                              )}
+                            >
+                              <span className={cn("mr-2 whitespace-nowrap hidden group-hover:inline")}>
+                                Attach
+                              </span>
+                              <Plus className="h-4 w-4 text-foreground" />
                             </Button>
                           </DropdownMenuTrigger>
                           <PatientSelectionDropdown
@@ -480,9 +497,7 @@ export default function AdvisorView() {
                           />
                         </DropdownMenu>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Attach</p>
-                      </TooltipContent>
+                      <TooltipContent><p>Attach</p></TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   {/* Hidden File Input for onFileUpload handler */}
@@ -500,14 +515,23 @@ export default function AdvisorView() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="icon" variant={dictating ? "default" : "ghost"} onClick={toggleDictation} className="group">
+                            <Button
+                              size="icon"
+                              variant={dictating ? "default" : "ghost"}
+                              onClick={toggleDictation}
+                              className={cn(
+                                "group",
+                                dictating && "w-auto px-3", // Active state
+                                "hover:w-auto hover:px-3"   // Hover state
+                              )}
+                            >
+                              <span className={cn("mr-2 whitespace-nowrap", dictating ? "inline" : "hidden", "group-hover:inline")}>
+                                Dictate
+                              </span>
                               <Mic className="h-4 w-4" />
-                              <span className="group-hover:ml-2 group-hover:block hidden">Dictate</span>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Dictate</p>
-                          </TooltipContent>
+                          <TooltipContent><p>Dictate</p></TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     )}
@@ -517,32 +541,44 @@ export default function AdvisorView() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            size="icon"
+                            size="icon" // Will be icon only initially
                             onClick={() => handleSend()}
                             disabled={isSending}
-                            className="bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white group"
+                            className={cn(
+                              "group bg-gradient-to-br from-teal-500 to-cyan-500 hover:opacity-90 text-white",
+                              "hover:w-auto hover:px-3" // Expands on hover
+                            )}
                           >
+                            <span className={cn("mr-2 whitespace-nowrap hidden group-hover:inline")}>
+                              Send
+                            </span>
                             <Send className="h-4 w-4" />
-                            <span className="group-hover:ml-2 group-hover:block hidden">Send</span>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Send</p>
-                        </TooltipContent>
+                        <TooltipContent><p>Send</p></TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button size="icon" variant={voiceMode ? "default" : "ghost"} onClick={() => setVoiceMode((v) => !v)} className="group">
+                          <Button
+                            size="icon"
+                            variant={voiceMode ? "default" : "ghost"}
+                            onClick={() => setVoiceMode((v) => !v)}
+                            className={cn(
+                              "group",
+                              voiceMode && "w-auto px-3", // Active state
+                              "hover:w-auto hover:px-3"  // Hover state
+                            )}
+                          >
+                            <span className={cn("mr-2 whitespace-nowrap", voiceMode ? "inline" : "hidden", "group-hover:inline")}>
+                              Voice Mode
+                            </span>
                             <Waves className="h-4 w-4" />
-                            <span className="group-hover:ml-2 group-hover:block hidden">Voice Mode</span>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Voice Mode</p>
-                        </TooltipContent>
+                        <TooltipContent><p>Voice Mode</p></TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   )}
