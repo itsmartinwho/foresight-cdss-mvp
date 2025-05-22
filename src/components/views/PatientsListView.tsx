@@ -160,24 +160,33 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   }, [upcomingRowsData, pastRowsData, upcomingSortConfig, pastSortConfig, displayName]);
 
   const renderAllPatientsTable = () => {
-    const patientFields: { key: keyof Patient; header: string; sortable?: boolean }[] = [
-      { key: "id", header: "Patient ID", sortable: true },
-      { key: "firstName", header: "First Name", sortable: true },
-      { key: "lastName", header: "Last Name", sortable: true },
-      // { key: "name", header: "Full Name" }, // Prefer firstName, lastName
-      { key: "gender", header: "Gender", sortable: true },
-      { key: "dateOfBirth", header: "Date of Birth", sortable: true },
-      // Consultations column will be handled separately
-      { key: "race", header: "Race", sortable: true },
-      { key: "maritalStatus", header: "Marital Status", sortable: true },
-      { key: "language", header: "Language", sortable: true },
-      { key: "povertyPercentage", header: "Poverty %", sortable: true },
-      // { key: "photo", header: "Photo" }, // Display image directly
-      { key: "primaryDiagnosis", header: "Primary Diagnosis", sortable: true },
-      // { key: "diagnosis", header: "Diagnosis" }, // Often same as primary
-      { key: "nextAppointment", header: "Next Appointment", sortable: true },
-      { key: "reason", header: "General Reason", sortable: true },
+    const patientFields: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
+      { key: "id", header: "Patient ID", sortable: true, className: "w-[200px]" },
+      { key: "firstName", header: "First Name", sortable: true, className: "w-[120px]" },
+      { key: "lastName", header: "Last Name", sortable: true, className: "w-[120px]" },
+      { key: "gender", header: "Gender", sortable: true, className: "w-[100px]" },
+      { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[150px]" },
+      { key: "race", header: "Race", sortable: true, className: "w-[100px]" },
+      { key: "maritalStatus", header: "Marital Status", sortable: true, className: "w-[120px]" },
+      { key: "language", header: "Language", sortable: true, className: "w-[100px]" },
+      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[100px]" },
+      { key: "primaryDiagnosis", header: "Primary Diagnosis", sortable: true, className: "w-[200px] truncate" },
+      { key: "nextAppointment", header: "Next Appointment", sortable: true, className: "w-[150px]" },
+      { key: "reason", header: "General Reason", sortable: true, className: "w-[200px] truncate" },
     ];
+
+    const dobIndex = patientFields.findIndex(field => field.key === "dateOfBirth");
+    const consultationsColumnHeader = {
+      key: "consultationsCount" as AllPatientsSortableKey,
+      header: "Consultations",
+      sortable: true,
+      className: "w-[250px]"
+    };
+
+    const tableHeaders = [...patientFields];
+    if (dobIndex !== -1) {
+      tableHeaders.splice(dobIndex + 1, 0, consultationsColumnHeader as any);
+    }
 
     if (isLoading) {
       return <LoadingAnimation />;
@@ -196,11 +205,11 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           <Table className="text-slate-200 text-step-0">
             <TableHeader>
               <TableRow className="border-slate-700/50">
-                {patientFields.map(field => (
+                {tableHeaders.map(field => (
                   <TableHead 
                     key={field.key}
                     onClick={field.sortable ? () => requestAllPatientsSort(field.key as AllPatientsSortableKey) : undefined}
-                    className={field.sortable ? "cursor-pointer hover:text-neon" : ""}
+                    className={`${field.className || ''} ${field.sortable ? "cursor-pointer hover:text-neon" : ""}`}
                   >
                     {field.header}
                     {field.sortable && allPatientsSortConfig?.key === field.key && (
@@ -208,15 +217,6 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     )}
                   </TableHead>
                 ))}
-                <TableHead 
-                  onClick={() => requestAllPatientsSort('consultationsCount')}
-                  className={"cursor-pointer hover:text-neon"}
-                >
-                  Consultations
-                  {allPatientsSortConfig?.key === 'consultationsCount' && (
-                    allPatientsSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />
-                  )}
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -228,25 +228,38 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     className="border-slate-700/50 hover:bg-slate-700/30 transition-colors duration-150 ease-in-out"
                   >
                     {patientFields.map(field => (
-                      <TableCell key={`${patient.id}-${field.key}`}>
-                        {patient[field.key] ? String(patient[field.key]) : "—"}
+                      <TableCell key={`${patient.id}-${field.key}`} className={field.className?.includes('truncate') ? 'truncate' : ''}>
+                        {field.key === 'id' ? (
+                          <div className="flex items-center gap-2">
+                            {patient.photo && (
+                              <Image src={patient.photo} alt={displayName(patient)} width={24} height={24} className="rounded-full" />
+                            )}
+                            <span>{patient[field.key] ? String(patient[field.key]) : "—"}</span>
+                          </div>
+                        ) : (
+                          patient[field.key] ? String(patient[field.key]) : "—"
+                        )}
                       </TableCell>
                     ))}
-                    <TableCell>
+                    <TableCell className={consultationsColumnHeader.className}>
                       {patientAdmissions.length > 0 ? (
                         <ul className="list-none p-0 m-0 space-y-1">
-                          {patientAdmissions.map(admission => (
+                          {patientAdmissions.slice(0, 3).map(admission => (
                             <li key={admission.id}>
                               <Button
                                 variant="link"
                                 size="sm"
-                                className="text-neon hover:text-neon/80 p-0 h-auto"
+                                className="text-neon hover:text-neon/80 p-0 h-auto truncate"
                                 onClick={() => router.push(`/patients/${patient.id}?ad=${admission.id}`)}
+                                title={new Date(admission.scheduledStart).toLocaleString()}
                               >
-                                {new Date(admission.scheduledStart).toLocaleString()}
+                                {new Date(admission.scheduledStart).toLocaleDateString()}
                               </Button>
                             </li>
                           ))}
+                          {patientAdmissions.length > 3 && (
+                            <li><span className="text-xs text-slate-400">+{patientAdmissions.length - 3} more</span></li>
+                          )}
                         </ul>
                       ) : "No consultations"}
                     </TableCell>
@@ -346,8 +359,6 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           </Button>
         </div>
         <TabsContent value="allPatients" className="mt-0 flex-grow">
-          {/* Placeholder for All Patients table */}
-          {/* <p className="text-slate-900">This is where the 'All Patients' table will be displayed.</p> */}
           {renderAllPatientsTable()}
         </TabsContent>
         <TabsContent value="allConsultations" className="mt-0 flex-grow">
