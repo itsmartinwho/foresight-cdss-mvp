@@ -98,10 +98,9 @@ const vertexShader = `
 `;
 
 const fragmentShader = `
-#extension GL_OES_standard_derivatives : enable
-precision highp float;
-
-uniform vec2 u_resolution;
+ precision highp float;
+ 
+   uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec3 u_viewDirection;
 varying vec2 vUv;
@@ -206,7 +205,7 @@ export default function PlasmaBackground() {
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
       u_viewDirection: { value: new THREE.Vector3(0, 0, 1) }
     };
-    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
+    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true, glslVersion: THREE.GLSL3 });
     material.blending = THREE.NormalBlending;
 
     const mesh = new THREE.Mesh(geometry, material);
