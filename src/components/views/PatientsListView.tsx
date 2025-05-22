@@ -123,7 +123,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     return (
       <Card className="mb-6 bg-glass-sidebar backdrop-blur-lg border-slate-700/20 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-slate-100">{title}</CardTitle>
+          <CardTitle className="text-slate-900">{title}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.length > 0 ? (
