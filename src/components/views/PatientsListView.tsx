@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Image from 'next/image';
 import Link from 'next/link';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate' | 'reason';
@@ -34,6 +35,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const [upcomingSortConfig, setUpcomingSortConfig] = useState<SortConfig | null>(null);
   const [pastSortConfig, setPastSortConfig] = useState<SortConfig | null>(null);
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"allPatients" | "allConsultations">("allPatients");
   const router = useRouter();
 
   const fetchData = async () => {
@@ -175,7 +177,12 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   return (
     <ContentSurface fullBleed className="p-6 flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <CardTitle className="text-slate-100 text-step-1">All Consultations</CardTitle>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "allPatients" | "allConsultations")} className="w-auto">
+          <TabsList>
+            <TabsTrigger value="allPatients" className="text-step-1 px-3">All Patients</TabsTrigger>
+            <TabsTrigger value="allConsultations" className="text-step-1 px-3">All Consultations</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Button
           onClick={() => setShowNewConsultModal(true)}
           size="sm"
@@ -185,8 +192,14 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           New Consultation
         </Button>
       </div>
-      {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
-      {renderTable("Past Consultations", sortedRows.past, 'past')}
+      <TabsContent value="allPatients" className="mt-0">
+        {/* Placeholder for All Patients table */}
+        <p className="text-slate-900">This is where the 'All Patients' table will be displayed.</p>
+      </TabsContent>
+      <TabsContent value="allConsultations" className="mt-0">
+        {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
+        {renderTable("Past Consultations", sortedRows.past, 'past')}
+      </TabsContent>
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}
