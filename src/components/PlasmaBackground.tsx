@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from 'react';
-import * as THREE from 'three';
+import ** THREE from 'three';
 
-// Keep noiseGLSL for later, but it's not used in this initial test
+// Keep noiseGLSL for later
 const noiseGLSL = `
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -58,56 +58,51 @@ float snoise(vec3 v)
   }
 `;
 
-// Explicit GLSL 3.00 ES Vertex Shader
-const vertexShader = ` #version 300 es
-  precision highp float;
+// Explicit GLSL 3.00 ES Vertex Shader - NO LEADING SPACE before #version
+const vertexShader = `#version 300 es
+precision highp float;
 
-  // Attributes from THREE.PlaneGeometry
-  in vec3 position;
-  in vec2 uv; // Input UV coordinates from geometry
+// Attributes from THREE.PlaneGeometry (Three.js provides these if #version is detected correctly)
+// If using RawShaderMaterial, you'd declare them yourself.
+// With ShaderMaterial and a correct #version pragma, Three.js should still map
+// its standard attribute names (position, uv) if they exist in your shader.
+in vec3 position;
+in vec2 uv;
 
-  // Uniforms from Three.js
-  uniform mat4 modelViewMatrix;
-  uniform mat4 projectionMatrix;
+// Uniforms from Three.js
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
 
-  // Varying to pass UV to fragment shader
-  out vec2 vUv; 
+// Varying to pass UV to fragment shader
+out vec2 vUv; 
 
-  void main() {
-    vUv = uv; // Pass the UV coordinates
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
 `;
 
-// Explicit GLSL 3.00 ES Fragment Shader (UV Gradient Test)
-const fragmentShader = ` #version 300 es
-  precision highp float;
+// Explicit GLSL 3.00 ES Fragment Shader - NO LEADING SPACE before #version
+const fragmentShader = `#version 300 es
+precision highp float;
 
-  // Varying received from vertex shader
-  in vec2 vUv;
+in vec2 vUv;
 
-  // Uniforms (not used in this simple test but keep for structure)
-  uniform vec2 u_resolution;
-  uniform float u_time;
-  // uniform vec3 u_viewDirection; // Keep for later
+uniform vec2 u_resolution;
+uniform float u_time;
+// uniform vec3 u_viewDirection;
 
-  // Output fragment color
-  out vec4 out_FragColor;
+out vec4 out_FragColor;
 
-  void main() {
-    // Simple UV gradient:
-    // Red component tied to vUv.x
-    // Green component tied to vUv.y
-    // Blue component is 0
-    // Alpha is 1 (fully opaque)
-    out_FragColor = vec4(vUv.x, vUv.y, 0.0, 1.0); 
-  }
+void main() {
+  out_FragColor = vec4(vUv.x, vUv.y, 0.0, 1.0); 
+}
 `;
 
 interface PlasmaSingleton {
   canvas: HTMLCanvasElement;
   destroy: () => void;
-  renderer?: THREE.WebGLRenderer; // For checking capabilities
+  renderer?: THREE.WebGLRenderer;
 }
 const globalAny = globalThis as any;
 
@@ -120,31 +115,41 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.width / 2, canvas.height / 2, 0,
     canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 1.5
   );
-  // Using the lighter pastel gradient from your later experiments for the static fallback
-  gradient.addColorStop(0.0, 'rgba(214,191,254,0.3)');   // lavender
-  gradient.addColorStop(0.25,'rgba(179,209,255,0.15)'); // blue-lavender
-  gradient.addColorStop(0.75,'rgba(236,239,241,0.1)');  // silver
-  gradient.addColorStop(1.0, 'rgba(153,246,228,0.3)');   // teal
+  gradient.addColorStop(0.0, 'rgba(214,191,254,0.3)');
+  gradient.addColorStop(0.25,'rgba(179,209,255,0.15)');
+  gradient.addColorStop(0.75,'rgba(236,239,241,0.1)');
+  gradient.addColorStop(1.0, 'rgba(153,246,228,0.3)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 export default function PlasmaBackground() {
   useEffect(() => {
-    // For debugging, temporarily disable singleton check to force re-init on HMR
-    // if (globalAny.__plasmaSingleton) {
-    //   console.log("PlasmaSingleton already exists. Skipping init.");
-    //   return;
-    // } else {
-    //    console.log("No PlasmaSingleton found, proceeding with init.");
-    // }
+    // The double initialization logs ("Initializing WebGL for PlasmaBackground.")
+    // are likely due to React.StrictMode in development, which runs effects twice.
+    // This is usually fine and for debugging. The singleton check *should* ideally
+    // prevent full re-initialization on the second run, but HMR can complicate this.
+    // Let's ensure the destroy logic is robust.
+
+    if (globalAny.__plasmaSingleton) {
+      console.log("PlasmaSingleton exists. Forcing destroy for HMR / StrictMode testing.");
+      // To handle React StrictMode's double invoke or HMR,
+      // ensure previous instance is cleaned up if re-running.
+      // This is aggressive for dev, might remove if it causes issues.
+      // globalAny.__plasmaSingleton.destroy(); 
+      // For now, let's rely on the HMR dispose below or manual refresh for clean state.
+      // If you still see double init *without* HMR or strict mode issues later,
+      // then the singleton check needs strengthening.
+      // For now, we just return if it exists to avoid problems, the main issue is shader.
+      return; 
+    }
+    console.log("No PlasmaSingleton, proceeding with init.");
 
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // --- FOR DEBUGGING: Force animation path ---
-    // const prefersReducedMotion = false;
-    // console.log("Prefers Reduced Motion:", prefersReducedMotion);
-    // --- END DEBUGGING ---
+    // --- FOR DEBUGGING: ---
+    // const prefersReducedMotion = false; 
+    // console.log("Prefers Reduced Motion (DEBUG):", prefersReducedMotion);
 
 
     const canvas = document.createElement('canvas');
@@ -153,45 +158,46 @@ export default function PlasmaBackground() {
     canvas.style.inset = '0';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
-    canvas.style.zIndex = '0'; // Ensure it's behind UI
+    canvas.style.zIndex = '0';
     canvas.style.pointerEvents = 'none';
 
-    // Prepend to body, ensure it's there
-    if (document.body.firstChild && document.body.firstChild.id === 'plasma-bg') {
-        document.body.removeChild(document.body.firstChild); // remove old one if any during HMR
+    // Defensively remove old canvas if any, before prepending new one
+    const existingCanvas = document.getElementById('plasma-bg');
+    if (existingCanvas) {
+        console.log("Removing existing plasma-bg canvas.");
+        existingCanvas.remove();
     }
     document.body.prepend(canvas);
 
-
     if (prefersReducedMotion) {
-      console.log("Painting static gradient due to prefers-reduced-motion.");
+      console.log("Painting static gradient.");
       paintStaticGradient(canvas);
       globalAny.__plasmaSingleton = {
         canvas,
         destroy: () => {
           if (canvas.parentElement) canvas.parentElement.removeChild(canvas);
           globalAny.__plasmaSingleton = null;
+          console.log("Static plasma destroyed.");
         },
       } as PlasmaSingleton;
       return;
     }
 
     console.log("Initializing WebGL for PlasmaBackground.");
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); // antialias might help if it's a pixel scaling issue
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight, false);
-    renderer.setClearColor(0x000000, 0); // Clear to transparent black
+    renderer.setClearColor(0x000000, 0);
 
-    // CRITICAL DIAGNOSTIC: Check if WebGL2 is being used
     const isWebGL2 = renderer.capabilities.isWebGL2;
     console.log("Using WebGL 2:", isWebGL2);
     if (!isWebGL2) {
-        console.error("CRITICAL: WebGL2 is NOT available or not being used. GLSL 3.00 ES shaders will fail.");
-        // Optionally, you could paint the static gradient here as a fallback if WebGL2 isn't available
-        // paintStaticGradient(canvas); 
-        // And then setup the singleton and return
+        console.error("CRITICAL: WebGL2 is NOT available. GLSL 3.00 ES shaders will fail.");
+        // Fallback or error handling
+        paintStaticGradient(canvas);
+        globalAny.__plasmaSingleton = { canvas, destroy: () => { if (canvas.parentElement) canvas.parentElement.removeChild(canvas); globalAny.__plasmaSingleton = null; } };
+        return;
     }
-
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -201,7 +207,6 @@ export default function PlasmaBackground() {
     const uniforms = {
       u_time: { value: 0.0 },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-      // u_viewDirection: { value: new THREE.Vector3(0, 0, 1) } // Keep for later
     };
 
     const material = new THREE.ShaderMaterial({
@@ -209,22 +214,23 @@ export default function PlasmaBackground() {
       fragmentShader,
       uniforms,
       transparent: true,
-      // No need to specify glslVersion if #version 300 es is in the shader strings
+      // No glslVersion needed if #version is correct in strings
     });
-    material.blending = THREE.NormalBlending; // Default, but explicit for clarity
+    material.blending = THREE.NormalBlending;
 
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
-    (canvas as any).__plasmaUniforms = uniforms; // For devtools inspection
+    (canvas as any).__plasmaUniforms = uniforms;
 
     const clock = new THREE.Clock();
     let frameId: number;
 
     function animateLoop() {
-      if (!globalAny.__plasmaSingleton || !globalAny.__plasmaSingleton.canvas.isConnected) {
-        console.log("Animation loop stopping: Singleton or canvas no longer valid.");
+      // Robust check if singleton still matches THIS instance's canvas
+      if (!globalAny.__plasmaSingleton || globalAny.__plasmaSingleton.canvas !== canvas || !canvas.isConnected) {
+        console.log("Animation loop stopping: Singleton changed, canvas detached, or destroyed.");
         if (frameId) cancelAnimationFrame(frameId);
         return;
       }
@@ -237,42 +243,43 @@ export default function PlasmaBackground() {
     frameId = requestAnimationFrame(animateLoop);
 
     const handleResize = () => {
-      if (!renderer) return; // Guard
+      if (!renderer) return;
       renderer.setSize(window.innerWidth, window.innerHeight, false);
       uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
-      camera.updateProjectionMatrix(); // For Ortho, not strictly needed unless aspect changes meaning
+      camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', handleResize);
 
     const destroy = () => {
-      console.log("Destroying PlasmaBackground resources.");
+      console.log("Destroying PlasmaBackground (WebGL instance). ID: plasma-bg");
       if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
       geometry.dispose();
-      material.dispose(); // This will dispose the shader program
+      material.dispose();
       if (renderer) renderer.dispose();
       if (canvas.parentElement) canvas.parentElement.removeChild(canvas);
-      globalAny.__plasmaSingleton = null;
+      
+      // Only nullify if THIS instance is the one being destroyed
+      if (globalAny.__plasmaSingleton && globalAny.__plasmaSingleton.canvas === canvas) {
+        globalAny.__plasmaSingleton = null;
+        console.log("Global __plasmaSingleton nulled.");
+      }
     };
 
     globalAny.__plasmaSingleton = { canvas, destroy, renderer } as PlasmaSingleton;
-    // Clean up on HMR or page unload
     window.addEventListener('beforeunload', destroy, { once: true });
     
-    // For Next.js HMR, we might need a more specific cleanup
-    // This is a common pattern but might need adjustment based on your HMR setup
-    if (module.hot) {
-        module.hot.dispose(() => {
-            destroy();
+    // HMR Cleanup for Next.js
+    // This is a bit tricky with singletons. The goal is to clean up the *old* instance.
+    const currentModule = module; // Capture current module
+    if (currentModule.hot) {
+        currentModule.hot.dispose(() => {
+            console.log("HMR disposing old PlasmaBackground instance.");
+            destroy(); // This will destroy the instance associated with the *old* module
         });
     }
 
   }, []);
 
   return null;
-}
-
-// Helper for HMR in Next.js (optional, place outside component)
-if (typeof module !== 'undefined' && module.hot) {
-    // You might need to do more here depending on how state is preserved across HMR
 }
