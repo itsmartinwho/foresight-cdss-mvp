@@ -20,9 +20,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      setError(null);
       try {
-        await supabaseDataService.loadPatientData();
-        const data = supabaseDataService.getPatientData(patientId);
+        const data = await supabaseDataService.getPatientData(patientId);
         
         if (!data || !data.patient) {
           setError('Patient data not found');
