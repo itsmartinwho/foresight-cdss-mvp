@@ -238,41 +238,49 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
     setIsOpen(false);
   };
 
-  function renderRow(r: SearchResult, idx: number) {
+  // New component for rendering each row
+  const SearchResultRow = ({ result, query, onSelect }: { result: SearchResult; query: string; onSelect: (res: SearchResult) => void }) => {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+      setImageError(true);
+    };
+
     return (
       <button
-        key={idx}
+        key={result.patient.id} // Use a stable key like patient.id
         type="button"
-        onClick={() => handleSelect(r)}
+        onClick={() => onSelect(result)}
         className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
       >
-        {r.patient.photo ? (
+        {result.patient.photo && !imageError ? (
           <Image
-            src={r.patient.photo}
-            alt={r.patient.name || "Patient photo"}
+            src={result.patient.photo}
+            alt={result.patient.name || "Patient photo"}
             width={24}
             height={24}
             className="rounded-full"
+            onError={handleImageError}
           />
         ) : (
           <div className="h-6 w-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-medium text-white">
-            {r.patient.name?.charAt(0).toUpperCase() || "?"}
+            {result.patient.name?.charAt(0).toUpperCase() || "?"}
           </div>
         )}
         <div className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
-          {r.patient.name || r.patient.id}
-          {r.kind !== "name" && r.snippet && (
+          {result.patient.name || result.patient.id}
+          {result.kind !== "name" && result.snippet && (
             <>
               {" "}
               <span className="opacity-60">
-                &gt; {highlightSnippet(r.snippet, query.trim().toLowerCase())}
+                &gt; {highlightSnippet(result.snippet, query.trim().toLowerCase())}
               </span>
             </>
           )}
         </div>
       </button>
     );
-  }
+  };
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -297,7 +305,9 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
             {results.length === 0 && query.trim().length >= 3 && (
               <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
             )}
-            {results.map((r, idx) => renderRow(r, idx))}
+            {results.map((r, idx) => (
+              <SearchResultRow key={r.patient.id + '-' + idx} result={r} query={query} onSelect={handleSelect} />
+            ))}
           </div>
         ) : createPortal(
           <div
@@ -311,7 +321,9 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
             {results.length === 0 && query.trim().length >= 3 && (
               <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
             )}
-            {results.map((r, idx) => renderRow(r, idx))}
+            {results.map((r, idx) => (
+               <SearchResultRow key={r.patient.id + '-' + idx} result={r} query={query} onSelect={handleSelect} />
+            ))}
           </div>, document.body)
         )
       )}
