@@ -84,7 +84,7 @@ export default function ConsultationTab({
   const socketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  const performSave = async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
+  const performSave = React.useCallback(async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
     if (transcriptToSave !== currentLastSaved) {
       console.log(`Attempting to save. Changed: ${transcriptToSave !== currentLastSaved}. To Save: "${transcriptToSave.substring(0,100)}...", Last Saved: "${currentLastSaved.substring(0,100)}..."`);
       try {
@@ -108,7 +108,7 @@ export default function ConsultationTab({
         }
     }
     return false;
-  };
+  }, [currentDetailedAdmission, setLastSavedTranscript, setTranscriptChanged]);
   
   const handleSaveTranscript = async () => {
     if (!patient?.id || !currentDetailedAdmission?.id) {
@@ -127,7 +127,7 @@ export default function ConsultationTab({
       }
     };
     return autoSaveOnCleanup;
-  }, [currentDetailedAdmission?.id]);
+  }, [currentDetailedAdmission?.id, performSave]);
 
   const getCursorPosition = () => {
     const selection = window.getSelection();

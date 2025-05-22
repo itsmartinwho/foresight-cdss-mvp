@@ -21,13 +21,13 @@ const AdvisorView: React.FC = () => {
   // Ref to store the div elements that the parsers will render into, keyed by message ID
   const markdownRootsRef = useRef<Record<string, HTMLDivElement>>({});
 
-  const closeEventSource = () => {
+  const closeEventSource = React.useCallback(() => {
     if (eventSourceRef.current) {
       console.log("Closing EventSource.");
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Clean up the EventSource when the component unmounts
@@ -45,49 +45,17 @@ const AdvisorView: React.FC = () => {
     };
   }, []);
 
-  // useEffect to open EventSource when a new user message is added and we are not already loading.
-  useEffect(() => {
-    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-
-    if (lastMessage && lastMessage.role === 'user' && !isLoading) {
-      // It is important to set isLoading to true here before any async operations
-      // or before the EventSource might try to add its own placeholder, to prevent re-triggers.
-      // However, openEventSource itself will set the placeholder and manage isLoading for the stream.
-      // The primary isLoading flag here is to prevent this effect from re-triggering for the same user message
-      // if other state changes cause this effect to re-evaluate.
-      // `handleSendMessage` will primarily set isLoading true.
-      console.log("useEffect triggered to open EventSource for user message:", lastMessage.id);
-      openEventSource();
-    }
-
-    // Cleanup function for this effect if dependencies change
-    return () => {
-      // If the component unmounts or dependencies change mid-stream, 
-      // ensure the existing connection is closed.
-      // The main unmount cleanup already calls closeEventSource(), but this can be a safeguard.
-      // if (eventSourceRef.current) {
-      //   console.log("useEffect cleanup: Closing EventSource due to dependency change or unmount.");
-      //   closeEventSource();
-      // }
-    };
-  // Rerun this effect if the ID of the last message changes, or if isLoading changes from true to false (signalling readiness for new msg)
-  }, [messages[messages.length - 1]?.id, isLoading]);
-
-  const openEventSource = async () => {
-    // Guard: Only proceed if the last message is from the user.
-    // This is a crucial guard to prevent re-opening if the effect somehow re-runs after assistant placeholder is added.
+  const openEventSource = React.useCallback(async () => {
     if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
       console.log("openEventSource: Skipped. Last message not from user or messages empty.");
       return;
     }
     
-    // Guard: If an EventSource is already open and active, don't open another one.
     if (eventSourceRef.current && eventSourceRef.current.readyState !== EventSource.CLOSED) {
       console.log("openEventSource: Skipped. EventSource already open and active.");
       return;
     }
     
-    // Set loading state for the duration of the stream
     setIsLoading(true); 
 
     const thinkMode = false;
@@ -102,11 +70,9 @@ const AdvisorView: React.FC = () => {
 
       const newStreamMessageId = `msg-${Date.now()}-streaming-${messages.length}`;
       
-      // Create a div for the markdown content
       const markdownRootDiv = document.createElement('div');
       markdownRootsRef.current[newStreamMessageId] = markdownRootDiv;
 
-      // Initialize parser for this message
       const newParser = parser(default_renderer(markdownRootDiv));
       parsersRef.current[newStreamMessageId] = newParser;
 
@@ -117,9 +83,6 @@ const AdvisorView: React.FC = () => {
           role: "assistant",
           content: {
             isMarkdownStream: true,
-            // Add 'content' and 'fallbackMarkdown' as optional undefined to satisfy type if needed, 
-            // or ensure AssistantMessageContent truly makes them optional.
-            // Based on previous chat-types.ts edit, they are optional.
           } as AssistantMessageContent,
           isStreaming: true,
         },
@@ -129,8 +92,6 @@ const AdvisorView: React.FC = () => {
         console.debug("SSE recv:", ev.data);
         try {
           const data = JSON.parse(ev.data);
-          
-          // Use newStreamMessageId directly from the closure
           const currentStreamingMsgId = newStreamMessageId;
 
           if (!currentStreamingMsgId) {
@@ -147,7 +108,6 @@ const AdvisorView: React.FC = () => {
           switch (data.type) {
             case "markdown_chunk": {
               if (data.content) {
-                // Use the imported smd_parser_write
                 smd_parser_write(currentParser, data.content);
               }
               break;
@@ -162,8 +122,7 @@ const AdvisorView: React.FC = () => {
               );
               const errorMsgId = `msg-${Date.now()}-error-${messages.length}`;
               const errorMessageContent: AssistantMessageContent = {
-                isMarkdownStream: true, // Render error as markdown too
-                // No actual parser for this, div will be manually filled
+                isMarkdownStream: true,
               };
               const errorMessage: ChatMessage = {
                 id: errorMsgId,
@@ -180,7 +139,6 @@ const AdvisorView: React.FC = () => {
               setIsLoading(false);
               closeEventSource();
               if (parsersRef.current[currentStreamingMsgId]) {
-                // smd_parser_end(parsersRef.current[currentStreamingMsgId]); // Call end for the original stream's parser
                 delete parsersRef.current[currentStreamingMsgId];
               }
               break;
@@ -197,90 +155,38 @@ const AdvisorView: React.FC = () => {
                 )
               );
               setIsLoading(false);
-              // Don't close EventSource here if more messages can be sent/received in the session.
-              // closeEventSource(); // Only close if the entire interaction is done.
-              
-              // Clean up the specific parser instance
-              if (parsersRef.current[currentStreamingMsgId]) {
-                  // Check if parser_end was already called by currentParser check above
-                  if (currentParser && typeof smd_parser_end === 'function') { 
-                      // smd_parser_end was called on currentParser, no need to call again
-                  } else if (typeof smd_parser_end === 'function'){
-                      smd_parser_end(parsersRef.current[currentStreamingMsgId]);
-                  }
-                  delete parsersRef.current[currentStreamingMsgId];
-              }
-              // The markdownRootsRef entry can remain as it holds the rendered content.
+              // No need to close if it ended normally, could be used again.
               break;
             }
-
-            default:
-              // console.log("Received unhandled SSE event type:", data.type, data);
-              break;
           }
         } catch (error) {
-          console.error("Error parsing SSE message or processing data:", error, ev.data);
-          // Potentially display a client-side error message
-          // setIsLoading(false); // Consider if loading should stop here.
-          // closeEventSource(); // Close on unexpected client-side parsing error.
+          console.error("Error parsing SSE message or updating state:", error);
+          setIsLoading(false);
         }
       };
 
       eventSource.onerror = (err) => {
         console.error("EventSource failed:", err);
-        
-        // Use newStreamMessageId directly from the closure for identifying the message that errored
-        const currentStreamingMsgIdOnError = newStreamMessageId;
-
-        if (currentStreamingMsgIdOnError && parsersRef.current[currentStreamingMsgIdOnError]) {
-           smd_parser_end(parsersRef.current[currentStreamingMsgIdOnError]); // Ensure parser is ended
-           delete parsersRef.current[currentStreamingMsgIdOnError];
-        }
-        
-        setMessages((prevMessages) => {
-          const updatedMessages = prevMessages.map(msg => 
-            // Use currentStreamingMsgIdOnError to mark the correct message as not streaming
-            msg.id === currentStreamingMsgIdOnError ? { ...msg, isStreaming: false } : msg
-          );
-          // Add an error message to UI
-          const errorDiv = document.createElement('div');
-          errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Connection issue or stream interrupted.`);
-          const errorMsgId = `msg-${Date.now()}-conn-error-${updatedMessages.length}`;
-          markdownRootsRef.current[errorMsgId] = errorDiv;
-
-          return [
-            ...updatedMessages,
-            {
-              id: errorMsgId,
-              role: "assistant",
-              content: { isMarkdownStream: true } as AssistantMessageContent,
-              isStreaming: false,
-            }
-          ];
-        });
-
         setIsLoading(false);
         closeEventSource();
       };
     } catch (error) {
       console.error("Failed to open EventSource:", error);
       setIsLoading(false);
-      // Display an error message in the chat
-      const errorDiv = document.createElement('div');
-      errorDiv.innerHTML = DOMPurify.sanitize(`<strong>Error:</strong> Could not connect to the advisor service.`);
-      const errorMsgId = `msg-${Date.now()}-connect-error-${messages.length}`;
-      markdownRootsRef.current[errorMsgId] = errorDiv;
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: errorMsgId,
-          role: "assistant",
-          content: { isMarkdownStream: true } as AssistantMessageContent,
-          isStreaming: false,
-        },
-      ]);
     }
-  };
+  }, [messages, setMessages, setIsLoading, closeEventSource]);
+
+  // useEffect to open EventSource when a new user message is added and we are not already loading.
+  useEffect(() => {
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    const lastMessageId = lastMessage?.id;
+
+    if (lastMessage && lastMessage.role === 'user' && !isLoading) {
+      console.log("useEffect triggered to open EventSource for user message:", lastMessage.id);
+      openEventSource();
+    }
+    // Rerun this effect if the ID of the last message changes, or if isLoading changes from true to false (signalling readiness for new msg)
+  }, [lastMessageId, isLoading, openEventSource, messages]);
 
   const handleSendMessage = () => {
     if (userInput.trim() === "") return;

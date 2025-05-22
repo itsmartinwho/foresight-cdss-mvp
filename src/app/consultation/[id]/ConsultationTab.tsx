@@ -76,7 +76,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
     }
   }, [editableTranscript, lastSavedTranscript, selectedAdmission?.id]);
 
-  const performSave = async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
+  const performSave = useCallback(async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
     if (transcriptToSave !== currentLastSaved) {
       console.log(`Attempting to save. Changed: ${transcriptToSave !== currentLastSaved}. To Save: "${transcriptToSave.substring(0,100)}"...", Last Saved: "${currentLastSaved.substring(0,100)}"..."`);
       try {
@@ -101,7 +101,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
         }
     }
     return false;
-  };
+  }, [selectedAdmission, setLastSavedTranscript, setTranscriptChanged]); // Added dependencies
   
   const handleSaveTranscript = async () => {
     if (!selectedAdmission || !patient?.id) { // Combined checks
@@ -121,7 +121,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
       }
     };
     return autoSaveOnCleanup;
-  }, [selectedAdmission?.id]); // Trigger cleanup effect when admission changes
+  }, [selectedAdmission?.id, performSave]); // Added performSave to dependencies
 
   const getCursorPosition = () => {
     const selection = window.getSelection();
