@@ -69,7 +69,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
                 id="navbar-desktop-search"
                 type="text"
                 placeholder="Search…"
-                className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 h-8 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+                className="unified-search-input h-8 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
               />
             </div>
             {/* Mobile Search Button - visible only on small screens, positioned within the search area */}
@@ -110,7 +110,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
               autoFocus
               type="text"
               placeholder="Search…"
-              className="unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
+              className="unified-search-input h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
             />
           </SheetContent>
         </Sheet>
