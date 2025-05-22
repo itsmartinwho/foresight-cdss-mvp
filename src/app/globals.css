@@ -390,3 +390,10 @@ select[value]:not([value=""]) {
   color: hsl(var(--foreground)) !important;
   opacity: 1 !important;
 }
+
+/* Plasma background performance optimization */
+@media (update: slow) {
+  #plasma-bg {
+    display: none;
+  }
+}

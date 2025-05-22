@@ -99,6 +99,7 @@ const vertexShader = `
 
 const fragmentShader = `
   precision highp float; // Necessary for some mobile devices
+  #extension GL_OES_standard_derivatives : enable // Re-enabled for dFdx/dFdy
 
   uniform vec2 u_resolution;
   uniform float u_time;
@@ -128,40 +129,36 @@ const fragmentShader = `
 
 
   void main() {
-    // Layered FBM for macro & micro texture
-    float coarse = fbm(vec3(vUv * 0.6, u_time * 0.02));
-    float fine   = fbm(vec3(vUv * 3.0, u_time * 0.1)) * 0.3;
-    float n = coarse + fine;
+    // Domain Warping
+    vec2 warp = fbm(vec3(vUv * 1.1, u_time * 0.04)).xy * 0.35;
 
-    // Dynamic Pastel Hue Mapping with subtle drift
-    float hueBase = 0.65;      // tealish base (0.0-1.0)
-    hueBase += sin(u_time * 0.005) * 0.02; // subtle hue shift over time
-    float hueRange = 0.1;      // ± variation
-    float hue = mod(hueBase + (n - 0.5) * hueRange + u_time * 0.02, 1.0);
-    vec3 baseColor = hsl2rgb(vec3(hue, 0.6, 0.8)); // Saturation 0.6, Lightness 0.8
+    // Three independent ridged noise masks with domain warping
+    float m1 = abs(snoise(vec3(vUv * 0.8 + warp,  u_time * 0.05)));
+    float m2 = abs(snoise(vec3(vUv * 1.7 + warp, u_time * 0.07)));
+    float m3 = abs(snoise(vec3(vUv * 3.4 + warp, u_time * 0.09)));
+    float n  = (m1 * 0.5 + m2 * 0.3 + m3 * 0.2); // Balanced weights
 
-    // Animated Specular Sheen with moving light
+    // Piece-wise Palette
+    vec3 washedTeal    = vec3(0.4, 0.7, 0.7);
+    vec3 softLavender  = vec3(0.7, 0.6, 0.85);
+    vec3 nearWhite     = vec3(0.9, 0.9, 0.95);
+
+    vec3 finalColor = mix(washedTeal, softLavender, smoothstep(0.2, 0.5, n));
+    finalColor      = mix(finalColor, nearWhite, smoothstep(0.6, 0.85, n));
+
+    // Animated Specular Sheen with moving light & derivative normals
     vec3 lightDir = normalize(vec3(sin(u_time * 0.1), cos(u_time * 0.1), 0.6));
     vec3 viewDir = normalize(u_viewDirection);
-
-    // Fallback flat normal (derivatives removed for compatibility)
-    vec3 norm = vec3(0.0, 0.0, 1.0);
+    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.1)); // Using derivatives, small Z for robustness
 
     vec3 halfVec = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfVec), 0.0), 64.0); // Specular power 64
-    vec3 finalColor = baseColor + spec * 0.6; // Boosted specular weight
+    float spec = pow(max(dot(norm, halfVec), 0.0), 48.0); // Specular power 48
+    finalColor += spec * 0.35; // Existing specular weight
 
-    // Optional contrast boost
-    finalColor = mix(vec3(0.5), finalColor, 1.2);
+    // Clamp final color before setting alpha
+    finalColor = clamp(finalColor, 0.0, 1.0);
 
-    // Softened vignette to avoid dark center
-    float vig = smoothstep(0.8, 0.2, length(vUv - 0.5));
-    finalColor *= vig * 0.6 + 0.4;
-
-    // Exposure/Gamma boost to enhance saturation
-    finalColor = pow(finalColor * 1.2, vec3(1.1));
-
-    gl_FragColor = vec4(finalColor, 0.4); // Keep initial alpha
+    gl_FragColor = vec4(finalColor, 0.18); // New global alpha
   }
 `;
 
@@ -234,7 +231,6 @@ export default function PlasmaBackground() {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight, false);
-    renderer.setClearColor(0x000000, 0); // Transparent clear for additive blending
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -247,7 +243,6 @@ export default function PlasmaBackground() {
       u_viewDirection: { value: new THREE.Vector3(0, 0, 1) }
     };
     const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
-    material.blending = THREE.AdditiveBlending; // Highlights glow over glass
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
@@ -258,21 +253,19 @@ export default function PlasmaBackground() {
     const clock = new THREE.Clock();
     let frameId: number;
 
-    const animate = () => {
-      // Throttle to ~30 FPS
-      frameId = window.setTimeout(() => {
-        // Check if component might have been unmounted or canvas removed
-        if (!globalAny.__plasmaSingleton || !globalAny.__plasmaSingleton.canvas.isConnected) {
-          return;
-        }
-        uniforms.u_time.value = clock.getElapsedTime();
-        renderer.render(scene, camera);
-        requestAnimationFrame(animate); // Call RAF for next "setTimeout gate"
-      }, 33); 
-    };
+    function animateLoop() {
+      // Check if component might have been unmounted or canvas removed
+      if (!globalAny.__plasmaSingleton || !globalAny.__plasmaSingleton.canvas.isConnected) {
+        if (frameId) cancelAnimationFrame(frameId); // Stop further calls if unmounted
+        return;
+      }
+      uniforms.u_time.value = clock.getElapsedTime();
+      renderer.render(scene, camera);
+      frameId = requestAnimationFrame(animateLoop); // Plain RAF loop
+    }
     
-    // Initial call to start the throttled loop
-    requestAnimationFrame(animate);
+    // Initial call to start the loop
+    frameId = requestAnimationFrame(animateLoop);
 
     const handleResize = () => {
       renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -281,7 +274,7 @@ export default function PlasmaBackground() {
     window.addEventListener('resize', handleResize);
 
     const destroy = () => {
-      clearTimeout(frameId); // Clear timeout on destroy
+      if (frameId) cancelAnimationFrame(frameId);
       window.removeEventListener('resize', handleResize);
       geometry.dispose();
       material.dispose();
