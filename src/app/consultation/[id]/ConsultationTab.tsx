@@ -101,7 +101,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
         }
     }
     return false;
-  }, [selectedAdmission, setLastSavedTranscript, setTranscriptChanged]); // Added dependencies
+  }, [selectedAdmission, setLastSavedTranscript, setTranscriptChanged, transcriptChanged]); // Added transcriptChanged
   
   const handleSaveTranscript = async () => {
     if (!selectedAdmission || !patient?.id) { // Combined checks

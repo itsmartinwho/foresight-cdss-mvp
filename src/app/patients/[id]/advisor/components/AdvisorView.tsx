@@ -43,7 +43,7 @@ const AdvisorView: React.FC = () => {
       parsersRef.current = {};
       markdownRootsRef.current = {};
     };
-  }, []);
+  }, [closeEventSource]);
 
   const openEventSource = React.useCallback(async () => {
     if (messages.length === 0 || messages[messages.length - 1].role !== 'user') {
@@ -186,7 +186,7 @@ const AdvisorView: React.FC = () => {
       openEventSource();
     }
     // Rerun this effect if the ID of the last message changes, or if isLoading changes from true to false (signalling readiness for new msg)
-  }, [lastMessageId, isLoading, openEventSource, messages]);
+  }, [isLoading, openEventSource, messages]);
 
   const handleSendMessage = () => {
     if (userInput.trim() === "") return;

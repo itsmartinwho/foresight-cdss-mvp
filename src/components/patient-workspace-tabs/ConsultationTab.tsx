@@ -108,7 +108,7 @@ export default function ConsultationTab({
         }
     }
     return false;
-  }, [currentDetailedAdmission, setLastSavedTranscript, setTranscriptChanged]);
+  }, [currentDetailedAdmission, setLastSavedTranscript, setTranscriptChanged, transcriptChanged]);
   
   const handleSaveTranscript = async () => {
     if (!patient?.id || !currentDetailedAdmission?.id) {
