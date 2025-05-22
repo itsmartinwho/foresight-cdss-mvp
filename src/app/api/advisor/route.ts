@@ -28,9 +28,8 @@ async function streamMarkdownOnly(
   // Flush buffer when it has a complete sentence or block or exceeds threshold
   function shouldFlush(buffer: string): boolean {
     return (
-      buffer.length > 200 ||               // too long
-      /\n\n/.test(buffer) ||             // paragraph boundary
-      /[\.\?!]\s$/.test(buffer)         // sentence end
+      buffer.length > 600 ||                       // force flush at large size
+      buffer.includes("\n\n")                     // paragraph or heading block finished
     );
   }
 

@@ -197,7 +197,13 @@ export default function AdvisorView() {
       }
     });
 
-    const apiPayloadMessages = [...messages.filter(m => m.role !== 'system'), { role: 'user', content: queryContent }];
+    // Build payload with only past user messages (strings) and the new user message to avoid OpenAI type errors
+    const apiPayloadMessages = [
+      ...messages
+        .filter(m => m.role === 'user' && typeof m.content === 'string')
+        .map(m => ({ role: 'user' as const, content: m.content as string })),
+      { role: 'user' as const, content: queryContent }
+    ];
 
     const eventSource = new EventSource(`/api/advisor?payload=${encodeURIComponent(JSON.stringify({ messages: apiPayloadMessages }))}&think=${thinkMode}`);
 
