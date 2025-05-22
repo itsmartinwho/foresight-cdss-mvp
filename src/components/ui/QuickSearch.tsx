@@ -5,6 +5,7 @@ import type { Patient, Diagnosis, Treatment } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 
 type MatchKind =
   | "name"
@@ -246,18 +247,19 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
         className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-white/10 focus:bg-white/10 focus:outline-none"
       >
         {r.patient.photo ? (
-          <img
+          <Image
             src={r.patient.photo}
-            alt={r.patient.name}
-            className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+            alt={r.patient.name || "Patient photo"}
+            width={24}
+            height={24}
+            className="rounded-full"
           />
         ) : (
-          <div className="flex-shrink-0 h-6 w-6 rounded-full bg-yellow-200 text-ink font-semibold flex items-center justify-center text-[0.625rem]">
-            {(r.patient.firstName?.[0] || "").toUpperCase()}
-            {(r.patient.lastName?.[0] || "").toUpperCase()}
+          <div className="h-6 w-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-medium text-white">
+            {r.patient.name?.charAt(0).toUpperCase() || "?"}
           </div>
         )}
-        <span className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
           {r.patient.name || r.patient.id}
           {r.kind !== "name" && r.snippet && (
             <>
@@ -267,7 +269,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
               </span>
             </>
           )}
-        </span>
+        </div>
       </button>
     );
   }

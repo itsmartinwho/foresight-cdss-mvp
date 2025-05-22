@@ -145,7 +145,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
                   <TableCell className="flex items-center gap-2">
                     {patient?.photo && (
-                      <img src={patient.photo} alt={displayName(patient)} className="h-6 w-6 rounded-full inline-block mr-2" />
+                      <Image src={patient.photo} alt={displayName(patient)} width={24} height={24} className="rounded-full inline-block mr-2" />
                     )}
                     {displayName(patient)}
                   </TableCell>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import QuickSearch from "@/components/ui/QuickSearch";
 
@@ -9,10 +10,12 @@ export default function GlassHeader() {
     <header className="fixed inset-x-0 top-0 z-40 h-16 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-none border-b border-[rgba(255,255,255,0.084)] bg-transparent">
       <div className="flex items-center gap-2">
         <Link href="/" className="flex items-center gap-0">
-          <img
+          <Image
             src="/images/word-logo.png"
             alt="Foresight Logo"
-            className="h-8 py-0.5 translate-y-[2px]"
+            width={120}
+            height={32}
+            className="py-0.5 translate-y-[2px]"
           />
         </Link>
       </div>
@@ -27,10 +30,12 @@ export default function GlassHeader() {
       <div className="flex items-center">
         <Popover>
           <PopoverTrigger asChild>
-            <img
+            <Image
               src="https://i.pravatar.cc/32?u=clinician"
               alt="avatar"
-              className="rounded-full h-8 w-8 cursor-pointer"
+              width={32}
+              height={32}
+              className="rounded-full cursor-pointer"
             />
           </PopoverTrigger>
           <PopoverContent className="bg-glass backdrop-blur-none border border-[rgba(255,255,255,0.084)] rounded-md p-2 flex flex-col">

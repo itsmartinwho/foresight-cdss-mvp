@@ -10,6 +10,7 @@ import NewConsultationModal from '../modals/NewConsultationModal';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import ContentSurface from '@/components/layout/ContentSurface';
 import { Progress } from "@/components/ui/progress";
+import Image from 'next/image';
 
 // Import shared UI components
 import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
@@ -91,7 +92,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
                     {p.photo && (
-                      <img src={p.photo} alt={p.name} className="h-6 w-6 rounded-full inline-block mr-2 mobile-card:hidden" />
+                      <Image src={p.photo} alt={p.name || "Patient photo"} width={24} height={24} className="rounded-full inline-block mr-2 mobile-card:hidden" />
                     )}
                     {p.name}
                   </TableCell>
