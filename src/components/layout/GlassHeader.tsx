@@ -6,7 +6,7 @@ import QuickSearch from "@/components/ui/QuickSearch";
 
 export default function GlassHeader() {
   return (
-    <header className="fixed inset-x-0 top-0 z-40 h-16 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-lg border-b border-[rgba(255,255,255,0.12)] bg-transparent">
+    <header className="fixed inset-x-0 top-0 z-40 h-16 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-lg border-b border-[rgba(255,255,255,0.084)] bg-transparent">
       <div className="flex items-center gap-2">
         <Link href="/" className="flex items-center gap-0">
           <img
@@ -33,7 +33,7 @@ export default function GlassHeader() {
               className="rounded-full h-8 w-8 cursor-pointer"
             />
           </PopoverTrigger>
-          <PopoverContent className="bg-glass backdrop-blur-lg border border-[rgba(255,255,255,0.12)] rounded-md p-2 flex flex-col">
+          <PopoverContent className="bg-glass backdrop-blur-lg border border-[rgba(255,255,255,0.084)] rounded-md p-2 flex flex-col">
             <Link href="/analytics" className="px-4 py-2 rounded hover:bg-white/10">
               Analytics
             </Link>
