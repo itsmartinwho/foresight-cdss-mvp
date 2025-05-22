@@ -22,6 +22,17 @@ async function streamMarkdownOnly(
 ) {
   const encoder = new TextEncoder();
   let streamEndedByThisFunction = false;
+  // Buffer to accumulate token stream into larger chunks
+  let chunkBuffer = "";
+
+  // Flush buffer when it has a complete sentence or block or exceeds threshold
+  function shouldFlush(buffer: string): boolean {
+    return (
+      buffer.length > 200 ||               // too long
+      /\n\n/.test(buffer) ||             // paragraph boundary
+      /[\.\?!]\s$/.test(buffer)         // sentence end
+    );
+  }
 
   const cleanupAndCloseController = () => {
     if (isControllerClosedRef.value || streamEndedByThisFunction) return;
@@ -39,11 +50,23 @@ async function streamMarkdownOnly(
   };
 
   if (reqSignal.aborted) {
+    // flush any remaining buffered content before cleanup
+    if (chunkBuffer.length > 0 && !isControllerClosedRef.value) {
+      const payload = { type: "markdown_chunk", content: chunkBuffer };
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
+      chunkBuffer = "";
+    }
     cleanupAndCloseController();
     return;
   }
 
   const clientDisconnectListener = () => {
+    // same flush on disconnect
+    if (chunkBuffer.length > 0 && !isControllerClosedRef.value) {
+      const payload = { type: "markdown_chunk", content: chunkBuffer };
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
+      chunkBuffer = "";
+    }
     cleanupAndCloseController();
   };
   reqSignal.addEventListener('abort', clientDisconnectListener, { once: true });
@@ -63,12 +86,23 @@ async function streamMarkdownOnly(
       }
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
-        if (!isControllerClosedRef.value) {
-          const payload = { type: "markdown_chunk", content };
-          console.log("SSE send (markdown_chunk):", JSON.stringify(payload)); // Added log
+        // accumulate into buffer
+        chunkBuffer += content;
+        // flush when appropriate
+        if (shouldFlush(chunkBuffer)) {
+          const payload = { type: "markdown_chunk", content: chunkBuffer };
+          console.log("SSE send (markdown_chunk buffered):", payload);
           controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
+          chunkBuffer = "";
         }
       }
+    }
+    // send any remaining buffer after stream ends
+    if (!isControllerClosedRef.value && chunkBuffer.length > 0) {
+      const payload = { type: "markdown_chunk", content: chunkBuffer };
+      console.log("SSE send (markdown_chunk final):", payload);
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(payload)}\n\n`));
+      chunkBuffer = "";
     }
   } catch (error: any) {
     if (!(error.name === 'AbortError' || reqSignal.aborted)) {

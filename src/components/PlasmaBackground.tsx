@@ -129,41 +129,41 @@ const fragmentShader = `
 
 
   void main() {
-    // Use FBM for noise
-    float n = fbm(vec3(vUv * 1.2, u_time * 0.03)); // Adjusted scale and speed for FBM
+    // Layered FBM for macro & micro texture
+    float coarse = fbm(vec3(vUv * 0.6, u_time * 0.02));
+    float fine   = fbm(vec3(vUv * 3.0, u_time * 0.1)) * 0.3;
+    float n = coarse + fine;
 
-    // Dynamic Pastel Hue Mapping
+    // Dynamic Pastel Hue Mapping with subtle drift
     float hueBase = 0.65;      // tealish base (0.0-1.0)
+    hueBase += sin(u_time * 0.005) * 0.02; // subtle hue shift over time
     float hueRange = 0.1;      // ± variation
     float hue = mod(hueBase + (n - 0.5) * hueRange + u_time * 0.02, 1.0);
     vec3 baseColor = hsl2rgb(vec3(hue, 0.6, 0.8)); // Saturation 0.6, Lightness 0.8
 
-    // Animated Specular Sheen
+    // Animated Specular Sheen with moving light
     vec3 lightDir = normalize(vec3(sin(u_time * 0.1), cos(u_time * 0.1), 0.6));
     vec3 viewDir = normalize(u_viewDirection);
 
     // Normals from FBM derivatives
     // Ensure GL_OES_standard_derivatives is enabled
-    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.05)); // Small Z component to avoid flat normal if n is flat.
-                                                        // May need adjustment based on how n varies.
-                                                        // Alternative: vec3(dFdx(n * some_scalar), dFdy(n * some_scalar), 1.0)
+    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.05));
 
     vec3 halfVec = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfVec), 0.0), 32.0); // Specular power 32
-    
-    vec3 finalColor = baseColor + spec * 0.3; // Additive specular
+    float spec = pow(max(dot(norm, halfVec), 0.0), 64.0); // Specular power 64
+    vec3 finalColor = baseColor + spec * 0.6; // Boosted specular weight
 
     // Optional contrast boost
-    finalColor = mix(vec3(0.5), finalColor, 1.2); // Boost mid-tones
+    finalColor = mix(vec3(0.5), finalColor, 1.2);
 
-    // Clamp final color before vignette
-    finalColor = clamp(finalColor, 0.0, 1.0);
+    // Softened vignette to avoid dark center
+    float vig = smoothstep(0.8, 0.2, length(vUv - 0.5));
+    finalColor *= vig * 0.6 + 0.4;
 
-    // Subtle vignette effect (applied last to combined color)
-    float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
-    finalColor *= vignette * 0.8 + 0.2; 
+    // Exposure/Gamma boost to enhance saturation
+    finalColor = pow(finalColor * 1.2, vec3(1.1));
 
-    gl_FragColor = vec4(finalColor, 0.4); // Initial alpha for testing
+    gl_FragColor = vec4(finalColor, 0.4); // Keep initial alpha
   }
 `;
 
@@ -192,9 +192,10 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.height / 2,
     Math.max(canvas.width, canvas.height) / 1.5
   );
-  gradient.addColorStop(0, 'rgba(214,191,254,0.2)');   // lavender
-  gradient.addColorStop(0.5, 'rgba(236,239,241,0.1)'); // silver
-  gradient.addColorStop(1, 'rgba(153,246,228,0.2)');   // teal
+  gradient.addColorStop(0.0, 'rgba(214,191,254,0.3)');   // lavender
+  gradient.addColorStop(0.25,'rgba(179,209,255,0.15)'); // blue-lavender
+  gradient.addColorStop(0.75,'rgba(236,239,241,0.1)');  // silver
+  gradient.addColorStop(1.0, 'rgba(153,246,228,0.3)');   // teal
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
@@ -235,6 +236,7 @@ export default function PlasmaBackground() {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.setClearColor(0x000000, 0); // Transparent clear for additive blending
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -244,9 +246,11 @@ export default function PlasmaBackground() {
     const uniforms = {
       u_time: { value: 0.0 },
       u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-      u_viewDirection: { value: new THREE.Vector3(0, 0, 1) } // Added view direction
+      u_viewDirection: { value: new THREE.Vector3(0, 0, 1) }
     };
     const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms, transparent: true });
+    material.blending = THREE.AdditiveBlending; // Highlights glow over glass
+
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
 
