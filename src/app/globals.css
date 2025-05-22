@@ -400,6 +400,6 @@ select[value]:not([value=""]) {
 #navbar-desktop-search::placeholder,
 #navbar-mobile-search::placeholder,
 .unified-search-input::placeholder {
-  color: #475569 !important; /* slate-600 */
+  color: #64748b !important; /* slate-500 */
   opacity: 1 !important;
 }

@@ -23,7 +23,7 @@ module.exports = {
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         text: {
           DEFAULT: "#000000", // Black for main text
-          placeholder: "#475569", // slate-600 for a darker placeholder
+          placeholder: "#64748b", // slate-500 for placeholder text (lightened)
           darkUI: "#FFFFFF", // White for text on dark UI elements
         },
         primary: {
