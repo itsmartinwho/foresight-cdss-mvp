@@ -326,7 +326,7 @@ export default function AdvisorView() {
                 <div
                   className={cn(
                     msg.role === "user"
-                      ? "max-w-[66.666%] w-fit bg-foresight-teal-darker/70 text-white p-6"
+                      ? "max-w-[66.666%] w-fit bg-foresight-teal/30 text-black p-6"
                       : msg.role === "assistant"
                       ? "max-w-full w-fit bg-white/90 text-gray-800 p-6"
                       : msg.role === "system"

@@ -120,6 +120,11 @@ The chat input/footer in the Advisor tab is implemented as a floating, glassmorp
 
 In complex layouts (especially with glassmorphism, backdrop filters, or transforms), CSS `position: fixed` can be scoped to the nearest ancestor with a transform or filter. By rendering the input/footer outside the main React tree (at the document body level), we guarantee it is always fixed to the viewport, providing a robust and predictable user experience.
 
+## Chat Bubble Styling
+
+- **User messages**: Translucent teal background (`bg-foresight-teal/30`) and black text (`text-black`).
+- **Assistant messages**: White background with 90% opacity (`bg-white/90`) and gray-800 text (`text-gray-800`).
+
 # Frontend Styling Guide: Outer Layout & Containers
 
 ## ContentSurface – the single frosted-glass wrapper (2025-05 refactor)
