@@ -162,7 +162,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const renderAllPatientsTable = () => {
     // Core columns in required order
     const coreColumns: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
-      { key: "firstName", header: "First Name", sortable: true, className: "w-[140px] truncate" },
+      { key: "firstName", header: "First Name", sortable: true, className: "w-[180px] truncate" },
       { key: "lastName", header: "Last Name", sortable: true, className: "w-[140px] truncate" },
       { key: "gender", header: "Gender", sortable: true, className: "w-[100px]" },
       { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[150px]" },
@@ -178,9 +178,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       { key: "reason", header: "General Reason", sortable: true, className: "w-[220px] truncate" },
     ];
 
-    // Assemble headers: Avatar(blank) + core + consultations + rest
+    // Assemble headers: core + consultations + rest
     const tableHeaders: (typeof coreColumns[number] | { key: AllPatientsSortableKey; header: string; sortable?: boolean; className?: string })[] = [
-      { key: "avatar" as any, header: "", sortable: false, className: "w-[60px]" },
       ...coreColumns,
       { key: "consultationsCount" as AllPatientsSortableKey, header: "Consultations", sortable: true, className: "w-[260px]" },
       ...additionalColumns,
@@ -225,17 +224,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     key={patient.id} 
                     className="border-slate-700/50 hover:bg-slate-700/30 transition-colors duration-150 ease-in-out"
                   >
-                    {/* Avatar Cell */}
-                    <TableCell className="w-[60px]">
-                      {patient.photo ? (
-                        <Image src={patient.photo} alt={displayName(patient)} width={32} height={32} className="rounded-full" />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-slate-500/40 flex items-center justify-center text-xs text-white">
-                          {patient.firstName?.charAt(0) ?? "?"}{patient.lastName?.charAt(0) ?? ""}
-                        </div>
-                      )}
-                    </TableCell>
-
+                    {/* Avatar Cell - Removed */}
                     {/* Core columns */}
                     {coreColumns.map(field => (
                       <TableCell 
@@ -243,7 +232,20 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                         className={`${field.className ?? ''} cursor-pointer truncate`} 
                         onClick={() => router.push(`/patients/${patient.id}`)}
                       >
-                        {patient[field.key] ? String(patient[field.key]) : "—"}
+                        {field.key === 'firstName' ? (
+                          <div className="flex items-center gap-2">
+                            {patient.photo ? (
+                              <Image src={patient.photo} alt={displayName(patient)} width={32} height={32} className="rounded-full flex-shrink-0" />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-slate-500/40 flex items-center justify-center text-xs text-white flex-shrink-0">
+                                {patient.firstName?.charAt(0) ?? "?"}{patient.lastName?.charAt(0) ?? ""}
+                              </div>
+                            )}
+                            <span className="truncate">{patient[field.key] ? String(patient[field.key]) : "—"}</span>
+                          </div>
+                        ) : (
+                          patient[field.key] ? String(patient[field.key]) : "—"
+                        )}
                       </TableCell>
                     ))}
 

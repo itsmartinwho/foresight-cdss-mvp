@@ -12,7 +12,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { X } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { PlusCircle, UserPlus, Search } from "lucide-react";
+import { PlusCircle, UserPlus, MagnifyingGlass } from "@phosphor-icons/react";
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import type { Admission } from '@/lib/types';
 
@@ -189,10 +189,11 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
                 </div>
               ) : (
                 <div className="border rounded-md overflow-hidden">
-                  <div className="border-b p-1">
+                  <div className="relative border-b p-1">
+                    <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       placeholder="Search patient by name or ID..."
-                      className="text-step--1"
+                      className="pl-10 text-step--1"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
