@@ -99,7 +99,6 @@ const vertexShader = `
 
 const fragmentShader = `
   precision highp float; // Necessary for some mobile devices
-  #extension GL_OES_standard_derivatives : enable
 
   uniform vec2 u_resolution;
   uniform float u_time;
@@ -145,9 +144,8 @@ const fragmentShader = `
     vec3 lightDir = normalize(vec3(sin(u_time * 0.1), cos(u_time * 0.1), 0.6));
     vec3 viewDir = normalize(u_viewDirection);
 
-    // Normals from FBM derivatives
-    // Ensure GL_OES_standard_derivatives is enabled
-    vec3 norm = normalize(vec3(dFdx(n), dFdy(n), 0.05));
+    // Fallback flat normal (derivatives removed for compatibility)
+    vec3 norm = vec3(0.0, 0.0, 1.0);
 
     vec3 halfVec = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfVec), 0.0), 64.0); // Specular power 64
