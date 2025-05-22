@@ -105,14 +105,14 @@ export default function GlassSidebar() {
             <Zap
               strokeWidth={1.5}
               className={cn(
-                "h-[1.125em] w-[1.125em] flex-shrink-0",
-                !isAdvisorActive && 'text-cyan-300'
+                "h-[1.125em] w-[1.125em] flex-shrink-0 filter drop-shadow-sm",
+                isAdvisorActive ? "text-yellow-600" : 'text-yellow-600'
               )}
             />
             {!collapsed && (
               <span
                 className={cn(
-                  'truncate',
+                  'truncate filter drop-shadow-sm',
                   isAdvisorActive
                     ? 'text-text font-semibold'
                     : 'bg-gradient-to-br from-teal-400 to-yellow-400 bg-clip-text text-transparent font-medium sheen'
