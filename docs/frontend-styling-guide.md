@@ -280,4 +280,23 @@ This document provides guidelines and conventions for styling frontend component
 - **Code Blocks:** Code blocks within Markdown are typically rendered as `<pre><code>...</code></pre>`. The `prose` plugin styles these, but further syntax highlighting themes can be applied if desired (e.g., using a library like `highlight.js` and theming its output).
 - **Tables:** Tables generated from Markdown will also be styled by `prose`. Ensure they are responsive and readable.
 
-*(More specific component styling guidelines will be added as the UI evolves.)* 
+*(More specific component styling guidelines will be added as the UI evolves.)*
+
+## Button Styles: Primary vs. Secondary
+
+### Secondary Button (2024 Glassy Gradient Update)
+
+- **Inside:** Always glassy/translucent, using `bg-[rgba(255,255,255,0.10)]` (light mode) or `bg-[rgba(0,0,0,0.10)]` (dark mode) and `backdrop-blur-sm`.
+- **Border/Edge:** Always displays a teal-to-yellow gradient border using a `before` pseudo-element (`before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))]`).
+- **Shine:** An inner shine is added with an `after` pseudo-element for a more intense glassy look.
+- **Hover Animation:** Only the border/edge animates (spins) on hover; the inside remains glassy.
+- **Stacking:** The border is below the glassy inside, which is below the button content.
+- **Implementation:** See `src/components/ui/button.tsx`, `secondary` variant. Example usage:
+
+```tsx
+<Button variant="secondary">Start</Button>
+```
+
+- **Design Note:** The primary button remains unchanged. Only secondary buttons use this glassy-inside, gradient-border style.
+
+*(More specific button styling guidelines will be added as the UI evolves.)* 

@@ -91,6 +91,8 @@ The application features several AI-powered clinical tools:
 
 Detailed information on UI patterns, styling conventions (including glassmorphism, typography, responsiveness, and accessibility), component styling, and layout/scrolling patterns are documented in the [Frontend Styling Guide](docs/frontend-styling-guide.md).
 
+**Update 2024:** The secondary button now features a glassy/translucent inside with a teal-to-yellow gradient border and shine. See the Frontend Styling Guide for implementation and design details.
+
 Key architectural aspects related to UI include:
 *   **State Management:** Primarily uses React's built-in state (`useState`, `useReducer`) and Context API for global or shared state. `ForesightApp.tsx` is a key location for managing app-level states that affect multiple views.
 

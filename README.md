@@ -34,7 +34,7 @@ The vision includes several advanced aspirational AI tools:
     *   Individual Patient Workspace (Demographics, Admissions, etc., using data from Supabase)
     *   Alerts, Analytics, and Settings screens (basic views, with alerts using mock data).
 *   **Client-Side Routing:** Utilizes Next.js for routing, with a central `ForesightApp.tsx` component managing view rendering.
-*   **Glassmorphism UI:** Features a modern "glassmorphism" visual style.
+*   **Glassmorphism UI:** Features a modern "glassmorphism" visual style. The secondary button now uses a glassy/translucent inside with a teal-to-yellow gradient border and shine (see docs/frontend-styling-guide.md for details).
 *   **Consultation Duration:** Optional duration field for new consultations.
 *   **Responsive Layout:** Basic responsive design.
 
