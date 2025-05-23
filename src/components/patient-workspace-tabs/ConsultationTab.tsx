@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextB as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from '@phosphor-icons/react';
 import { getSupabaseClient } from '@/lib/supabaseClient';
+import { clinicalEngineService } from '@/lib/clinicalEngineService';
+import type { ClinicalOutputPackage } from '@/lib/types';
 
 // Consultation Tab
 export default function ConsultationTab({
@@ -50,6 +52,9 @@ export default function ConsultationTab({
   const [transcriptChanged, setTranscriptChanged] = useState<boolean>(false);
   const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   const transcriptAreaRef = useRef<HTMLDivElement | null>(null);
+  const [clinicalOutput, setClinicalOutput] = useState<ClinicalOutputPackage | null>(null);
+  const [isGeneratingClinical, setIsGeneratingClinical] = useState<boolean>(false);
+  const [clinicalError, setClinicalError] = useState<string | null>(null);
 
   const admissionStateForAutoSaveRef = useRef<{
     patientId: string | undefined;
@@ -315,6 +320,35 @@ export default function ConsultationTab({
     }
   };
 
+  const compilePatientDataDict = () => ({
+    patient,
+    admissions: allAdmissions,
+  });
+
+  const handleGenerateClinical = async () => {
+    if (!patient?.id) {
+      alert('Patient ID missing');
+      return;
+    }
+    const transcriptText = editableTranscript || currentDetailedAdmission?.transcript;
+    if (!transcriptText) {
+      alert('No transcript available for generating diagnostic result');
+      return;
+    }
+    const patientDataDict = compilePatientDataDict();
+    setIsGeneratingClinical(true);
+    setClinicalError(null);
+    try {
+      const result = await clinicalEngineService.generateDiagnosticResult(patient.id, transcriptText, patientDataDict);
+      setClinicalOutput(result);
+    } catch (error) {
+      console.error('Error generating clinical output', error);
+      setClinicalError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsGeneratingClinical(false);
+    }
+  };
+
   return (
     <div className={cn("p-6 grid lg:grid-cols-3 gap-6", isStartingNewConsultation ? "lg:grid-cols-1" : "")}>
       {isStartingNewConsultation ? (
@@ -454,12 +488,35 @@ export default function ConsultationTab({
       {!isStartingNewConsultation && (
         <Card className="bg-glass glass-dense backdrop-blur-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-step-0"><span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span> Structured Note (SOAP)</CardTitle>
+            <CardTitle className="flex items-center justify-between gap-2 text-step-0">
+              <div className="flex items-center gap-2">
+                <span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span>
+                Structured Note (SOAP)
+              </div>
+              <Button variant="default" size="sm" onClick={handleGenerateClinical} disabled={isGeneratingClinical}>
+                {isGeneratingClinical ? 'Generating...' : 'Generate Clinical Output'}
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
             {currentDetailedAdmission?.soapNote ?
               currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i} className="text-step-0">{line}</p>) :
               <p className="text-muted-foreground">No SOAP note available for this consultation.</p>}
+          </CardContent>
+        </Card>
+      )}
+      {clinicalError && (
+        <div className="lg:col-span-3 text-red-600 mt-4">
+          Error generating clinical output: {clinicalError}
+        </div>
+      )}
+      {clinicalOutput && (
+        <Card className="lg:col-span-3 bg-glass glass-dense backdrop-blur-lg mt-4">
+          <CardHeader>
+            <CardTitle className="text-step-0">Clinical Output</CardTitle>
+          </CardHeader>
+          <CardContent className="h-auto overflow-y-auto space-y-2 text-sm">
+            <pre className="text-xs whitespace-pre-wrap break-all">{JSON.stringify(clinicalOutput, null, 2)}</pre>
           </CardContent>
         </Card>
       )}
