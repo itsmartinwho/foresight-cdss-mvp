@@ -183,6 +183,26 @@ The architecture is designed with the following future AI-powered capabilities i
         *   **Stepwise UI Support:** This modular pipeline is designed to support a stepwise user interface. For example, the application could generate and display the diagnostic plan first, allow for user input or modifications, or pause for lab results before proceeding to execution and final diagnosis synthesis.
         *   **Integration Entry Point:** The `run_full_diagnostic(patient_id: str, transcript: str, patient_data_dict: Dict[str, Any], ...)` coroutine in `clinical_engine.py` provides a high-level entry point for running the entire pipeline, suitable for an API call.
 
+        **Current API Data Handling (MVP v0 - FastAPI `/run-dx`):
+
+        *   **Input Data (Patient Context):**
+            *   **Current Mechanism:** The `/run-dx` API endpoint (in `main.py`) expects a `patient_id`, `transcript`, and a `patient_data_dict` (a JSON object containing the comprehensive patient data).
+            *   **Frontend Responsibility:** The frontend (e.g., `clinicalEngineService.ts`) is responsible for:
+                1.  Identifying the active `patient_id`.
+                2.  Gathering the relevant `transcript`.
+                3.  **Fetching and bundling all necessary patient data into the `patient_data_dict` JSON structure.** This should reuse existing mechanisms currently employed by other parts of the application (e.g., for the medical advisor tab or patient workspace view) to load data from Supabase.
+            *   **Backend Expectation:** The `run_full_diagnostic` function in `clinical_engine.py` receives this `patient_data_dict` and uses it to populate the `Patient` Pydantic model, including its `raw_data` field.
+            *   **FHIR Deferral:** For this MVP stage, direct FHIR bundle creation and processing are deferred. The `patient_data_dict` serves as a stand-in for a more structured FHIR-based input. The `FHIRBundle` model in `main.py` is a placeholder for future development.
+
+        *   **Output Data (Diagnosis & Treatment):**
+            *   **API Response:** The `/run-dx` API endpoint returns a `DiagnosticResult` JSON object (defined by Pydantic models in `clinical_engine.py` and matching TypeScript types in `src/lib/types.ts`). This object contains the engine's proposed diagnosis, supporting evidence, recommended tests, treatments, etc.
+            *   **Frontend Responsibility (Editing & Saving):**
+                1.  The frontend receives this `DiagnosticResult`.
+                2.  It should use this data to populate the relevant editable UI fields for diagnosis and treatment (e.g., in the patient workspace or a dedicated diagnosis/treatment planning view).
+                3.  **The user has full control to edit, overwrite, or manually enter diagnosis and treatment information.** The engine's output is a suggestion or draft.
+                4.  **Saving:** The saving of the (potentially modified) diagnosis and treatment information back to the appropriate Supabase fields (e.g., `visits.soap_note`, `visits.treatments`, `patients.primary_diagnosis_description`) is handled by existing frontend application logic, not directly by the Clinical Engine API's output.
+            *   **Auditability:** While not directly part of the API output, the system design should eventually include robust audit trails for engine runs and physician overrides (as per the long-term guidelines, e.g., in a `diagnostic_runs` table).
+
 *   **Tool C (Medical Co-pilot):** A real-time AI assistant during live consultations.
     *   **Functionality:** Listens to the consultation in real-time and provides discrete, high-confidence nudges (e.g., silent notifications) to the physician about questions to ask, tests to consider, etc., if it detects potential omissions.
     *   **Technology:** Would likely require real-time audio processing, speech-to-text, and a fast, responsive AI model. Integration might involve WebSockets or similar real-time communication.

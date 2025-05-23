@@ -987,8 +987,14 @@ async def run_full_diagnostic(
     """
     High-level function to run the full diagnostic pipeline.
     This would be the function an API route could call.
-    It takes patient_id, transcript, and the full patient_data_dict (expected from EMR/Supabase),
-    along with necessary client instances.
+    
+    CURRENT (MVP v0): This function expects `patient_data_dict` to be a comprehensive JSON object
+    containing all relevant patient information (demographics, visits, labs, etc.),
+    pre-fetched and bundled by the calling service (e.g., the FastAPI backend, which in turn
+    receives it from the frontend).
+    
+    FUTURE: This function or the layer calling it might incorporate direct FHIR resource handling
+    or more granular data fetching based on IDs, reducing reliance on a monolithic pre-bundled dict.
     """
     engine = ClinicalEngine(llm_client, guideline_client, clinical_trial_client)
     

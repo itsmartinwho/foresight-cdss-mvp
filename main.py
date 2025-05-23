@@ -28,11 +28,14 @@ class FHIRBundle(BaseModel):
 class RunDxRequest(BaseModel):
     patient_id: str
     transcript: str
-    # patient_data_dict is the raw patient data, which in a real scenario
-    # might be derived from the fhir_bundle or passed alongside.
-    # For now, we'll keep it as a dictionary.
-    patient_data_dict: Dict[str, Any] 
-    # fhir_bundle: FHIRBundle # Uncomment and use when FHIR processing is implemented
+    # patient_data_dict is the raw patient data dictionary.
+    # CURRENT (MVP v0): This dictionary is expected to be pre-compiled by the frontend,
+    # by fetching all relevant patient data from Supabase (or other EMR sources)
+    # and bundling it into a single JSON object. This reuses existing frontend data-fetching logic.
+    # FUTURE: This might be replaced or augmented by a FHIR Bundle, or the backend might
+    # take more responsibility for fetching/constructing this data from patient_id and visit_ids.
+    patient_data_dict: Dict[str, Any]
+    # fhir_bundle: FHIRBundle # Placeholder for future FHIR-based input
 
 # Dummy clients for the clinical engine - replace with actual client initializations
 class DummyLLMClient:
@@ -77,9 +80,11 @@ async def run_dx_endpoint(request: RunDxRequest):
     (Future: Will accept a FHIR Bundle)
     """
     try:
-        # TODO: Implement FHIR Bundle processing here.
-        # For now, we use patient_id, transcript, and patient_data_dict directly.
-        # The patient_data_dict would ideally be constructed from the FHIR bundle.
+        # CURRENT (MVP v0): The endpoint relies on the frontend to supply a comprehensive
+        # patient_data_dict. The backend (run_full_diagnostic) then uses this dictionary.
+        # TODO (Future): Implement FHIR Bundle processing. When a fhir_bundle is provided,
+        # it would be parsed here, and patient_data_dict might be constructed from it,
+        # or the engine might be refactored to consume FHIR resources directly.
 
         # Ensure patient_data_dict contains the 'patient' key with at least 'id'
         # as expected by the current run_full_diagnostic structure
