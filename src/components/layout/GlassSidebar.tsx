@@ -114,8 +114,8 @@ export default function GlassSidebar() {
                 className={cn(
                   'truncate filter drop-shadow-md font-bold',
                   isAdvisorActive
-                    ? 'text-yellow-300'
-                    : 'bg-gradient-to-br from-teal-200 to-yellow-200 bg-clip-text text-transparent sheen'
+                    ? 'text-black font-semibold'
+                    : 'text-black bg-gradient-to-br from-yellow-300 to-teal-300 bg-clip-text hover:text-transparent sheen'
                 )}
               >
                 Advisor
