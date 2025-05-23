@@ -10,7 +10,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from clinical_engine import (
     run_full_diagnostic,
     Patient, # Assuming Patient model is needed for request body or internal use
-    DiagnosticResult, # This is the response model
+    # DiagnosticResult, # No longer the direct response model for the endpoint
+    ClinicalOutputPackage, # This is the new response model
     # Import other necessary models from clinical_engine if they are part of the API contract
     # For example, if the FHIR bundle directly maps to some Pydantic models in clinical_engine
 )
@@ -72,7 +73,7 @@ llm_client = DummyLLMClient()
 guideline_client = DummyGuidelineClient()
 clinical_trial_client = DummyClinicalTrialClient()
 
-@app.post("/run-dx", response_model=DiagnosticResult)
+@app.post("/run-dx", response_model=ClinicalOutputPackage)
 async def run_dx_endpoint(request: RunDxRequest):
     """
     Runs the full diagnostic pipeline.
@@ -100,15 +101,15 @@ async def run_dx_endpoint(request: RunDxRequest):
             raise HTTPException(status_code=400, detail=f"patient_id in request ({request.patient_id}) does not match patient.id in patient_data_dict ({request.patient_data_dict['patient'].get('id')}).")
 
 
-        diagnostic_result = await run_full_diagnostic(
-            patient_id=request.patient_id,
+        diagnostic_package = await run_full_diagnostic(
+            patient_id_input=request.patient_id,
             transcript=request.transcript,
             patient_data_dict=request.patient_data_dict,
             llm_client=llm_client,
             guideline_client=guideline_client,
             clinical_trial_client=clinical_trial_client
         )
-        return diagnostic_result
+        return diagnostic_package
     except ValueError as ve: # Catching specific errors like circular reference or missing symptoms
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:

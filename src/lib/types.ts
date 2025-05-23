@@ -125,6 +125,38 @@ export interface DiagnosticResult {
   clinicalTrialMatches: ClinicalTrial[];
 }
 
+export interface SoapNote {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+  rawTranscriptSnippet?: string;
+}
+
+export interface GeneratedReferralDocument {
+  referralTo: string;
+  reasonForReferral: string;
+  summaryOfFindings: string;
+  generatedContent: SpecialistReferral; // Or Record<string, any> if more flexible
+}
+
+export interface GeneratedPriorAuthDocument {
+  medicationOrService: string;
+  reasonForRequest: string;
+  generatedContent: PriorAuthorization; // Or Record<string, any>
+}
+
+export interface ClinicalOutputPackage {
+  requestId: string;
+  timestamp: string;
+  patientId: string;
+  diagnosticResult: DiagnosticResult;
+  soapNote?: SoapNote;
+  referralDocument?: GeneratedReferralDocument;
+  priorAuthDocument?: GeneratedPriorAuthDocument;
+  evidenceSources: ClinicalSource[];
+}
+
 export interface PriorAuthorization {
   patientInformation: {
     name: string;

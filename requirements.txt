@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+pytest
+pytest-asyncio
+# pydantic is a dependency of fastapi, usually no need to list explicitly unless specific version is required.
+# Other existing project dependencies should also be listed here if not managed elsewhere. 

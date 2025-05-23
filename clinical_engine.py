@@ -16,7 +16,7 @@ If the product vision or architecture for Tool B changes, update docs/architectu
 import asyncio
 import json
 import logging
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import os
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional, Any
@@ -106,7 +106,45 @@ class DiagnosticResult(BaseModel):
     recommended_tests: List[str] = [] # A list of suggested further tests to confirm the diagnosis or rule out differentials.
     recommended_treatments: List[str] = [] # A list of potential treatment options based on the diagnosis and guidelines.
     clinical_trial_matches: List[ClinicalTrialMatch] = [] # A list of relevant clinical trials the patient might be eligible for.
-    
+
+class SoapNote(BaseModel):
+    subjective: str
+    objective: str
+    assessment: str # This would likely be derived from/related to DiagnosticResult.diagnosis_name
+    plan: str       # This would likely be derived from/related to DiagnosticResult.recommended_treatments & tests
+    raw_transcript_snippet: Optional[str] = None # Optional: snippet from transcript relevant to the note
+
+class ReferralDocument(BaseModel):
+    # Using a simplified structure, actual referral content is complex
+    # and partially covered by generate_specialist_referral's current dictionary output
+    # For a Pydantic model, we define specific fields expected by the frontend.
+    referral_to: str # e.g., "Cardiology", "Rheumatology"
+    reason_for_referral: str
+    summary_of_findings: str
+    # patient_details: Patient # Could embed the full patient model or select fields
+    # referring_provider_details: Dict[str, str]
+    generated_content: Dict[str, Any] # To hold the output of generate_specialist_referral
+
+class PriorAuthDocument(BaseModel):
+    # Similar to ReferralDocument, using a simplified structure
+    # generate_prior_authorization current output is a Dict
+    medication_or_service: str
+    reason_for_request: str
+    # patient_details: Patient
+    # provider_details: Dict[str, str]
+    generated_content: Dict[str, Any] # To hold the output of generate_prior_authorization
+
+class ClinicalOutputPackage(BaseModel):
+    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    patient_id: str # From the input request
+    diagnostic_result: DiagnosticResult
+    soap_note: Optional[SoapNote] = None
+    referral_document: Optional[ReferralDocument] = None
+    prior_auth_document: Optional[PriorAuthDocument] = None
+    evidence_sources: List[ClinicalSource] = []
+    # Future: Could add physician_override_details here if captured at point of save
+
 class DebugLogger:
     """Simple debug logger for the clinical engine"""
     
@@ -975,18 +1013,51 @@ class ClinicalEngine:
         threshold = low_thresholds.get(lab_name, float('-inf'))
         return value < threshold
 
+# Helper method for SOAP note generation (placeholder)
+async def generate_soap_note_placeholder(
+    transcript: str, 
+    diagnosis_result: DiagnosticResult, 
+    patient: Patient,
+    llm_client: Optional[Any] = None # Optional LLM client for more advanced generation
+) -> SoapNote:
+    logger.info(f"Generating placeholder SOAP note for patient {patient.id}")
+    
+    # Basic placeholder logic. A real implementation would use an LLM or templates.
+    subjective = f"Patient (ID: {patient.id}) presents with complaints leading to diagnosis of {diagnosis_result.diagnosis_name}. Key symptoms from transcript might include: {transcript[:150]}..."
+    objective = "Objective findings from the diagnostic plan and evidence would be summarized here. E.g., key lab results, physical exam findings from evidence sources."
+    assessment = f"Primary Diagnosis: {diagnosis_result.diagnosis_name} (Confidence: {diagnosis_result.confidence*100:.0f}%). "
+    assessment += f"Supporting evidence includes: {'; '.join(diagnosis_result.supporting_evidence[:2])}."
+    if diagnosis_result.differential_diagnoses:
+        assessment += f" Differential diagnoses considered: {', '.join([dd.name for dd in diagnosis_result.differential_diagnoses[:2]])}."
+    
+    plan_str = "Plan includes: "
+    if diagnosis_result.recommended_tests:
+        plan_str += f"Further tests: {', '.join(diagnosis_result.recommended_tests[:2])}. "
+    if diagnosis_result.recommended_treatments:
+        plan_str += f"Treatments: {', '.join(diagnosis_result.recommended_treatments[:2])}. "
+    if not diagnosis_result.recommended_tests and not diagnosis_result.recommended_treatments:
+        plan_str += "Follow up as clinically indicated."
+
+    return SoapNote(
+        subjective=subjective,
+        objective=objective,
+        assessment=assessment,
+        plan=plan_str.strip(),
+        raw_transcript_snippet=transcript[:500] # Include a larger snippet
+    )
+
 # Integration Hooks and API Design
 async def run_full_diagnostic(
-    patient_id: str, 
+    patient_id_input: str, # Renamed to avoid conflict with patient_id in ClinicalOutputPackage
     transcript: str, 
     patient_data_dict: Dict[str, Any], # Patient data from Supabase/EMR
     llm_client: Any, 
     guideline_client: Any, 
     clinical_trial_client: Any
-) -> DiagnosticResult:
+) -> ClinicalOutputPackage:
     """
     High-level function to run the full diagnostic pipeline.
-    This would be the function an API route could call.
+    Returns a ClinicalOutputPackage.
     
     CURRENT (MVP v0): This function expects `patient_data_dict` to be a comprehensive JSON object
     containing all relevant patient information (demographics, visits, labs, etc.),
@@ -999,50 +1070,54 @@ async def run_full_diagnostic(
     engine = ClinicalEngine(llm_client, guideline_client, clinical_trial_client)
     
     # Create Patient Pydantic model instance
-    # Ensure patient_data_dict["patient"] exists and has an 'id'
     if not patient_data_dict.get("patient") or not patient_data_dict["patient"].get("id"):
+        # Simplified error handling for brevity in this step
+        # Production code should ensure robust handling or default Patient creation
         raise ValueError("Patient data dictionary must contain 'patient' with an 'id'.")
     
-    # Construct Patient model, assuming patient_data_dict["patient"] has the necessary fields
-    # This might need more robust error handling or mapping if the dict structure varies
+    patient_info_from_dict = patient_data_dict.get("patient", {})
+    # Ensure the patient_id from the input matches the one in the dictionary if both exist
+    if patient_info_from_dict.get("id") != patient_id_input:
+        logger.warning(f"Mismatch between patient_id_input '{patient_id_input}' and patient_data_dict.patient.id '{patient_info_from_dict.get('id')}'. Using ID from patient_data_dict.")
+        # Decide on a precedence rule or raise error. For now, use ID from dict if different.
+        # Or, ensure they must match by raising ValueError here.
+
+    current_patient_id = patient_info_from_dict.get("id", patient_id_input) # Prefer ID from dict if available
+
     try:
-        # Shallow copy patient info to avoid mutating input dict and circular references
-        patient_info = patient_data_dict.get("patient", {})
-        patient_model_data = {**patient_info}
-        # Attach full data dict under raw_data (no circular mutations)
+        patient_model_data = {**patient_info_from_dict}
         patient_model_data['raw_data'] = patient_data_dict
         patient = Patient(**patient_model_data)
-
     except Exception as e:
-        logger.error(f"Error creating Patient model from patient_data_dict: {e}")
-        # Fallback or re-raise, depending on desired error handling
-        # For now, let's create a patient with minimal data if primary fields are missing,
-        # though this might affect downstream logic that expects complete patient info.
-        # A more robust solution would be to ensure patient_data_dict structure is as expected.
+        logger.error(f"Error creating Patient model for {current_patient_id}: {e}")
+        # Fallback to a minimal patient model for robustness, though this might impact downstream quality.
         patient = Patient(
-            id=patient_id, 
-            gender="Unknown", 
-            date_of_birth="Unknown", 
-            race="Unknown", 
-            marital_status="Unknown", 
-            language="Unknown", 
-            poverty_percentage=0.0,
-            raw_data=patient_data_dict # Still store the raw data
+            id=current_patient_id, 
+            gender=patient_info_from_dict.get("gender", "Unknown"), 
+            date_of_birth=patient_info_from_dict.get("date_of_birth", "Unknown"), 
+            race=patient_info_from_dict.get("race", "Unknown"), 
+            marital_status=patient_info_from_dict.get("marital_status", "Unknown"), 
+            language=patient_info_from_dict.get("language", "Unknown"), 
+            poverty_percentage=patient_info_from_dict.get("poverty_percentage", 0.0),
+            raw_data=patient_data_dict
         )
-        logger.warning(f"Created Patient model with default values for patient_id: {patient_id} due to missing fields in input dict.")
-
+        logger.warning(f"Created Patient model with potentially default values for patient_id: {current_patient_id}")
 
     # Stage 1: Input processing
     symptoms = engine.extract_symptoms_from_transcript(transcript)
     if not symptoms:
-        # Handle cases where no symptoms are extracted, perhaps return a specific result or raise error
-        logger.warning(f"No symptoms extracted for patient {patient_id} from transcript. Aborting diagnostic.")
-        # Example: return a DiagnosticResult indicating this issue
-        return DiagnosticResult(
+        logger.warning(f"No symptoms extracted for patient {current_patient_id} from transcript.")
+        # Return a package indicating inability to process
+        diag_result_error = DiagnosticResult(
             diagnosis_name="Unable to Process",
             confidence=0.0,
             supporting_evidence=["No symptoms could be extracted from the provided transcript."],
             recommended_tests=["Review consultation transcript and ensure clarity of reported symptoms."]
+        )
+        return ClinicalOutputPackage(
+            patient_id=current_patient_id,
+            diagnostic_result=diag_result_error,
+            evidence_sources=[]
         )
 
     # Stage 2: Plan creation
@@ -1052,14 +1127,57 @@ async def run_full_diagnostic(
     executed_plan, sources = await engine.execute_diagnostic_plan(plan, patient)
     
     # Stage 4: Diagnosis synthesis
-    result = await engine.generate_diagnostic_result(symptoms, executed_plan, sources, patient)
+    diag_result = await engine.generate_diagnostic_result(symptoms, executed_plan, sources, patient)
     
-    # Stage 5 (optional): Match clinical trials if a diagnosis is made
-    if result.diagnosis_name and result.diagnosis_name != "Unable to Process" and result.diagnosis_name != "Undifferentiated Inflammatory Condition": # Avoid matching for generic/error cases
-        trial_matches = await engine.match_clinical_trials(result.diagnosis_name, patient)
-        result.clinical_trial_matches = trial_matches
+    # Initialize optional documents
+    soap_note_doc: Optional[SoapNote] = None
+    referral_doc_obj: Optional[ReferralDocument] = None
+    prior_auth_doc_obj: Optional[PriorAuthDocument] = None
+
+    # Stage 5 (conditional & optional): Document Generation & Clinical Trial Matching
+    if diag_result.diagnosis_name and diag_result.diagnosis_name not in ["Unable to Process", "Undifferentiated Inflammatory Condition"]:
+        # Match clinical trials
+        trial_matches = await engine.match_clinical_trials(diag_result.diagnosis_name, patient)
+        diag_result.clinical_trial_matches = trial_matches # Attach to DiagnosticResult itself as per existing model
+
+        # Generate SOAP Note (placeholder)
+        soap_note_doc = await generate_soap_note_placeholder(transcript, diag_result, patient, llm_client)
+
+        # Generate Specialist Referral (if a common scenario applies, e.g., Rheumatology for RA)
+        # This logic is simplified; a real system would have triggers or UI choices for when to generate these.
+        if "Rheumatoid Arthritis" in diag_result.diagnosis_name:
+            try:
+                referral_data_dict = await engine.generate_specialist_referral(diag_result.diagnosis_name, "Rheumatology", patient)
+                referral_doc_obj = ReferralDocument(
+                    referral_to="Rheumatology",
+                    reason_for_referral=referral_data_dict.get("referral_reason", {}).get("reason_for_referral", "N/A"),
+                    summary_of_findings=referral_data_dict.get("clinical_information", {}).get("history_of_present_illness", "N/A"),
+                    generated_content=referral_data_dict
+                )
+            except Exception as e:
+                logger.error(f"Failed to generate referral document for {current_patient_id}: {e}")
         
-    return result
+        # Generate Prior Authorization (if a common treatment needing it is recommended)
+        # Simplified trigger logic
+        if diag_result.recommended_treatments and any("methotrexate" in t.lower() for t in diag_result.recommended_treatments):
+            try:
+                prior_auth_data_dict = await engine.generate_prior_authorization(diag_result.diagnosis_name, "Methotrexate", patient)
+                prior_auth_doc_obj = PriorAuthDocument(
+                    medication_or_service="Methotrexate",
+                    reason_for_request=prior_auth_data_dict.get("clinical_justification", "N/A"),
+                    generated_content=prior_auth_data_dict
+                )
+            except Exception as e:
+                logger.error(f"Failed to generate prior auth document for {current_patient_id}: {e}")
+
+    return ClinicalOutputPackage(
+        patient_id=current_patient_id,
+        diagnostic_result=diag_result,
+        soap_note=soap_note_doc,
+        referral_document=referral_doc_obj,
+        prior_auth_document=prior_auth_doc_obj,
+        evidence_sources=sources
+    )
 
 if __name__ == "__main__":
     import asyncio
@@ -1098,7 +1216,7 @@ if __name__ == "__main__":
             dummy_guidelines,
             dummy_trials
         )
-        # Print the resulting DiagnosticResult as JSON
+        # Print the resulting ClinicalOutputPackage as JSON
         print(result.model_dump_json(indent=2))
 
     asyncio.run(main())
