@@ -72,6 +72,19 @@ class ClinicalSource(BaseModel):
     relevance_score: Optional[float] = None
     access_time: str = datetime.now().isoformat()
 
+class DifferentialDiagnosisItem(BaseModel): # Renamed from DifferentialDiagnosis to avoid conflict
+    name: str
+    likelihood: str # e.g., "High", "Medium", "Low"
+    key_factors: str # Brief explanation
+
+class ClinicalTrialMatch(BaseModel): # Renamed from ClinicalTrial to avoid conflict
+    id: str
+    title: str
+    phase: str
+    location: str
+    contact: str
+    eligibility: str
+
 class DiagnosticStep(BaseModel):
     id: str
     description: str
@@ -89,10 +102,10 @@ class DiagnosticResult(BaseModel):
     diagnosis_code: Optional[str] = None # The ICD-10 or other relevant code for the diagnosis.
     confidence: float # A numerical value (e.g., 0.0 to 1.0) indicating the engine's confidence in the primary diagnosis.
     supporting_evidence: List[str] # A list of key findings or reasons that support the primary diagnosis.
-    differential_diagnoses: List[Dict[str, Any]] = [] # A list of alternative diagnoses considered, potentially with likelihoods or distinguishing factors.
+    differential_diagnoses: List[DifferentialDiagnosisItem] = [] # A list of alternative diagnoses considered.
     recommended_tests: List[str] = [] # A list of suggested further tests to confirm the diagnosis or rule out differentials.
     recommended_treatments: List[str] = [] # A list of potential treatment options based on the diagnosis and guidelines.
-    clinical_trial_matches: List[Dict[str, Any]] = [] # A list of relevant clinical trials the patient might be eligible for.
+    clinical_trial_matches: List[ClinicalTrialMatch] = [] # A list of relevant clinical trials the patient might be eligible for.
     
 class DebugLogger:
     """Simple debug logger for the clinical engine"""
@@ -431,7 +444,7 @@ class ClinicalEngine:
             
             Based on these sources:
             
-            {json.dumps([s.dict() for s in sources], indent=2)}
+            {json.dumps([s.model_dump() for s in sources], indent=2)}
             
             Summarize the key findings in 3-5 detailed paragraphs. Include specific facts, data points, and important details from the sources.
             Focus on clinically relevant information and note any contradictions between sources.
@@ -498,7 +511,7 @@ class ClinicalEngine:
                 self.current_session_id,
                 step.id,
                 findings,
-                source=json.dumps([s.dict() for s in sources])
+                source=json.dumps([s.model_dump() for s in sources])
             )
         else:
             findings = "No relevant information found for this diagnostic step."
@@ -586,9 +599,9 @@ class ClinicalEngine:
                     "Family history of autoimmune conditions"
                 ],
                 differential_diagnoses=[
-                    {"name": "Systemic Lupus Erythematosus", "likelihood": "Low", "key_factors": "Positive ANA but negative anti-dsDNA, normal complement levels, absence of typical organ involvement"},
-                    {"name": "Psoriatic Arthritis", "likelihood": "Very Low", "key_factors": "No skin or nail changes, no DIP joint involvement"},
-                    {"name": "Viral Arthritis", "likelihood": "Very Low", "key_factors": "Chronic progressive course rather than acute onset"}
+                    DifferentialDiagnosisItem(name="Systemic Lupus Erythematosus", likelihood="Low", key_factors="Positive ANA but negative anti-dsDNA, normal complement levels, absence of typical organ involvement"),
+                    DifferentialDiagnosisItem(name="Psoriatic Arthritis", likelihood="Very Low", key_factors="No skin or nail changes, no DIP joint involvement"),
+                    DifferentialDiagnosisItem(name="Viral Arthritis", likelihood="Very Low", key_factors="Chronic progressive course rather than acute onset")
                 ],
                 recommended_tests=[
                     "Hand/wrist X-rays to assess for erosions",
@@ -604,22 +617,8 @@ class ClinicalEngine:
                     "Physical therapy for joint protection techniques and exercises"
                 ],
                 clinical_trial_matches=[
-                    {
-                        "id": "NCT04134728",
-                        "title": "Novel JAK Inhibitor for Early Rheumatoid Arthritis",
-                        "phase": "Phase 3",
-                        "location": "Multiple locations",
-                        "contact": "research@arthritistrial.org",
-                        "eligibility": "Early RA, anti-CCP positive, no prior biologic therapy"
-                    },
-                    {
-                        "id": "NCT03922607",
-                        "title": "Precision Medicine Approach to RA Treatment Selection",
-                        "phase": "Phase 4",
-                        "location": "University Medical Center",
-                        "contact": "precision@umc.edu",
-                        "eligibility": "New RA diagnosis, no contraindications to methotrexate"
-                    }
+                    ClinicalTrialMatch(id="NCT04134728", title="Novel JAK Inhibitor for Early Rheumatoid Arthritis", phase="Phase 3", location="Multiple locations", contact="research@arthritistrial.org", eligibility="Early RA, anti-CCP positive, no prior biologic therapy"),
+                    ClinicalTrialMatch(id="NCT03922607", title="Precision Medicine Approach to RA Treatment Selection", phase="Phase 4", location="University Medical Center", contact="precision@umc.edu", eligibility="New RA diagnosis, no contraindications to methotrexate")
                 ]
             )
         elif any("leukemia" in step.findings.lower() for step in plan.steps if step.findings):
@@ -636,9 +635,9 @@ class ClinicalEngine:
                     "Elevated LDH and uric acid"
                 ],
                 differential_diagnoses=[
-                    {"name": "Acute Myeloid Leukemia", "likelihood": "Moderate", "key_factors": "Absence of blast crisis, chronic rather than acute presentation"},
-                    {"name": "Myelofibrosis", "likelihood": "Low", "key_factors": "No significant bone marrow fibrosis on biopsy"},
-                    {"name": "Reactive Leukocytosis", "likelihood": "Very Low", "key_factors": "Presence of Philadelphia chromosome confirms neoplastic process"}
+                    DifferentialDiagnosisItem(name="Acute Myeloid Leukemia", likelihood="Moderate", key_factors="Absence of blast crisis, chronic rather than acute presentation"),
+                    DifferentialDiagnosisItem(name="Myelofibrosis", likelihood="Low", key_factors="No significant bone marrow fibrosis on biopsy"),
+                    DifferentialDiagnosisItem(name="Reactive Leukocytosis", likelihood="Very Low", key_factors="Presence of Philadelphia chromosome confirms neoplastic process")
                 ],
                 recommended_tests=[
                     "BCR-ABL PCR quantification",
@@ -653,14 +652,7 @@ class ClinicalEngine:
                     "Genetic counseling"
                 ],
                 clinical_trial_matches=[
-                    {
-                        "id": "NCT03789942",
-                        "title": "Novel TKI Combination for Newly Diagnosed CML",
-                        "phase": "Phase 2",
-                        "location": "Cancer Research Center",
-                        "contact": "cml@cancerresearch.org",
-                        "eligibility": "Newly diagnosed CML in chronic phase, no prior TKI therapy"
-                    }
+                    ClinicalTrialMatch(id="NCT03789942", title="Novel TKI Combination for Newly Diagnosed CML", phase="Phase 2", location="Cancer Research Center", contact="cml@cancerresearch.org", eligibility="Newly diagnosed CML in chronic phase, no prior TKI therapy")
                 ]
             )
         else:
@@ -675,9 +667,9 @@ class ClinicalEngine:
                     "Absence of definitive diagnostic criteria for specific conditions"
                 ],
                 differential_diagnoses=[
-                    {"name": "Early Rheumatoid Arthritis", "likelihood": "Moderate", "key_factors": "Joint symptoms but incomplete criteria"},
-                    {"name": "Undifferentiated Connective Tissue Disease", "likelihood": "Moderate", "key_factors": "Mixed features of several autoimmune conditions"},
-                    {"name": "Viral Syndrome", "likelihood": "Low", "key_factors": "Chronic rather than self-limited course"}
+                    DifferentialDiagnosisItem(name="Early Rheumatoid Arthritis", likelihood="Moderate", key_factors="Joint symptoms but incomplete criteria"),
+                    DifferentialDiagnosisItem(name="Undifferentiated Connective Tissue Disease", likelihood="Moderate", key_factors="Mixed features of several autoimmune conditions"),
+                    DifferentialDiagnosisItem(name="Viral Syndrome", likelihood="Low", key_factors="Chronic rather than self-limited course")
                 ],
                 recommended_tests=[
                     "Complete autoimmune panel",
@@ -784,7 +776,7 @@ class ClinicalEngine:
                 recent_labs.append(lab_result)
              except Exception as e: # Broad exception to catch Pydantic validation errors or others
                 logger.warning(f"Skipping lab result due to data issue: {lab_data}. Error: {e}")
-
+        
         # Sort labs by date (most recent first)
         recent_labs.sort(key=lambda x: x.date_time, reverse=True)
         
@@ -1008,9 +1000,11 @@ async def run_full_diagnostic(
     # Construct Patient model, assuming patient_data_dict["patient"] has the necessary fields
     # This might need more robust error handling or mapping if the dict structure varies
     try:
-        patient_model_data = patient_data_dict["patient"]
-        # Add the full patient_data_dict to raw_data field
-        patient_model_data['raw_data'] = patient_data_dict 
+        # Shallow copy patient info to avoid mutating input dict and circular references
+        patient_info = patient_data_dict.get("patient", {})
+        patient_model_data = {**patient_info}
+        # Attach full data dict under raw_data (no circular mutations)
+        patient_model_data['raw_data'] = patient_data_dict
         patient = Patient(**patient_model_data)
 
     except Exception as e:
@@ -1060,3 +1054,47 @@ async def run_full_diagnostic(
         result.clinical_trial_matches = trial_matches
         
     return result
+
+if __name__ == "__main__":
+    import asyncio
+    # Dummy clients for guidelines and clinical trials (return empty lists)
+    class DummyClient:
+        async def search(self, *args, **kwargs):
+            return []
+
+    dummy_llm = None  # Not used in simulated plan generation
+    dummy_guidelines = DummyClient()
+    dummy_trials = DummyClient()
+
+    # Sample input
+    sample_transcript = "Patient reports fatigue and joint pain and occasional low-grade fever"
+    sample_patient_data = {
+        "patient": {
+            "id": "patient1",
+            "gender": "Female",
+            "date_of_birth": "1980-01-01",
+            "race": "Unknown",
+            "marital_status": "Single",
+            "language": "English",
+            "poverty_percentage": 0.0
+        },
+        "admissions": [],
+        "lab_results": []
+    }
+
+    async def main():
+        # Run full diagnostic pipeline end-to-end
+        result = await run_full_diagnostic(
+            "patient1",
+            sample_transcript,
+            sample_patient_data,
+            dummy_llm,
+            dummy_guidelines,
+            dummy_trials
+        )
+        # Print the resulting DiagnosticResult as JSON
+        print(result.model_dump_json(indent=2))
+
+    asyncio.run(main())
+
+# End of file
