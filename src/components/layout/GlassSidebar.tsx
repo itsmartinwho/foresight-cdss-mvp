@@ -112,7 +112,7 @@ export default function GlassSidebar() {
             {!collapsed && (
               <span
                 className={cn(
-                  'truncate filter drop-shadow-md font-bold',
+                  'truncate filter drop-shadow-md',
                   isAdvisorActive
                     ? 'text-black font-semibold'
                     : 'bg-gradient-to-br from-black to-teal-300 bg-clip-text text-transparent sheen'
