@@ -106,7 +106,7 @@ export default function GlassSidebar() {
               strokeWidth={1.5}
               className={cn(
                 "h-[1.125em] w-[1.125em] flex-shrink-0 filter drop-shadow-sm",
-                isAdvisorActive ? "text-black" : "text-yellow-300"
+                isAdvisorActive ? "text-black" : "text-black"
               )}
             />
             {!collapsed && (
