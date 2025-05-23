@@ -106,7 +106,7 @@ export default function GlassSidebar() {
               strokeWidth={1.5}
               className={cn(
                 "h-[1.125em] w-[1.125em] flex-shrink-0 filter drop-shadow-sm",
-                isAdvisorActive ? "text-yellow-300" : 'text-yellow-300'
+                isAdvisorActive ? "text-black" : "text-yellow-300"
               )}
             />
             {!collapsed && (
@@ -115,7 +115,7 @@ export default function GlassSidebar() {
                   'truncate filter drop-shadow-md font-bold',
                   isAdvisorActive
                     ? 'text-black font-semibold'
-                    : 'text-black bg-gradient-to-br from-yellow-300 to-teal-300 bg-clip-text hover:text-transparent sheen'
+                    : 'bg-gradient-to-br from-black to-teal-300 bg-clip-text text-transparent sheen'
                 )}
               >
                 Advisor

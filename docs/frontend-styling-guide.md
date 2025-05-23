@@ -306,7 +306,7 @@ This document provides guidelines and conventions for styling frontend component
 The sidebar, particularly the `GlassSidebar` component, has specific styling for its items, including the 'Advisor' link.
 
 ### 'Advisor' Link
-- **Default State:** The 'Advisor' text is black. A gradient flows through the text, transitioning from yellow (specifically `text-yellow-300`) to neon teal (specifically `to-teal-300`). The `sheen` class is used for this effect.
+- **Default State:** The 'Advisor' text is black. An animated gradient sheen flows through the text, transitioning from black to neon teal (specifically `to-teal-300`). The `sheen` class is used for this effect.
 - **Active State:** When the '/advisor' path is active, the 'Advisor' text and its icon become bold black (`text-black font-semibold`). The icon also turns black in this state.
 - **Icon Styling (Default):** The 'Zap' icon next to 'Advisor' is `text-yellow-300` by default.
 - **Collapsed State:** When the sidebar is collapsed, only the icon is visible. The tooltip will display 'Advisor'.
