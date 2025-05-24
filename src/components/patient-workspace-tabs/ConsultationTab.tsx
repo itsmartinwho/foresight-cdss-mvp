@@ -143,7 +143,7 @@ export default function ConsultationTab({
     if (JSON.stringify(observationsToSave) !== JSON.stringify(currentLastSavedObservations)) {
       console.log(`Attempting to save observations. Changed: ${JSON.stringify(observationsToSave) !== JSON.stringify(currentLastSavedObservations)}.`);
       try {
-        console.log("Simulating saving observations for admission:", admissionId, observationsToSave);
+        await supabaseDataService.updateAdmissionObservations(patientId, admissionId, observationsToSave);
         if (admissionId === currentDetailedAdmission?.id) {
             setLastSavedObservations([...observationsToSave]);
             setObservationsChanged(false);

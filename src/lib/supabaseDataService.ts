@@ -449,6 +449,37 @@ class SupabaseDataService {
     }
   }
 
+  async updateAdmissionObservations(
+    patientId: string, // Though not directly used in the SQL, good for context/caching if needed
+    admissionCompositeId: string, 
+    observations: string[]
+  ): Promise<void> {
+    const originalAdmissionId = admissionCompositeId.split('_').pop(); // Get the actual admission_id for the DB
+    if (!originalAdmissionId) {
+      console.error('SupabaseDataService: Could not extract originalAdmissionId from composite ID:', admissionCompositeId);
+      throw new Error('Invalid admissionCompositeId');
+    }
+
+    const { error } = await this.supabase
+      .from('visits')
+      .update({ observations: observations })
+      .eq('admission_id', originalAdmissionId);
+
+    if (error) {
+      console.error('SupabaseDataService (Prod Debug): Error updating observations in DB:', error.message);
+      throw error;
+    }
+
+    // Update local cache
+    if (this.admissions[admissionCompositeId]) {
+      this.admissions[admissionCompositeId].observations = observations;
+      this.emitChange(); // Notify subscribers of the change
+    } else {
+      console.warn(`SupabaseDataService (Prod Debug): updateAdmissionObservations - Admission with composite ID ${admissionCompositeId} not found in local cache to update.`);
+    }
+    console.log("Observations updated successfully in DB and cache for admission:", admissionCompositeId);
+  }
+
   async createNewAdmission(
     patientId: string,
     opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
