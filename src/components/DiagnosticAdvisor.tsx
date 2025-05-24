@@ -101,12 +101,20 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
       setDiagnosticPlan(updatedPlan);
       
       // Generate diagnostic result
-      const result = await clinicalEngineService.generateDiagnosticResult(symptoms, updatedPlan);
-      setDiagnosticResult(result);
+      const transcript = symptoms.join(', '); // Create transcript from symptoms
+      const patientDataDict = {}; // Placeholder for patient data
+      const result = await clinicalEngineService.generateDiagnosticResult(
+        patientId || '', // Ensure patientId is a string
+        transcript,
+        patientDataDict,
+        symptoms, 
+        updatedPlan
+      );
+      setDiagnosticResult(result.diagnosticResult);
       
       // Match clinical trials if a diagnosis is available
-      if (result.diagnosisName) {
-        const trials = await clinicalEngineService.matchClinicalTrials(result.diagnosisName, patientId);
+      if (result.diagnosticResult.diagnosisName) {
+        const trials = await clinicalEngineService.matchClinicalTrials(result.diagnosticResult.diagnosisName, patientId);
         setClinicalTrials(trials);
       }
       
