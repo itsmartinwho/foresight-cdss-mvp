@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, AsyncMock
 import json
 from typing import Dict, List, Optional, Any
 
-from clinical_engine import (
+from ..clinical_engine import (
     ClinicalEngine,
     Patient,
     DiagnosticPlan,
@@ -316,4 +316,4 @@ async def test_run_full_diagnostic_end_to_end(
 
 
 # Example of how to run tests:
-# pytest test_clinical_engine.py 
+# pytest test_clinical_engine.py

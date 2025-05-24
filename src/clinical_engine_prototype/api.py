@@ -1,13 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional # Ensure List and Optional are imported
-import sys
-import os
 
-# Add project root to Python path to allow importing clinical_engine
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from clinical_engine import (
+from .engine import (
     run_full_diagnostic,
     Patient, # Assuming Patient model is needed for request body or internal use
     # DiagnosticResult, # No longer the direct response model for the endpoint
@@ -119,8 +114,8 @@ async def run_dx_endpoint(request: RunDxRequest):
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
 
 # To run this FastAPI app:
-# uvicorn main:app --reload
+# uvicorn src.clinical_engine_prototype.api:app --reload
 #
 # Example curl request:
-# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d '{"patient_id": "patient123", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "date_of_birth": "1980-01-01", "race": "Caucasian", "marital_status": "Married", "language": "English", "poverty_percentage": 150.0}, "visits": [{"id": "visit1", "patient_id": "patient123", "start_date": "2023-01-15T09:00:00Z", "end_date": "2023-01-15T09:30:00Z", "reason": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "lab_results": [{"patient_id": "patient123", "admission_id": "visit1", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}'
-# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d '{"patient_id": "patient123", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "date_of_birth": "1980-01-01", "race": "Caucasian", "marital_status": "Married", "language": "English", "poverty_percentage": 150.0}, "visits": [{"id": "visit1", "patient_id": "patient123", "start_date": "2023-01-15T09:00:00Z", "end_date": "2023-01-15T09:30:00Z", "reason": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "lab_results": [{"patient_id": "patient123", "admission_id": "visit1", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}' 
+# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d \'{"patient_id": "patient123", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "date_of_birth": "1980-01-01", "race": "Caucasian", "marital_status": "Married", "language": "English", "poverty_percentage": 150.0}, "visits": [{"id": "visit1", "patient_id": "patient123", "start_date": "2023-01-15T09:00:00Z", "end_date": "2023-01-15T09:30:00Z", "reason": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "lab_results": [{"patient_id": "patient123", "admission_id": "visit1", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}\'
+# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d \'{"patient_id": "patient123", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "date_of_birth": "1980-01-01", "race": "Caucasian", "marital_status": "Married", "language": "English", "poverty_percentage": 150.0}, "visits": [{"id": "visit1", "patient_id": "patient123", "start_date": "2023-01-15T09:00:00Z", "end_date": "2023-01-15T09:30:00Z", "reason": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "lab_results": [{"patient_id": "patient123", "admission_id": "visit1", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}\' 

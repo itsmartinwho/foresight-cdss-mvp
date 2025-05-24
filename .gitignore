@@ -36,3 +36,11 @@ next-env.d.ts
 # Ignored directories
 .git_old 
 *storybook.log
+/tests/playwright-report/
+/tests/test-artifacts/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+

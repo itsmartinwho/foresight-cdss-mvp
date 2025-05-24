@@ -13,7 +13,7 @@ The vision includes several advanced aspirational AI tools (B, C, D, F).
 *   **[System Architecture](./docs/architecture.md):** The primary source of truth for system design, AI tools, data layer, application flow, and tech stack.
 *   **[Frontend Guide](./docs/frontend_guide.md):** Detailed frontend development guidelines, styling conventions, component structure, and UI patterns.
 *   **[Development Guide](./docs/development_guide.md):** Rules for development process, coding standards, version control, testing strategy, and more.
-*   **[Python Clinical Engine (Tool B Prototype)](./docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b):** Specific details on the `clinical_engine.py` prototype for the aspirational Tool B.
+*   **[Python Clinical Engine (Tool B Prototype)](./docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b):** Specific details on the Tool B prototype. (Code located in `src/clinical_engine_prototype/`)
 *   **[Plasma Background Effect](./docs/PLASMA_EFFECT.md):** Explanation of the animated background effect.
 
 ## Features (Current Prototype Highlights)
@@ -40,7 +40,7 @@ _The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed i
 | pnpm (CLI)               | 8                    | `npm install -g pnpm`                                 |
 | Supabase Account         | N/A                  | Required for your own database instance.   |
 | OpenAI API Key           | N/A                  | Required for Tool A (Advisor).          |
-| Python (Optional)        | 3.9+                 | For `clinical_engine.py` (Tool B prototype) |
+| Python (Optional)        | 3.9+                 | For the Clinical Engine prototype (Tool B), located in `src/clinical_engine_prototype/` |
 
 ### Installation & Setup
 1.  **Clone the repository.**
@@ -52,9 +52,15 @@ _The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed i
 4.  **Set up Supabase Database:**
     *   Create a project on [Supabase](https://supabase.com/).
     *   Run schema from `scripts/schema.sql`.
-5.  **(Optional) Python Prototype Setup (`clinical_engine.py`):**
-    *   `python -m venv .venv && source .venv/bin/activate && pip install pydantic>=1.10`
-    *   Refer to details in **[docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b](./docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b)**.
+5.  **(Optional) Python Prototype Setup (Clinical Engine - Tool B):**
+    *   The prototype code is located in `src/clinical_engine_prototype/`.
+    *   To run it, navigate to that directory: `cd src/clinical_engine_prototype/`
+    *   Create a virtual environment: `python3 -m venv .venv` (or `python -m venv .venv`)
+    *   Activate it: `source .venv/bin/activate`
+    *   Install dependencies: `pip install -r prototype_requirements.txt`
+    *   You can then run the API server: `uvicorn api:app --reload` (from within `src/clinical_engine_prototype/`)
+    *   Or run the engine directly: `python engine.py` (from within `src/clinical_engine_prototype/`)
+    *   Refer to details in **[docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b](./docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b)** and comments in the Python files for more context.
 
 ### Common Commands
 
