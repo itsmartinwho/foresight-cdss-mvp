@@ -97,7 +97,7 @@ async def run_dx_endpoint(request: RunDxRequest):
 
 
         diagnostic_package = await run_full_diagnostic(
-            patient_id_input=request.patient_id,
+            patient_id=request.patient_id,
             transcript=request.transcript,
             patient_data_dict=request.patient_data_dict,
             llm_client=llm_client,

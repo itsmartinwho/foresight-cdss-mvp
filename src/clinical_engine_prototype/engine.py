@@ -1048,7 +1048,7 @@ async def generate_soap_note_placeholder(
 
 # Integration Hooks and API Design
 async def run_full_diagnostic(
-    patient_id_input: str, # Renamed to avoid conflict with patient_id in ClinicalOutputPackage
+    patient_id: str, # Patient ID input for diagnostic pipeline
     transcript: str, 
     patient_data_dict: Dict[str, Any], # Patient data from Supabase/EMR
     llm_client: Any, 
@@ -1077,12 +1077,12 @@ async def run_full_diagnostic(
     
     patient_info_from_dict = patient_data_dict.get("patient", {})
     # Ensure the patient_id from the input matches the one in the dictionary if both exist
-    if patient_info_from_dict.get("id") != patient_id_input:
-        logger.warning(f"Mismatch between patient_id_input '{patient_id_input}' and patient_data_dict.patient.id '{patient_info_from_dict.get('id')}'. Using ID from patient_data_dict.")
+    if patient_info_from_dict.get("id") != patient_id:
+        logger.warning(f"Mismatch between patient_id '{patient_id}' and patient_data_dict.patient.id '{patient_info_from_dict.get('id')}'. Using ID from patient_data_dict.")
         # Decide on a precedence rule or raise error. For now, use ID from dict if different.
         # Or, ensure they must match by raising ValueError here.
 
-    current_patient_id = patient_info_from_dict.get("id", patient_id_input) # Prefer ID from dict if available
+    current_patient_id = patient_info_from_dict.get("id", patient_id) # Prefer ID from dict if available
 
     try:
         patient_model_data = {**patient_info_from_dict}

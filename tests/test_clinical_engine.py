@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, AsyncMock
 import json
 from typing import Dict, List, Optional, Any
 
-from ..clinical_engine import (
+from src.clinical_engine_prototype.engine import (
     ClinicalEngine,
     Patient,
     DiagnosticPlan,
@@ -13,7 +13,6 @@ from ..clinical_engine import (
     ClinicalSource,
     DifferentialDiagnosisItem,
     ClinicalTrialMatch,
-    extract_symptoms_from_transcript, # Direct import for testing if it's a standalone function
     run_full_diagnostic # For integration test
 )
 
