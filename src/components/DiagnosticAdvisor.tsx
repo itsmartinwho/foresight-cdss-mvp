@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DiagnosticPlan, DiagnosticStep, DiagnosticResult, ClinicalTrial } from '@/lib/types';
+import { DiagnosticPlan, DiagnosticStep, DiagnosticResult, ClinicalTrial, Patient, AdmissionDetailsWrapper } from '@/lib/types';
 import { clinicalEngineService } from '@/lib/clinicalEngineService';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 interface DiagnosticAdvisorProps {
   patientId?: string;
   symptoms?: string[];
+  patientFullData?: Patient | null;
+  admissionsData?: AdmissionDetailsWrapper[] | null;
 }
 
-export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms }: DiagnosticAdvisorProps) {
+export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms, patientFullData, admissionsData }: DiagnosticAdvisorProps) {
   const [symptoms, setSymptoms] = useState<string[]>(initialSymptoms || []);
   const [symptomInput, setSymptomInput] = useState<string>('');
   const [diagnosticPlan, setDiagnosticPlan] = useState<DiagnosticPlan | null>(null);
@@ -102,7 +104,20 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
       
       // Generate diagnostic result
       const transcript = symptoms.join(', '); // Create transcript from symptoms
-      const patientDataDict = {}; // Placeholder for patient data
+      
+      let patientDataDict: Record<string, any> = {};
+      if (patientFullData && admissionsData) {
+        patientDataDict = {
+          patient: patientFullData,
+          admissions: admissionsData,
+        };
+      } else if (patientFullData) {
+        patientDataDict = {
+          patient: patientFullData,
+          admissions: [], // Or handle as appropriate if admissions are expected
+        };
+      }
+      
       const result = await clinicalEngineService.generateDiagnosticResult(
         patientId || '', // Ensure patientId is a string
         transcript,
