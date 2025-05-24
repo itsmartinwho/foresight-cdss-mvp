@@ -16,8 +16,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "resize:icons": "tsx scripts/resize-icons.ts",
-    "replace-icons": "node scripts/replace-lucide-with-phosphor.js"
+    "resize:icons": "tsx scripts/resize-icons.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
