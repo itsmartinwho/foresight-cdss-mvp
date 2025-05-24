@@ -38,6 +38,7 @@ next-env.d.ts
 *storybook.log
 /tests/playwright-report/
 /tests/test-artifacts/
+/storybook-static/
 
 # Python
 __pycache__/
