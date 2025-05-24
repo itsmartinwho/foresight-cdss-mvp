@@ -4,7 +4,7 @@
 > - This document is the primary source of truth for the Foresight CDSS architecture, including AI tools, data layer, application flow, and tech stack.
 > - For detailed frontend conventions and styling, see [./frontend_guide.md](./frontend_guide.md).
 > - For development process, coding standards, and testing strategy, see [./development_guide.md](./development_guide.md).
-> - This file and [../clinical_engine.py](../clinical_engine.py) must be kept in sync regarding the vision, status, and integration plans for Tool B (Diagnosis and Treatment Engine).
+> - This file and [../src/clinical_engine_prototype/engine.py](../src/clinical_engine_prototype/engine.py) must be kept in sync regarding the vision, status, and integration plans for Tool B (Diagnosis and Treatment Engine).
 
 ## Overview
 
@@ -12,7 +12,7 @@ This document outlines the comprehensive architecture of the Foresight CDSS MVP 
 
 The application features several AI-powered clinical tools:
 *   **Tool A (Advisor):** Currently implemented as an AI-powered chatbot in the "Advisor" tab, using OpenAI via the `/api/advisor` route. It provides general medical information.
-*   **Tool B (Diagnosis and Treatment Engine):** An aspirational feature. Aims to ingest patient data and consultation transcripts to produce diagnoses and treatment plans, and generate related documents (referrals, prior authorizations). Placeholder UI elements for these outputs exist. The `clinical_engine.py` script is an early prototype for this engine's logic and is not currently integrated.
+*   **Tool B (Diagnosis and Treatment Engine):** An aspirational feature. Aims to ingest patient data and consultation transcripts to produce diagnoses and treatment plans, and generate related documents (referrals, prior authorizations). Placeholder UI elements for these outputs exist. The `src/clinical_engine_prototype/engine.py` script is an early prototype for this engine's logic and is not currently integrated.
 *   **Tool C (Medical Co-pilot):** An aspirational, real-time AI assistant to provide nudges to physicians during consultations. Does not yet exist.
 *   **Tool D (Complex Conditions Alerts):** An aspirational tool to scan diagnostic outputs (from the future Tool B) and alert physicians to potential complex conditions. Placeholder UI for alerts exists, currently populated by mock data from the `patients.alerts` field in Supabase.
 *   **Tool F (Clinical Trial Matching):** An aspirational tool to find clinical trials for eligible patients. Placeholder UI for clinical trials exists, currently populated by mock data.
@@ -49,7 +49,7 @@ _The application flow centers around clinician interaction with patient data and
 
 5.  **Tool B: Diagnosis and Treatment Engine (Aspirational - Placeholder UI Exists)**
     `Consultation Ends → Trigger Tool B Analysis (Aspirational) → Physician Reviews/Amends AI Output (in placeholder UI) → Accept Plan → Optionally Generate Documents (placeholder forms)`
-    - `clinical_engine.py` prototypes this logic.
+    - `src/clinical_engine_prototype/engine.py` prototypes this logic.
 
 6.  **Tool C: Medical Co-pilot (Aspirational - No UI Exists)**
     `During Live Consultation → AI Co-pilot Monitors → Delivers Discrete Nudges/Notifications`
@@ -93,7 +93,7 @@ _This section outlines technologies for current and aspirational components._
     *   Next.js API route (`/api/advisor`).
     *   Integrates with OpenAI API (GPT-4.1, GPT-3.5).
 *   **Tool B (Diagnosis and Treatment Engine) - Aspirational (Python Prototype Exists):**
-    *   **Prototype:** `clinical_engine.py` (Python, Pydantic). See dedicated section below.
+    *   **Prototype:** `src/clinical_engine_prototype/engine.py` (Python, Pydantic). See dedicated section below.
     *   **Potential Future Stack:** Evolve Python prototype (FastAPI/Flask containerized service), or TypeScript/Node.js rewrite. May incorporate ML models, NLP libraries.
 *   **Tool C (Medical Co-pilot) - Aspirational:** Real-time audio processing, Speech-to-Text, fast AI models, WebSockets.
 *   **Tool D (Complex Conditions Alerts) - Aspirational:** Processes Tool B outputs, may use ML models.
@@ -159,15 +159,15 @@ _Refer to [./frontend_guide.md](./frontend_guide.md) for detailed frontend guide
 *   **Supabase Auto-generated APIs.**
 *   **Custom Next.js API Routes (`src/app/api/`):**
     *   `/api/advisor`: Serves Tool A (Advisor), proxies to OpenAI.
-*   **`clinical_engine.py` (Standalone Prototype for Tool B):** See dedicated section below.
+*   **`src/clinical_engine_prototype/engine.py` (Standalone Prototype for Tool B):** See dedicated section below.
 *   **`src/lib/clinicalEngineService.ts` (Mock Service):** Frontend mocks for Tools B & F; **not connected to any live AI backend.**
 
-## Python Component (`clinical_engine.py`) – Prototype for Tool B
+## Python Component (`src/clinical_engine_prototype/engine.py`) – Prototype for Tool B
 
-_This section details the standalone Python script `clinical_engine.py`, an early-stage prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)**._
+_This section details the standalone Python script `src/clinical_engine_prototype/engine.py`, an early-stage prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)**._
 
 **Important Current Status:**
-*   **Not Integrated:** `clinical_engine.py` is **NOT currently integrated** into the live Next.js web application.
+*   **Not Integrated:** `src/clinical_engine_prototype/engine.py` is **NOT currently integrated** into the live Next.js web application.
 *   **Not Used by Tool A:** It does **NOT** power the current Advisor (Tool A).
 *   **Standalone Prototype:** Can only be run independently for conceptual testing.
 
@@ -177,7 +177,7 @@ _This section details the standalone Python script `clinical_engine.py`, an earl
 *   **Outputs:** Physician-amendable diagnosis & treatment plan, potential for document generation (referrals, prior auth).
 *   **Future:** Parse novel clinical research.
 
-### `clinical_engine.py` Prototype Details
+### `engine.py` Prototype Details
 *   **Runtime & Dependencies:** Python 3.9+, Pydantic 1.10+.
 *   **Structure:** `ClinicalEngine` class with methods like `generate_diagnostic_plan`, `execute_diagnostic_plan`, `generate_diagnostic_result`.
 *   **Clinical Engine Pipeline (Refactored Logic):**
@@ -199,7 +199,7 @@ _This section details the standalone Python script `clinical_engine.py`, an earl
 The architecture aims to support the following future capabilities:
 
 *   **Tool A (Advisor) Enhancements:** Patient context awareness, UI reliability.
-*   **Tool B (Diagnosis and Treatment Engine):** Full implementation as described above, integrating `clinical_engine.py` concepts. UI placeholders exist.
+*   **Tool B (Diagnosis and Treatment Engine):** Full implementation as described above, integrating `src/clinical_engine_prototype/engine.py` concepts. UI placeholders exist.
 *   **Tool C (Medical Co-pilot):** Real-time nudges during consultations.
 *   **Tool D (Complex Conditions Alerts):** Intelligent alerts from Tool B outputs. Mock data currently shown via `patients.alerts`.
 *   **Tool F (Clinical Trial Matching):** Automated trial matching. Mock data currently shown.

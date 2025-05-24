@@ -66,7 +66,7 @@ This document establishes the rules, conventions, and guidelines for developing 
 ### Code Review Process
 
 #### Pre-Review Checklist
-- Run `pnpm run lint` and `pnpm test` (adjust if test command is different, e.g., `pnpm run test:e2e`) before submitting
+- Run `pnpm run lint`, `pnpm run test:e2e` (for Playwright E2E tests), and `pytest tests/` (for Python unit/integration tests) before submitting.
 - Ensure all files are properly formatted
 - Verify TypeScript types are correctly defined
 - Remove any debugging code, console logs, or commented-out code
@@ -164,7 +164,7 @@ The project employs a multi-layered testing approach to ensure software quality,
     *   **Focus:** Complete user flows through the application, simulating real user scenarios from the UI.
     *   **Tools:** [Playwright](https://playwright.dev/) is used for E2E testing.
     *   **Scope:** Verify critical user journeys, such as logging in, navigating through patient lists, interacting with the Advisor (Tool A), and other core functionalities.
-    *   **Location:** E2E tests are typically located in a dedicated `tests/e2e/` or `playwright/` directory.
+    *   **Location:** E2E tests (`*.spec.ts`) and their configuration (`playwright.config.ts`) are located in the `tests/` directory.
 
 *   **Manual Testing / User Acceptance Testing (UAT):**
     *   **Focus:** Exploratory testing by developers, QAs, or stakeholders to catch issues not covered by automated tests and to validate user experience.
@@ -194,9 +194,9 @@ While `test-plan.md` provided a high-level list, here's how its concepts integra
 *   **Patient Data Service (`supabaseDataService.ts`):**
     *   Unit/Integration tests for methods interacting with Supabase. This might involve mocking the Supabase client or testing against a test database instance.
     *   Verify correct data retrieval, filtering (e.g., by condition), and parsing.
-*   **Clinical Engine Service (`clinicalEngineService.ts` - Mock Service, `clinical_engine.py` - Prototype):**
+*   **Clinical Engine Service (`clinicalEngineService.ts` - Mock Service, `src/clinical_engine_prototype/engine.py` - Prototype):**
     *   `clinicalEngineService.ts` (Frontend Mock): Test its mock implementations to ensure they provide consistent data for UI development.
-    *   `clinical_engine.py` (Python Prototype for Tool B): Has its own dedicated Python tests (see `test_clinical_engine.py`). These cover its internal logic for plan generation, execution, diagnosis, trial matching, etc. When/if this engine is integrated, new integration tests will be needed.
+    *   `src/clinical_engine_prototype/engine.py` (Python Prototype for Tool B): Has its own dedicated Python tests (see `tests/test_clinical_engine.py`). These cover its internal logic for plan generation, execution, diagnosis, trial matching, etc. When/if this engine is integrated, new integration tests will be needed.
 *   **Transcription Service (Future/Aspirational):**
     *   If implemented, would require unit tests for transcription accuracy, note generation logic, and integration tests with the UI.
 *   **Alert Service (Future/Aspirational for Tool D):**
