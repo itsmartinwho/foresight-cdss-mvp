@@ -23,7 +23,8 @@ class FHIRBundle(BaseModel):
 
 class RunDxRequest(BaseModel):
     patient_id: str
-    transcript: str
+    transcript: Optional[str] = ""
+    observations: Optional[List[str]] = None  # New: list of observations
     # patient_data_dict is the raw patient data dictionary.
     # CURRENT (MVP v0): This dictionary is expected to be pre-compiled by the frontend,
     # by fetching all relevant patient data from Supabase (or other EMR sources)
@@ -72,33 +73,26 @@ clinical_trial_client = DummyClinicalTrialClient()
 async def run_dx_endpoint(request: RunDxRequest):
     """
     Runs the full diagnostic pipeline.
-    Accepts patient ID, transcript, and a dictionary of patient data.
-    (Future: Will accept a FHIR Bundle)
+    Accepts patient ID, transcript, observations, and a dictionary of patient data.
     """
     try:
-        # CURRENT (MVP v0): The endpoint relies on the frontend to supply a comprehensive
-        # patient_data_dict. The backend (run_full_diagnostic) then uses this dictionary.
-        # TODO (Future): Implement FHIR Bundle processing. When a fhir_bundle is provided,
-        # it would be parsed here, and patient_data_dict might be constructed from it,
-        # or the engine might be refactored to consume FHIR resources directly.
+        # Validate input: require at least transcript or observations
+        if not (request.transcript and request.transcript.strip()) and not request.observations:
+            raise HTTPException(status_code=400, detail="Either transcript or observations must be provided.")
 
-        # Ensure patient_data_dict contains the 'patient' key with at least 'id'
-        # as expected by the current run_full_diagnostic structure
-        # This is a temporary measure until FHIR bundle parsing is in place.
+        # Ensure patient_data_dict contains 'patient' with an 'id'
         if "patient" not in request.patient_data_dict or "id" not in request.patient_data_dict["patient"]:
-             # If patient_id is provided in the request, use it to structure basic patient info
              if request.patient_id:
                  request.patient_data_dict["patient"] = {"id": request.patient_id, **request.patient_data_dict.get("patient", {})}
-             else: # Or if no patient_id at all, this will likely fail downstream or should be handled
+             else:
                  raise HTTPException(status_code=400, detail="patient_data_dict must contain 'patient' with an 'id', or patient_id must be provided in request.")
         elif request.patient_id and request.patient_data_dict["patient"].get("id") != request.patient_id:
-            # Ensure consistency if both are provided
             raise HTTPException(status_code=400, detail=f"patient_id in request ({request.patient_id}) does not match patient.id in patient_data_dict ({request.patient_data_dict['patient'].get('id')}).")
-
 
         diagnostic_package = await run_full_diagnostic(
             patient_id=request.patient_id,
-            transcript=request.transcript,
+            transcript=request.transcript or "",
+            observations=request.observations or [],
             patient_data_dict=request.patient_data_dict,
             llm_client=llm_client,
             guideline_client=guideline_client,

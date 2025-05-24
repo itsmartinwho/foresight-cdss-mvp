@@ -1048,12 +1048,13 @@ async def generate_soap_note_placeholder(
 
 # Integration Hooks and API Design
 async def run_full_diagnostic(
-    patient_id: str, # Patient ID input for diagnostic pipeline
-    transcript: str, 
-    patient_data_dict: Dict[str, Any], # Patient data from Supabase/EMR
-    llm_client: Any, 
-    guideline_client: Any, 
-    clinical_trial_client: Any
+    patient_id: str,  # Patient ID input for diagnostic pipeline
+    transcript: str,
+    patient_data_dict: Dict[str, Any],  # Patient data from Supabase/EMR
+    llm_client: Any,
+    guideline_client: Any,
+    clinical_trial_client: Any,
+    observations: Optional[List[str]] = None  # Observations provided by frontend
 ) -> ClinicalOutputPackage:
     """
     High-level function to run the full diagnostic pipeline.
@@ -1103,16 +1104,19 @@ async def run_full_diagnostic(
         )
         logger.warning(f"Created Patient model with potentially default values for patient_id: {current_patient_id}")
 
-    # Stage 1: Input processing
-    symptoms = engine.extract_symptoms_from_transcript(transcript)
+    # Stage 1: Input processing (use observations if provided, else extract from transcript)
+    if observations and len(observations) > 0:
+        symptoms = observations  # Use provided observations as symptoms
+    else:
+        symptoms = engine.extract_symptoms_from_transcript(transcript)
     if not symptoms:
-        logger.warning(f"No symptoms extracted for patient {current_patient_id} from transcript.")
+        logger.warning(f"No symptoms (observations) available for patient {current_patient_id}.")
         # Return a package indicating inability to process
         diag_result_error = DiagnosticResult(
             diagnosis_name="Unable to Process",
             confidence=0.0,
-            supporting_evidence=["No symptoms could be extracted from the provided transcript."],
-            recommended_tests=["Review consultation transcript and ensure clarity of reported symptoms."]
+            supporting_evidence=["No observations or transcript could be used to generate symptoms."],
+            recommended_tests=["Provide a valid transcript or observations list."]
         )
         return ClinicalOutputPackage(
             patient_id=current_patient_id,
