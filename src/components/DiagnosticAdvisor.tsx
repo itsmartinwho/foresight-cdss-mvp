@@ -8,14 +8,14 @@ import { Input } from "@/components/ui/input";
 
 interface DiagnosticAdvisorProps {
   patientId?: string;
-  symptoms?: string[];
+  initialObservations?: string[];
   patientFullData?: Patient | null;
   admissionsData?: AdmissionDetailsWrapper[] | null;
 }
 
-export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms, patientFullData, admissionsData }: DiagnosticAdvisorProps) {
-  const [symptoms, setSymptoms] = useState<string[]>(initialSymptoms || []);
-  const [symptomInput, setSymptomInput] = useState<string>('');
+export default function DiagnosticAdvisor({ patientId, initialObservations, patientFullData, admissionsData }: DiagnosticAdvisorProps) {
+  const [observations, setObservations] = useState<string[]>(initialObservations || []);
+  const [observationInput, setObservationInput] = useState<string>('');
   const [diagnosticPlan, setDiagnosticPlan] = useState<DiagnosticPlan | null>(null);
   const [diagnosticResult, setDiagnosticResult] = useState<DiagnosticResult | null>(null);
   const [clinicalTrials, setClinicalTrials] = useState<ClinicalTrial[]>([]);
@@ -26,28 +26,28 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
   const [activeTab, setActiveTab] = useState<string>('plan');
 
   useEffect(() => {
-    if (initialSymptoms && initialSymptoms.length > 0) {
-      setSymptoms(initialSymptoms);
+    if (initialObservations && initialObservations.length > 0) {
+      setObservations(initialObservations);
     }
-  }, [initialSymptoms]);
+  }, [initialObservations]);
 
-  const handleAddSymptom = () => {
-    if (symptomInput.trim() === '') return;
+  const handleAddObservation = () => {
+    if (observationInput.trim() === '') return;
     
-    if (!symptoms.includes(symptomInput.trim())) {
-      setSymptoms([...symptoms, symptomInput.trim()]);
+    if (!observations.includes(observationInput.trim())) {
+      setObservations([...observations, observationInput.trim()]);
     }
     
-    setSymptomInput('');
+    setObservationInput('');
   };
 
-  const handleRemoveSymptom = (symptom: string) => {
-    setSymptoms(symptoms.filter(s => s !== symptom));
+  const handleRemoveObservation = (observation: string) => {
+    setObservations(observations.filter(s => s !== observation));
   };
 
   const handleGeneratePlan = async () => {
-    if (symptoms.length === 0) {
-      setError('Please add at least one symptom');
+    if (observations.length === 0) {
+      setError('Please add at least one observation');
       return;
     }
     
@@ -55,7 +55,7 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
     setLoading(true);
     
     try {
-      const plan = await clinicalEngineService.generateDiagnosticPlan(symptoms, patientId);
+      const plan = await clinicalEngineService.generateDiagnosticPlan(observations, patientId);
       setDiagnosticPlan(plan);
       setDiagnosticResult(null);
       setClinicalTrials([]);
@@ -103,7 +103,7 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
       setDiagnosticPlan(updatedPlan);
       
       // Generate diagnostic result
-      const transcript = symptoms.join(', '); // Create transcript from symptoms
+      const transcript = observations.join(', ');
       
       let patientDataDict: Record<string, any> = {};
       if (patientFullData && admissionsData) {
@@ -119,10 +119,10 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
       }
       
       const result = await clinicalEngineService.generateDiagnosticResult(
-        patientId || '', // Ensure patientId is a string
+        patientId || '',
         transcript,
         patientDataDict,
-        symptoms, 
+        observations,
         updatedPlan
       );
       setDiagnosticResult(result.diagnosticResult);
@@ -201,29 +201,29 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">AI Diagnostic & Treatment Advisor</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Enter symptoms to generate a diagnostic plan and treatment recommendations
+          Enter observations to generate a diagnostic plan and treatment recommendations
         </p>
       </div>
 
       <div className="p-6">
-        {/* Symptom input */}
+        {/* Observation input */}
         <div className="mb-6">
           <label htmlFor="symptom" className="block text-sm font-medium text-gray-700 mb-1">
-            Add Symptoms
+            Add Observations
           </label>
           <div className="flex">
             <Input
               type="text"
               id="symptom"
               className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter a symptom"
-              value={symptomInput}
-              onChange={(e) => setSymptomInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddSymptom()}
+              placeholder="Enter an observation"
+              value={observationInput}
+              onChange={(e) => setObservationInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddObservation()}
             />
             <Button
               type="button"
-              onClick={handleAddSymptom}
+              onClick={handleAddObservation}
               variant="default"
               className="rounded-l-none"
             >
@@ -231,17 +231,17 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
             </Button>
           </div>
           
-          {/* Symptom tags */}
+          {/* Observation tags */}
           <div className="mt-3 flex flex-wrap gap-2">
-            {symptoms.map((symptom, index) => (
+            {observations.map((observation, index) => (
               <div
                 key={index}
                 className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
               >
-                {symptom}
+                {observation}
                 <Button
                   type="button"
-                  onClick={() => handleRemoveSymptom(symptom)}
+                  onClick={() => handleRemoveObservation(observation)}
                   variant="ghost"
                   size="icon"
                   className="ml-2 h-5 w-5 p-0 text-blue-400 hover:text-blue-600"
@@ -268,7 +268,7 @@ export default function DiagnosticAdvisor({ patientId, symptoms: initialSymptoms
             <Button
               type="button"
               onClick={handleGeneratePlan}
-              disabled={loading || symptoms.length === 0}
+              disabled={loading || observations.length === 0}
             >
                {loading ? 'Generating...' : 'Generate Diagnostic Plan'}
             </Button>

@@ -56,11 +56,21 @@ export default function ConsultationTab({
   const [isGeneratingClinical, setIsGeneratingClinical] = useState<boolean>(false);
   const [clinicalError, setClinicalError] = useState<string | null>(null);
 
+  // New state for observations
+  const [editableObservations, setEditableObservations] = useState<string[]>([]);
+  const [observationInput, setObservationInput] = useState<string>('');
+  const [lastSavedObservations, setLastSavedObservations] = useState<string[]>([]);
+  const [observationsChanged, setObservationsChanged] = useState<boolean>(false);
+  const [isExtractingObservations, setIsExtractingObservations] = useState<boolean>(false);
+  const observationExtractionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const admissionStateForAutoSaveRef = useRef<{
     patientId: string | undefined;
     admissionId: string | undefined;
     transcriptToSave: string;
-    lastSaved: string;
+    lastSavedTranscript: string;
+    observationsToSave: string[];
+    lastSavedObservations: string[];
   } | null>(null);
 
   useEffect(() => {
@@ -69,29 +79,47 @@ export default function ConsultationTab({
     setLastSavedTranscript(initialTranscript);
     setTranscriptChanged(false);
 
+    const initialObservations = currentDetailedAdmission?.observations || [];
+    setEditableObservations(initialObservations);
+    setLastSavedObservations(initialObservations);
+    setObservationsChanged(false);
+
     admissionStateForAutoSaveRef.current = {
       patientId: patient?.id,
       admissionId: currentDetailedAdmission?.id,
       transcriptToSave: initialTranscript,
-      lastSaved: initialTranscript,
+      lastSavedTranscript: initialTranscript,
+      observationsToSave: initialObservations,
+      lastSavedObservations: initialObservations,
     };
-  }, [currentDetailedAdmission?.id, currentDetailedAdmission?.transcript, patient?.id]);
+  }, [currentDetailedAdmission?.id, currentDetailedAdmission?.transcript, currentDetailedAdmission?.observations, patient?.id]);
 
   useEffect(() => {
     if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === currentDetailedAdmission?.id) {
       admissionStateForAutoSaveRef.current.transcriptToSave = editableTranscript;
-      admissionStateForAutoSaveRef.current.lastSaved = lastSavedTranscript;
+      admissionStateForAutoSaveRef.current.lastSavedTranscript = lastSavedTranscript;
+      admissionStateForAutoSaveRef.current.observationsToSave = editableObservations;
+      admissionStateForAutoSaveRef.current.lastSavedObservations = lastSavedObservations;
     }
-  }, [editableTranscript, lastSavedTranscript, currentDetailedAdmission?.id]);
-
+  }, [editableTranscript, lastSavedTranscript, editableObservations, lastSavedObservations, currentDetailedAdmission?.id]);
 
   const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
   const socketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  const performSave = React.useCallback(async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
-    if (transcriptToSave !== currentLastSaved) {
-      console.log(`Attempting to save. Changed: ${transcriptToSave !== currentLastSaved}. To Save: "${transcriptToSave.substring(0,100)}...", Last Saved: "${currentLastSaved.substring(0,100)}..."`);
+  const performSave = React.useCallback(async (
+    patientId: string, 
+    admissionId: string, 
+    transcriptToSave: string, 
+    currentLastSavedTranscript: string,
+    observationsToSave: string[],
+    currentLastSavedObservations: string[]
+  ) => {
+    let transcriptActuallySaved = false;
+    let observationsActuallySaved = false;
+
+    if (transcriptToSave !== currentLastSavedTranscript) {
+      console.log(`Attempting to save transcript. Changed: ${transcriptToSave !== currentLastSavedTranscript}. To Save: "${transcriptToSave.substring(0,100)}...", Last Saved: "${currentLastSavedTranscript.substring(0,100)}..."`);
       try {
         await supabaseDataService.updateAdmissionTranscript(patientId, admissionId, transcriptToSave);
         if (admissionId === currentDetailedAdmission?.id) {
@@ -99,36 +127,76 @@ export default function ConsultationTab({
             setTranscriptChanged(false);
         }
         if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === admissionId) {
-            admissionStateForAutoSaveRef.current.lastSaved = transcriptToSave;
+            admissionStateForAutoSaveRef.current.lastSavedTranscript = transcriptToSave;
         }
         console.log("Transcript saved successfully via performSave for admission:", admissionId);
-        return true;
+        transcriptActuallySaved = true;
       } catch (error) {
         console.error("Error saving transcript via performSave for admission:", admissionId, error);
-        return false;
       }
     } else {
         if (transcriptChanged && admissionId === currentDetailedAdmission?.id){
             setTranscriptChanged(false);
         }
     }
-    return false;
-  }, [currentDetailedAdmission, setLastSavedTranscript, setTranscriptChanged, transcriptChanged]);
+
+    if (JSON.stringify(observationsToSave) !== JSON.stringify(currentLastSavedObservations)) {
+      console.log(`Attempting to save observations. Changed: ${JSON.stringify(observationsToSave) !== JSON.stringify(currentLastSavedObservations)}.`);
+      try {
+        console.log("Simulating saving observations for admission:", admissionId, observationsToSave);
+        if (admissionId === currentDetailedAdmission?.id) {
+            setLastSavedObservations([...observationsToSave]);
+            setObservationsChanged(false);
+        }
+        if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === admissionId) {
+            admissionStateForAutoSaveRef.current.lastSavedObservations = [...observationsToSave];
+        }
+        console.log("Observations saved successfully (simulated) via performSave for admission:", admissionId);
+        observationsActuallySaved = true;
+      } catch (error) {
+        console.error("Error saving observations (simulated) via performSave for admission:", admissionId, error);
+      }
+    } else {
+      if (observationsChanged && admissionId === currentDetailedAdmission?.id) {
+        setObservationsChanged(false);
+      }
+    }
+
+    return transcriptActuallySaved || observationsActuallySaved;
+  }, [currentDetailedAdmission, setLastSavedTranscript, setTranscriptChanged, transcriptChanged, setLastSavedObservations, setObservationsChanged, observationsChanged]);
   
   const handleSaveTranscript = async () => {
     if (!patient?.id || !currentDetailedAdmission?.id) {
       console.warn("Cannot save: Patient or admission data missing for current view.");
       return;
     }
-    performSave(patient.id, currentDetailedAdmission.id, editableTranscript, lastSavedTranscript);
+    performSave(
+      patient.id, 
+      currentDetailedAdmission.id, 
+      editableTranscript, 
+      lastSavedTranscript,
+      editableObservations,
+      lastSavedObservations
+    );
   };
   
   useEffect(() => {
     const autoSaveOnCleanup = () => {
       const stateToSave = admissionStateForAutoSaveRef.current;
-      if (stateToSave && stateToSave.patientId && stateToSave.admissionId && (stateToSave.transcriptToSave !== stateToSave.lastSaved)) {
-        console.log(`Auto-saving transcript for previous/unmounting admission ${stateToSave.admissionId}`);
-        performSave(stateToSave.patientId, stateToSave.admissionId, stateToSave.transcriptToSave, stateToSave.lastSaved);
+      if (stateToSave && stateToSave.patientId && stateToSave.admissionId && 
+          ((stateToSave.transcriptToSave !== stateToSave.lastSavedTranscript) || 
+           (JSON.stringify(stateToSave.observationsToSave) !== JSON.stringify(stateToSave.lastSavedObservations))
+          )
+      ) {
+        console.log(`Auto-saving data for previous/unmounting admission ${stateToSave.admissionId}`);
+        performSave(
+          stateToSave.patientId, 
+          stateToSave.admissionId, 
+          stateToSave.transcriptToSave, 
+          stateToSave.lastSavedTranscript,
+          stateToSave.observationsToSave,
+          stateToSave.lastSavedObservations
+        );
       }
     };
     return autoSaveOnCleanup;
@@ -298,6 +366,39 @@ export default function ConsultationTab({
     if (newText !== lastSavedTranscript) {
       setTranscriptChanged(true);
     }
+
+    if (observationExtractionTimeoutRef.current) {
+      clearTimeout(observationExtractionTimeoutRef.current);
+    }
+    observationExtractionTimeoutRef.current = setTimeout(() => {
+      if (newText.trim().length > 0) {
+        handleExtractObservations(newText);
+      }
+    }, 1500);
+  };
+
+  const handleExtractObservations = async (transcript: string) => {
+    if (isExtractingObservations) return;
+    console.log("Attempting to extract observations from transcript...");
+    setIsExtractingObservations(true);
+    try {
+      const extractedObs = transcript.toLowerCase().includes("headache") ? ["headache"] : transcript.toLowerCase().includes("fever") ? ["fever"] : [];
+      if (transcript.toLowerCase().includes("nausea") && !extractedObs.includes("nausea")) extractedObs.push("nausea");
+      
+      setEditableObservations(prevObs => {
+        const newObsSet = new Set([...prevObs, ...extractedObs]);
+        const newMergedObs = Array.from(newObsSet);
+        if (JSON.stringify(newMergedObs) !== JSON.stringify(prevObs)) {
+          setObservationsChanged(true);
+        }
+        return newMergedObs;
+      });
+      console.log("Observations extracted (mocked):", extractedObs);
+    } catch (error) {
+      console.error("Error extracting observations:", error);
+    } finally {
+      setIsExtractingObservations(false);
+    }
   };
   
   const showStartTranscriptionOverlay = !isStartingNewConsultation && !currentDetailedAdmission?.transcript && !editableTranscript && !isTranscribing;
@@ -331,15 +432,22 @@ export default function ConsultationTab({
       return;
     }
     const transcriptText = editableTranscript || currentDetailedAdmission?.transcript;
-    if (!transcriptText) {
-      alert('No transcript available for generating diagnostic result');
+    const currentObservations = editableObservations.length > 0 ? editableObservations : (currentDetailedAdmission?.observations || []);
+
+    if (!transcriptText && currentObservations.length === 0) {
+      alert('No transcript or observations available for generating diagnostic result');
       return;
     }
     const patientDataDict = compilePatientDataDict();
     setIsGeneratingClinical(true);
     setClinicalError(null);
     try {
-      const result = await clinicalEngineService.generateDiagnosticResult(patient.id, transcriptText, patientDataDict);
+      const result = await clinicalEngineService.generateDiagnosticResult(
+        patient.id, 
+        transcriptText || "",
+        patientDataDict,
+        currentObservations
+      );
       setClinicalOutput(result);
     } catch (error) {
       console.error('Error generating clinical output', error);
@@ -347,6 +455,22 @@ export default function ConsultationTab({
     } finally {
       setIsGeneratingClinical(false);
     }
+  };
+
+  // Functions to handle manual observation input
+  const handleAddObservation = () => {
+    if (observationInput.trim() === '') return;
+    const newObservation = observationInput.trim();
+    if (!editableObservations.includes(newObservation)) {
+      setEditableObservations([...editableObservations, newObservation]);
+      setObservationsChanged(true);
+    }
+    setObservationInput('');
+  };
+
+  const handleRemoveObservation = (observationToRemove: string) => {
+    setEditableObservations(editableObservations.filter(obs => obs !== observationToRemove));
+    setObservationsChanged(true);
   };
 
   return (
@@ -486,24 +610,83 @@ export default function ConsultationTab({
       </Card>
 
       {!isStartingNewConsultation && (
-        <Card className="bg-glass glass-dense backdrop-blur-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between gap-2 text-step-0">
-              <div className="flex items-center gap-2">
-                <span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span>
-                Structured Note (SOAP)
+        <>
+          <Card className="bg-glass glass-dense backdrop-blur-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between gap-2 text-step-0">
+                <div className="flex items-center gap-2">
+                  <span>Observations</span> 
+                </div>
+                {isExtractingObservations && (
+                  <span className="text-xs text-muted-foreground">Extracting...</span>
+                )}
+                {observationsChanged && !isExtractingObservations && (
+                  <Button variant="default" size="sm" onClick={handleSaveTranscript} className="ml-auto">
+                    <Save className="h-4 w-4 mr-2" /> Save Observations
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2 h-[calc(30vh-60px)] overflow-y-auto">
+              <div className="flex mb-2">
+                <Input
+                  type="text"
+                  placeholder="Add observation manually"
+                  value={observationInput}
+                  onChange={(e) => setObservationInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddObservation()}
+                  className="flex-grow"
+                  disabled={isExtractingObservations}
+                />
+                <Button onClick={handleAddObservation} variant="default" className="ml-2" disabled={isExtractingObservations}>
+                  Add
+                </Button>
               </div>
-              <Button variant="default" size="sm" onClick={handleGenerateClinical} disabled={isGeneratingClinical}>
-                {isGeneratingClinical ? 'Generating...' : 'Generate Clinical Output'}
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-2 h-[60vh] overflow-y-auto">
-            {currentDetailedAdmission?.soapNote ?
-              currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i} className="text-step-0">{line}</p>) :
-              <p className="text-muted-foreground">No SOAP note available for this consultation.</p>}
-          </CardContent>
-        </Card>
+              <div className="flex flex-wrap gap-2">
+                {editableObservations.map((obs, index) => (
+                  <div
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200"
+                  >
+                    {obs}
+                    <Button
+                      type="button"
+                      onClick={() => handleRemoveObservation(obs)}
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2 h-5 w-5 p-0 text-sky-400 hover:text-sky-600 dark:text-sky-500 dark:hover:text-sky-300"
+                      disabled={isExtractingObservations}
+                    >
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              {editableObservations.length === 0 && !isExtractingObservations && (
+                <p className="text-muted-foreground text-center py-4">No observations yet. Type in the transcript to auto-extract or add manually.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-glass glass-dense backdrop-blur-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between gap-2 text-step-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-neon"><svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 20h9M12 4h9M4 9h16M4 15h16'/></svg></span>
+                  Structured Note (SOAP)
+                </div>
+                <Button variant="default" size="sm" onClick={handleGenerateClinical} disabled={isGeneratingClinical}>
+                  {isGeneratingClinical ? 'Generating...' : 'Generate Clinical Output'}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2 h-[calc(30vh-60px)] overflow-y-auto">
+              {currentDetailedAdmission?.soapNote ?
+                currentDetailedAdmission.soapNote.split('\n').map((line, i) => <p key={i} className="text-step-0">{line}</p>) :
+                <p className="text-muted-foreground">No SOAP note available for this consultation.</p>}
+            </CardContent>
+          </Card>
+        </>
       )}
       {clinicalError && (
         <div className="lg:col-span-3 text-red-600 mt-4">

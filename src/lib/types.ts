@@ -34,6 +34,7 @@ export interface Admission {
   actualEnd?: string;
   reason?: string; // Admission-specific reason
   transcript?: string;
+  observations?: string[]; // New field for observations
   soapNote?: string;
   treatments?: Treatment[];
   priorAuthJustification?: string;
