@@ -65,7 +65,7 @@ export const PatientList = () => {
   // });
 
   const upcomingPatients = filteredPatients.filter(patient => {
-    const admissions = supabaseDataService.getPatientAdmissions(patient.id) || [];
+    const admissions = supabaseDataService.getPatientEncounters(patient.id) || [];
     const now = new Date();
     return admissions.some(ad => ad.scheduledStart && new Date(ad.scheduledStart) > now);
   });
