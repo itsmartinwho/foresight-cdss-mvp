@@ -53,18 +53,9 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     const allPatients = supabaseDataService.getAllPatients();
     setAllPatientsData(allPatients);
 
-    const now = new Date();
-    const upcoming: { patient: Patient | null; visit: Admission }[] = [];
-    const past: { patient: Patient | null; visit: Admission }[] = [];
-
-    supabaseDataService.getAllAdmissions().forEach(({ patient, admission }) => {
-      if ((admission as any).isDeleted) return;
-      const arr = new Date(admission.scheduledStart) > now ? upcoming : past;
-      arr.push({ patient, visit: admission });
-    });
-
-    upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
-    past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
+    // Use robust service methods for filtering
+    const upcoming = supabaseDataService.getUpcomingConsultations();
+    const past = supabaseDataService.getPastConsultations();
 
     setUpcomingRowsData(upcoming);
     setPastRowsData(past);

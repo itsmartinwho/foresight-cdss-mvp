@@ -411,9 +411,11 @@ class SupabaseDataService {
         try {
           const startDate = new Date(ad.scheduledStart);
           const startTime = startDate.getTime();
+          // Debug log for every admission
+          console.log('[DEBUG] Checking admission:', ad.id, 'scheduledStart:', ad.scheduledStart, 'parsedYear:', startDate.getFullYear());
           // Add a check for very old dates that might be misparsed
           if (startDate.getFullYear() < 2000) {
-            // console.warn(`SupabaseDataService (Prod Debug): Date is prior to year 2000, treating as past: ${ad.id}. Original string: ${ad.scheduledStart}`);
+            console.log('[DEBUG] Skipping admission due to year < 2000:', ad.id, 'scheduledStart:', ad.scheduledStart, 'parsedYear:', startDate.getFullYear());
             return; // Treat as past, skip adding to upcoming
           }
           if (startDate instanceof Date && !isNaN(startTime)) { 
@@ -435,6 +437,40 @@ class SupabaseDataService {
       }
     });
     return upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+  }
+
+  getPastConsultations(): { patient: Patient; visit: Admission }[] {
+    if (!this.isLoaded && !this.isLoading) {
+      console.error("SupabaseDataService: getPastConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
+    }
+    const past: { patient: Patient; visit: Admission }[] = [];
+    const now = new Date();
+    const nowTime = now.getTime();
+
+    Object.values(this.admissions).forEach(ad => {
+      if ((ad as any).isDeleted) return;
+      if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
+        try {
+          const startDate = new Date(ad.scheduledStart);
+          const startTime = startDate.getTime();
+          if (startDate.getFullYear() < 2000) {
+            return; // Skip very old dates
+          }
+          if (startDate instanceof Date && !isNaN(startTime)) {
+            const isInPast = startTime <= nowTime;
+            if (isInPast) {
+              const patient = this.patients[ad.patientId];
+              if (patient) {
+                past.push({ patient, visit: ad });
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors for past
+        }
+      }
+    });
+    return past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
   }
 
   async updateAdmissionTranscript(patientId: string, admissionCompositeId: string, transcript: string): Promise<void> {
