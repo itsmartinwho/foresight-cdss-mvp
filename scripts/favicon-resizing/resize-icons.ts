@@ -36,7 +36,7 @@ async function main() {
   const fullWordLogo = path.join(imagesDir, 'word-logo-full.png');
   await sharp(fullWordLogo)
     .trim()
-    .resize({ height: 32, fit: 'contain' })
+    .resize({ height: 48, fit: 'contain' })
     .png()
     .toFile(path.join(imagesDir, 'word-logo.png'));
 
