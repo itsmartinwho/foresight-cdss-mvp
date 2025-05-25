@@ -353,10 +353,11 @@ class SupabaseDataService {
           isDeleted: !!row.is_deleted, // Ensure this mapping is correct
         };
         this.encounters[compositeKey] = encounter;
-        if (this.encountersByPatient[patientPublicId]) {
+        if (!this.encountersByPatient[patientPublicId]) {
+          this.encountersByPatient[patientPublicId] = [];
+        }
+        if (!this.encountersByPatient[patientPublicId].includes(compositeKey)) {
           this.encountersByPatient[patientPublicId].push(compositeKey);
-        } else {
-          this.encountersByPatient[patientPublicId] = [compositeKey];
         }
         encountersProcessed++;
       });
