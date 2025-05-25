@@ -133,8 +133,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           aValue = new Date(a.visit.scheduledStart).getTime();
           bValue = new Date(b.visit.scheduledStart).getTime();
         } else if (sortConfig.key === 'reason') {
-          aValue = (a.visit.reasonCode || "").toLowerCase();
-          bValue = (b.visit.reasonCode || "").toLowerCase();
+          aValue = (a.visit.reasonDisplayText || a.visit.reasonCode || "").toLowerCase();
+          bValue = (b.visit.reasonDisplayText || b.visit.reasonCode || "").toLowerCase();
         } else {
           return 0; // Should not happen
         }
@@ -317,7 +317,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     {displayName(patient)}
                   </TableCell>
                   <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                  <TableCell>{visit.reasonCode ?? "—"}</TableCell>
+                  <TableCell>{(visit.reasonDisplayText || visit.reasonCode) ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     <Button 
                       variant="secondary"

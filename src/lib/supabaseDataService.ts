@@ -142,6 +142,7 @@ class SupabaseDataService {
               actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
               actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
               reasonCode: row.reason_code,
+              reasonDisplayText: row.reason_display_text,
               transcript: row.transcript,
               soapNote: row.soap_note,
               treatments: row.treatments || undefined,
@@ -380,6 +381,7 @@ class SupabaseDataService {
           actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
           actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
           reasonCode: row.reason_code,
+          reasonDisplayText: row.reason_display_text,
           transcript: row.transcript,
           soapNote: row.soap_note,
           treatments: row.treatments || undefined, 
@@ -758,7 +760,8 @@ class SupabaseDataService {
       patientId,
       scheduledStart: startIso,
       scheduledEnd: endIso ?? '',
-      reasonCode: opts?.reason ?? undefined,
+      reasonCode: undefined, // Will be AI generated
+      reasonDisplayText: opts?.reason ?? undefined, // This now takes the verbose reason
     } as Encounter;
 
     this.encounters[compositeId] = encounter;

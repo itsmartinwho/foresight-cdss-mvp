@@ -154,7 +154,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                         value={adWrapper.admission.id}
                       >
                         {formatDateTime(adWrapper.admission.scheduledStart)} -{' '}
-                        {adWrapper.admission.reasonCode || 'Visit'}
+                        {adWrapper.admission.reasonDisplayText || adWrapper.admission.reasonCode || 'Visit'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -202,7 +202,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               <h2 className="text-md font-semibold text-blue-700">
                 Current Visit: {formatDateTime(currentAdmissionDetails.admission.scheduledStart)}
               </h2>
-              <p className="text-sm text-blue-600">Reason: {currentAdmissionDetails.admission.reasonCode || 'N/A'}</p>
+              <p className="text-sm text-blue-600">Reason: {currentAdmissionDetails.admission.reasonDisplayText || currentAdmissionDetails.admission.reasonCode || 'N/A'}</p>
             </div>
           </div>
         )}
