@@ -38,7 +38,7 @@ export default function DiagnosisTab({ patient, allAdmissions }: {
       {allAdmissions.map(({ admission, diagnoses }) => (
         <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
           <h3 className="text-step-0 font-semibold text-foreground mb-1">Visit on: {new Date(admission.scheduledStart).toLocaleString()}</h3>
-          <p className="text-xs text-muted-foreground mb-2">Reason: {admission.reason || 'N/A'}</p>
+          <p className="text-xs text-muted-foreground mb-2">Reason: {admission.reasonDisplayText || admission.reasonCode || 'N/A'}</p>
           <RenderDetailTable title='Diagnoses for this visit' dataArray={diagnoses} headers={['Code', 'Description']} columnAccessors={['code', 'description']} />
         </div>
       ))}

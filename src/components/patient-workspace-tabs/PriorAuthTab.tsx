@@ -61,7 +61,7 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allAdmission
           <option value="" disabled={!selectedAdmissionState}>-- Select a consultation --</option>
           {allAdmissions.map(({ admission }) => (
             <option key={admission.id} value={admission.id}>
-              {new Date(admission.scheduledStart).toLocaleString()} - {admission.reason || 'N/A'}
+              {new Date(admission.scheduledStart).toLocaleString()} - {admission.reasonDisplayText || admission.reasonCode || 'N/A'}
             </option>
           ))}
         </select>

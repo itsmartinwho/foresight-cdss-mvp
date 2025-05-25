@@ -120,17 +120,18 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
         if (matches.length >= 10) return;
 
         // 3) Deep search in admissions / diagnoses / treatments.
-        const admissions = supabaseDataService.getPatientAdmissions(p.id);
+        const admissions = supabaseDataService.getPatientEncounters(p.id);
         for (const ad of admissions) {
           if (matches.length >= 10) break;
 
           // Reason (Consultation tab)
-          if (ad.reason && ad.reason.toLowerCase().includes(lower)) {
+          const reasonText = ad.reasonDisplayText || ad.reasonCode;
+          if (reasonText && reasonText.toLowerCase().includes(lower)) {
             addIfNotExceeded({
               patient: p,
               kind: "reason",
               admissionId: ad.id,
-              snippet: buildSnippet(ad.reason),
+              snippet: buildSnippet(reasonText),
             });
           }
 

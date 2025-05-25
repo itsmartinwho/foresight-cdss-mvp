@@ -100,7 +100,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   </TableCell>
                   <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                    {visit.reason}
+                    {visit.reasonDisplayText || visit.reasonCode || 'N/A'}
                   </TableCell>
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
                     <Button

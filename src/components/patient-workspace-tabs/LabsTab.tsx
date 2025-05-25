@@ -17,7 +17,7 @@ export default function LabsTab({ patient, allAdmissions }: {
       {allAdmissions.map(({ admission, labResults }) => (
         <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
           <h3 className="text-step-0 font-semibold text-foreground mb-1">Visit on: {new Date(admission.scheduledStart).toLocaleString()}</h3>
-          <p className="text-xs text-muted-foreground mb-2">Reason: {admission.reason || 'N/A'}</p>
+          <p className="text-xs text-muted-foreground mb-2">Reason: {admission.reasonDisplayText || admission.reasonCode || 'N/A'}</p>
           <RenderDetailTable title='Labs for this visit' dataArray={labResults} headers={['Test Name', 'Value', 'Units', 'Date/Time', 'Ref. Range', 'Flag']} columnAccessors={['name', 'value', 'units', 'dateTime', 'referenceRange', 'flag']} />
         </div>
       ))}

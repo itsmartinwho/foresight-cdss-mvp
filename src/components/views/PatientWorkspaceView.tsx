@@ -291,7 +291,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
                 <option value="" disabled>-- Select a consultation --</option>
                 {activeAdmissionDetails.map((adDetailWrapper: AdmissionDetailsWrapper) => (
                   <option key={adDetailWrapper.admission.id} value={adDetailWrapper.admission.id}>
-                    {new Date(adDetailWrapper.admission.scheduledStart).toLocaleString()} - {adDetailWrapper.admission.reason || 'N/A'}
+                    {new Date(adDetailWrapper.admission.scheduledStart).toLocaleString()} - {adDetailWrapper.admission.reasonDisplayText || adDetailWrapper.admission.reasonCode || 'N/A'}
                   </option>
                 ))}
               </select>
@@ -326,7 +326,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
                   ).toLocaleString()
                 }
                 <br />
-                Reason: {activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.reason || 'N/A'}
+                Reason: {activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.reasonDisplayText || activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.reasonCode || 'N/A'}
               </p>
             </CardContent>
             <div className="flex justify-end gap-2 mt-4">
