@@ -75,7 +75,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
           <Card key={adm.id || index} className="mt-2 bg-glass glass-dense backdrop-blur-lg">
             <CardHeader>
               <CardTitle className="text-step-0">Admission on {new Date(adm.scheduledStart).toLocaleString()} (ID: {adm.id})</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground/80">Reason: {adm.reason || 'N/A'}</CardDescription>
+              <CardDescription className="text-xs text-muted-foreground/80">Reason: {adm.reasonCode || 'N/A'}</CardDescription>
             </CardHeader>
             <CardContent className="text-sm space-y-3">
               <div><strong>Actual Start:</strong> {adm.actualStart ? new Date(adm.actualStart).toLocaleString() : 'N/A'}</div>

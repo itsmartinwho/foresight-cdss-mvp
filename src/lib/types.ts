@@ -35,6 +35,7 @@ export interface Encounter {
   actualStart?: string;
   actualEnd?: string;
   reasonCode?: string; // FHIR Encounter.reasonCode.text
+  reasonDisplayText?: string; // User-friendly, verbose reason for visit
   transcript?: string;
   observations?: string[]; // New field for observations
   soapNote?: string;
