@@ -109,6 +109,8 @@
     "tailwindcss": "^3.4.1",
     "to-ico": "^1.1.5",
     "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.7.0",
     "turbo": "^2.3.3",
     "typescript": "^5",

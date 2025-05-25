@@ -112,7 +112,8 @@ class SupabaseDataService {
           visitRows.forEach((row) => {
             const compositeKey = `${patientId}_${row.admission_id}`;
             const admission: Admission = {
-              id: compositeKey,
+              id: row.id, // Actual UUID of the visit
+              admission_id: row.admission_id, // Human-readable/external ID
               patientId: patientId,
               scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
               scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
@@ -337,7 +338,8 @@ class SupabaseDataService {
         const compositeKey = `${patientPublicId}_${row.admission_id}`;
 
         const admission: Admission = {
-          id: compositeKey, 
+          id: row.id, // Actual UUID of the visit
+          admission_id: row.admission_id, // Human-readable/external ID
           patientId: patientPublicId, 
           scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
           scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',

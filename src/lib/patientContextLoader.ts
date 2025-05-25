@@ -19,7 +19,7 @@ export class PatientContextLoader {
    */
   static async fetch(
     patientId: string,
-    currentVisitId?: string,
+    currentVisitAdmissionId?: string,
     includeVisitIds?: string[]
   ): Promise<FHIRPatientContext> {
     // Ensure data is loaded
@@ -34,9 +34,13 @@ export class PatientContextLoader {
     
     // Find current visit if specified
     let currentVisit: Admission | undefined;
-    if (currentVisitId) {
+    if (currentVisitAdmissionId) {
+      console.log(`PatientContextLoader: Searching for currentVisitAdmissionId: '${currentVisitAdmissionId}'`);
+      allAdmissions.forEach((wrapper, index) => {
+        console.log(`PatientContextLoader: Admission ${index} has admission_id: '${wrapper.admission.admission_id}', id: '${wrapper.admission.id}'`);
+      });
       const currentAdmissionWrapper = allAdmissions.find(
-        wrapper => wrapper.admission.id === currentVisitId
+        wrapper => wrapper.admission.admission_id === currentVisitAdmissionId
       );
       currentVisit = currentAdmissionWrapper?.admission;
     }
@@ -47,7 +51,8 @@ export class PatientContextLoader {
         if (includeVisitIds && includeVisitIds.length > 0) {
           return includeVisitIds.includes(wrapper.admission.id);
         }
-        return wrapper.admission.id !== currentVisitId;
+        // If currentVisit is defined, exclude it. Otherwise, include all (as none is current).
+        return currentVisit ? wrapper.admission.id !== currentVisit.id : true;
       })
       .map(wrapper => wrapper.admission);
 

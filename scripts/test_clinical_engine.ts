@@ -1,11 +1,31 @@
 #!/usr/bin/env ts-node
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Explicitly load .env.local from the project root
+const envPath = path.resolve(__dirname, '../.env.local');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  // It's possible the file doesn't exist or isn't readable, 
+  // which is fine if env vars are set globally.
+  console.warn(`Warning: Could not load .env.local file from ${envPath}. Error: ${result.error.message}`);
+  console.warn('Proceeding with script execution. If Supabase connection fails, ensure environment variables are set globally or .env.local is correctly placed and readable.');
+} else {
+  console.log(`.env.local loaded successfully from ${envPath}.`);
+  if (result.parsed) {
+    console.log('Variables parsed from .env.local:', Object.keys(result.parsed).join(', '));
+  } else {
+    console.log('.env.local was loaded, but no variables were parsed. This might mean the file is empty.');
+  }
+}
 
 /**
  * Test script for Clinical Engine V2
  * Run this after executing phase2_test_data.sql to test the diagnostic pipeline
  */
 
-import { ClinicalEngineServiceV2 } from '../src/lib/clinicalEngineServiceV2';
+import { ClinicalEngineServiceV2 } from '@/lib/clinicalEngineServiceV2';
 
 async function testClinicalEngine() {
   console.log('=== Clinical Engine V2 Test ===\n');
