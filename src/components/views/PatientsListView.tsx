@@ -133,8 +133,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           aValue = new Date(a.visit.scheduledStart).getTime();
           bValue = new Date(b.visit.scheduledStart).getTime();
         } else if (sortConfig.key === 'reason') {
-          aValue = (a.visit.reason || "").toLowerCase();
-          bValue = (b.visit.reason || "").toLowerCase();
+          aValue = (a.visit.reasonCode || "").toLowerCase();
+          bValue = (b.visit.reasonCode || "").toLowerCase();
         } else {
           return 0; // Should not happen
         }
@@ -209,7 +209,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
             </TableHeader>
             <TableBody>
               {sortedAllPatients.map((patient) => {
-                const patientAdmissions = supabaseDataService.getPatientAdmissions(patient.id) || [];
+                const patientAdmissions = supabaseDataService.getPatientEncounters(patient.id) || [];
                 return (
                   <TableRow 
                     key={patient.id} 
@@ -317,7 +317,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     {displayName(patient)}
                   </TableCell>
                   <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                  <TableCell>{visit.reason ?? "—"}</TableCell>
+                  <TableCell>{visit.reasonCode ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     <Button 
                       variant="secondary"
