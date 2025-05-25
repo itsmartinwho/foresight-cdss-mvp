@@ -84,6 +84,7 @@ CREATE TABLE public.lab_results (
    - Added ethnicity field mapping
    - Added methods to fetch diagnoses and lab results
    - Created UUID to patient ID mapping for data retrieval
+   - **Note on Encounters/Admissions**: The method `getPatientEncounters(patientId: string)` is the primary method for fetching patient encounters. While an alias `getPatientAdmissions(patientId: string)` exists for backward compatibility, it is recommended to use `getPatientEncounters` directly to avoid potential build or linting issues, as these tools may not consistently resolve the alias.
 
 ### New Methods
 
