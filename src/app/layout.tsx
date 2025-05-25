@@ -12,7 +12,7 @@ import MotionWrapper from '../components/MotionWrapper';
 export const metadata: Metadata = {
   title: 'Foresight',
   description: 'Clinical Decision Support System for healthcare providers',
-  // icons metadata can remain if src/app/favicon.ico is intended to be used by convention
+  // icons metadata is removed as Next.js will infer from files in src/app/
 };
 
 export default function RootLayout({
@@ -23,9 +23,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/site.webmanifest" />
+        {/* Favicon, apple-touch-icon, and manifest links are removed to let Next.js handle them */}
+        {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
+        {/* <link rel="apple-touch-icon" href="/apple-touch-icon.png" /> */}
+        {/* <link rel="manifest" href="/site.webmanifest" /> */}
         {/* <link rel="preload" as="image" href="/slower-load-animation.gif" /> */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Foresight</title>
