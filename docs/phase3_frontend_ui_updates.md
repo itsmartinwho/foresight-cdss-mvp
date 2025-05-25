@@ -122,6 +122,10 @@ These methods update both the database and local cache, ensuring UI consistency.
 3. **Customizable AI Parameters**: Let users adjust confidence thresholds
 4. **Export Functionality**: Generate PDF reports of AI recommendations
 5. **Audit Trail**: Track all edits to AI-generated content
+6. **AI-Generated `reasonCode`**:
+    * Automatically generate the `reasonCode` (e.g., a SNOMED CT code) based on the textual `reasonDisplayText` (reason for visit) provided by the user for an encounter.
+    * This generation should occur automatically when a new encounter is created or when the `reasonDisplayText` is updated.
+    * If a user manually edits the `reasonCode` field, the system should respect this manual input and not overwrite it with an AI-generated code, even if the `reasonDisplayText` is subsequently changed. The AI generation should only occur if the `reasonCode` field has not been manually overridden.
 
 ## Testing Recommendations
 
