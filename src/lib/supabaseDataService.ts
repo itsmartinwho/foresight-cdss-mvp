@@ -18,6 +18,9 @@ class SupabaseDataService {
   private patients: Record<string, Patient> = {}; // key = original PatientID (e.g., "1", "FB2ABB...")
   private admissions: Record<string, Admission> = {}; // key = composite `${patientId}_${originalAdmissionID}`
   private admissionsByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite admission keys
+  private diagnoses: Record<string, Diagnosis[]> = {}; // key = patient ID, value = array of diagnoses
+  private labResults: Record<string, LabResult[]> = {}; // key = patient ID, value = array of lab results
+  private patientUuidToOriginalId: Record<string, string> = {}; // key = Supabase UUID, value = original patient ID
   /** Simple pub-sub so UI layers can refresh after data-mutating calls */
   private changeSubscribers: Array<() => void> = [];
 
@@ -55,9 +58,10 @@ class SupabaseDataService {
           firstName: patientRow.first_name,
           lastName: patientRow.last_name,
           gender: patientRow.gender,
-          dateOfBirth: patientRow.dob ? new Date(patientRow.dob).toISOString().split('T')[0] : undefined,
+          dateOfBirth: patientRow.birth_date ? new Date(patientRow.birth_date).toISOString().split('T')[0] : undefined,
           photo: patientRow.photo_url,
           race: patientRow.race,
+          ethnicity: patientRow.ethnicity,
           maritalStatus: patientRow.marital_status,
           language: patientRow.language,
           povertyPercentage: patientRow.poverty_percentage !== null ? Number(patientRow.poverty_percentage) : undefined,
@@ -87,6 +91,8 @@ class SupabaseDataService {
         if (!this.admissionsByPatient[patient.id]) {
           this.admissionsByPatient[patient.id] = [];
         }
+        // Store the mapping from Supabase UUID to original patient ID
+        this.patientUuidToOriginalId[patientRow.id] = patient.id;
 
         // Fetch visits for this patient
         // Important: Ensure 'visits' table has a way to filter by patient_id
@@ -125,6 +131,43 @@ class SupabaseDataService {
             }
           });
         }
+
+        // Fetch diagnoses for this patient
+        const { data: dxRows } = await this.supabase.from('conditions')
+          .select('*')
+          .eq('patient_id', patientRow.id);
+
+        // Fetch lab results for this patient
+        const { data: labRows } = await this.supabase.from('lab_results')
+          .select('*')
+          .eq('patient_id', patientRow.id);
+
+        // Store diagnoses
+        if (dxRows) {
+          this.diagnoses[patientId] = dxRows.map(dx => ({
+            patientId: patientId,
+            admissionId: dx.encounter_id || '',
+            code: dx.code,
+            description: dx.description,
+          }));
+          console.log(`Fetched ${dxRows.length} diagnoses for patient ${patientId}`);
+        }
+        
+        // Store lab results
+        if (labRows) {
+          this.labResults[patientId] = labRows.map(lab => ({
+            patientId: patientId,
+            admissionId: lab.encounter_id || '',
+            name: lab.name,
+            value: lab.value,
+            units: lab.units,
+            dateTime: lab.date_time ? new Date(lab.date_time).toISOString() : undefined,
+            referenceRange: lab.reference_range,
+            flag: lab.flag,
+          }));
+          console.log(`Fetched ${labRows.length} lab results for patient ${patientId}`);
+        }
+
         this.emitChange(); // Notify subscribers
       } catch (error) {
         console.error(`SupabaseDataService (Prod Debug): Exception during single patient data fetch for ${patientId}:`, error);
@@ -204,9 +247,10 @@ class SupabaseDataService {
           firstName: row.first_name,
           lastName: row.last_name,
           gender: row.gender,
-          dateOfBirth: row.dob ? new Date(row.dob).toISOString().split('T')[0] : undefined,
+          dateOfBirth: row.birth_date ? new Date(row.birth_date).toISOString().split('T')[0] : undefined,
           photo: row.photo_url,
           race: row.race,
+          ethnicity: row.ethnicity,
           maritalStatus: row.marital_status,
           language: row.language,
           povertyPercentage: row.poverty_percentage !== null ? Number(row.poverty_percentage) : undefined,
@@ -244,6 +288,8 @@ class SupabaseDataService {
         };
         this.patients[patient.id] = patient;
         this.admissionsByPatient[patient.id] = []; 
+        // Store the mapping from Supabase UUID to original patient ID
+        this.patientUuidToOriginalId[row.id] = patient.id;
       });
 
       let visitRows = null;
@@ -315,8 +361,77 @@ class SupabaseDataService {
 
       this.isLoaded = true;
       // this.isLoading = false;
-      this.loadPromise = null; // Clear the promise, so next call will trigger a new load if isLoaded becomes false
-      this.emitChange(); // Notify subscribers that data is loaded/updated.
+      this.loadPromise = null;
+
+      // Fetch diagnoses for all patients
+      console.log('SupabaseDataService: Fetching diagnoses...');
+      const { data: allDiagnoses, error: dxErr } = await this.supabase
+        .from('conditions')
+        .select('*');
+      
+      if (dxErr) {
+        console.error('SupabaseDataService: Error fetching diagnoses:', dxErr);
+      } else if (allDiagnoses) {
+        // Group diagnoses by patient
+        allDiagnoses.forEach((dx) => {
+          // Find the original patient ID from the UUID
+          const originalPatientId = this.patientUuidToOriginalId[dx.patient_id];
+          
+          if (originalPatientId) {
+            if (!this.diagnoses[originalPatientId]) {
+              this.diagnoses[originalPatientId] = [];
+            }
+            
+            const diagnosis: Diagnosis = {
+              patientId: originalPatientId,
+              admissionId: dx.encounter_id || '',
+              code: dx.code,
+              description: dx.description,
+            };
+            
+            this.diagnoses[originalPatientId].push(diagnosis);
+          }
+        });
+        console.log(`SupabaseDataService: Loaded ${allDiagnoses.length} diagnoses`);
+      }
+
+      // Fetch lab results for all patients
+      console.log('SupabaseDataService: Fetching lab results...');
+      const { data: allLabResults, error: labErr } = await this.supabase
+        .from('lab_results')
+        .select('*');
+      
+      if (labErr) {
+        console.error('SupabaseDataService: Error fetching lab results:', labErr);
+      } else if (allLabResults) {
+        // Group lab results by patient
+        allLabResults.forEach((lab) => {
+          // Find the original patient ID from the UUID
+          const originalPatientId = this.patientUuidToOriginalId[lab.patient_id];
+          
+          if (originalPatientId) {
+            if (!this.labResults[originalPatientId]) {
+              this.labResults[originalPatientId] = [];
+            }
+            
+            const labResult: LabResult = {
+              patientId: originalPatientId,
+              admissionId: lab.encounter_id || '',
+              name: lab.name,
+              value: lab.value,
+              units: lab.units,
+              dateTime: lab.date_time ? new Date(lab.date_time).toISOString() : undefined,
+              referenceRange: lab.reference_range,
+              flag: lab.flag,
+            };
+            
+            this.labResults[originalPatientId].push(labResult);
+          }
+        });
+        console.log(`SupabaseDataService: Loaded ${allLabResults.length} lab results`);
+      }
+
+      this.emitChange();
     })();
     return this.loadPromise;
   }
@@ -376,8 +491,8 @@ class SupabaseDataService {
     const patientAdmissions = this.getPatientAdmissions(patientId);
     const admissionDetails = patientAdmissions.map(admission => ({
       admission,
-      diagnoses: [] as Diagnosis[], 
-      labResults: [] as LabResult[], 
+      diagnoses: this.getDiagnosesForAdmission(patientId, admission.id),
+      labResults: this.getLabResultsForAdmission(patientId, admission.id),
     }));
     return { patient, admissions: admissionDetails };
   }
@@ -597,7 +712,7 @@ class SupabaseDataService {
         first_name: input.firstName,
         last_name: input.lastName,
         gender: input.gender ?? null,
-        dob: input.dateOfBirth ?? null,
+        birth_date: input.dateOfBirth ?? null,
         name: `${input.firstName} ${input.lastName}`.trim(),
       },
     ]);
@@ -732,6 +847,24 @@ class SupabaseDataService {
   unsubscribe(cb: () => void) {
     this.changeSubscribers = this.changeSubscribers.filter(s => s !== cb);
     // console.log("SupabaseDataService (Prod Debug): Unsubscribed a callback. Total subscribers:", this.changeSubscribers.length);
+  }
+
+  getPatientDiagnoses(patientId: string): Diagnosis[] {
+    return this.diagnoses[patientId] || [];
+  }
+
+  getPatientLabResults(patientId: string): LabResult[] {
+    return this.labResults[patientId] || [];
+  }
+
+  getDiagnosesForAdmission(patientId: string, admissionId: string): Diagnosis[] {
+    const patientDiagnoses = this.diagnoses[patientId] || [];
+    return patientDiagnoses.filter(dx => dx.admissionId === admissionId);
+  }
+
+  getLabResultsForAdmission(patientId: string, admissionId: string): LabResult[] {
+    const patientLabs = this.labResults[patientId] || [];
+    return patientLabs.filter(lab => lab.admissionId === admissionId);
   }
 }
 

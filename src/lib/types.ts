@@ -8,6 +8,7 @@ export interface Patient {
   gender?: string;
   dateOfBirth?: string;
   race?: string;
+  ethnicity?: string;
   maritalStatus?: string;
   language?: string;
   povertyPercentage?: number;
