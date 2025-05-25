@@ -25,36 +25,36 @@ export class ClinicalEngineServiceV2 {
   private supabase = getSupabaseClient();
 
   /**
-   * Run the complete diagnostic pipeline for a patient visit
+   * Run the complete diagnostic pipeline for a patient admission
    */
   async runDiagnosticPipeline(
     patientId: string,
-    compositeVisitId: string,
+    compositeAdmissionId: string,
     transcript?: string
   ): Promise<ClinicalOutputPackage> {
     try {
       // Extract actual admission_id for context loading
       let actualAdmissionId = '';
-      if (compositeVisitId.startsWith(patientId + '_')) {
-        actualAdmissionId = compositeVisitId.substring(patientId.length + 1);
+      if (compositeAdmissionId.startsWith(patientId + '_')) {
+        actualAdmissionId = compositeAdmissionId.substring(patientId.length + 1);
       } else {
         // Fallback or error if the format is unexpected, though test data follows this.
-        console.warn(`Unexpected compositeVisitId format: ${compositeVisitId}. Could not reliably extract actualAdmissionId.`);
-        actualAdmissionId = compositeVisitId; // Or handle as an error
+        console.warn(`Unexpected compositeAdmissionId format: ${compositeAdmissionId}. Could not reliably extract actualAdmissionId.`);
+        actualAdmissionId = compositeAdmissionId; // Or handle as an error
       }
 
       // Stage 1: Load patient context using FHIR-aligned data
       const context = await PatientContextLoader.fetch(patientId, actualAdmissionId);
       
-      // Get transcript from current visit if not provided
-      const finalTranscript = transcript || context.currentVisit?.transcript || '';
+      // Get transcript from current admission if not provided
+      const finalTranscript = transcript || context.currentAdmission?.transcript || '';
       
       // Stage 2: Extract symptoms from transcript
       const symptoms = SymptomExtractor.extract(finalTranscript);
       
-      // Store extracted symptoms in visit extra_data
-      if (context.currentVisit && symptoms.length > 0) {
-        await this.storeExtractedSymptoms(context.currentVisit.id, symptoms);
+      // Store extracted symptoms in admission extra_data
+      if (context.currentAdmission && symptoms.length > 0) {
+        await this.storeExtractedSymptoms(context.currentAdmission.id, symptoms);
       }
       
       // Stage 3: Generate diagnostic plan based on symptoms and context
@@ -77,10 +77,10 @@ export class ClinicalEngineServiceV2 {
       const priorAuthDoc = await this.generatePriorAuthIfNeeded(diagnosticResult, treatments, context);
       
       // Stage 9: Write results back to database
-      if (context.currentVisit?.id) {
-        await this.saveResults(patientId, context.currentVisit.id, diagnosticResult, treatments, soapNote, referralDoc, priorAuthDoc);
+      if (context.currentAdmission?.id) {
+        await this.saveResults(patientId, context.currentAdmission.id, diagnosticResult, treatments, soapNote, referralDoc, priorAuthDoc);
       } else {
-        console.warn(`Skipping saveResults as context.currentVisit.id is not available for patient ${patientId}, compositeVisitId ${compositeVisitId}`);
+        console.warn(`Skipping saveResults as context.currentAdmission.id is not available for patient ${patientId}, compositeAdmissionId ${compositeAdmissionId}`);
       }
       
       // Return complete clinical output package
@@ -102,17 +102,17 @@ export class ClinicalEngineServiceV2 {
   }
 
   /**
-   * Store extracted symptoms in visit extra_data
+   * Store extracted symptoms in admission extra_data
    */
-  private async storeExtractedSymptoms(actualVisitUuid: string, symptoms: string[]): Promise<void> {
+  private async storeExtractedSymptoms(actualAdmissionUuid: string, symptoms: string[]): Promise<void> {
     const { error } = await this.supabase
-      .from('visits')
+      .from('admissions')
       .update({ 
         extra_data: {
           extracted_symptoms: symptoms
         }
       })
-      .eq('id', actualVisitUuid);
+      .eq('id', actualAdmissionUuid);
       
     if (error) {
       console.error('Error storing extracted symptoms:', error);
@@ -243,8 +243,8 @@ export class ClinicalEngineServiceV2 {
       
       if (step.description.includes("symptom assessment")) {
         findings = "Patient reports symptoms for 3 months with progressive worsening. ";
-        if (context.currentVisit?.reason) {
-          findings += `Chief complaint: ${context.currentVisit.reason}. `;
+        if (context.currentAdmission?.reason) {
+          findings += `Chief complaint: ${context.currentAdmission.reason}. `;
         }
       } else if (step.description.includes("existing conditions")) {
         if (context.conditions.length > 0) {
@@ -391,8 +391,8 @@ export class ClinicalEngineServiceV2 {
     diagnosis: DiagnosticResult,
     treatments: Treatment[]
   ): Promise<SoapNote> {
-    const subjective = context.currentVisit?.transcript 
-      ? context.currentVisit.transcript.slice(0, 200) + '...'
+    const subjective = context.currentAdmission?.transcript 
+      ? context.currentAdmission.transcript.slice(0, 200) + '...'
       : `Patient reports ${symptoms.join(', ')}.`;
       
     const objective = context.observations.length > 0
@@ -415,7 +415,7 @@ export class ClinicalEngineServiceV2 {
       objective,
       assessment,
       plan,
-      rawTranscriptSnippet: context.currentVisit?.transcript?.slice(0, 100)
+      rawTranscriptSnippet: context.currentAdmission?.transcript?.slice(0, 100)
     };
   }
 
@@ -500,7 +500,7 @@ export class ClinicalEngineServiceV2 {
    */
   private async saveResults(
     patientId: string,
-    actualVisitUuid: string,
+    actualAdmissionUuid: string,
     diagnosis: DiagnosticResult,
     treatments: Treatment[],
     soapNote: SoapNote,
@@ -520,7 +520,7 @@ export class ClinicalEngineServiceV2 {
           .from('conditions')
           .insert({
             patient_id: patientUuid,
-            encounter_id: actualVisitUuid,
+            encounter_id: actualAdmissionUuid,
             code: diagnosis.diagnosisCode,
             description: diagnosis.diagnosisName,
             category: 'encounter-diagnosis',
@@ -532,19 +532,19 @@ export class ClinicalEngineServiceV2 {
         }
       }
       
-      // 2. Update visit with SOAP note and treatments
-      if (actualVisitUuid) {
-        const { error: visitError } = await this.supabase
-          .from('visits')
+      // 2. Update admission with SOAP note and treatments
+      if (actualAdmissionUuid) {
+        const { error: admissionError } = await this.supabase
+          .from('admissions')
           .update({
             soap_note: `S: ${soapNote.subjective}\nO: ${soapNote.objective}\nA: ${soapNote.assessment}\nP: ${soapNote.plan}`,
             treatments: treatments,
             prior_auth_justification: priorAuthDoc ? priorAuthDoc.generatedContent.clinicalJustification : null
           })
-          .eq('id', actualVisitUuid);
+          .eq('id', actualAdmissionUuid);
           
-        if (visitError) {
-          console.error('Error updating visit:', visitError);
+        if (admissionError) {
+          console.error('Error updating admission:', admissionError);
         }
       }
       
@@ -554,15 +554,15 @@ export class ClinicalEngineServiceV2 {
         if (referralDoc) documents.referral = referralDoc;
         if (priorAuthDoc) documents.priorAuth = priorAuthDoc;
         
-        if (actualVisitUuid) {
+        if (actualAdmissionUuid) {
           const { error: docError } = await this.supabase
-            .from('visits')
+            .from('admissions')
             .update({
               extra_data: {
                 documents: documents
               }
             })
-            .eq('id', actualVisitUuid);
+            .eq('id', actualAdmissionUuid);
             
           if (docError) {
             console.error('Error storing documents:', docError);

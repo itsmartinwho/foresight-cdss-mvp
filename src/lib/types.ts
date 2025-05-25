@@ -28,7 +28,7 @@ export interface Treatment {
 
 export interface Admission {
   id: string;
-  admission_id: string; // Human-readable/external ID for the visit/encounter
+  admission_id: string; // Human-readable/external ID for the admission/encounter
   patientId: string;
   scheduledStart: string;
   scheduledEnd: string;

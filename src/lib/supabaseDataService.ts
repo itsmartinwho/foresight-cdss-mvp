@@ -94,32 +94,32 @@ class SupabaseDataService {
         // Store the mapping from Supabase UUID to original patient ID
         this.patientUuidToOriginalId[patientRow.id] = patient.id;
 
-        // Fetch visits for this patient
-        // Important: Ensure 'visits' table has a way to filter by patient_id
-        // Assuming 'visits' table has 'patient_id_fk' or similar that matches 'patients.patient_id'
-        // This query might need adjustment based on your actual schema for visits
-        const { data: visitRows, error: vErr } = await this.supabase
-          .from('visits')
+        // Fetch admissions for this patient
+        // Important: Ensure 'admissions' table has a way to filter by patient_id
+        // Assuming 'admissions' table has 'patient_id_fk' or similar that matches 'patients.patient_id'
+        // This query might need adjustment based on your actual schema for admissions
+        const { data: admissionRows, error: vErr } = await this.supabase
+          .from('admissions')
           .select('*')
           .eq('extra_data->>PatientID', patientId); // Querying based on the existing pattern in loadPatientData
 
         if (vErr) {
-          console.error(`SupabaseDataService (Prod Debug): Error fetching visits for patient ${patientId}:`, vErr);
+          console.error(`SupabaseDataService (Prod Debug): Error fetching admissions for patient ${patientId}:`, vErr);
           throw vErr;
         }
 
-        if (visitRows) {
-          visitRows.forEach((row) => {
+        if (admissionRows) {
+          admissionRows.forEach((row) => {
             const compositeKey = `${patientId}_${row.admission_id}`;
             const admission: Admission = {
-              id: row.id, // Actual UUID of the visit
+              id: row.id, // Actual UUID of the admission
               admission_id: row.admission_id, // Human-readable/external ID
               patientId: patientId,
               scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
               scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
               actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
               actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
-              reason: row.reason_for_visit,
+              reason: row.reason_for_admission,
               transcript: row.transcript,
               soapNote: row.soap_note,
               treatments: row.treatments || undefined,
@@ -293,59 +293,59 @@ class SupabaseDataService {
         this.patientUuidToOriginalId[row.id] = patient.id;
       });
 
-      let visitRows = null;
-      let totalVisitsAvailable = 0;
+      let admissionRows = null;
+      let totalAdmissionsAvailable = 0;
       try {
-          console.log('SupabaseDataService (Prod Debug): Attempting to fetch ALL visits with count...');
+          console.log('SupabaseDataService (Prod Debug): Attempting to fetch ALL admissions with count...');
           const { data, error: vErr, count } = await this.supabase
-              .from('visits')
+              .from('admissions')
               .select('*', { count: 'exact' }); 
 
           if (vErr) {
-              console.error('SupabaseDataService (Prod Debug): Error fetching visits:', vErr);
+              console.error('SupabaseDataService (Prod Debug): Error fetching admissions:', vErr);
               throw vErr;
           }
-          visitRows = data;
-          totalVisitsAvailable = count ?? 0;
+          admissionRows = data;
+          totalAdmissionsAvailable = count ?? 0;
       } catch (error) {
-          console.error('SupabaseDataService (Prod Debug): Exception during visits fetch:', error);
+          console.error('SupabaseDataService (Prod Debug): Exception during admissions fetch:', error);
           this.loadPromise = null; 
           // this.isLoading = false;
           throw error;
       }
 
-      if (!visitRows) {
-          console.error('SupabaseDataService (Prod Debug): visitRows is null after fetch. Cannot proceed with visits.');
+      if (!admissionRows) {
+          console.error('SupabaseDataService (Prod Debug): admissionRows is null after fetch. Cannot proceed with admissions.');
           this.loadPromise = null;
           // this.isLoading = false;
-          throw new Error("Visit rows fetch returned null.");
+          throw new Error("Admission rows fetch returned null.");
       }
 
-      let visitsProcessed = 0;
-      visitRows.forEach((row) => {
-        const originalPatientIDFromVisitExtraData = row.extra_data?.PatientID;
+      let admissionsProcessed = 0;
+      admissionRows.forEach((row) => {
+        const originalPatientIDFromAdmissionExtraData = row.extra_data?.PatientID;
         
-        if (!originalPatientIDFromVisitExtraData) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping visit ${row.admission_id} due to missing PatientID in extra_data.`);
+        if (!originalPatientIDFromAdmissionExtraData) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping admission ${row.admission_id} due to missing PatientID in extra_data.`);
           return;
         }
-        if (!this.patients[originalPatientIDFromVisitExtraData]) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping visit ${row.admission_id}. Patient by original ID '${originalPatientIDFromVisitExtraData}' not found.`);
+        if (!this.patients[originalPatientIDFromAdmissionExtraData]) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping admission ${row.admission_id}. Patient by original ID '${originalPatientIDFromAdmissionExtraData}' not found.`);
           return;
         }
 
-        const patientPublicId = originalPatientIDFromVisitExtraData;
+        const patientPublicId = originalPatientIDFromAdmissionExtraData;
         const compositeKey = `${patientPublicId}_${row.admission_id}`;
 
         const admission: Admission = {
-          id: row.id, // Actual UUID of the visit
+          id: row.id, // Actual UUID of the admission
           admission_id: row.admission_id, // Human-readable/external ID
           patientId: patientPublicId, 
           scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
           scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
           actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
           actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
-          reason: row.reason_for_visit,
+          reason: row.reason_for_admission,
           transcript: row.transcript,
           soapNote: row.soap_note,
           treatments: row.treatments || undefined, 
@@ -358,7 +358,7 @@ class SupabaseDataService {
         } else {
           this.admissionsByPatient[patientPublicId] = [compositeKey];
         }
-        visitsProcessed++;
+        admissionsProcessed++;
       });
 
       this.isLoaded = true;
@@ -582,7 +582,7 @@ class SupabaseDataService {
   async updateAdmissionTranscript(patientId: string, admissionCompositeId: string, transcript: string): Promise<void> {
     const originalAdmissionId = admissionCompositeId.split('_').slice(-1)[0];
     const { error } = await this.supabase
-      .from('visits')
+      .from('admissions')
       .update({ transcript: transcript })
       .eq('admission_id', originalAdmissionId);
     if (error) {
@@ -608,7 +608,7 @@ class SupabaseDataService {
     }
 
     const { error } = await this.supabase
-      .from('visits')
+      .from('admissions')
       .update({ observations: observations })
       .eq('admission_id', originalAdmissionId);
 
@@ -651,10 +651,10 @@ class SupabaseDataService {
       : opts?.scheduledEnd ?? null;
 
     // Insert into DB
-    const { error: insertErr } = await this.supabase.from('visits').insert([
+    const { error: insertErr } = await this.supabase.from('admissions').insert([
       {
         admission_id: newAdmissionId,
-        reason_for_visit: opts?.reason ?? null,
+        reason_for_admission: opts?.reason ?? null,
         scheduled_start_datetime: startIso,
         scheduled_end_datetime: endIso,
         actual_start_datetime: null,
@@ -765,14 +765,14 @@ class SupabaseDataService {
 
     // Persist to DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    this.supabase.from('visits')
+    this.supabase.from('admissions')
       .update({ is_deleted: true })
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error, data }) => {
         if (error) {
           console.error('SupabaseDataService: update by admission_id failed', JSON.stringify(error, null, 2));
           // Attempt alternative column
-          const { error: err2 } = await this.supabase.from('visits')
+          const { error: err2 } = await this.supabase.from('admissions')
             .update({ is_deleted: true })
             .eq('id', originalAdmissionId);
           if (err2) {
@@ -795,13 +795,13 @@ class SupabaseDataService {
 
     // Persist to DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    this.supabase.from('visits')
+    this.supabase.from('admissions')
       .update({ is_deleted: false })
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
           console.error('SupabaseDataService: restore update admission_id failed', JSON.stringify(error, null,2));
-          const { error: err2 } = await this.supabase.from('visits')
+          const { error: err2 } = await this.supabase.from('admissions')
             .update({ is_deleted: false })
             .eq('id', originalAdmissionId);
           if (err2) {
@@ -827,13 +827,13 @@ class SupabaseDataService {
 
     // Delete from DB in background (try both candidate PK column names)
     const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    this.supabase.from('visits')
+    this.supabase.from('admissions')
       .delete()
       .eq('admission_id', originalAdmissionId)
       .then(async ({ error }) => {
         if (error) {
           console.error('SupabaseDataService: delete admission_id failed', JSON.stringify(error, null,2));
-          const { error: err2 } = await this.supabase.from('visits')
+          const { error: err2 } = await this.supabase.from('admissions')
             .delete()
             .eq('id', originalAdmissionId);
           if (err2) {

@@ -64,13 +64,13 @@ export class SymptomExtractor {
   }
 
   /**
-   * Extract and store symptoms in the visit record
-   * @param visitId The visit/encounter ID
+   * Extract and store symptoms in the admission record
+   * @param admissionId The admission/encounter ID
    * @param transcript The consultation transcript
    * @returns The extracted symptoms
    */
   static async extractAndStore(
-    visitId: string,
+    admissionId: string,
     transcript: string
   ): Promise<string[]> {
     const symptoms = this.extract(transcript);

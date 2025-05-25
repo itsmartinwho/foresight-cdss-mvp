@@ -3,7 +3,7 @@ import { Patient, Admission, Diagnosis, LabResult } from './types';
 
 export interface FHIRPatientContext {
   patient: Patient;
-  currentVisit?: Admission;
+  currentAdmission?: Admission;
   priorEncounters: Admission[];
   conditions: Diagnosis[];
   observations: LabResult[];
@@ -19,8 +19,8 @@ export class PatientContextLoader {
    */
   static async fetch(
     patientId: string,
-    currentVisitAdmissionId?: string,
-    includeVisitIds?: string[]
+    currentAdmissionId?: string,
+    includeAdmissionIds?: string[]
   ): Promise<FHIRPatientContext> {
     // Ensure data is loaded
     const patientData = await supabaseDataService.getPatientData(patientId);
@@ -32,27 +32,27 @@ export class PatientContextLoader {
     const patient = patientData.patient;
     const allAdmissions = patientData.admissions || [];
     
-    // Find current visit if specified
-    let currentVisit: Admission | undefined;
-    if (currentVisitAdmissionId) {
-      console.log(`PatientContextLoader: Searching for currentVisitAdmissionId: '${currentVisitAdmissionId}'`);
+    // Find current admission if specified
+    let currentAdmission: Admission | undefined;
+    if (currentAdmissionId) {
+      console.log(`PatientContextLoader: Searching for currentAdmissionId: '${currentAdmissionId}'`);
       allAdmissions.forEach((wrapper, index) => {
         console.log(`PatientContextLoader: Admission ${index} has admission_id: '${wrapper.admission.admission_id}', id: '${wrapper.admission.id}'`);
       });
       const currentAdmissionWrapper = allAdmissions.find(
-        wrapper => wrapper.admission.admission_id === currentVisitAdmissionId
+        wrapper => wrapper.admission.admission_id === currentAdmissionId
       );
-      currentVisit = currentAdmissionWrapper?.admission;
+      currentAdmission = currentAdmissionWrapper?.admission;
     }
 
-    // Filter prior encounters based on includeVisitIds or get all except current
+    // Filter prior encounters based on includeAdmissionIds or get all except current
     const priorEncounters = allAdmissions
       .filter(wrapper => {
-        if (includeVisitIds && includeVisitIds.length > 0) {
-          return includeVisitIds.includes(wrapper.admission.id);
+        if (includeAdmissionIds && includeAdmissionIds.length > 0) {
+          return includeAdmissionIds.includes(wrapper.admission.id);
         }
-        // If currentVisit is defined, exclude it. Otherwise, include all (as none is current).
-        return currentVisit ? wrapper.admission.id !== currentVisit.id : true;
+        // If currentAdmission is defined, exclude it. Otherwise, include all (as none is current).
+        return currentAdmission ? wrapper.admission.id !== currentAdmission.id : true;
       })
       .map(wrapper => wrapper.admission);
 
@@ -64,7 +64,7 @@ export class PatientContextLoader {
 
     return {
       patient,
-      currentVisit,
+      currentAdmission,
       priorEncounters,
       conditions,
       observations
@@ -90,13 +90,13 @@ export class PatientContextLoader {
         diagnosis: context.patient.diagnosis,
         alerts: context.patient.alerts || []
       },
-      currentVisit: context.currentVisit ? {
-        id: context.currentVisit.id,
-        reason: context.currentVisit.reason,
-        scheduledStart: context.currentVisit.scheduledStart,
-        transcript: context.currentVisit.transcript,
-        soapNote: context.currentVisit.soapNote,
-        treatments: context.currentVisit.treatments || []
+      currentAdmission: context.currentAdmission ? {
+        id: context.currentAdmission.id,
+        reason: context.currentAdmission.reason,
+        scheduledStart: context.currentAdmission.scheduledStart,
+        transcript: context.currentAdmission.transcript,
+        soapNote: context.currentAdmission.soapNote,
+        treatments: context.currentAdmission.treatments || []
       } : null,
       priorEncounters: context.priorEncounters.map(enc => ({
         id: enc.id,

@@ -12,20 +12,20 @@ ALTER TABLE public.patients
 ALTER TABLE public.patients 
   RENAME COLUMN dob TO birth_date;
 
--- 3. Add status field to visits (FHIR Encounter.status)
-ALTER TABLE public.visits 
+-- 3. Add status field to admissions (FHIR Encounter.status)
+ALTER TABLE public.admissions 
   ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'finished';
 
--- 4. Add is_deleted boolean to visits for soft deletes
+-- 4. Add is_deleted boolean to admissions for soft deletes
 -- This field is referenced in code but was missing from schema
-ALTER TABLE public.visits 
+ALTER TABLE public.admissions 
   ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
 
 -- 5. Create Conditions table for diagnoses (FHIR Condition resource)
 CREATE TABLE IF NOT EXISTS public.conditions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
-  encounter_id UUID REFERENCES public.visits(id),  -- which visit generated or noted this diagnosis (nullable for chronic conditions)
+  encounter_id UUID REFERENCES public.admissions(id),  -- which admission generated or noted this diagnosis (nullable for chronic conditions)
   code TEXT,        -- e.g. ICD-10 or SNOMED code
   description TEXT, -- human-readable diagnosis name
   category TEXT,    -- e.g. 'encounter-diagnosis' or 'problem-list'
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS public.conditions (
 CREATE TABLE IF NOT EXISTS public.lab_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE,
-  encounter_id UUID REFERENCES public.visits(id),
+  encounter_id UUID REFERENCES public.admissions(id),
   name TEXT,        -- name of test or observation (e.g. "Hemoglobin A1C")
   value TEXT,       -- result value (as text to allow numeric or string results)
   units TEXT,       -- units of measure, if numeric
@@ -114,7 +114,7 @@ SELECT
   '4.0-5.6', 
   'H'
 FROM public.patients p
-JOIN public.visits v ON v.patient_supabase_id = p.id
+JOIN public.admissions v ON v.patient_supabase_id = p.id
 WHERE p.language IS NOT NULL  -- arbitrary condition to pick some patients
 LIMIT 5;
 
@@ -130,7 +130,7 @@ SELECT
   '70-100', 
   'H'
 FROM public.patients p
-JOIN public.visits v ON v.patient_supabase_id = p.id
+JOIN public.admissions v ON v.patient_supabase_id = p.id
 WHERE p.language IS NOT NULL
 LIMIT 5;
 
