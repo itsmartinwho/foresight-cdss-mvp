@@ -23,11 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Favicon, apple-touch-icon, and manifest links are removed to let Next.js handle them */}
-        {/* <link rel="icon" href="/favicon.ico" sizes="any" /> */}
-        {/* <link rel="apple-touch-icon" href="/apple-touch-icon.png" /> */}
-        {/* <link rel="manifest" href="/site.webmanifest" /> */}
-        {/* <link rel="preload" as="image" href="/slower-load-animation.gif" /> */}
+        {/* Favicons and PWA manifest */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#000000" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Foresight</title>
       </head>

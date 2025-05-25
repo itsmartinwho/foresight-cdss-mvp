@@ -16,6 +16,7 @@ export default function GlassHeader() {
             width={120}
             height={32}
             className="py-0.5 translate-y-[2px]"
+            style={{ width: 'auto', height: 'auto' }}
           />
         </Link>
       </div>

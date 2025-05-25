@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main() {
-  const publicDir = path.resolve(__dirname, '..', 'public');
+  const publicDir = path.resolve(__dirname, '..', '..', 'public');
   const imagesDir = path.join(publicDir, 'images');
   const originalPng = path.join(imagesDir, 'foresight-icon.png');
   const originalIco = path.join(publicDir, 'favicon.ico');
@@ -52,6 +52,19 @@ async function main() {
   );
   const icoBuffer = await toIco(buffers);
   await fs.writeFile(originalIco, icoBuffer);
+
+  // Generate android-chrome icons
+  await sharp(path.join(imagesDir, 'foresight-icon.png'))
+    .resize(192, 192, { fit: 'contain' })
+    .toFile(path.join(publicDir, 'android-chrome-192x192.png'));
+  await sharp(path.join(imagesDir, 'foresight-icon.png'))
+    .resize(512, 512, { fit: 'contain' })
+    .toFile(path.join(publicDir, 'android-chrome-512x512.png'));
+
+  // Generate apple-touch-icon
+  await sharp(path.join(imagesDir, 'foresight-icon.png'))
+    .resize(180, 180, { fit: 'contain' })
+    .toFile(path.join(publicDir, 'apple-touch-icon.png'));
 
   console.log('Resized icons created successfully.');
 }
