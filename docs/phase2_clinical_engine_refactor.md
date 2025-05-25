@@ -4,6 +4,8 @@
 
 Phase 2 refactors the clinical engine logic to use the new FHIR-aligned schema from Phase 1. The engine now pulls structured data from normalized tables and produces comprehensive diagnostic outputs that are written back to the database.
 
+**Note:** We store each patient visit in the `encounters` table (FHIR: Encounter). "Admission" will only be used later inside the hospitalization slice of Encounter for inpatient workflows.
+
 ## Key Components
 
 ### 1. PatientContextLoader (`src/lib/patientContextLoader.ts`)
@@ -12,7 +14,7 @@ A new service that fetches patient data from the FHIR-aligned schema and assembl
 
 **Features:**
 - Fetches patient demographics from the `patients` table
-- Retrieves encounters from the `admissions` table
+- Retrieves encounters from the `encounters` table
 - Loads conditions from the `conditions` table (problem list)
 - Fetches observations from the `lab_results` table
 - Assembles data into a FHIR-like context object
@@ -21,8 +23,8 @@ A new service that fetches patient data from the FHIR-aligned schema and assembl
 ```typescript
 const context = await PatientContextLoader.fetch(
   patientId,
-  currentAdmissionId,
-  includeAdmissionIds // optional array of prior admissions to include
+  currentEncounterId,
+  includeEncounterIds // optional array of prior encounters to include
 );
 ```
 
@@ -34,7 +36,7 @@ Extracts symptoms from consultation transcripts using keyword matching.
 - Keyword-based symptom extraction (MVP implementation)
 - Supports common symptoms and their variations
 - Returns standardized symptom list
-- Can store extracted symptoms in admission `extra_data`
+- Can store extracted symptoms in encounter `extra_data`
 
 **Supported Symptoms:**
 - Physical: headache, fever, fatigue, joint pain, chest pain, etc.
@@ -78,16 +80,16 @@ The engine writes results to multiple tables:
    VALUES (?, ?, 'M06.9', 'Rheumatoid arthritis', 'encounter-diagnosis');
    ```
 
-2. **Admissions Table**: SOAP note, treatments, and prior auth
+2. **Encounters Table**: SOAP note, treatments, and prior auth
    ```sql
-   UPDATE admissions 
+   UPDATE encounters 
    SET soap_note = ?, treatments = ?, prior_auth_justification = ?
    WHERE id = ?;
    ```
 
 3. **Extra Data**: Referral/prior auth documents
    ```sql
-   UPDATE admissions 
+   UPDATE encounters 
    SET extra_data = jsonb_set(extra_data, '{documents}', ?)
    WHERE id = ?;
    ```
@@ -159,7 +161,7 @@ Four test patients are provided:
 
 3. Verify outputs in database:
    - Check `conditions` table for new diagnosis
-   - Check `admissions` table for SOAP note and treatments
+   - Check `encounters` table for SOAP note and treatments
    - Review generated documents in `extra_data`
 
 ## Future Enhancements
@@ -180,9 +182,9 @@ The engine can be called from:
 Example API endpoint:
 ```typescript
 app.post('/api/clinical-engine/run', async (req, res) => {
-  const { patientId, admissionId } = req.body;
+  const { patientId, encounterId } = req.body;
   const engine = new ClinicalEngineServiceV2();
-  const result = await engine.runDiagnosticPipeline(patientId, admissionId);
+  const result = await engine.runDiagnosticPipeline(patientId, encounterId);
   res.json(result);
 });
 ``` 

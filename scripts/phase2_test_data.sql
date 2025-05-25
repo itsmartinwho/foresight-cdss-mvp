@@ -1,7 +1,7 @@
 -- Phase 2: Test Data Generation for Clinical Engine Testing
 -- This script creates synthetic patient scenarios to test the diagnostic pipeline
 
--- Test Patient 1: Diabetes patient with follow-up admission
+-- Test Patient 1: Diabetes patient with follow-up encounter
 INSERT INTO public.patients(patient_id, first_name, last_name, gender, birth_date, race, ethnicity, language)
 VALUES ('TEST_DM_001', 'John', 'Doe', 'male', '1980-05-01', 'White', 'Not Hispanic or Latino', 'en')
 ON CONFLICT (patient_id) DO NOTHING;
@@ -10,17 +10,17 @@ ON CONFLICT (patient_id) DO NOTHING;
 DO $$
 DECLARE
   patient_uuid UUID;
-  admission_uuid UUID;
+  encounter_uuid UUID;
 BEGIN
   SELECT id INTO patient_uuid FROM public.patients WHERE patient_id = 'TEST_DM_001';
   
-  -- Create an admission for this patient
-  INSERT INTO public.admissions(
+  -- Create an encounter for this patient
+  INSERT INTO public.encounters(
     id, 
-    admission_id, 
+    encounter_id, 
     patient_supabase_id, 
     admission_type, 
-    reason_for_admission, 
+    reason_code, 
     scheduled_start_datetime,
     actual_start_datetime,
     transcript,
@@ -40,7 +40,7 @@ BEGIN
     jsonb_build_object('PatientID', 'TEST_DM_001')
   )
   ON CONFLICT DO NOTHING
-  RETURNING id INTO admission_uuid;
+  RETURNING id INTO encounter_uuid;
   
   -- Add existing diabetes diagnosis to problem list
   INSERT INTO public.conditions(patient_id, description, code, category, onset_date)
@@ -50,9 +50,9 @@ BEGIN
   -- Add recent lab results
   INSERT INTO public.lab_results(patient_id, encounter_id, name, value, units, date_time, reference_range, flag)
   VALUES 
-    (patient_uuid, admission_uuid, 'Hemoglobin A1C', '8.2', '%', NOW() - INTERVAL '1 week', '4.0-5.6', 'H'),
-    (patient_uuid, admission_uuid, 'Glucose', '185', 'mg/dL', NOW() - INTERVAL '1 week', '70-100', 'H'),
-    (patient_uuid, admission_uuid, 'Creatinine', '1.1', 'mg/dL', NOW() - INTERVAL '1 week', '0.7-1.3', NULL)
+    (patient_uuid, encounter_uuid, 'Hemoglobin A1C', '8.2', '%', NOW() - INTERVAL '1 week', '4.0-5.6', 'H'),
+    (patient_uuid, encounter_uuid, 'Glucose', '185', 'mg/dL', NOW() - INTERVAL '1 week', '70-100', 'H'),
+    (patient_uuid, encounter_uuid, 'Creatinine', '1.1', 'mg/dL', NOW() - INTERVAL '1 week', '0.7-1.3', NULL)
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -64,17 +64,17 @@ ON CONFLICT (patient_id) DO NOTHING;
 DO $$
 DECLARE
   patient_uuid UUID;
-  admission_uuid UUID;
+  encounter_uuid UUID;
 BEGIN
   SELECT id INTO patient_uuid FROM public.patients WHERE patient_id = 'TEST_RA_001';
   
-  -- Create an admission for this patient
-  INSERT INTO public.admissions(
+  -- Create an encounter for this patient
+  INSERT INTO public.encounters(
     id,
-    admission_id, 
+    encounter_id, 
     patient_supabase_id, 
     admission_type, 
-    reason_for_admission,
+    reason_code,
     scheduled_start_datetime,
     actual_start_datetime,
     transcript,
@@ -94,14 +94,14 @@ BEGIN
     jsonb_build_object('PatientID', 'TEST_RA_001')
   )
   ON CONFLICT DO NOTHING
-  RETURNING id INTO admission_uuid;
+  RETURNING id INTO encounter_uuid;
   
   -- Add lab results suggesting inflammation
   INSERT INTO public.lab_results(patient_id, encounter_id, name, value, units, date_time, reference_range, flag)
   VALUES 
-    (patient_uuid, admission_uuid, 'ESR', '45', 'mm/hr', NOW() - INTERVAL '2 days', '0-20', 'H'),
-    (patient_uuid, admission_uuid, 'CRP', '3.2', 'mg/dL', NOW() - INTERVAL '2 days', '0-1.0', 'H'),
-    (patient_uuid, admission_uuid, 'RF', '82', 'IU/mL', NOW() - INTERVAL '2 days', '0-14', 'H')
+    (patient_uuid, encounter_uuid, 'ESR', '45', 'mm/hr', NOW() - INTERVAL '2 days', '0-20', 'H'),
+    (patient_uuid, encounter_uuid, 'CRP', '3.2', 'mg/dL', NOW() - INTERVAL '2 days', '0-1.0', 'H'),
+    (patient_uuid, encounter_uuid, 'RF', '82', 'IU/mL', NOW() - INTERVAL '2 days', '0-14', 'H')
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -113,17 +113,17 @@ ON CONFLICT (patient_id) DO NOTHING;
 DO $$
 DECLARE
   patient_uuid UUID;
-  admission_uuid UUID;
+  encounter_uuid UUID;
 BEGIN
   SELECT id INTO patient_uuid FROM public.patients WHERE patient_id = 'TEST_URI_001';
   
-  -- Create an admission for this patient
-  INSERT INTO public.admissions(
+  -- Create an encounter for this patient
+  INSERT INTO public.encounters(
     id,
-    admission_id, 
+    encounter_id, 
     patient_supabase_id, 
     admission_type, 
-    reason_for_admission,
+    reason_code,
     scheduled_start_datetime,
     actual_start_datetime,
     transcript,
@@ -143,13 +143,13 @@ BEGIN
     jsonb_build_object('PatientID', 'TEST_URI_001')
   )
   ON CONFLICT DO NOTHING
-  RETURNING id INTO admission_uuid;
+  RETURNING id INTO encounter_uuid;
   
   -- Add basic lab results
   INSERT INTO public.lab_results(patient_id, encounter_id, name, value, units, date_time, reference_range, flag)
   VALUES 
-    (patient_uuid, admission_uuid, 'WBC', '12.5', 'K/uL', NOW() - INTERVAL '1 hour', '4.5-11.0', 'H'),
-    (patient_uuid, admission_uuid, 'Temperature', '101.2', 'F', NOW() - INTERVAL '30 minutes', '97.0-99.0', 'H')
+    (patient_uuid, encounter_uuid, 'WBC', '12.5', 'K/uL', NOW() - INTERVAL '1 hour', '4.5-11.0', 'H'),
+    (patient_uuid, encounter_uuid, 'Temperature', '101.2', 'F', NOW() - INTERVAL '30 minutes', '97.0-99.0', 'H')
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -161,17 +161,17 @@ ON CONFLICT (patient_id) DO NOTHING;
 DO $$
 DECLARE
   patient_uuid UUID;
-  admission_uuid UUID;
+  encounter_uuid UUID;
 BEGIN
   SELECT id INTO patient_uuid FROM public.patients WHERE patient_id = 'TEST_CP_001';
   
-  -- Create an admission for this patient
-  INSERT INTO public.admissions(
+  -- Create an encounter for this patient
+  INSERT INTO public.encounters(
     id,
-    admission_id, 
+    encounter_id, 
     patient_supabase_id, 
     admission_type, 
-    reason_for_admission,
+    reason_code,
     scheduled_start_datetime,
     actual_start_datetime,
     transcript,
@@ -191,7 +191,7 @@ BEGIN
     jsonb_build_object('PatientID', 'TEST_CP_001')
   )
   ON CONFLICT DO NOTHING
-  RETURNING id INTO admission_uuid;
+  RETURNING id INTO encounter_uuid;
   
   -- Add existing conditions
   INSERT INTO public.conditions(patient_id, description, code, category, onset_date)
@@ -203,9 +203,9 @@ BEGIN
   -- Add cardiac-related lab results
   INSERT INTO public.lab_results(patient_id, encounter_id, name, value, units, date_time, reference_range, flag)
   VALUES 
-    (patient_uuid, admission_uuid, 'Troponin I', '0.02', 'ng/mL', NOW() - INTERVAL '2 hours', '0-0.04', NULL),
-    (patient_uuid, admission_uuid, 'Total Cholesterol', '245', 'mg/dL', NOW() - INTERVAL '1 month', '0-200', 'H'),
-    (patient_uuid, admission_uuid, 'LDL', '165', 'mg/dL', NOW() - INTERVAL '1 month', '0-100', 'H')
+    (patient_uuid, encounter_uuid, 'Troponin I', '0.02', 'ng/mL', NOW() - INTERVAL '2 hours', '0-0.04', NULL),
+    (patient_uuid, encounter_uuid, 'Total Cholesterol', '245', 'mg/dL', NOW() - INTERVAL '1 month', '0-200', 'H'),
+    (patient_uuid, encounter_uuid, 'LDL', '165', 'mg/dL', NOW() - INTERVAL '1 month', '0-100', 'H')
   ON CONFLICT DO NOTHING;
 END $$;
 
@@ -219,11 +219,11 @@ END $$;
 SELECT 
   p.patient_id,
   p.first_name || ' ' || p.last_name as name,
-  COUNT(DISTINCT v.id) as admission_count,
+  COUNT(DISTINCT v.id) as encounter_count,
   COUNT(DISTINCT c.id) as condition_count,
   COUNT(DISTINCT l.id) as lab_count
 FROM public.patients p
-LEFT JOIN public.admissions v ON v.patient_supabase_id = p.id
+LEFT JOIN public.encounters v ON v.patient_supabase_id = p.id
 LEFT JOIN public.conditions c ON c.patient_id = p.id
 LEFT JOIN public.lab_results l ON l.patient_id = p.id
 WHERE p.patient_id LIKE 'TEST_%'

@@ -26,15 +26,15 @@ export interface Treatment {
   rationale: string;
 }
 
-export interface Admission {
+export interface Encounter {
   id: string;
-  admission_id: string; // Human-readable/external ID for the admission/encounter
+  encounterIdentifier: string; // Human-readable/external ID for the encounter
   patientId: string;
   scheduledStart: string;
   scheduledEnd: string;
   actualStart?: string;
   actualEnd?: string;
-  reason?: string; // Admission-specific reason
+  reasonCode?: string; // FHIR Encounter.reasonCode.text
   transcript?: string;
   observations?: string[]; // New field for observations
   soapNote?: string;
@@ -43,6 +43,9 @@ export interface Admission {
   isDeleted?: boolean;
   deletedAt?: string;
 }
+
+// TODO: delete in July 2024 when all downstream code is migrated
+export type Admission = Encounter; // TEMPORARY alias for backward compatibility
 
 export interface Diagnosis {
   patientId: string;

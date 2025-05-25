@@ -1,6 +1,6 @@
 import { getSupabaseClient } from './supabaseClient';
 import {
-  Patient, Admission, Diagnosis, LabResult, ComplexCaseAlert, Treatment,
+  Patient, Encounter, Diagnosis, LabResult, ComplexCaseAlert, Treatment,
   PatientDataPayload // Import the new type
 } from './types';
 
@@ -16,8 +16,8 @@ class SupabaseDataService {
   private loadPromise: Promise<void> | null = null;
   private singlePatientLoadPromises: Map<string, Promise<void>> = new Map(); // Added for single patient loads
   private patients: Record<string, Patient> = {}; // key = original PatientID (e.g., "1", "FB2ABB...")
-  private admissions: Record<string, Admission> = {}; // key = composite `${patientId}_${originalAdmissionID}`
-  private admissionsByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite admission keys
+  private encounters: Record<string, Encounter> = {}; // key = composite `${patientId}_${originalEncounterID}`
+  private encountersByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite encounter keys
   private diagnoses: Record<string, Diagnosis[]> = {}; // key = patient ID, value = array of diagnoses
   private labResults: Record<string, LabResult[]> = {}; // key = patient ID, value = array of lab results
   private patientUuidToOriginalId: Record<string, string> = {}; // key = Supabase UUID, value = original patient ID
@@ -88,47 +88,47 @@ class SupabaseDataService {
           reason: patientRow.patient_level_reason,
         };
         this.patients[patient.id] = patient;
-        if (!this.admissionsByPatient[patient.id]) {
-          this.admissionsByPatient[patient.id] = [];
+        if (!this.encountersByPatient[patient.id]) {
+          this.encountersByPatient[patient.id] = [];
         }
         // Store the mapping from Supabase UUID to original patient ID
         this.patientUuidToOriginalId[patientRow.id] = patient.id;
 
-        // Fetch admissions for this patient
-        // Important: Ensure 'admissions' table has a way to filter by patient_id
-        // Assuming 'admissions' table has 'patient_id_fk' or similar that matches 'patients.patient_id'
-        // This query might need adjustment based on your actual schema for admissions
-        const { data: admissionRows, error: vErr } = await this.supabase
-          .from('admissions')
+        // Fetch encounters for this patient
+        // Important: Ensure 'encounters' table has a way to filter by patient_id
+        // Assuming 'encounters' table has 'patient_id_fk' or similar that matches 'patients.patient_id'
+        // This query might need adjustment based on your actual schema for encounters
+        const { data: encounterRows, error: vErr } = await this.supabase
+          .from('encounters')
           .select('*')
           .eq('extra_data->>PatientID', patientId); // Querying based on the existing pattern in loadPatientData
 
         if (vErr) {
-          console.error(`SupabaseDataService (Prod Debug): Error fetching admissions for patient ${patientId}:`, vErr);
+          console.error(`SupabaseDataService (Prod Debug): Error fetching encounters for patient ${patientId}:`, vErr);
           throw vErr;
         }
 
-        if (admissionRows) {
-          admissionRows.forEach((row) => {
-            const compositeKey = `${patientId}_${row.admission_id}`;
-            const admission: Admission = {
-              id: row.id, // Actual UUID of the admission
-              admission_id: row.admission_id, // Human-readable/external ID
+        if (encounterRows) {
+          encounterRows.forEach((row) => {
+            const compositeKey = `${patientId}_${row.encounter_id}`;
+            const encounter: Encounter = {
+              id: row.id, // Actual UUID of the encounter
+              encounterIdentifier: row.encounter_id, // Human-readable/external ID
               patientId: patientId,
               scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
               scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
               actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
               actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
-              reason: row.reason_for_admission,
+              reasonCode: row.reason_code,
               transcript: row.transcript,
               soapNote: row.soap_note,
               treatments: row.treatments || undefined,
               priorAuthJustification: row.prior_auth_justification,
               isDeleted: !!row.is_deleted,
             };
-            this.admissions[compositeKey] = admission;
-            if (!this.admissionsByPatient[patientId].includes(compositeKey)) {
-               this.admissionsByPatient[patientId].push(compositeKey);
+            this.encounters[compositeKey] = encounter;
+            if (!this.encountersByPatient[patientId].includes(compositeKey)) {
+               this.encountersByPatient[patientId].push(compositeKey);
             }
           });
         }
@@ -195,8 +195,8 @@ class SupabaseDataService {
       // this.isLoading = true; // loadPromise presence indicates loading
 
       this.patients = {}; // Clear previous state
-      this.admissions = {};
-      this.admissionsByPatient = {};
+      this.encounters = {};
+      this.encountersByPatient = {};
 
       let patientRows = null;
       try {
@@ -288,77 +288,77 @@ class SupabaseDataService {
           reason: row.patient_level_reason,
         };
         this.patients[patient.id] = patient;
-        this.admissionsByPatient[patient.id] = []; 
+        this.encountersByPatient[patient.id] = []; 
         // Store the mapping from Supabase UUID to original patient ID
         this.patientUuidToOriginalId[row.id] = patient.id;
       });
 
-      let admissionRows = null;
-      let totalAdmissionsAvailable = 0;
+      let encounterRows = null;
+      let totalEncountersAvailable = 0;
       try {
-          console.log('SupabaseDataService (Prod Debug): Attempting to fetch ALL admissions with count...');
+          console.log('SupabaseDataService (Prod Debug): Attempting to fetch ALL encounters with count...');
           const { data, error: vErr, count } = await this.supabase
-              .from('admissions')
+              .from('encounters')
               .select('*', { count: 'exact' }); 
 
           if (vErr) {
-              console.error('SupabaseDataService (Prod Debug): Error fetching admissions:', vErr);
+              console.error('SupabaseDataService (Prod Debug): Error fetching encounters:', vErr);
               throw vErr;
           }
-          admissionRows = data;
-          totalAdmissionsAvailable = count ?? 0;
+          encounterRows = data;
+          totalEncountersAvailable = count ?? 0;
       } catch (error) {
-          console.error('SupabaseDataService (Prod Debug): Exception during admissions fetch:', error);
+          console.error('SupabaseDataService (Prod Debug): Exception during encounters fetch:', error);
           this.loadPromise = null; 
           // this.isLoading = false;
           throw error;
       }
 
-      if (!admissionRows) {
-          console.error('SupabaseDataService (Prod Debug): admissionRows is null after fetch. Cannot proceed with admissions.');
+      if (!encounterRows) {
+          console.error('SupabaseDataService (Prod Debug): encounterRows is null after fetch. Cannot proceed with encounters.');
           this.loadPromise = null;
           // this.isLoading = false;
-          throw new Error("Admission rows fetch returned null.");
+          throw new Error("Encounter rows fetch returned null.");
       }
 
-      let admissionsProcessed = 0;
-      admissionRows.forEach((row) => {
-        const originalPatientIDFromAdmissionExtraData = row.extra_data?.PatientID;
+      let encountersProcessed = 0;
+      encounterRows.forEach((row) => {
+        const originalPatientIDFromEncounterExtraData = row.extra_data?.PatientID;
         
-        if (!originalPatientIDFromAdmissionExtraData) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping admission ${row.admission_id} due to missing PatientID in extra_data.`);
+        if (!originalPatientIDFromEncounterExtraData) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter ${row.encounter_id} due to missing PatientID in extra_data.`);
           return;
         }
-        if (!this.patients[originalPatientIDFromAdmissionExtraData]) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping admission ${row.admission_id}. Patient by original ID '${originalPatientIDFromAdmissionExtraData}' not found.`);
+        if (!this.patients[originalPatientIDFromEncounterExtraData]) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter ${row.encounter_id}. Patient by original ID '${originalPatientIDFromEncounterExtraData}' not found.`);
           return;
         }
 
-        const patientPublicId = originalPatientIDFromAdmissionExtraData;
-        const compositeKey = `${patientPublicId}_${row.admission_id}`;
+        const patientPublicId = originalPatientIDFromEncounterExtraData;
+        const compositeKey = `${patientPublicId}_${row.encounter_id}`;
 
-        const admission: Admission = {
-          id: row.id, // Actual UUID of the admission
-          admission_id: row.admission_id, // Human-readable/external ID
+        const encounter: Encounter = {
+          id: row.id, // Actual UUID of the encounter
+          encounterIdentifier: row.encounter_id, // Human-readable/external ID
           patientId: patientPublicId, 
           scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
           scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
           actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
           actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
-          reason: row.reason_for_admission,
+          reasonCode: row.reason_code,
           transcript: row.transcript,
           soapNote: row.soap_note,
           treatments: row.treatments || undefined, 
           priorAuthJustification: row.prior_auth_justification,
           isDeleted: !!row.is_deleted, // Ensure this mapping is correct
         };
-        this.admissions[compositeKey] = admission;
-        if (this.admissionsByPatient[patientPublicId]) {
-          this.admissionsByPatient[patientPublicId].push(compositeKey);
+        this.encounters[compositeKey] = encounter;
+        if (this.encountersByPatient[patientPublicId]) {
+          this.encountersByPatient[patientPublicId].push(compositeKey);
         } else {
-          this.admissionsByPatient[patientPublicId] = [compositeKey];
+          this.encountersByPatient[patientPublicId] = [compositeKey];
         }
-        admissionsProcessed++;
+        encountersProcessed++;
       });
 
       this.isLoaded = true;
@@ -453,11 +453,11 @@ class SupabaseDataService {
     return this.patients[patientId] ?? null;
   }
 
-  getPatientAdmissions(patientId: string): Admission[] {
+  getPatientEncounters(patientId: string): Encounter[] {
     // If patient data isn't loaded at all, this might return empty
     // but getPatientData should ensure data is loaded before this is relied upon heavily.
-    const admissionKeys = this.admissionsByPatient[patientId] || [];
-    return admissionKeys.map(key => this.admissions[key]).filter(Boolean) as Admission[];
+    const encounterKeys = this.encountersByPatient[patientId] || [];
+    return encounterKeys.map(key => this.encounters[key]).filter(Boolean) as Encounter[];
   }
 
   async getPatientData(patientId: string): Promise<PatientDataPayload | null> {
@@ -490,38 +490,38 @@ class SupabaseDataService {
         return null;
     }
 
-    const patientAdmissions = this.getPatientAdmissions(patientId);
-    const admissionDetails = patientAdmissions.map(admission => ({
-      admission,
-      diagnoses: this.getDiagnosesForAdmission(patientId, admission.id),
-      labResults: this.getLabResultsForAdmission(patientId, admission.id),
+    const patientEncounters = this.getPatientEncounters(patientId);
+    const encounterDetails = patientEncounters.map(encounter => ({
+      admission: encounter, // Keep 'admission' key for backward compatibility
+      diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
+      labResults: this.getLabResultsForEncounter(patientId, encounter.id),
     }));
-    return { patient, admissions: admissionDetails };
+    return { patient, admissions: encounterDetails }; // Keep 'admissions' key for backward compatibility
   }
 
-  getAllAdmissions(): { patient: Patient | null; admission: Admission }[] {
-    // console.log('SupabaseDataService (Prod Debug): getAllAdmissions called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.admissions).length);
+  getAllAdmissions(): { patient: Patient | null; admission: Encounter }[] {
+    // console.log('SupabaseDataService (Prod Debug): getAllAdmissions called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.encounters).length);
     if (!this.isLoaded && !this.isLoading) {
         console.error("SupabaseDataService: getAllAdmissions called when data not loaded and not currently loading. THIS IS A BUG.");
     }
-    const allAds: { patient: Patient | null; admission: Admission }[] = [];
-    Object.values(this.admissions).forEach(admission => {
-      if ((admission as any).isDeleted) return; // skip deleted
-      const patient = this.patients[admission.patientId] ?? null;
-      allAds.push({ patient, admission });
+    const allAds: { patient: Patient | null; admission: Encounter }[] = [];
+    Object.values(this.encounters).forEach(encounter => {
+      if ((encounter as any).isDeleted) return; // skip deleted
+      const patient = this.patients[encounter.patientId] ?? null;
+      allAds.push({ patient, admission: encounter });
     });
     return allAds;
   }
 
-  getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
+  getUpcomingConsultations(): { patient: Patient; visit: Encounter }[] {
     if (!this.isLoaded && !this.isLoading) {
         console.error("SupabaseDataService: getUpcomingConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
     }
-    const upcoming: { patient: Patient; visit: Admission }[] = [];
+    const upcoming: { patient: Patient; visit: Encounter }[] = [];
     const now = new Date();
     const nowTime = now.getTime();
 
-    Object.values(this.admissions).forEach(ad => {
+    Object.values(this.encounters).forEach(ad => {
       if ((ad as any).isDeleted) return;
       if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
         try {
@@ -548,15 +548,15 @@ class SupabaseDataService {
     return upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
   }
 
-  getPastConsultations(): { patient: Patient; visit: Admission }[] {
+  getPastConsultations(): { patient: Patient; visit: Encounter }[] {
     if (!this.isLoaded && !this.isLoading) {
       console.error("SupabaseDataService: getPastConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
     }
-    const past: { patient: Patient; visit: Admission }[] = [];
+    const past: { patient: Patient; visit: Encounter }[] = [];
     const now = new Date();
     const nowTime = now.getTime();
 
-    Object.values(this.admissions).forEach(ad => {
+    Object.values(this.encounters).forEach(ad => {
       if ((ad as any).isDeleted) return;
       if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
         try {
@@ -579,38 +579,43 @@ class SupabaseDataService {
     return past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
   }
 
-  async updateAdmissionTranscript(patientId: string, admissionCompositeId: string, transcript: string): Promise<void> {
-    const originalAdmissionId = admissionCompositeId.split('_').slice(-1)[0];
+  async updateEncounterTranscript(patientId: string, encounterCompositeId: string, transcript: string): Promise<void> {
+    const originalEncounterId = encounterCompositeId.split('_').slice(-1)[0];
     const { error } = await this.supabase
-      .from('admissions')
+      .from('encounters')
       .update({ transcript: transcript })
-      .eq('admission_id', originalAdmissionId);
+      .eq('encounter_id', originalEncounterId);
     if (error) {
       console.error('SupabaseDataService (Prod Debug): Error updating transcript in DB:', error.message);
       throw error;
     }
-    if (this.admissions[admissionCompositeId]) {
-      this.admissions[admissionCompositeId].transcript = transcript;
+    if (this.encounters[encounterCompositeId]) {
+      this.encounters[encounterCompositeId].transcript = transcript;
     } else {
-      console.warn(`SupabaseDataService (Prod Debug): updateAdmissionTranscript - Admission with composite ID ${admissionCompositeId} not found in local cache to update.`);
+      console.warn(`SupabaseDataService (Prod Debug): updateEncounterTranscript - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
     }
   }
 
-  async updateAdmissionObservations(
+  // Backward compatibility alias
+  async updateAdmissionTranscript(patientId: string, admissionCompositeId: string, transcript: string): Promise<void> {
+    return this.updateEncounterTranscript(patientId, admissionCompositeId, transcript);
+  }
+
+  async updateEncounterObservations(
     patientId: string, // Though not directly used in the SQL, good for context/caching if needed
-    admissionCompositeId: string, 
+    encounterCompositeId: string, 
     observations: string[]
   ): Promise<void> {
-    const originalAdmissionId = admissionCompositeId.split('_').pop(); // Get the actual admission_id for the DB
-    if (!originalAdmissionId) {
-      console.error('SupabaseDataService: Could not extract originalAdmissionId from composite ID:', admissionCompositeId);
-      throw new Error('Invalid admissionCompositeId');
+    const originalEncounterId = encounterCompositeId.split('_').pop(); // Get the actual encounter_id for the DB
+    if (!originalEncounterId) {
+      console.error('SupabaseDataService: Could not extract originalEncounterId from composite ID:', encounterCompositeId);
+      throw new Error('Invalid encounterCompositeId');
     }
 
     const { error } = await this.supabase
-      .from('admissions')
+      .from('encounters')
       .update({ observations: observations })
-      .eq('admission_id', originalAdmissionId);
+      .eq('encounter_id', originalEncounterId);
 
     if (error) {
       console.error('SupabaseDataService (Prod Debug): Error updating observations in DB:', error.message);
@@ -618,19 +623,28 @@ class SupabaseDataService {
     }
 
     // Update local cache
-    if (this.admissions[admissionCompositeId]) {
-      this.admissions[admissionCompositeId].observations = observations;
+    if (this.encounters[encounterCompositeId]) {
+      this.encounters[encounterCompositeId].observations = observations;
       this.emitChange(); // Notify subscribers of the change
     } else {
-      console.warn(`SupabaseDataService (Prod Debug): updateAdmissionObservations - Admission with composite ID ${admissionCompositeId} not found in local cache to update.`);
+      console.warn(`SupabaseDataService (Prod Debug): updateEncounterObservations - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
     }
-    console.log("Observations updated successfully in DB and cache for admission:", admissionCompositeId);
+    console.log("Observations updated successfully in DB and cache for encounter:", encounterCompositeId);
   }
 
-  async createNewAdmission(
+  // Backward compatibility alias
+  async updateAdmissionObservations(
+    patientId: string,
+    admissionCompositeId: string,
+    observations: string[]
+  ): Promise<void> {
+    return this.updateEncounterObservations(patientId, admissionCompositeId, observations);
+  }
+
+  async createNewEncounter(
     patientId: string,
     opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
-  ): Promise<Admission> {
+  ): Promise<Encounter> {
     // Ensure patient exists (reload on demand)
     if (!this.patients[patientId]) {
       if (!this.isLoaded && !this.isLoading) {
@@ -641,7 +655,7 @@ class SupabaseDataService {
       }
     }
 
-    const newAdmissionId = crypto.randomUUID();
+    const newEncounterId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
 
     // Compute start and end times based on optional duration
@@ -651,10 +665,10 @@ class SupabaseDataService {
       : opts?.scheduledEnd ?? null;
 
     // Insert into DB
-    const { error: insertErr } = await this.supabase.from('admissions').insert([
+    const { error: insertErr } = await this.supabase.from('encounters').insert([
       {
-        admission_id: newAdmissionId,
-        reason_for_admission: opts?.reason ?? null,
+        encounter_id: newEncounterId,
+        reason_code: opts?.reason ?? null,
         scheduled_start_datetime: startIso,
         scheduled_end_datetime: endIso,
         actual_start_datetime: null,
@@ -665,25 +679,34 @@ class SupabaseDataService {
     ]);
 
     if (insertErr) {
-      console.error('SupabaseDataService: Failed to insert new admission into DB', insertErr);
+      console.error('SupabaseDataService: Failed to insert new encounter into DB', insertErr);
       throw insertErr;
     }
 
     // Build local cache record
-    const compositeId = `${patientId}_${newAdmissionId}`;
-    const admission: Admission = {
+    const compositeId = `${patientId}_${newEncounterId}`;
+    const encounter: Encounter = {
       id: compositeId,
+      encounterIdentifier: newEncounterId,
       patientId,
       scheduledStart: startIso,
       scheduledEnd: endIso ?? '',
-      reason: opts?.reason ?? undefined,
-    } as Admission;
+      reasonCode: opts?.reason ?? undefined,
+    } as Encounter;
 
-    this.admissions[compositeId] = admission;
-    if (!this.admissionsByPatient[patientId]) this.admissionsByPatient[patientId] = [];
-    this.admissionsByPatient[patientId].unshift(compositeId);
+    this.encounters[compositeId] = encounter;
+    if (!this.encountersByPatient[patientId]) this.encountersByPatient[patientId] = [];
+    this.encountersByPatient[patientId].unshift(compositeId);
     this.emitChange();
-    return admission;
+    return encounter;
+  }
+
+  // Backward compatibility alias
+  async createNewAdmission(
+    patientId: string,
+    opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
+  ): Promise<Encounter> {
+    return this.createNewEncounter(patientId, opts);
   }
 
   // ------------------------------------------------------------------
@@ -732,49 +755,58 @@ class SupabaseDataService {
       gender: input.gender,
       dateOfBirth: input.dateOfBirth,
       alerts: [],
-    } as Patient;
-    this.patients[newId] = patient;
-    this.admissionsByPatient[newId] = [];
-    this.emitChange();
-    return patient;
+          } as Patient;
+      this.patients[newId] = patient;
+      this.encountersByPatient[newId] = [];
+      this.emitChange();
+      return patient;
   }
 
+  async createNewPatientWithEncounter(
+    patientInput: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string },
+    encounterInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
+  ): Promise<{ patient: Patient; encounter: Encounter }> {
+    const patient = await this.createNewPatient(patientInput);
+    const encounter = await this.createNewEncounter(patient.id, encounterInput);
+    return { patient, encounter };
+  }
+
+  // Backward compatibility alias
   async createNewPatientWithAdmission(
     patientInput: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string },
     admissionInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
-  ): Promise<{ patient: Patient; admission: Admission }> {
-    const patient = await this.createNewPatient(patientInput);
-    const admission = await this.createNewAdmission(patient.id, admissionInput);
-    return { patient, admission };
+  ): Promise<{ patient: Patient; admission: Encounter }> {
+    const result = await this.createNewPatientWithEncounter(patientInput, admissionInput);
+    return { patient: result.patient, admission: result.encounter };
   }
 
   // ------------------------------------------------------------------
   // Soft delete helpers (in-memory updates; DB persistence TBD)
   // ------------------------------------------------------------------
   /**
-   * Mark an admission as deleted (soft delete).
-   * Returns true if admission exists and was marked deleted.
+   * Mark an encounter as deleted (soft delete).
+   * Returns true if encounter exists and was marked deleted.
    */
-  markAdmissionAsDeleted(patientId: string, admissionId: string): boolean {
-    const ad = this.admissions[admissionId];
-    if (!ad || ad.patientId !== patientId) return false;
-    if (ad.isDeleted) return true; // already deleted
+  markEncounterAsDeleted(patientId: string, encounterId: string): boolean {
+    const enc = this.encounters[encounterId];
+    if (!enc || enc.patientId !== patientId) return false;
+    if (enc.isDeleted) return true; // already deleted
 
     // Update in-memory cache first for immediate UI feedback
-    (ad as Admission).isDeleted = true;
+    (enc as Encounter).isDeleted = true;
 
     // Persist to DB in background (try both candidate PK column names)
-    const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    this.supabase.from('admissions')
+    const originalEncounterId = encounterId.split('_').slice(-1)[0];
+    this.supabase.from('encounters')
       .update({ is_deleted: true })
-      .eq('admission_id', originalAdmissionId)
+      .eq('encounter_id', originalEncounterId)
       .then(async ({ error, data }) => {
         if (error) {
-          console.error('SupabaseDataService: update by admission_id failed', JSON.stringify(error, null, 2));
+          console.error('SupabaseDataService: update by encounter_id failed', JSON.stringify(error, null, 2));
           // Attempt alternative column
-          const { error: err2 } = await this.supabase.from('admissions')
+          const { error: err2 } = await this.supabase.from('encounters')
             .update({ is_deleted: true })
-            .eq('id', originalAdmissionId);
+            .eq('id', originalEncounterId);
           if (err2) {
             console.error('SupabaseDataService: update by id failed', JSON.stringify(err2, null,2));
           }
@@ -785,25 +817,30 @@ class SupabaseDataService {
     return true;
   }
 
-  /** Restore a previously soft-deleted admission */
-  restoreAdmission(patientId: string, admissionId: string): boolean {
-    const ad = this.admissions[admissionId];
-    if (!ad || ad.patientId !== patientId) return false;
-    if (!ad.isDeleted) return true; // already active
+  // Backward compatibility alias
+  markAdmissionAsDeleted(patientId: string, admissionId: string): boolean {
+    return this.markEncounterAsDeleted(patientId, admissionId);
+  }
 
-    delete (ad as any).isDeleted;
+  /** Restore a previously soft-deleted encounter */
+  restoreEncounter(patientId: string, encounterId: string): boolean {
+    const enc = this.encounters[encounterId];
+    if (!enc || enc.patientId !== patientId) return false;
+    if (!enc.isDeleted) return true; // already active
+
+    delete (enc as any).isDeleted;
 
     // Persist to DB in background (try both candidate PK column names)
-    const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    this.supabase.from('admissions')
+    const originalEncounterId = encounterId.split('_').slice(-1)[0];
+    this.supabase.from('encounters')
       .update({ is_deleted: false })
-      .eq('admission_id', originalAdmissionId)
+      .eq('encounter_id', originalEncounterId)
       .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: restore update admission_id failed', JSON.stringify(error, null,2));
-          const { error: err2 } = await this.supabase.from('admissions')
+          console.error('SupabaseDataService: restore update encounter_id failed', JSON.stringify(error, null,2));
+          const { error: err2 } = await this.supabase.from('encounters')
             .update({ is_deleted: false })
-            .eq('id', originalAdmissionId);
+            .eq('id', originalEncounterId);
           if (err2) {
             console.error('SupabaseDataService: restore update id failed', JSON.stringify(err2, null,2));
           }
@@ -814,28 +851,33 @@ class SupabaseDataService {
     return true;
   }
 
-  /** Permanently remove an admission from cache (DB removal TBD) */
-  permanentlyDeleteAdmission(patientId: string, admissionId: string): boolean {
-    const ad = this.admissions[admissionId];
-    if (!ad || ad.patientId !== patientId) return false;
+  // Backward compatibility alias
+  restoreAdmission(patientId: string, admissionId: string): boolean {
+    return this.restoreEncounter(patientId, admissionId);
+  }
+
+  /** Permanently remove an encounter from cache (DB removal TBD) */
+  permanentlyDeleteEncounter(patientId: string, encounterId: string): boolean {
+    const enc = this.encounters[encounterId];
+    if (!enc || enc.patientId !== patientId) return false;
 
     // Remove from in-memory maps first for immediate UI update
-    delete this.admissions[admissionId];
-    if (this.admissionsByPatient[patientId]) {
-      this.admissionsByPatient[patientId] = this.admissionsByPatient[patientId].filter(key => key !== admissionId);
+    delete this.encounters[encounterId];
+    if (this.encountersByPatient[patientId]) {
+      this.encountersByPatient[patientId] = this.encountersByPatient[patientId].filter(key => key !== encounterId);
     }
 
     // Delete from DB in background (try both candidate PK column names)
-    const originalAdmissionId = admissionId.split('_').slice(-1)[0];
-    this.supabase.from('admissions')
+    const originalEncounterId = encounterId.split('_').slice(-1)[0];
+    this.supabase.from('encounters')
       .delete()
-      .eq('admission_id', originalAdmissionId)
+      .eq('encounter_id', originalEncounterId)
       .then(async ({ error }) => {
         if (error) {
-          console.error('SupabaseDataService: delete admission_id failed', JSON.stringify(error, null,2));
-          const { error: err2 } = await this.supabase.from('admissions')
+          console.error('SupabaseDataService: delete encounter_id failed', JSON.stringify(error, null,2));
+          const { error: err2 } = await this.supabase.from('encounters')
             .delete()
-            .eq('id', originalAdmissionId);
+            .eq('id', originalEncounterId);
           if (err2) {
             console.error('SupabaseDataService: delete id failed', JSON.stringify(err2, null,2));
           }
@@ -844,6 +886,11 @@ class SupabaseDataService {
 
     this.emitChange();
     return true;
+  }
+
+  // Backward compatibility alias
+  permanentlyDeleteAdmission(patientId: string, admissionId: string): boolean {
+    return this.permanentlyDeleteEncounter(patientId, admissionId);
   }
 
   unsubscribe(cb: () => void) {
@@ -859,14 +906,23 @@ class SupabaseDataService {
     return this.labResults[patientId] || [];
   }
 
-  getDiagnosesForAdmission(patientId: string, admissionId: string): Diagnosis[] {
+  getDiagnosesForEncounter(patientId: string, encounterId: string): Diagnosis[] {
     const patientDiagnoses = this.diagnoses[patientId] || [];
-    return patientDiagnoses.filter(dx => dx.admissionId === admissionId);
+    return patientDiagnoses.filter(dx => dx.admissionId === encounterId);
+  }
+
+  getLabResultsForEncounter(patientId: string, encounterId: string): LabResult[] {
+    const patientLabs = this.labResults[patientId] || [];
+    return patientLabs.filter(lab => lab.admissionId === encounterId);
+  }
+
+  // Backward compatibility aliases
+  getDiagnosesForAdmission(patientId: string, admissionId: string): Diagnosis[] {
+    return this.getDiagnosesForEncounter(patientId, admissionId);
   }
 
   getLabResultsForAdmission(patientId: string, admissionId: string): LabResult[] {
-    const patientLabs = this.labResults[patientId] || [];
-    return patientLabs.filter(lab => lab.admissionId === admissionId);
+    return this.getLabResultsForEncounter(patientId, admissionId);
   }
 }
 

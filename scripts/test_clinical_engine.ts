@@ -37,25 +37,25 @@ async function testClinicalEngine() {
     {
       name: 'Diabetic Patient with Poor Control',
       patientId: 'TEST_DM_001',
-      admissionId: 'TEST_DM_001_TEST_DM_001-V1',
+      encounterId: 'TEST_DM_001_TEST_DM_001-V1',
       expectedDiagnosis: 'fatigue'
     },
     {
       name: 'Patient with Joint Pain (Possible RA)',
       patientId: 'TEST_RA_001',
-      admissionId: 'TEST_RA_001_TEST_RA_001-V1',
+      encounterId: 'TEST_RA_001_TEST_RA_001-V1',
       expectedDiagnosis: 'arthritis'
     },
     {
       name: 'Patient with URI Symptoms',
       patientId: 'TEST_URI_001',
-      admissionId: 'TEST_URI_001_TEST_URI_001-V1',
+      encounterId: 'TEST_URI_001_TEST_URI_001-V1',
       expectedDiagnosis: 'respiratory infection'
     },
     {
       name: 'Patient with Chest Pain',
       patientId: 'TEST_CP_001',
-      admissionId: 'TEST_CP_001_TEST_CP_001-V1',
+      encounterId: 'TEST_CP_001_TEST_CP_001-V1',
       expectedDiagnosis: 'chest pain'
     }
   ];
@@ -67,7 +67,7 @@ async function testClinicalEngine() {
     try {
       const result = await engine.runDiagnosticPipeline(
         testCase.patientId,
-        testCase.admissionId
+        testCase.encounterId
       );
       
       console.log('\n📋 Diagnostic Result:');

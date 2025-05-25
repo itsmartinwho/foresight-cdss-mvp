@@ -1,10 +1,10 @@
 import { supabaseDataService } from './supabaseDataService';
-import { Patient, Admission, Diagnosis, LabResult } from './types';
+import { Patient, Encounter, Diagnosis, LabResult } from './types';
 
 export interface FHIRPatientContext {
   patient: Patient;
-  currentAdmission?: Admission;
-  priorEncounters: Admission[];
+  currentEncounter?: Encounter;
+  priorEncounters: Encounter[];
   conditions: Diagnosis[];
   observations: LabResult[];
 }
@@ -19,8 +19,8 @@ export class PatientContextLoader {
    */
   static async fetch(
     patientId: string,
-    currentAdmissionId?: string,
-    includeAdmissionIds?: string[]
+    currentEncounterId?: string,
+    includeEncounterIds?: string[]
   ): Promise<FHIRPatientContext> {
     // Ensure data is loaded
     const patientData = await supabaseDataService.getPatientData(patientId);
@@ -32,27 +32,27 @@ export class PatientContextLoader {
     const patient = patientData.patient;
     const allAdmissions = patientData.admissions || [];
     
-    // Find current admission if specified
-    let currentAdmission: Admission | undefined;
-    if (currentAdmissionId) {
-      console.log(`PatientContextLoader: Searching for currentAdmissionId: '${currentAdmissionId}'`);
+    // Find current encounter if specified
+    let currentEncounter: Encounter | undefined;
+    if (currentEncounterId) {
+      console.log(`PatientContextLoader: Searching for currentEncounterId: '${currentEncounterId}'`);
       allAdmissions.forEach((wrapper, index) => {
-        console.log(`PatientContextLoader: Admission ${index} has admission_id: '${wrapper.admission.admission_id}', id: '${wrapper.admission.id}'`);
+        console.log(`PatientContextLoader: Encounter ${index} has encounterIdentifier: '${wrapper.admission.encounterIdentifier}', id: '${wrapper.admission.id}'`);
       });
-      const currentAdmissionWrapper = allAdmissions.find(
-        wrapper => wrapper.admission.admission_id === currentAdmissionId
+      const currentEncounterWrapper = allAdmissions.find(
+        wrapper => wrapper.admission.encounterIdentifier === currentEncounterId
       );
-      currentAdmission = currentAdmissionWrapper?.admission;
+      currentEncounter = currentEncounterWrapper?.admission;
     }
 
-    // Filter prior encounters based on includeAdmissionIds or get all except current
+    // Filter prior encounters based on includeEncounterIds or get all except current
     const priorEncounters = allAdmissions
       .filter(wrapper => {
-        if (includeAdmissionIds && includeAdmissionIds.length > 0) {
-          return includeAdmissionIds.includes(wrapper.admission.id);
+        if (includeEncounterIds && includeEncounterIds.length > 0) {
+          return includeEncounterIds.includes(wrapper.admission.id);
         }
-        // If currentAdmission is defined, exclude it. Otherwise, include all (as none is current).
-        return currentAdmission ? wrapper.admission.id !== currentAdmission.id : true;
+        // If currentEncounter is defined, exclude it. Otherwise, include all (as none is current).
+        return currentEncounter ? wrapper.admission.id !== currentEncounter.id : true;
       })
       .map(wrapper => wrapper.admission);
 
@@ -64,7 +64,7 @@ export class PatientContextLoader {
 
     return {
       patient,
-      currentAdmission,
+      currentEncounter,
       priorEncounters,
       conditions,
       observations
@@ -90,17 +90,17 @@ export class PatientContextLoader {
         diagnosis: context.patient.diagnosis,
         alerts: context.patient.alerts || []
       },
-      currentAdmission: context.currentAdmission ? {
-        id: context.currentAdmission.id,
-        reason: context.currentAdmission.reason,
-        scheduledStart: context.currentAdmission.scheduledStart,
-        transcript: context.currentAdmission.transcript,
-        soapNote: context.currentAdmission.soapNote,
-        treatments: context.currentAdmission.treatments || []
+      currentEncounter: context.currentEncounter ? {
+        id: context.currentEncounter.id,
+        reason: context.currentEncounter.reasonCode,
+        scheduledStart: context.currentEncounter.scheduledStart,
+        transcript: context.currentEncounter.transcript,
+        soapNote: context.currentEncounter.soapNote,
+        treatments: context.currentEncounter.treatments || []
       } : null,
       priorEncounters: context.priorEncounters.map(enc => ({
         id: enc.id,
-        reason: enc.reason,
+        reason: enc.reasonCode,
         scheduledStart: enc.scheduledStart,
         transcript: enc.transcript
       })),
