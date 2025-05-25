@@ -81,4 +81,35 @@ test.describe('Foresight CDSS E2E Tests', () => {
     await page.waitForTimeout(500); // Wait for request
     expect(modelUsed).toBe('o3');
   });
+
+  test('No consultations before year 2000 appear in Upcoming or Past Consultations in Patients tab', async ({ page }) => {
+    // Navigate to Patients tab
+    const patientsLink = page.getByRole('link', { name: 'Patients' });
+    await patientsLink.click();
+    await expect(page).toHaveURL(/.*\/patients/);
+
+    // Wait for the consultations tab to load
+    const consultationsTab = page.getByRole('tab', { name: /All Consultations/i });
+    await consultationsTab.click();
+
+    // Check Upcoming Consultations table
+    const upcomingRows = await page.locator('table:has-caption("Upcoming Consultations") tbody tr').all();
+    for (const row of upcomingRows) {
+      const dateCell = await row.locator('td').nth(1).textContent();
+      if (dateCell) {
+        const year = new Date(dateCell).getFullYear();
+        expect(year).toBeGreaterThanOrEqual(2000);
+      }
+    }
+
+    // Check Past Consultations table
+    const pastRows = await page.locator('table:has-caption("Past Consultations") tbody tr').all();
+    for (const row of pastRows) {
+      const dateCell = await row.locator('td').nth(1).textContent();
+      if (dateCell) {
+        const year = new Date(dateCell).getFullYear();
+        expect(year).toBeGreaterThanOrEqual(2000);
+      }
+    }
+  });
 }); 

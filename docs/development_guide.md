@@ -203,6 +203,12 @@ While `test-plan.md` provided a high-level list, here's how its concepts integra
     *   If Tool D is developed, its logic for complex case detection and co-pilot suggestions would need thorough unit and integration testing.
 *   **UI Component Testing (Covered by Storybook, Jest/RTL):**
     *   Navigation, layout, patient list, patient detail, consultation view, diagnostic advisor components. Each interactive element and display logic should be tested.
+
+**Consultation Filtering Logic**
+- Both the Dashboard and Patients tab use robust filtering for upcoming and past consultations.
+- Any consultation (admission) with a `scheduledStart` year < 2000 is excluded from both "Upcoming" and "Past" lists, regardless of its date value.
+- This is enforced in the service layer via `supabaseDataService.getUpcomingConsultations()` and `supabaseDataService.getPastConsultations()`, which should be used for all such filtering in the UI.
+- This ensures that legacy or malformed data does not appear in the user interface.
 *   **Browser Compatibility & Mobile Responsiveness:**
     *   Primarily covered by Playwright E2E tests which can be run across different browser engines.
     *   Visual regression testing (e.g., with Playwright or Storybook addons) can help catch layout issues on different viewports.
