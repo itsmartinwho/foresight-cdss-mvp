@@ -31,7 +31,7 @@ export default function AlertsScreenView({ onAlertClick, allAlerts: rawAlerts }:
 
       for (const alert of alertsToEnrich) {
         let lastConsultDate: string | undefined;
-        const patientAdmissions: Admission[] = supabaseDataService.getPatientAdmissions(alert.patientId);
+        const patientAdmissions: Admission[] = supabaseDataService.getPatientEncounters(alert.patientId);
         
         if (patientAdmissions && patientAdmissions.length > 0) {
           const sortedAdmissions = [...patientAdmissions].sort((a, b) => {
