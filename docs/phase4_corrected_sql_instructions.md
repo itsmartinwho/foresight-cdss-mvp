@@ -9,11 +9,11 @@ The Phase 4 SQL script has been corrected to match the actual database schema. T
 - `patients.email`
 - `patients.address`
 - `encounters.date_time` (use `scheduled_start_datetime`)
-- `encounters.encounter_class` (not used; `admission_type` covers this)
+- `encounters.encounter_class` (not used; `encounter_type` covers this, formerly `admission_type`)
 
 ### Correct field names & usage:
 - Use `birth_date` not `dob` (already renamed in Phase 1)
-- Use `admission_type` for the type of encounter (e.g., 'consultation').
+- Use `encounter_type` for the type of encounter (e.g., 'consultation', 'ambulatory'). This was formerly `admission_type`.
 - Use `reason_code` for the coded reason (e.g., 'R05').
 - Use `reason_display_text` for the human-readable text (e.g., 'Cough - mild upper respiratory symptoms').
 - Use `scheduled_start_datetime` for encounter timing.

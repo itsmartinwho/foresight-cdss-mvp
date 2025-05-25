@@ -7,15 +7,28 @@ ALTER TABLE public.patients
   DROP COLUMN IF EXISTS primary_diagnosis_description,
   DROP COLUMN IF EXISTS general_diagnosis_details;
 
--- 2. Ensure encounter_id is properly unique per patient
+-- 2. Rename admission_type to encounter_type in encounters table for FHIR alignment
+DO $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='encounters' AND column_name='admission_type') THEN
+    ALTER TABLE public.encounters RENAME COLUMN admission_type TO encounter_type;
+    RAISE NOTICE 'Column encounters.admission_type renamed to encounter_type';
+  ELSEIF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='encounters' AND column_name='encounter_type') THEN
+    RAISE NOTICE 'Column encounters.encounter_type already exists';
+  ELSE
+    RAISE WARNING 'Column encounters.admission_type not found, could not rename to encounter_type';
+  END IF;
+END $$;
+
+-- 3. Ensure encounter_id is properly unique per patient
 -- The field is already unique, but let's add a comment for clarity
 COMMENT ON COLUMN public.encounters.encounter_id IS 'Human-readable unique identifier per patient (e.g., P001-V1)';
 
--- 3. Add comprehensive test data for end-to-end testing
+-- 4. Add comprehensive test data for end-to-end testing
 -- Clear existing test data first (only test patients starting with TEST_)
 DELETE FROM public.patients WHERE patient_id LIKE 'TEST_%';
 
--- 3a. Healthy adult with no chronic conditions
+-- 4a. Healthy adult with no chronic conditions
 INSERT INTO public.patients (
   patient_id, first_name, last_name, name, gender, birth_date, 
   race, ethnicity, language
@@ -26,7 +39,7 @@ INSERT INTO public.patients (
 
 -- Add an encounter for the healthy patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, admission_type,
+  encounter_id, patient_supabase_id, encounter_type,
   reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_HEALTHY_001-V1',
@@ -35,7 +48,7 @@ INSERT INTO public.encounters (
   'finished', NOW() - INTERVAL '2 days'
 );
 
--- 3b. Patient with multiple chronic conditions
+-- 4b. Patient with multiple chronic conditions
 INSERT INTO public.patients (
   patient_id, first_name, last_name, name, gender, birth_date,
   race, ethnicity, language
@@ -53,7 +66,7 @@ INSERT INTO public.conditions (patient_id, code, description, category, onset_da
 
 -- Add an encounter for the chronic patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, admission_type,
+  encounter_id, patient_supabase_id, encounter_type,
   reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_CHRONIC_001-V1',
@@ -74,7 +87,7 @@ INSERT INTO public.lab_results (patient_id, encounter_id, name, value, units, da
    (SELECT id FROM public.encounters WHERE encounter_id = 'TEST_CHRONIC_001-V1'),
    'LDL Cholesterol', '145', 'mg/dL', NOW() - INTERVAL '1 week', '<100', 'H');
 
--- 3c. Edge case: Patient with missing data
+-- 4c. Edge case: Patient with missing data
 INSERT INTO public.patients (
   patient_id, first_name, last_name, gender, birth_date,
   language -- Minimal data, no race/ethnicity
@@ -84,7 +97,7 @@ INSERT INTO public.patients (
 
 -- Add encounter with no lab results
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, admission_type,
+  encounter_id, patient_supabase_id, encounter_type,
   reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_MINIMAL_001-V1',
@@ -93,7 +106,7 @@ INSERT INTO public.encounters (
   'finished', NOW() - INTERVAL '3 days'
 );
 
--- 3d. Pediatric patient
+-- 4d. Pediatric patient
 INSERT INTO public.patients (
   patient_id, first_name, last_name, name, gender, birth_date,
   race, ethnicity, language
@@ -104,7 +117,7 @@ INSERT INTO public.patients (
 
 -- Add encounter for pediatric patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, admission_type,
+  encounter_id, patient_supabase_id, encounter_type,
   reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_PEDS_001-V1',
@@ -122,7 +135,7 @@ INSERT INTO public.lab_results (patient_id, encounter_id, name, value, units, da
    (SELECT id FROM public.encounters WHERE encounter_id = 'TEST_PEDS_001-V1'),
    'WBC Count', '12.5', 'K/uL', NOW() - INTERVAL '3 hours', '4.5-11.0', 'H');
 
--- 3e. Elderly patient with polypharmacy
+-- 4e. Elderly patient with polypharmacy
 INSERT INTO public.patients (
   patient_id, first_name, last_name, name, gender, birth_date,
   race, ethnicity, language
@@ -139,7 +152,7 @@ INSERT INTO public.conditions (patient_id, code, description, category, onset_da
 
 -- Add encounter for elderly patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, admission_type,
+  encounter_id, patient_supabase_id, encounter_type,
   reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_ELDERLY_001-V1',
@@ -160,7 +173,7 @@ INSERT INTO public.lab_results (patient_id, encounter_id, name, value, units, da
    (SELECT id FROM public.encounters WHERE encounter_id = 'TEST_ELDERLY_001-V1'),
    'INR', '2.5', '', NOW() - INTERVAL '1 day', '2.0-3.0', '');
 
--- 4. Create a summary view of the test data
+-- 5. Create a summary view of the test data
 CREATE OR REPLACE VIEW test_data_summary AS
 SELECT 
   p.patient_id,
@@ -179,7 +192,7 @@ LEFT JOIN public.lab_results l ON l.patient_id = p.id
 WHERE p.patient_id LIKE 'TEST_%'
 GROUP BY p.patient_id, p.first_name, p.last_name, p.gender, p.birth_date, p.race, p.ethnicity;
 
--- 5. Verify data integrity
+-- 6. Verify data integrity
 DO $$
 DECLARE
   orphaned_conditions INTEGER;
@@ -220,7 +233,7 @@ BEGIN
   RAISE NOTICE 'Data integrity check complete';
 END $$;
 
--- 6. Final schema documentation
+-- 7. Final schema documentation
 COMMENT ON TABLE public.patients IS 'FHIR-aligned patient demographics (US Core Patient)';
 COMMENT ON TABLE public.encounters IS 'FHIR-aligned clinical encounters (US Core Encounter)';
 COMMENT ON TABLE public.conditions IS 'FHIR-aligned diagnoses and problems (US Core Condition)';

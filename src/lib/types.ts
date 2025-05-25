@@ -28,6 +28,7 @@ export interface Encounter {
   id: string;
   encounterIdentifier: string; // Human-readable/external ID for the encounter
   patientId: string;
+  encounter_type?: string; // FHIR Encounter.type (e.g. 'consultation', 'ambulatory')
   scheduledStart: string;
   scheduledEnd: string;
   actualStart?: string;

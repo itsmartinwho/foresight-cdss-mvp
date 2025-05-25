@@ -164,6 +164,13 @@ The current schema can be easily serialized to FHIR resources:
 - No speculative fields added
 - Clear separation of concerns between tables
 
+## Schema Alignment Status
+
+The system now has:
+- ✅ FHIR-aligned patient demographics (with `birth_date`, `race`, `ethnicity`)
+- ✅ FHIR-aligned encounters (with `status`, `is_deleted` for soft deletes, and `encounter_type`)
+- ✅ Separate `conditions` table for diagnoses
+
 ## Summary
 
 Phase 4 successfully completes the FHIR migration by:
