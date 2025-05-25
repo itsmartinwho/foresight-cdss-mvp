@@ -31,6 +31,7 @@ interface TestEncounter {
   encounter_id: string;
   admission_type: string;
   reason_code: string;
+  reason_display_text: string;
   transcript?: string;
 }
 
@@ -149,35 +150,40 @@ async function insertTestEncounters() {
       patient_id: 'TEST_HEALTHY_001',
       encounter_id: 'TEST_HEALTHY_001-V1',
       admission_type: 'consultation',
-      reason_code: 'R05 - Cough - mild upper respiratory symptoms',
+      reason_code: 'R05',
+      reason_display_text: 'Cough - mild upper respiratory symptoms',
       transcript: 'Patient presents with mild cough for 3 days. No fever, no shortness of breath.'
     },
     {
       patient_id: 'TEST_CHRONIC_001',
       encounter_id: 'TEST_CHRONIC_001-V1',
       admission_type: 'consultation',
-      reason_code: 'R53.83 - Fatigue and joint pain',
+      reason_code: 'R53.83',
+      reason_display_text: 'Fatigue and joint pain',
       transcript: 'Patient reports increasing fatigue over past month. Also experiencing joint pain in hands and knees, worse in the morning.'
     },
     {
       patient_id: 'TEST_MINIMAL_001',
       encounter_id: 'TEST_MINIMAL_001-V1',
       admission_type: 'consultation',
-      reason_code: 'R51 - Headache',
+      reason_code: 'R51',
+      reason_display_text: 'Headache',
       transcript: 'Tension-type headache for 2 days. No visual changes, no nausea.'
     },
     {
       patient_id: 'TEST_PEDS_001',
       encounter_id: 'TEST_PEDS_001-V1',
       admission_type: 'consultation',
-      reason_code: 'R50.9 - Fever and ear pain',
+      reason_code: 'R50.9',
+      reason_display_text: 'Fever and ear pain',
       transcript: 'Child brought in by parent with fever 101.5F and complaining of right ear pain since yesterday.'
     },
     {
       patient_id: 'TEST_ELDERLY_001',
       encounter_id: 'TEST_ELDERLY_001-V1',
       admission_type: 'consultation',
-      reason_code: 'R26.2 - Difficulty walking and dizziness',
+      reason_code: 'R26.2',
+      reason_display_text: 'Difficulty walking and dizziness',
       transcript: 'Patient reports increased difficulty with ambulation and episodes of dizziness, especially when standing up.'
     }
   ];
@@ -204,6 +210,7 @@ async function insertTestEncounters() {
         patient_supabase_id: patient.id,
         admission_type: encounter.admission_type,
         reason_code: encounter.reason_code,
+        reason_display_text: encounter.reason_display_text,
         transcript: encounter.transcript,
         status: 'finished',
         scheduled_start_datetime: now.toISOString(),

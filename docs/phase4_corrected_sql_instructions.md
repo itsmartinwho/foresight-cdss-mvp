@@ -8,16 +8,15 @@ The Phase 4 SQL script has been corrected to match the actual database schema. T
 - `patients.phone`
 - `patients.email`
 - `patients.address`
-- `encounters.date_time`
-- `encounters.encounter_type` (it's called `admission_type`)
-- `encounters.encounter_class` (doesn't exist)
-- `encounters.reason_display_text` (only `reason_code` exists)
+- `encounters.date_time` (use `scheduled_start_datetime`)
+- `encounters.encounter_class` (not used; `admission_type` covers this)
 
-### Correct field names:
+### Correct field names & usage:
 - Use `birth_date` not `dob` (already renamed in Phase 1)
-- Use `admission_type` not `encounter_type`
-- Use `reason_code` for the reason (we combine code and description in one field)
-- Use `scheduled_start_datetime` for encounter timing
+- Use `admission_type` for the type of encounter (e.g., 'consultation').
+- Use `reason_code` for the coded reason (e.g., 'R05').
+- Use `reason_display_text` for the human-readable text (e.g., 'Cough - mild upper respiratory symptoms').
+- Use `scheduled_start_datetime` for encounter timing.
 
 ## Running the Script
 
@@ -48,7 +47,7 @@ The script creates 5 test patients:
 
 After running the script, verify:
 1. Test patients appear in the UI
-2. Encounters show with combined reason codes (e.g., "R05 - Cough - mild upper respiratory symptoms")
+2. Encounters show with separate `reason_code` and `reason_display_text`.
 3. Lab results and conditions are properly linked
 4. AI analysis can run on these test patients
 

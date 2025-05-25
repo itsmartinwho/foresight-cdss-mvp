@@ -27,11 +27,11 @@ INSERT INTO public.patients (
 -- Add an encounter for the healthy patient
 INSERT INTO public.encounters (
   encounter_id, patient_supabase_id, admission_type,
-  reason_code, status, scheduled_start_datetime
+  reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_HEALTHY_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_HEALTHY_001'),
-  'consultation', 'R05 - Cough - mild upper respiratory symptoms',
+  'consultation', 'R05', 'Cough - mild upper respiratory symptoms',
   'finished', NOW() - INTERVAL '2 days'
 );
 
@@ -54,11 +54,11 @@ INSERT INTO public.conditions (patient_id, code, description, category, onset_da
 -- Add an encounter for the chronic patient
 INSERT INTO public.encounters (
   encounter_id, patient_supabase_id, admission_type,
-  reason_code, status, scheduled_start_datetime
+  reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_CHRONIC_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_CHRONIC_001'),
-  'consultation', 'R53.83 - Fatigue and joint pain',
+  'consultation', 'R53.83', 'Fatigue and joint pain',
   'finished', NOW() - INTERVAL '1 day'
 );
 
@@ -85,11 +85,11 @@ INSERT INTO public.patients (
 -- Add encounter with no lab results
 INSERT INTO public.encounters (
   encounter_id, patient_supabase_id, admission_type,
-  reason_code, status, scheduled_start_datetime
+  reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_MINIMAL_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_MINIMAL_001'),
-  'consultation', 'R51 - Headache',
+  'consultation', 'R51', 'Headache',
   'finished', NOW() - INTERVAL '3 days'
 );
 
@@ -105,11 +105,11 @@ INSERT INTO public.patients (
 -- Add encounter for pediatric patient
 INSERT INTO public.encounters (
   encounter_id, patient_supabase_id, admission_type,
-  reason_code, status, scheduled_start_datetime
+  reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_PEDS_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_PEDS_001'),
-  'consultation', 'R50.9 - Fever and ear pain',
+  'consultation', 'R50.9', 'Fever and ear pain',
   'finished', NOW() - INTERVAL '4 hours'
 );
 
@@ -140,11 +140,11 @@ INSERT INTO public.conditions (patient_id, code, description, category, onset_da
 -- Add encounter for elderly patient
 INSERT INTO public.encounters (
   encounter_id, patient_supabase_id, admission_type,
-  reason_code, status, scheduled_start_datetime
+  reason_code, reason_display_text, status, scheduled_start_datetime
 ) VALUES (
   'TEST_ELDERLY_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_ELDERLY_001'),
-  'consultation', 'R26.2 - Difficulty walking and dizziness',
+  'consultation', 'R26.2', 'Difficulty walking and dizziness',
   'finished', NOW() - INTERVAL '6 hours'
 );
 
