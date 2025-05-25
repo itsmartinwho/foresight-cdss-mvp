@@ -211,6 +211,7 @@ export default function PlasmaBackground() {
     canvas.style.height = '100%';
     canvas.style.zIndex = '0';
     canvas.style.pointerEvents = 'none';
+    canvas.style.backgroundColor = 'white'; // Set initial background to white
 
     document.body.prepend(canvas); // ensure it is the first child so always behind
 
