@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import AlertSidePanel from '../components/ui/AlertSidePanel';
-import type { ComplexCaseAlert } from '../lib/types';
+import AlertSidePanel from '../../src/components/ui/AlertSidePanel';
+import type { ComplexCaseAlert } from '../../src/lib/types';
 
 const sampleAlerts: (ComplexCaseAlert & { patientName?: string })[] = [
   {
