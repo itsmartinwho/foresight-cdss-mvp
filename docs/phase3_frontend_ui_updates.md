@@ -149,4 +149,37 @@ These methods update both the database and local cache, ensuring UI consistency.
 - No database migrations required (uses Phase 1 schema)
 - Frontend changes are backward compatible
 - Existing patient data will display new fields when available
-- AI features are opt-in (require explicit user action) 
+- AI features are opt-in (require explicit user action)
+
+## Recent Fixes & Bug Resolutions
+
+To ensure consistent build and type-checking, several patches were applied across the frontend codebase:
+
+- **Replaced `getPatientAdmissions` alias with `getPatientEncounters`:**
+  - Files updated:
+    - `src/components/views/AlertsScreenView.tsx`
+    - `src/components/patient-workspace-tabs/ConsultationTab.tsx`
+    - `src/components/patient-workspace-tabs/DiagnosisTab.tsx`
+    - `src/components/views/DashboardView.tsx`
+    - `src/components/patient-workspace-tabs/TreatmentTab.tsx`
+    - `src/components/patient-workspace-tabs/PriorAuthTab.tsx`
+    - `src/components/patient-workspace-tabs/LabsTab.tsx`
+    - `src/components/views/PatientWorkspaceView.tsx`
+    - `src/components/ui/QuickSearch.tsx`
+  - **Rationale:** Direct use of `getPatientEncounters(patientId)` avoids build and lint errors that sometimes fail to resolve the deprecated alias `getPatientAdmissions`.
+
+- **Updated encounter reason fields to handle FHIR properties:**
+  - Replaced all references to the legacy `encounter.reason` property with a fallback pattern:
+    ```ts
+    const displayReason = encounter.reasonDisplayText || encounter.reasonCode || 'N/A';
+    ```
+  - Files updated:
+    - `src/components/patient-workspace-tabs/ConsultationTab.tsx`
+    - `src/components/patient-workspace-tabs/DiagnosisTab.tsx`
+    - `src/components/views/DashboardView.tsx`
+    - `src/components/patient-workspace-tabs/TreatmentTab.tsx`
+    - `src/components/patient-workspace-tabs/PriorAuthTab.tsx`
+    - `src/components/patient-workspace-tabs/LabsTab.tsx`
+    - `src/components/views/PatientWorkspaceView.tsx`
+
+These changes have been committed to prevent recurring deployment failures and ensure consistent handling of FHIR-aligned encounter data. 
