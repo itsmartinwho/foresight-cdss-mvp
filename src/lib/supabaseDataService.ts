@@ -110,11 +110,33 @@ class SupabaseDataService {
 
         if (encounterRows) {
           encounterRows.forEach((row) => {
-            const compositeKey = `${patientId}_${row.encounter_id}`;
+            const encounterSupabaseUUID = row.id;
+            const encounterBusinessKey = row.encounter_id; // Assumes DB column is now encounter_id
+            const patientSupabaseUUIDFromEncounter = row.patient_supabase_id;
+
+            if (!encounterBusinessKey) {
+              console.warn(`SupabaseDataService (SingleLoad Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}) due to missing encounter_id (human-readable identifier). Full row:`, JSON.stringify(row));
+              return;
+            }
+
+            if (!patientSupabaseUUIDFromEncounter) {
+              console.warn(`SupabaseDataService (SingleLoad Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}) due to missing patient_supabase_id (foreign key to patient). Full row:`, JSON.stringify(row));
+              return;
+            }
+            
+            const patientPublicId = this.patientUuidToOriginalId[patientSupabaseUUIDFromEncounter];
+
+            if (!patientPublicId) {
+              console.warn(`SupabaseDataService (SingleLoad Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}). Patient with Supabase UUID '${patientSupabaseUUIDFromEncounter}' (from encounter's patient_supabase_id) not found in loaded patients map. Full row:`, JSON.stringify(row));
+              return;
+            }
+            
+            const compositeKey = `${patientPublicId}_${encounterBusinessKey}`;
+            
             const encounter: Encounter = {
-              id: row.id, // Actual UUID of the encounter
-              encounterIdentifier: row.encounter_id, // Human-readable/external ID
-              patientId: patientId,
+              id: encounterSupabaseUUID, 
+              encounterIdentifier: encounterBusinessKey, 
+              patientId: patientPublicId, 
               scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
               scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
               actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
@@ -127,8 +149,11 @@ class SupabaseDataService {
               isDeleted: !!row.is_deleted,
             };
             this.encounters[compositeKey] = encounter;
-            if (!this.encountersByPatient[patientId].includes(compositeKey)) {
-               this.encountersByPatient[patientId].push(compositeKey);
+            if (!this.encountersByPatient[patientPublicId]) {
+              this.encountersByPatient[patientPublicId] = [];
+            }
+            if (!this.encountersByPatient[patientPublicId].includes(compositeKey)) {
+              this.encountersByPatient[patientPublicId].push(compositeKey);
             }
           });
         }
@@ -323,23 +348,32 @@ class SupabaseDataService {
 
       let encountersProcessed = 0;
       encounterRows.forEach((row) => {
-        const originalPatientIDFromEncounterExtraData = row.extra_data?.PatientID;
-        
-        if (!originalPatientIDFromEncounterExtraData) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter ${row.encounter_id} due to missing PatientID in extra_data.`);
-          return;
-        }
-        if (!this.patients[originalPatientIDFromEncounterExtraData]) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter ${row.encounter_id}. Patient by original ID '${originalPatientIDFromEncounterExtraData}' not found.`);
+        const encounterSupabaseUUID = row.id; 
+        const encounterBusinessKey = row.encounter_id; // Assumes DB column is now encounter_id
+        const patientSupabaseUUIDFromEncounter = row.patient_supabase_id;
+
+        if (!encounterBusinessKey) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}) due to missing encounter_id (human-readable identifier). Full row:`, JSON.stringify(row));
           return;
         }
 
-        const patientPublicId = originalPatientIDFromEncounterExtraData;
-        const compositeKey = `${patientPublicId}_${row.encounter_id}`;
+        if (!patientSupabaseUUIDFromEncounter) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}) due to missing patient_supabase_id (foreign key to patient). Full row:`, JSON.stringify(row));
+          return;
+        }
+
+        const patientPublicId = this.patientUuidToOriginalId[patientSupabaseUUIDFromEncounter];
+
+        if (!patientPublicId) {
+          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}). Patient with Supabase UUID '${patientSupabaseUUIDFromEncounter}' (from encounter's patient_supabase_id) not found in loaded patients map. Full row:`, JSON.stringify(row));
+          return;
+        }
+        
+        const compositeKey = `${patientPublicId}_${encounterBusinessKey}`;
 
         const encounter: Encounter = {
-          id: row.id, // Actual UUID of the encounter
-          encounterIdentifier: row.encounter_id, // Human-readable/external ID
+          id: encounterSupabaseUUID, 
+          encounterIdentifier: encounterBusinessKey, 
           patientId: patientPublicId, 
           scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
           scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
@@ -350,7 +384,7 @@ class SupabaseDataService {
           soapNote: row.soap_note,
           treatments: row.treatments || undefined, 
           priorAuthJustification: row.prior_auth_justification,
-          isDeleted: !!row.is_deleted, // Ensure this mapping is correct
+          isDeleted: !!row.is_deleted, 
         };
         this.encounters[compositeKey] = encounter;
         if (!this.encountersByPatient[patientPublicId]) {
