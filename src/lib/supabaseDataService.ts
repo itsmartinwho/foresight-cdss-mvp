@@ -411,6 +411,11 @@ class SupabaseDataService {
         try {
           const startDate = new Date(ad.scheduledStart);
           const startTime = startDate.getTime();
+          // Add a check for very old dates that might be misparsed
+          if (startDate.getFullYear() < 2000) {
+            // console.warn(`SupabaseDataService (Prod Debug): Date is prior to year 2000, treating as past: ${ad.id}. Original string: ${ad.scheduledStart}`);
+            return; // Treat as past, skip adding to upcoming
+          }
           if (startDate instanceof Date && !isNaN(startTime)) { 
             const isInFuture = startTime > nowTime;
             if (isInFuture) {

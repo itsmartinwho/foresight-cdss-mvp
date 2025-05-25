@@ -1,10 +1,15 @@
 import React from 'react';
 import Image from 'next/image';
 
-const LoadingAnimation = () => {
+interface LoadingAnimationProps {
+  customText?: string;
+}
+
+const LoadingAnimation: React.FC<LoadingAnimationProps> = ({ customText }) => {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] w-full">
-      <Image src="/slower-load-animation.gif" alt="Loading..." width={100} height={100} />
+    <div className="flex flex-col items-center justify-center h-full">
+      <Image src="/slower-load-animation.gif" alt="Loading..." width={100} height={100} priority />
+      {customText && <p className="mt-4 text-lg">{customText}</p>}
     </div>
   );
 };
