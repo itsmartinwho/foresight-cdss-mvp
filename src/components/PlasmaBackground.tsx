@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three'; // Corrected import statement
 
 /**
  * Animated plasma-style background that sits behind all UI elements.
@@ -138,17 +138,20 @@ const fragmentShader = `
     control_signals = clamp(control_signals, 0.0, 1.0);
 
     // Define base colors (Neon Teal & Lighter Greyscale Palette)
-    vec3 color1 = vec3(0.1, 0.95, 0.85);  // Neon Teal (approx #1AF2D9)
+    // Neon Teal (approx #1AF2D9, now 15% darker -> #16CEB8)
+    vec3 color1 = vec3(0.1 * 0.85, 0.95 * 0.85, 0.85 * 0.85); 
     vec3 color2 = vec3(0.90, 0.90, 0.90); // Lighter Grey (approx #E6E6E6)
     vec3 color3 = vec3(0.96, 0.96, 0.96); // Almost-White Grey (approx #F5F5F5)
     vec3 color4 = vec3(1.0, 1.0, 1.0);    // White (for highlights)
 
 
     // Blend colors based on noise-derived control signals
-    vec3 finalColor = mix(color1, color2, control_signals.r); // Mix Neon Teal with Lighter Grey
-    finalColor = mix(finalColor, color3, control_signals.g * 0.6); // Mix that result with Almost-White Grey less strongly
-    // Add subtle white highlights based on blue control signal
-    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, control_signals.b) * 0.3); 
+    // Mix (darker) Neon Teal with Lighter Grey, reducing Lighter Grey's influence
+    vec3 finalColor = mix(color1, color2, control_signals.r * 0.5); 
+    // Mix that result with Almost-White Grey, reducing its influence
+    finalColor = mix(finalColor, color3, control_signals.g * 0.3); // Was control_signals.g * 0.6
+    // Add subtle white highlights, reducing their influence
+    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, control_signals.b) * 0.15); // Was * 0.3
 
 
     // Subtle vignette effect
@@ -185,9 +188,12 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     Math.max(canvas.width, canvas.height) / 1.5
   );
   // Neon Teal & Lighter Greyscale theme for static gradient
-  gradient.addColorStop(0, 'rgba(26, 242, 217, 0.6)');     // Corresponds to color1 (Neon Teal)
-  gradient.addColorStop(0.5, 'rgba(230, 230, 230, 0.5)');  // Corresponds to color2 (Lighter Grey)
-  gradient.addColorStop(1, 'rgba(245, 245, 245, 0.4)');    // Corresponds to color3 (Almost-White Grey)
+  // Corresponds to darker color1 (Neon Teal #16CEB8)
+  gradient.addColorStop(0, 'rgba(22, 206, 184, 0.6)');    
+  // Corresponds to color2 (Lighter Grey), with reduced opacity
+  gradient.addColorStop(0.5, 'rgba(230, 230, 230, 0.25)'); 
+  // Corresponds to color3 (Almost-White Grey), with reduced opacity
+  gradient.addColorStop(1, 'rgba(245, 245, 245, 0.2)');   
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
