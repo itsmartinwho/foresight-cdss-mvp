@@ -104,18 +104,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
           return; // Skip deeper search to avoid duplicate entries.
         }
 
-        // 2) Patient-level diagnosis fields
-        const patientDiagFields = [p.primaryDiagnosis, p.diagnosis];
-        for (const field of patientDiagFields) {
-          if (field && field.toLowerCase().includes(lower)) {
-            addIfNotExceeded({
-              patient: p,
-              kind: "diagnosis",
-              snippet: buildSnippet(field),
-            });
-            break;
-          }
-        }
+        // 2) Patient-level diagnosis fields - removed as these are now in conditions table
 
         if (matches.length >= 10) return;
 

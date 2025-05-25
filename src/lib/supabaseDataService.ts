@@ -82,8 +82,7 @@ class SupabaseDataService {
             } catch (e) { console.warn('SupabaseDataService: Unable to parse alerts for patient', patientRow.patient_id, e); }
             return [];
           })(),
-          primaryDiagnosis: patientRow.primary_diagnosis_description,
-          diagnosis: patientRow.general_diagnosis_details,
+
           nextAppointment: patientRow.next_appointment_date ? new Date(patientRow.next_appointment_date).toISOString() : undefined,
           reason: patientRow.patient_level_reason,
         };
@@ -308,8 +307,7 @@ class SupabaseDataService {
             }
             return [];
           })(),
-          primaryDiagnosis: row.primary_diagnosis_description,
-          diagnosis: row.general_diagnosis_details,
+
           nextAppointment: row.next_appointment_date ? new Date(row.next_appointment_date).toISOString() : undefined,
           reason: row.patient_level_reason,
         };

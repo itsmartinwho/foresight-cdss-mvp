@@ -31,9 +31,16 @@ This document describes the Phase 1 migration to align the Foresight CDSS MVP da
 - **Renamed**: `dob` → `birth_date` - FHIR naming alignment
 - **Standardized**: Gender values to lowercase for FHIR compatibility
 
-#### visits
-- **Added**: `status TEXT DEFAULT 'finished'` - FHIR Encounter.status
-- **Added**: `is_deleted BOOLEAN DEFAULT FALSE` - Soft delete support
+#### encounters (formerly visits/admissions)
+- **Renamed and Evolved**: This table, originally `visits` and later referred to as `admissions` in some contexts, is now primarily known as `encounters` to align with FHIR terminology.
+- **Key Fields Include**: 
+    - `id`: Supabase UUID (Primary Key)
+    - `encounter_id`: Human-readable business key
+    - `status TEXT DEFAULT 'finished'`: FHIR Encounter.status
+    - `is_deleted BOOLEAN DEFAULT FALSE`: Soft delete support
+    - `reason_code TEXT`: Stores the coded reason for the encounter (e.g., from a terminology like SNOMED CT). Replaces older `reason_for_admission` fields.
+    - `reason_display_text TEXT`: Human-readable version of the reason, often accompanying `reason_code`.
+- **Frontend Note**: When displaying the reason for an encounter, frontend components should prefer `encounter.reasonDisplayText` if available, otherwise fallback to `encounter.reasonCode`.
 
 ### New Tables
 

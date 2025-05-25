@@ -13,8 +13,6 @@ export interface Patient {
   language?: string;
   povertyPercentage?: number;
   photo?: string;
-  primaryDiagnosis?: string;
-  diagnosis?: string;
   nextAppointment?: string;
   reason?: string; // Patient-level general reason
   alerts?: ComplexCaseAlert[];

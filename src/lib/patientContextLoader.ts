@@ -86,8 +86,7 @@ export class PatientContextLoader {
         ethnicity: context.patient.ethnicity,
         maritalStatus: context.patient.maritalStatus,
         language: context.patient.language,
-        primaryDiagnosis: context.patient.primaryDiagnosis,
-        diagnosis: context.patient.diagnosis,
+
         alerts: context.patient.alerts || []
       },
       currentEncounter: context.currentEncounter ? {
