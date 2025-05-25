@@ -24,18 +24,13 @@ interface TestPatient {
   race?: string;
   ethnicity?: string;
   language: string;
-  phone?: string;
-  email?: string;
-  address?: string;
 }
 
 interface TestEncounter {
   patient_id: string;
   encounter_id: string;
-  encounter_type: string;
-  encounter_class: string;
+  admission_type: string;
   reason_code: string;
-  reason_display_text: string;
   transcript?: string;
 }
 
@@ -80,10 +75,7 @@ async function insertTestPatients() {
       birth_date: '1990-01-01',
       race: 'Asian',
       ethnicity: 'Not Hispanic or Latino',
-      language: 'en',
-      phone: '555-0101',
-      email: 'alice.smith@example.com',
-      address: '123 Healthy St, Wellness City, CA 90210'
+      language: 'en'
     },
     {
       id: 'TEST_CHRONIC_001',
@@ -93,10 +85,7 @@ async function insertTestPatients() {
       birth_date: '1950-07-07',
       race: 'White',
       ethnicity: 'Hispanic or Latino',
-      language: 'en',
-      phone: '555-0102',
-      email: 'bob.jones@example.com',
-      address: '456 Chronic Lane, Complex City, CA 90211'
+      language: 'en'
     },
     {
       id: 'TEST_MINIMAL_001',
@@ -114,10 +103,7 @@ async function insertTestPatients() {
       birth_date: '2015-03-20',
       race: 'Black or African American',
       ethnicity: 'Not Hispanic or Latino',
-      language: 'en',
-      phone: '555-0103',
-      email: 'parent.wilson@example.com',
-      address: '789 Pediatric Ave, Kid City, CA 90212'
+      language: 'en'
     },
     {
       id: 'TEST_ELDERLY_001',
@@ -127,10 +113,7 @@ async function insertTestPatients() {
       birth_date: '1940-12-25',
       race: 'White',
       ethnicity: 'Not Hispanic or Latino',
-      language: 'en',
-      phone: '555-0104',
-      email: 'eleanor.thompson@example.com',
-      address: '321 Senior Blvd, Elder City, CA 90213'
+      language: 'en'
     }
   ];
 
@@ -147,10 +130,7 @@ async function insertTestPatients() {
         birth_date: patient.birth_date,
         race: patient.race,
         ethnicity: patient.ethnicity,
-        language: patient.language,
-        phone: patient.phone,
-        email: patient.email,
-        address: patient.address
+        language: patient.language
       })
       .select()
       .single();
@@ -168,46 +148,36 @@ async function insertTestEncounters() {
     {
       patient_id: 'TEST_HEALTHY_001',
       encounter_id: 'TEST_HEALTHY_001-V1',
-      encounter_type: 'consultation',
-      encounter_class: 'ambulatory',
-      reason_code: 'R05',
-      reason_display_text: 'Cough - mild upper respiratory symptoms',
+      admission_type: 'consultation',
+      reason_code: 'R05 - Cough - mild upper respiratory symptoms',
       transcript: 'Patient presents with mild cough for 3 days. No fever, no shortness of breath.'
     },
     {
       patient_id: 'TEST_CHRONIC_001',
       encounter_id: 'TEST_CHRONIC_001-V1',
-      encounter_type: 'consultation',
-      encounter_class: 'ambulatory',
-      reason_code: 'R53.83',
-      reason_display_text: 'Fatigue and joint pain',
+      admission_type: 'consultation',
+      reason_code: 'R53.83 - Fatigue and joint pain',
       transcript: 'Patient reports increasing fatigue over past month. Also experiencing joint pain in hands and knees, worse in the morning.'
     },
     {
       patient_id: 'TEST_MINIMAL_001',
       encounter_id: 'TEST_MINIMAL_001-V1',
-      encounter_type: 'consultation',
-      encounter_class: 'ambulatory',
-      reason_code: 'R51',
-      reason_display_text: 'Headache',
+      admission_type: 'consultation',
+      reason_code: 'R51 - Headache',
       transcript: 'Tension-type headache for 2 days. No visual changes, no nausea.'
     },
     {
       patient_id: 'TEST_PEDS_001',
       encounter_id: 'TEST_PEDS_001-V1',
-      encounter_type: 'consultation',
-      encounter_class: 'ambulatory',
-      reason_code: 'R50.9',
-      reason_display_text: 'Fever and ear pain',
+      admission_type: 'consultation',
+      reason_code: 'R50.9 - Fever and ear pain',
       transcript: 'Child brought in by parent with fever 101.5F and complaining of right ear pain since yesterday.'
     },
     {
       patient_id: 'TEST_ELDERLY_001',
       encounter_id: 'TEST_ELDERLY_001-V1',
-      encounter_type: 'consultation',
-      encounter_class: 'ambulatory',
-      reason_code: 'R26.2',
-      reason_display_text: 'Difficulty walking and dizziness',
+      admission_type: 'consultation',
+      reason_code: 'R26.2 - Difficulty walking and dizziness',
       transcript: 'Patient reports increased difficulty with ambulation and episodes of dizziness, especially when standing up.'
     }
   ];
@@ -232,13 +202,10 @@ async function insertTestEncounters() {
       .insert({
         encounter_id: encounter.encounter_id,
         patient_supabase_id: patient.id,
-        encounter_type: encounter.encounter_type,
-        encounter_class: encounter.encounter_class,
+        admission_type: encounter.admission_type,
         reason_code: encounter.reason_code,
-        reason_display_text: encounter.reason_display_text,
         transcript: encounter.transcript,
         status: 'finished',
-        date_time: now.toISOString(),
         scheduled_start_datetime: now.toISOString(),
         scheduled_end_datetime: new Date(now.getTime() + 30 * 60000).toISOString() // 30 minutes later
       });

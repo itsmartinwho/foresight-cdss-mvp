@@ -17,33 +17,31 @@ DELETE FROM public.patients WHERE patient_id LIKE 'TEST_%';
 
 -- 3a. Healthy adult with no chronic conditions
 INSERT INTO public.patients (
-  patient_id, first_name, last_name, gender, birth_date, 
-  race, ethnicity, language, phone, email, address
+  patient_id, first_name, last_name, name, gender, birth_date, 
+  race, ethnicity, language
 ) VALUES (
-  'TEST_HEALTHY_001', 'Alice', 'Smith', 'female', '1990-01-01',
-  'Asian', 'Not Hispanic or Latino', 'en', '555-0101', 
-  'alice.smith@example.com', '123 Healthy St, Wellness City, CA 90210'
+  'TEST_HEALTHY_001', 'Alice', 'Smith', 'Alice Smith', 'female', '1990-01-01',
+  'Asian', 'Not Hispanic or Latino', 'en'
 );
 
 -- Add an encounter for the healthy patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, encounter_type, encounter_class,
-  reason_code, reason_display_text, status, date_time
+  encounter_id, patient_supabase_id, admission_type,
+  reason_code, status, scheduled_start_datetime
 ) VALUES (
   'TEST_HEALTHY_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_HEALTHY_001'),
-  'consultation', 'ambulatory', 'R05', 'Cough - mild upper respiratory symptoms',
+  'consultation', 'R05 - Cough - mild upper respiratory symptoms',
   'finished', NOW() - INTERVAL '2 days'
 );
 
 -- 3b. Patient with multiple chronic conditions
 INSERT INTO public.patients (
-  patient_id, first_name, last_name, gender, birth_date,
-  race, ethnicity, language, phone, email, address
+  patient_id, first_name, last_name, name, gender, birth_date,
+  race, ethnicity, language
 ) VALUES (
-  'TEST_CHRONIC_001', 'Bob', 'Jones', 'male', '1950-07-07',
-  'White', 'Hispanic or Latino', 'en', '555-0102',
-  'bob.jones@example.com', '456 Chronic Lane, Complex City, CA 90211'
+  'TEST_CHRONIC_001', 'Bob', 'Jones', 'Bob Jones', 'male', '1950-07-07',
+  'White', 'Hispanic or Latino', 'en'
 );
 
 -- Add multiple chronic conditions for Bob
@@ -55,12 +53,12 @@ INSERT INTO public.conditions (patient_id, code, description, category, onset_da
 
 -- Add an encounter for the chronic patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, encounter_type, encounter_class,
-  reason_code, reason_display_text, status, date_time
+  encounter_id, patient_supabase_id, admission_type,
+  reason_code, status, scheduled_start_datetime
 ) VALUES (
   'TEST_CHRONIC_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_CHRONIC_001'),
-  'consultation', 'ambulatory', 'R53.83', 'Fatigue and joint pain',
+  'consultation', 'R53.83 - Fatigue and joint pain',
   'finished', NOW() - INTERVAL '1 day'
 );
 
@@ -86,33 +84,32 @@ INSERT INTO public.patients (
 
 -- Add encounter with no lab results
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, encounter_type, encounter_class,
-  reason_code, reason_display_text, status, date_time
+  encounter_id, patient_supabase_id, admission_type,
+  reason_code, status, scheduled_start_datetime
 ) VALUES (
   'TEST_MINIMAL_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_MINIMAL_001'),
-  'consultation', 'ambulatory', 'R51', 'Headache',
+  'consultation', 'R51 - Headache',
   'finished', NOW() - INTERVAL '3 days'
 );
 
 -- 3d. Pediatric patient
 INSERT INTO public.patients (
-  patient_id, first_name, last_name, gender, birth_date,
-  race, ethnicity, language, phone, email, address
+  patient_id, first_name, last_name, name, gender, birth_date,
+  race, ethnicity, language
 ) VALUES (
-  'TEST_PEDS_001', 'Diana', 'Wilson', 'female', '2015-03-20',
-  'Black or African American', 'Not Hispanic or Latino', 'en', '555-0103',
-  'parent.wilson@example.com', '789 Pediatric Ave, Kid City, CA 90212'
+  'TEST_PEDS_001', 'Diana', 'Wilson', 'Diana Wilson', 'female', '2015-03-20',
+  'Black or African American', 'Not Hispanic or Latino', 'en'
 );
 
 -- Add encounter for pediatric patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, encounter_type, encounter_class,
-  reason_code, reason_display_text, status, date_time
+  encounter_id, patient_supabase_id, admission_type,
+  reason_code, status, scheduled_start_datetime
 ) VALUES (
   'TEST_PEDS_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_PEDS_001'),
-  'consultation', 'ambulatory', 'R50.9', 'Fever and ear pain',
+  'consultation', 'R50.9 - Fever and ear pain',
   'finished', NOW() - INTERVAL '4 hours'
 );
 
@@ -127,12 +124,11 @@ INSERT INTO public.lab_results (patient_id, encounter_id, name, value, units, da
 
 -- 3e. Elderly patient with polypharmacy
 INSERT INTO public.patients (
-  patient_id, first_name, last_name, gender, birth_date,
-  race, ethnicity, language, phone, email, address
+  patient_id, first_name, last_name, name, gender, birth_date,
+  race, ethnicity, language
 ) VALUES (
-  'TEST_ELDERLY_001', 'Eleanor', 'Thompson', 'female', '1940-12-25',
-  'White', 'Not Hispanic or Latino', 'en', '555-0104',
-  'eleanor.thompson@example.com', '321 Senior Blvd, Elder City, CA 90213'
+  'TEST_ELDERLY_001', 'Eleanor', 'Thompson', 'Eleanor Thompson', 'female', '1940-12-25',
+  'White', 'Not Hispanic or Latino', 'en'
 );
 
 -- Add multiple conditions for elderly patient
@@ -143,12 +139,12 @@ INSERT INTO public.conditions (patient_id, code, description, category, onset_da
 
 -- Add encounter for elderly patient
 INSERT INTO public.encounters (
-  encounter_id, patient_supabase_id, encounter_type, encounter_class,
-  reason_code, reason_display_text, status, date_time
+  encounter_id, patient_supabase_id, admission_type,
+  reason_code, status, scheduled_start_datetime
 ) VALUES (
   'TEST_ELDERLY_001-V1',
   (SELECT id FROM public.patients WHERE patient_id = 'TEST_ELDERLY_001'),
-  'consultation', 'ambulatory', 'R26.2', 'Difficulty walking and dizziness',
+  'consultation', 'R26.2 - Difficulty walking and dizziness',
   'finished', NOW() - INTERVAL '6 hours'
 );
 
