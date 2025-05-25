@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import LikelihoodBadge from '../components/ui/LikelihoodBadge';
+import LikelihoodBadge from '../../src/components/ui/LikelihoodBadge';
 
 const meta = {
   title: 'UI/LikelihoodBadge',

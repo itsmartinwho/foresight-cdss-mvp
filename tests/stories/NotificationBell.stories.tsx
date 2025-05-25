@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import NotificationBell from '../components/ui/NotificationBell';
+import NotificationBell from '../../src/components/ui/NotificationBell';
 
 const meta = {
   title: 'UI/NotificationBell',

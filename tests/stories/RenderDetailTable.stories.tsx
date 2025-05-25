@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import RenderDetailTable from '../components/ui/RenderDetailTable';
+import RenderDetailTable from '../../src/components/ui/RenderDetailTable';
 
 const sampleData = [
   { name: 'Alice', age: 30, city: 'NY' },

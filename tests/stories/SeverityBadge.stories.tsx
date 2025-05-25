@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import SeverityBadge from '../components/ui/SeverityBadge';
+import SeverityBadge from '../../src/components/ui/SeverityBadge';
 
 const meta = {
   title: 'UI/SeverityBadge',
