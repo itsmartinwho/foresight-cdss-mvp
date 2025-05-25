@@ -206,9 +206,9 @@ While `test-plan.md` provided a high-level list, here's how its concepts integra
 
 **Consultation Filtering Logic**
 - Both the Dashboard and Patients tab use robust filtering for upcoming and past consultations.
-- Any consultation (admission) with a `scheduledStart` year < 2000 is excluded from both "Upcoming" and "Past" lists, regardless of its date value.
+- The only threshold is the current date and time: if a consultation's (admission's) `scheduledStart` is in the future, it is considered "Upcoming"; if it is in the past, it is considered "Past".
 - This is enforced in the service layer via `supabaseDataService.getUpcomingConsultations()` and `supabaseDataService.getPastConsultations()`, which should be used for all such filtering in the UI.
-- This ensures that legacy or malformed data does not appear in the user interface.
+- This ensures that all data is categorized by actual scheduled time, regardless of year.
 *   **Browser Compatibility & Mobile Responsiveness:**
     *   Primarily covered by Playwright E2E tests which can be run across different browser engines.
     *   Visual regression testing (e.g., with Playwright or Storybook addons) can help catch layout issues on different viewports.

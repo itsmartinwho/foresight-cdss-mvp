@@ -397,7 +397,6 @@ class SupabaseDataService {
   }
 
   getUpcomingConsultations(): { patient: Patient; visit: Admission }[] {
-    // console.log('SupabaseDataService (Prod Debug): getUpcomingConsultations called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.admissions).length);
     if (!this.isLoaded && !this.isLoading) {
         console.error("SupabaseDataService: getUpcomingConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
     }
@@ -411,13 +410,6 @@ class SupabaseDataService {
         try {
           const startDate = new Date(ad.scheduledStart);
           const startTime = startDate.getTime();
-          // Debug log for every admission
-          console.log('[DEBUG] Checking admission:', ad.id, 'scheduledStart:', ad.scheduledStart, 'parsedYear:', startDate.getFullYear());
-          // Add a check for very old dates that might be misparsed
-          if (startDate.getFullYear() < 2000) {
-            console.log('[DEBUG] Skipping admission due to year < 2000:', ad.id, 'scheduledStart:', ad.scheduledStart, 'parsedYear:', startDate.getFullYear());
-            return; // Treat as past, skip adding to upcoming
-          }
           if (startDate instanceof Date && !isNaN(startTime)) { 
             const isInFuture = startTime > nowTime;
             if (isInFuture) {
@@ -453,9 +445,6 @@ class SupabaseDataService {
         try {
           const startDate = new Date(ad.scheduledStart);
           const startTime = startDate.getTime();
-          if (startDate.getFullYear() < 2000) {
-            return; // Skip very old dates
-          }
           if (startDate instanceof Date && !isNaN(startTime)) {
             const isInPast = startTime <= nowTime;
             if (isInPast) {

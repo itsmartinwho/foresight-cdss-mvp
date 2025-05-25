@@ -82,7 +82,7 @@ test.describe('Foresight CDSS E2E Tests', () => {
     expect(modelUsed).toBe('o3');
   });
 
-  test('No consultations before year 2000 appear in Upcoming or Past Consultations in Patients tab', async ({ page }) => {
+  test('No consultations appear in the wrong table in Patients tab (upcoming vs past)', async ({ page }) => {
     // Navigate to Patients tab
     const patientsLink = page.getByRole('link', { name: 'Patients' });
     await patientsLink.click();
@@ -92,13 +92,16 @@ test.describe('Foresight CDSS E2E Tests', () => {
     const consultationsTab = page.getByRole('tab', { name: /All Consultations/i });
     await consultationsTab.click();
 
+    // Get current time for comparison
+    const now = Date.now();
+
     // Check Upcoming Consultations table
     const upcomingRows = await page.locator('table:has-caption("Upcoming Consultations") tbody tr').all();
     for (const row of upcomingRows) {
       const dateCell = await row.locator('td').nth(1).textContent();
       if (dateCell) {
-        const year = new Date(dateCell).getFullYear();
-        expect(year).toBeGreaterThanOrEqual(2000);
+        const scheduledTime = new Date(dateCell).getTime();
+        expect(scheduledTime).toBeGreaterThan(now);
       }
     }
 
@@ -107,8 +110,8 @@ test.describe('Foresight CDSS E2E Tests', () => {
     for (const row of pastRows) {
       const dateCell = await row.locator('td').nth(1).textContent();
       if (dateCell) {
-        const year = new Date(dateCell).getFullYear();
-        expect(year).toBeGreaterThanOrEqual(2000);
+        const scheduledTime = new Date(dateCell).getTime();
+        expect(scheduledTime).toBeLessThanOrEqual(now);
       }
     }
   });
