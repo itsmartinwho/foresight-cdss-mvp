@@ -129,6 +129,8 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                   <span>DOB: {formatDate(patient.dateOfBirth)} (Age: {calculateAge(patient.dateOfBirth)})</span>
                   {/* {patient.mrn && <span>MRN: {patient.mrn}</span>} */}
                   {patient.gender && <span>Gender: {patient.gender}</span>}
+                  {patient.ethnicity && <span>Ethnicity: {patient.ethnicity}</span>}
+                  {patient.race && <span>Race: {patient.race}</span>}
                 </div>
               </div>
             </div>
@@ -152,7 +154,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                         value={adWrapper.admission.id}
                       >
                         {formatDateTime(adWrapper.admission.scheduledStart)} -{' '}
-                        {adWrapper.admission.reason || 'Visit'}
+                        {adWrapper.admission.reasonCode || 'Visit'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -200,7 +202,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               <h2 className="text-md font-semibold text-blue-700">
                 Current Visit: {formatDateTime(currentAdmissionDetails.admission.scheduledStart)}
               </h2>
-              <p className="text-sm text-blue-600">Reason: {currentAdmissionDetails.admission.reason || 'N/A'}</p>
+              <p className="text-sm text-blue-600">Reason: {currentAdmissionDetails.admission.reasonCode || 'N/A'}</p>
             </div>
           </div>
         )}

@@ -641,6 +641,38 @@ class SupabaseDataService {
     return this.updateEncounterObservations(patientId, admissionCompositeId, observations);
   }
 
+  async updateEncounterSOAPNote(patientId: string, encounterCompositeId: string, soapNote: string): Promise<void> {
+    const originalEncounterId = encounterCompositeId.split('_').pop();
+    if (!originalEncounterId) {
+      console.error('SupabaseDataService: Could not extract originalEncounterId from composite ID:', encounterCompositeId);
+      throw new Error('Invalid encounterCompositeId');
+    }
+
+    const { error } = await this.supabase
+      .from('encounters')
+      .update({ soap_note: soapNote })
+      .eq('encounter_id', originalEncounterId);
+
+    if (error) {
+      console.error('SupabaseDataService: Error updating SOAP note in DB:', error.message);
+      throw error;
+    }
+
+    // Update local cache
+    if (this.encounters[encounterCompositeId]) {
+      this.encounters[encounterCompositeId].soapNote = soapNote;
+      this.emitChange();
+    } else {
+      console.warn(`SupabaseDataService: updateEncounterSOAPNote - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
+    }
+    console.log("SOAP note updated successfully in DB and cache for encounter:", encounterCompositeId);
+  }
+
+  // Backward compatibility alias
+  async updateAdmissionSOAPNote(patientId: string, admissionCompositeId: string, soapNote: string): Promise<void> {
+    return this.updateEncounterSOAPNote(patientId, admissionCompositeId, soapNote);
+  }
+
   async createNewEncounter(
     patientId: string,
     opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }

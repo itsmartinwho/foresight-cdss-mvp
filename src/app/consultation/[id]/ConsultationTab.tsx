@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea was used, or a contentEditable div
 import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextB as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from '@phosphor-icons/react';
 import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import
-import { Admission, Patient } from '@/lib/types'; // Assuming types path, Import Patient type
+import { Admission, Patient, ClinicalOutputPackage } from '@/lib/types'; // Assuming types path, Import Patient type
 import { supabaseDataService } from '@/lib/supabaseDataService'; // Import supabaseDataService
+import AIAnalysisPanel from '@/components/AIAnalysisPanel';
 
 interface ConsultationTabProps {
   selectedAdmission: Admission | null;
@@ -297,9 +298,36 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
     }
   };
 
+  const handleAIResultsSave = async (results: ClinicalOutputPackage) => {
+    if (!selectedAdmission || !patient?.id) {
+      throw new Error('Missing patient or admission data');
+    }
+
+    try {
+      // Save the AI-generated results to the database
+      // This would typically call supabaseDataService methods to:
+      // 1. Update encounters table with SOAP note and treatments
+      // 2. Insert diagnosis into conditions table
+      // 3. Store any additional data in extra_data
+
+      // For now, we'll just update the SOAP note and treatments
+      if (results.soapNote) {
+        const soapText = `S: ${results.soapNote.subjective}\nO: ${results.soapNote.objective}\nA: ${results.soapNote.assessment}\nP: ${results.soapNote.plan}`;
+        await supabaseDataService.updateAdmissionSOAPNote(patient.id, selectedAdmission.id, soapText);
+      }
+
+      // Refresh the patient data to show the updates
+      window.location.reload(); // Simple refresh for now
+    } catch (error) {
+      console.error('Error saving AI results:', error);
+      throw error;
+    }
+  };
+
   // JSX for rendering will be added here
   return (
-    <Card className="h-full flex flex-col">
+    <div className="space-y-4">
+      <Card className="flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           Consultation Notes & Transcript
@@ -381,6 +409,16 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
         )}
       </CardContent>
     </Card>
+    
+    {/* AI Analysis Panel */}
+    {selectedAdmission && patient?.id && (
+      <AIAnalysisPanel
+        patientId={patient.id}
+        encounterId={selectedAdmission.id}
+        onSave={handleAIResultsSave}
+      />
+    )}
+    </div>
   );
 };
 
