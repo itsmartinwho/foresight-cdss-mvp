@@ -164,7 +164,6 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       { key: "maritalStatus", header: "Marital Status", sortable: true, className: "w-[140px] truncate" },
       { key: "language", header: "Language", sortable: true, className: "w-[110px] truncate" },
       { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[110px]" },
-      { key: "primaryDiagnosis", header: "Primary Diagnosis", sortable: true, className: "w-[220px] truncate" },
       { key: "nextAppointment", header: "Next Appointment", sortable: true, className: "w-[180px] truncate" },
       { key: "reason", header: "General Reason", sortable: true, className: "w-[220px] truncate" },
     ];
