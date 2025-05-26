@@ -422,7 +422,7 @@ class SupabaseDataService {
             
             const diagnosis: Diagnosis = {
               patientId: originalPatientId,
-              encounterId: dx.encounter_id || '',
+              encounterId: dx.encounter_id || '', // This is now a UUID that references encounters.id
               code: dx.code,
               description: dx.description,
             };
@@ -454,7 +454,7 @@ class SupabaseDataService {
             
             const labResult: LabResult = {
               patientId: originalPatientId,
-              encounterId: lab.encounter_id || '',
+              encounterId: lab.encounter_id || '', // This is now a UUID that references encounters.id
               name: lab.name,
               value: lab.value,
               units: lab.units,
@@ -1009,16 +1009,9 @@ class SupabaseDataService {
     console.log(`  - Patient has ${patientDiagnoses.length} total diagnoses`);
     console.log(`  - Diagnoses encounter IDs:`, patientDiagnoses.map(dx => dx.encounterId));
     
-    // Try to find the encounter to get its business identifier
-    const encounter = Object.values(this.encounters).find(enc => enc.id === encounterId);
-    const businessEncounterId = encounter?.encounterIdentifier;
-    
-    // Filter by either Supabase UUID or business encounter identifier
-    const filtered = patientDiagnoses.filter(dx => 
-      dx.encounterId === encounterId || 
-      (businessEncounterId && dx.encounterId === businessEncounterId)
-    );
-    console.log(`  - Filtered to ${filtered.length} diagnoses for encounter ${encounterId} (business ID: ${businessEncounterId})`);
+    // Filter by Supabase UUID (encounter_id in database is a UUID foreign key)
+    const filtered = patientDiagnoses.filter(dx => dx.encounterId === encounterId);
+    console.log(`  - Filtered to ${filtered.length} diagnoses for encounter UUID ${encounterId}`);
     return filtered;
   }
 
@@ -1028,16 +1021,9 @@ class SupabaseDataService {
     console.log(`  - Patient has ${patientLabs.length} total lab results`);
     console.log(`  - Lab results encounter IDs:`, patientLabs.map(lab => lab.encounterId));
     
-    // Try to find the encounter to get its business identifier
-    const encounter = Object.values(this.encounters).find(enc => enc.id === encounterId);
-    const businessEncounterId = encounter?.encounterIdentifier;
-    
-    // Filter by either Supabase UUID or business encounter identifier
-    const filtered = patientLabs.filter(lab => 
-      lab.encounterId === encounterId || 
-      (businessEncounterId && lab.encounterId === businessEncounterId)
-    );
-    console.log(`  - Filtered to ${filtered.length} lab results for encounter ${encounterId} (business ID: ${businessEncounterId})`);
+    // Filter by Supabase UUID (encounter_id in database is a UUID foreign key)
+    const filtered = patientLabs.filter(lab => lab.encounterId === encounterId);
+    console.log(`  - Filtered to ${filtered.length} lab results for encounter UUID ${encounterId}`);
     return filtered;
   }
 
