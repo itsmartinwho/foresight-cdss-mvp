@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast"; // Corrected: import useToast hook
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import TranscriptDebug from "@/components/debug/TranscriptDebug";
 
 function useDebouncedCallback(callback: (...args: any[]) => void, delay: number): (...args: any[]) => void {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -438,6 +439,11 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   // JSX for rendering will be added here
   return (
     <div className="space-y-4">
+      {/* Debug component - remove in production */}
+      <TranscriptDebug 
+        selectedEncounter={selectedEncounter}
+        editableTranscript={editableTranscript}
+      />
       {isStartingNewConsultation && (
         <Card>
           <CardHeader>
