@@ -10,7 +10,6 @@ import { FileText } from '@phosphor-icons/react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { EncounterSummaryList, DiagnosisList, LabResultList } from "@/components/EncounterLists";
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 interface PatientDetailProps {
@@ -279,9 +278,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               {activeTab === 'diagnosis' && (
                 <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagnoses for this Encounter</h3>
-                  {ewDetail.encounter.diagnoses && ewDetail.encounter.diagnoses.length > 0 ? (
+                  {ewDetail.diagnoses && ewDetail.diagnoses.length > 0 ? (
                     <ul className="divide-y divide-gray-200">
-                      {ewDetail.encounter.diagnoses.map((dx: Diagnosis) => (
+                      {ewDetail.diagnoses.map((dx: Diagnosis) => (
                         <li key={dx.code} className="py-3 flex justify-between items-center">
                           <span className="text-gray-800 text-sm md:text-base">{dx.description}</span>
                           <span className="font-mono text-xs md:text-sm bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 tracking-tight">{dx.code}</span>
@@ -328,7 +327,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               {activeTab === 'labs' && (
                 <div className="bg-white p-0 md:p-5 shadow-md rounded-lg border border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4 px-5 pt-5 md:px-0 md:pt-0">Lab Results</h3>
-                  {ewDetail.encounter.labResults && ewDetail.encounter.labResults.length > 0 ? (
+                  {ewDetail.labResults && ewDetail.labResults.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200 text-sm">
                         <thead className="bg-gray-50">
@@ -342,7 +341,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {ewDetail.encounter.labResults.map((lab: LabResult, idx: number) => (
+                          {ewDetail.labResults.map((lab: LabResult, idx: number) => (
                             <tr key={idx} className={lab.flag ? 'bg-yellow-50 hover:bg-yellow-100' : 'hover:bg-gray-50'}>
                               <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{lab.name}</td>
                               <td className="px-4 py-3 whitespace-nowrap text-gray-700">{lab.value}</td>
