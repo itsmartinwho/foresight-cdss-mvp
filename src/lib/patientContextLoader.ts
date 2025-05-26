@@ -1,14 +1,43 @@
-import { supabase } from './supabaseClient'; // Assuming supabase client is initialized here
+// import { supabase } from './supabaseClient'; // Assuming supabase client is initialized here
 import { supabaseDataService } from './supabaseDataService';
-import { Patient, Encounter, Diagnosis, LabResult, FHIRPatientContext } from './types'; // Removed PatientDataPayload as it's defined by service
+import { Patient, Encounter, Diagnosis, LabResult } from './types'; // Removed FHIRPatientContext and PatientDataPayload
 // import { logger } from './logger'; // Removed logger import
+
+// FHIR-like types for conditions and observations
+interface FHIRCodeableConcept {
+  text?: string;
+  coding?: Array<{ display?: string; code?: string; system?: string }>;
+}
+interface FHIRReference {
+  reference?: string;
+}
+interface FHIRCondition {
+  resourceType: "Condition";
+  clinicalStatus?: { coding?: Array<{ system?: string; code?: string }> };
+  verificationStatus?: { coding?: Array<{ system?: string; code?: string }> };
+  category?: Array<{ coding?: Array<{ system?: string; code?: string }> }>;
+  code?: FHIRCodeableConcept;
+  subject?: FHIRReference;
+  encounter?: FHIRReference;
+}
+interface FHIRObservation {
+  resourceType: "Observation";
+  status?: string;
+  category?: Array<{ coding?: Array<{ system?: string; code?: string }> }>;
+  code?: FHIRCodeableConcept;
+  subject?: FHIRReference;
+  encounter?: FHIRReference;
+  effectiveDateTime?: string;
+  valueQuantity?: { value?: number; unit?: string };
+  valueString?: string;
+}
 
 export interface FHIRPatientContext {
   patient: Patient;
   currentEncounter?: Encounter;
   priorEncounters: Encounter[];
-  conditions: Diagnosis[];
-  observations: LabResult[];
+  conditions: FHIRCondition[];  // FHIR-like conditions
+  observations: FHIRObservation[];  // FHIR-like observations
 }
 
 /**
@@ -160,17 +189,17 @@ export class PatientContextLoader {
         transcript: enc.transcript
       })),
       conditions: context.conditions.map(cond => ({
-        code: cond.code,
-        description: cond.description,
-        encounterId: cond.encounterId
+        code: cond.code?.coding?.[0]?.code || '',
+        description: cond.code?.text || cond.code?.coding?.[0]?.display || '',
+        encounterId: cond.encounter?.reference?.split('/')[1] || ''
       })),
       observations: context.observations.map(obs => ({
-        name: obs.name,
-        value: obs.value,
-        units: obs.units,
-        dateTime: obs.dateTime,
-        flag: obs.flag,
-        referenceRange: obs.referenceRange
+        name: obs.code?.text || '',
+        value: obs.valueQuantity?.value ?? obs.valueString ?? '',
+        units: obs.valueQuantity?.unit,
+        dateTime: obs.effectiveDateTime,
+        flag: undefined,
+        referenceRange: undefined
       }))
     };
   }
