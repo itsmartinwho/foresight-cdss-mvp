@@ -12,7 +12,7 @@ import type { Patient, ComplexCaseAlert } from "@/lib/types";
 
 import DashboardView from "@/components/views/DashboardView";
 import PatientsListView from "@/components/views/PatientsListView";
-import PatientWorkspaceView from "@/components/views/PatientWorkspaceView";
+import PatientWorkspaceViewModern from "@/components/views/PatientWorkspaceViewModern";
 import AlertsScreenView from "@/components/views/AlertsScreenView";
 import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
 import SettingsScreenView from "@/components/views/SettingsScreenView";
@@ -101,7 +101,7 @@ function ForesightApp() {
     case "patients":
       if (patientIdFromPath) {
         currentView = (
-          <PatientWorkspaceView
+          <PatientWorkspaceViewModern
             key={patientIdFromPath}
             patient={{ id: patientIdFromPath } as Patient}
             initialTab={selectedPatientTab}

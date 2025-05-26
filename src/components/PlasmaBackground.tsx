@@ -4,11 +4,9 @@ import { useEffect } from 'react';
 import * as THREE from 'three'; // Corrected import statement
 
 /**
- * Animated plasma-style background that sits behind all UI elements.
- * Rendering is intentionally low-fidelity & low-opacity so that the effect is
- * barely noticeable. The component respects the user's "prefers-reduced-motion"
- * setting (hidden via media query) and automatically pauses when the tab is
- * not visible.
+ * Animated gradient flow background that sits behind all UI elements.
+ * Creates a sophisticated, flowing effect suitable for professional medical applications.
+ * Respects "prefers-reduced-motion" and pauses when tab is not visible.
  */
 
 // 3D Simplex Noise by Ashima Arts (public domain)
@@ -98,67 +96,77 @@ const vertexShader = `
 `;
 
 const fragmentShader = `
-  precision highp float; // Necessary for some mobile devices
+  precision highp float;
   uniform vec2 u_resolution;
   uniform float u_time;
   varying vec2 vUv;
 
-  ${noiseGLSL} // Include the noise function
+  ${noiseGLSL}
 
-  // Constants for plasma effect - tweak these!
-  const float PLASMA_SCALE = 1.5; // How zoomed in the noise pattern is
-  const float TIME_SPEED = 0.015; // How fast the pattern evolves (slower)
-  const float COLOR_FREQ_R = 0.8;
-  const float COLOR_FREQ_G = 0.7;
-  const float COLOR_FREQ_B = 0.9;
-  const float COLOR_PHASE_R = 0.0;
-  const float COLOR_PHASE_G = 1.0; // Phase shifts create color variation
-  const float COLOR_PHASE_B = 2.0;
-  const float BRIGHTNESS = 1.1; // Overall brightness of control signals
-  const float CONTRAST = 0.4; // Contrast adjustment of control signals
-
+  // Constants for gradient flow effect
+  const float FLOW_SCALE = 0.8;     // Larger scale for smoother gradients
+  const float TIME_SPEED = 0.008;   // Even slower for professional feel
+  const float VERTICAL_DRIFT = 0.3; // Subtle vertical movement
+  const float LAYER_COUNT = 3.0;    // Multiple layers for depth
+  
   void main() {
-    vec2 scaledUv = vUv * PLASMA_SCALE; // Scale UV coordinates
+    vec2 scaledUv = vUv * FLOW_SCALE;
     float time = u_time * TIME_SPEED;
-
-    // Calculate noise value - using 3D noise with time as the third dimension
-    float noiseValue = snoise(vec3(scaledUv * 2.0, time));
-
-    // Map noise value to color components using sine waves (these become control signals)
-    float r_control = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
-    float g_control = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
-    float b_control = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
-
-    // Apply brightness and contrast to control signals
-    vec3 control_signals = vec3(r_control, g_control, b_control);
-    control_signals = (control_signals - 0.5) * (1.0 + CONTRAST) + 0.5; // Contrast
-    control_signals *= BRIGHTNESS; // Brightness
-
-    // Clamp control signals to valid range
-    control_signals = clamp(control_signals, 0.0, 1.0);
-
-    // Define base colors (Neon Teal & Lighter Greyscale Palette)
-    // Neon Teal (approx #1AF2D9, now 15% darker -> #16CEB8)
-    vec3 color1 = vec3(0.1 * 0.85, 0.95 * 0.85, 0.85 * 0.85); 
-    vec3 color2 = vec3(0.90, 0.90, 0.90); // Lighter Grey (approx #E6E6E6)
-    vec3 color3 = vec3(0.96, 0.96, 0.96); // Almost-White Grey (approx #F5F5F5)
-    vec3 color4 = vec3(1.0, 1.0, 1.0);    // White (for highlights)
-
-
-    // Blend colors based on noise-derived control signals
-    // Mix (darker) Neon Teal with Lighter Grey, reducing Lighter Grey's influence
-    vec3 finalColor = mix(color1, color2, control_signals.r * 0.5); 
-    // Mix that result with Almost-White Grey, reducing its influence
-    finalColor = mix(finalColor, color3, control_signals.g * 0.3); // Was control_signals.g * 0.6
-    // Add subtle white highlights, reducing their influence
-    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, control_signals.b) * 0.15); // Was * 0.3
-
-
-    // Subtle vignette effect
-    // float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
-    // finalColor *= vignette * 0.8 + 0.2; // Apply vignette
-
-    gl_FragColor = vec4(finalColor, 0.65); // Opacity
+    
+    // Create gradient base
+    float gradientBase = 0.0;
+    
+    // Layer multiple noise octaves for smooth flow
+    for (float i = 0.0; i < LAYER_COUNT; i++) {
+      float layerScale = 1.0 + i * 0.5;
+      float layerSpeed = 1.0 - i * 0.3;
+      
+      // Add vertical drift to create flowing motion
+      vec2 flowUv = scaledUv * layerScale;
+      flowUv.y += time * VERTICAL_DRIFT * layerSpeed;
+      
+      // Sample noise at different scales
+      float noise = snoise(vec3(flowUv, time * layerSpeed));
+      
+      // Smooth the noise for gradient-like appearance
+      noise = noise * 0.5 + 0.5; // Normalize to 0-1
+      noise = smoothstep(0.3, 0.7, noise); // Create smooth transitions
+      
+      // Accumulate with decreasing influence
+      gradientBase += noise / pow(2.0, i);
+    }
+    
+    // Normalize the accumulated value
+    gradientBase /= 1.75;
+    
+    // Define a more professional color palette
+    // Muted teal (medical/healthcare appropriate)
+    vec3 color1 = vec3(0.4, 0.7, 0.75);  // Soft medical teal
+    vec3 color2 = vec3(0.85, 0.88, 0.9); // Cool light grey
+    vec3 color3 = vec3(0.94, 0.95, 0.96); // Near white
+    vec3 color4 = vec3(0.98, 0.98, 0.99); // Subtle white
+    
+    // Create smooth gradient transitions
+    vec3 finalColor;
+    
+    if (gradientBase < 0.33) {
+      finalColor = mix(color1, color2, gradientBase * 3.0);
+    } else if (gradientBase < 0.66) {
+      finalColor = mix(color2, color3, (gradientBase - 0.33) * 3.0);
+    } else {
+      finalColor = mix(color3, color4, (gradientBase - 0.66) * 3.0);
+    }
+    
+    // Add subtle luminosity variation
+    float luminosity = 0.95 + 0.05 * sin(gradientBase * 3.14159);
+    finalColor *= luminosity;
+    
+    // Very subtle vignette for depth
+    float vignette = smoothstep(1.2, 0.4, length(vUv - 0.5));
+    finalColor *= 0.9 + 0.1 * vignette;
+    
+    // Output with controlled opacity for glassmorphism
+    gl_FragColor = vec4(finalColor, 0.55); // Slightly lower opacity for subtlety
   }
 `;
 
@@ -179,21 +187,16 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
   if (!ctx) return;
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  const gradient = ctx.createRadialGradient(
-    canvas.width / 2,
-    canvas.height / 2,
+  const gradient = ctx.createLinearGradient(
     0,
-    canvas.width / 2,
-    canvas.height / 2,
-    Math.max(canvas.width, canvas.height) / 1.5
+    0,
+    0,
+    canvas.height
   );
-  // Neon Teal & Lighter Greyscale theme for static gradient
-  // Corresponds to darker color1 (Neon Teal #16CEB8)
-  gradient.addColorStop(0, 'rgba(22, 206, 184, 0.6)');    
-  // Corresponds to color2 (Lighter Grey), with reduced opacity
-  gradient.addColorStop(0.5, 'rgba(230, 230, 230, 0.25)'); 
-  // Corresponds to color3 (Almost-White Grey), with reduced opacity
-  gradient.addColorStop(1, 'rgba(245, 245, 245, 0.2)');   
+  // Professional medical teal gradient
+  gradient.addColorStop(0, 'rgba(102, 178, 191, 0.4)');    // Soft medical teal
+  gradient.addColorStop(0.5, 'rgba(217, 224, 230, 0.3)');  // Cool light grey
+  gradient.addColorStop(1, 'rgba(240, 242, 245, 0.2)');    // Near white
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
