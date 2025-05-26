@@ -12,11 +12,11 @@ CREATE TABLE IF NOT EXISTS public.patients (
   birth_date DATE, -- Changed from dob
   race TEXT,
   ethnicity TEXT, -- Added field
-  -- marital_status TEXT, -- Consider moving to extra_data if not consistently available or core
-  -- language TEXT, -- Consider moving to extra_data
-  -- poverty_percentage NUMERIC, -- Consider moving to extra_data
-  -- photo_url TEXT, -- Retained from original, move to extra_data if not core FHIR alignment
-  -- alerts JSONB, -- Retained from original, consider specific alert table or extra_data
+  marital_status TEXT,
+  language TEXT,
+  poverty_percentage NUMERIC,
+  photo_url TEXT,
+  alerts JSONB,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   extra_data JSONB -- For any other miscellaneous fields or less structured FHIR extensions
@@ -32,22 +32,21 @@ COMMENT ON COLUMN public.patients.extra_data IS 'JSONB field for storing additio
 CREATE TABLE IF NOT EXISTS public.encounters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Internal Supabase ID
   encounter_id TEXT NOT NULL, -- Original AdmissionID/EncounterID from source (unique per patient)
-  patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE, -- FK to patients table internal Supabase UUID
+  patient_supabase_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE, -- FK to patients table internal Supabase UUID
   encounter_type TEXT, -- FHIR-aligned: e.g., 'ambulatory', 'inpatient', 'emergency'
   status TEXT DEFAULT 'finished', -- FHIR-aligned: e.g., 'planned', 'in-progress', 'finished', 'cancelled'
-  -- scheduled_start_datetime TIMESTAMPTZ, -- Retained from original schema
-  -- scheduled_end_datetime TIMESTAMPTZ, -- Retained from original schema
-  -- actual_start_datetime TIMESTAMPTZ, -- Retained from original schema
-  -- actual_end_datetime TIMESTAMPTZ, -- Retained from original schema
-  period_start TIMESTAMPTZ, -- FHIR Period.start
-  period_end TIMESTAMPTZ, -- FHIR Period.end
+  scheduled_start_datetime TIMESTAMPTZ,
+  scheduled_end_datetime TIMESTAMPTZ,
+  actual_start_datetime TIMESTAMPTZ,
+  actual_end_datetime TIMESTAMPTZ,
   reason_code TEXT, -- Coded reason for encounter (e.g., SNOMED CT code)
   reason_display_text TEXT, -- Human-readable reason for encounter
   transcript TEXT,
   soap_note TEXT, -- Or consider a separate 'clinical_notes' table linked to encounters
   treatments JSONB, -- Array of treatment objects or references
-  -- prior_auth_justification TEXT, -- This seems specific, consider moving to extra_data or linking to a document
-  -- insurance_status TEXT, -- This is patient-level or coverage-level, not typically per encounter. Consider linking to a Coverage resource.
+  observations TEXT, -- Clinical observations made during the encounter
+  prior_auth_justification TEXT,
+  insurance_status TEXT,
   is_deleted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
@@ -57,11 +56,9 @@ CREATE TABLE IF NOT EXISTS public.encounters (
 COMMENT ON TABLE public.encounters IS 'Stores information about patient encounters (visits, consultations), aligned with FHIR Encounter resource concepts.';
 COMMENT ON COLUMN public.encounters.id IS 'Internal Supabase UUID, primary key.';
 COMMENT ON COLUMN public.encounters.encounter_id IS 'Business identifier for the encounter (e.g., Visit ID from source system). Unique within a patient context.';
-COMMENT ON COLUMN public.encounters.patient_id IS 'Foreign key referencing the patient associated with this encounter.';
+COMMENT ON COLUMN public.encounters.patient_supabase_id IS 'Foreign key referencing the patient associated with this encounter.';
 COMMENT ON COLUMN public.encounters.encounter_type IS 'Category of the encounter (e.g., outpatient, inpatient).';
 COMMENT ON COLUMN public.encounters.status IS 'The status of the encounter (e.g., planned, finished).';
-COMMENT ON COLUMN public.encounters.period_start IS 'The start date and time of the encounter period.';
-COMMENT ON COLUMN public.encounters.period_end IS 'The end date and time of the encounter period.';
 COMMENT ON COLUMN public.encounters.reason_code IS 'Coded reason for the encounter (e.g., SNOMED CT).';
 COMMENT ON COLUMN public.encounters.reason_display_text IS 'Human-readable description of the reason for the encounter.';
 COMMENT ON COLUMN public.encounters.is_deleted IS 'Flag for soft-deleting encounters.';
@@ -77,7 +74,7 @@ CREATE TABLE IF NOT EXISTS public.conditions (
     category TEXT NOT NULL, -- 'problem-list-item' or 'encounter-diagnosis'
     clinical_status TEXT DEFAULT 'active', -- FHIR Condition.clinicalStatus (active, recurrence, relapse, inactive, remission, resolved)
     verification_status TEXT DEFAULT 'confirmed', -- FHIR Condition.verificationStatus (unconfirmed, provisional, differential, confirmed, refuted, entered-in-error)
-    onset_datetime TIMESTAMPTZ,
+    onset_date DATE,
     recorded_date DATE DEFAULT CURRENT_DATE,
     note TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
@@ -212,14 +209,14 @@ BEGIN
     AND conname = 'encounters_patient_encounter_unique'
   ) THEN
     ALTER TABLE public.encounters
-      ADD CONSTRAINT encounters_patient_encounter_unique UNIQUE (patient_id, encounter_id);
+      ADD CONSTRAINT encounters_patient_encounter_unique UNIQUE (patient_supabase_id, encounter_id);
   END IF;
 END $$;
 
 -- Optional: Add indexes for frequently queried columns
 CREATE INDEX IF NOT EXISTS idx_patients_patient_id ON public.patients(patient_id);
 CREATE INDEX IF NOT EXISTS idx_encounters_encounter_id ON public.encounters(encounter_id);
-CREATE INDEX IF NOT EXISTS idx_encounters_patient_id ON public.encounters(patient_id); -- Changed from idx_visits_patient_supabase_id
+CREATE INDEX IF NOT EXISTS idx_encounters_patient_supabase_id ON public.encounters(patient_supabase_id);
 -- CREATE INDEX IF NOT EXISTS idx_transcripts_visit_supabase_id ON public.transcripts(visit_supabase_id); -- Removed as transcripts table is not in the core schema
 
 -- Indexes for new tables
