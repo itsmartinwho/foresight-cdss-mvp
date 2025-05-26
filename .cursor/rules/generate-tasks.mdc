@@ -1,5 +1,5 @@
 ---
-description: 
+description: This rule takes an existing PRD and generates a detailed, step-by-step task list in Markdown format.
 globs: 
 alwaysApply: false
 ---
@@ -39,7 +39,8 @@ To guide an AI assistant in creating a detailed, step-by-step task list in Markd
 - [ ] 3.0 Parent Task Title (may not have sub-tasks if simple enough)
 
 ## Interaction Model
-The process explicitly requires a pause after generating parent tasks to get user confirmation ("Go") before proceeding to generate sub-tasks. This ensures the high-level plan aligns with user expectations before diving into details.
+The process explicitly requires a pause after generating parent tasks to get user confirmation ("Go") before proceeding to generate sub-tasks. This ensures the high-level plan aligns with user expectations before diving into details. 
+Once the PRD is satisfactory, you can use the [task-list.mdc](mdc:.cursor/rules/task-list.mdc) rule and tag this generated PRD file to create a task list.
 
 ## Target Audience
 Assume the primary reader of the task list is a **developer** who will implement the feature.

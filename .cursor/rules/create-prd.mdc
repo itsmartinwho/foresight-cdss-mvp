@@ -3,6 +3,8 @@ description:
 globs: 
 alwaysApply: false
 ---
+This rule guides the AI in generating a Product Requirements Document (PRD) based on an initial user prompt.
+
 # Rule: Generating a Product Requirements Document (PRD)
 
 ## Goal
@@ -61,3 +63,4 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 1. Do NOT start implementing the PRD
 2. Make sure to ask the user clarifying questions
 3. Take the user's answers to the clarifying questions and improve the PRD
+4. Once the PRD is satisfactory, you can use the [generate-tasks.mdc](mdc:.cursor/rules/generate-tasks.mdc) rule and tag this generated PRD file to create a task list.

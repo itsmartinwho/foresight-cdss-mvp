@@ -49,6 +49,7 @@
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@supabase/supabase-js": "^2.42.3",
+    "@tanstack/react-table": "^8.21.3",
     "ai": "^4.3.16",
     "caniuse-lite": "1.0.30001281",
     "class-variance-authority": "^0.7.1",
