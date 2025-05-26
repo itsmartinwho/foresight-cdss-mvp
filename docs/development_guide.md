@@ -398,5 +398,21 @@ When encountering deployment errors, follow this iterative approach:
 - Test fixes in isolation before combining multiple changes
 - Keep deployment logs for troubleshooting patterns
 
+## Transcript UI Functionality (Validated October 2023)
+
+An investigation into an apparent issue with the transcript UI in patient consultation tabs confirmed that the functionality is working as designed. Key findings include:
+
+*   **Data Integrity**: The database contains substantial and valid transcript data for numerous encounters.
+*   **Data Service**: The `supabaseDataService` correctly fetches and processes transcript data.
+*   **UI Rendering**: The `ConsultationTab.tsx` component accurately displays transcript content, including HTML formatting, using `dangerouslySetInnerHTML`.
+*   **No Systemic Issue**: The initially reported problem was not due to a systemic bug; the transcript system operates correctly.
+
+The investigation involved database queries, data service testing, and UI component analysis. Several debugging scripts were created in the `scripts/` directory, which can be referenced for future troubleshooting if similar concerns arise. These include:
+*   `scripts/check_transcript_data.js`: Verifies transcript content in the database.
+*   `scripts/find_real_transcripts.js`: Identifies encounters with substantial transcript text.
+*   `scripts/test_data_service_simple.js`: A basic test for the data service logic.
+*   `scripts/get_patient_with_transcript.js`: Retrieves test patient details with associated transcripts.
+*   `debug_transcript_issue.js`: A more comprehensive script for debugging transcript-related issues.
+
 ## Conclusion
 Following these development guidelines will help ensure consistent, high-quality development of the Foresight CDSS MVP. All team members are expected to adhere to these guidelines and suggest improvements to the process as needed. 
