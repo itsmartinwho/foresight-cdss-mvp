@@ -111,6 +111,8 @@ The Foresight CDSS MVP underwent several significant refactoring phases to align
 
 **Key Changes:**
 
+*   **SQL Script Corrections:**
+    *   Prior to removal, the Phase 4 SQL script was corrected to remove references to fields no longer present in the schema (`patients.phone`, `patients.email`, `patients.address`, `encounters.date_time`, `encounters.encounter_class`) and to use the correct current field names (`birth_date`, `encounter_type`, `reason_code`, `reason_display_text`, `scheduled_start_datetime`). These corrections formed the basis for the final cleanup actions.
 *   **Deprecated Fields Removal:**
     *   `patients.primary_diagnosis_description` and `patients.general_diagnosis_details` were permanently removed from the `patients` table. All diagnosis information is now managed in the `conditions` table.
 *   **Code Updates:**
@@ -137,6 +139,7 @@ The Foresight CDSS MVP underwent several significant refactoring phases to align
 *   `scripts/database_cleanup_final.sql`: This script handled the removal of problematic views, deprecated columns, creation of the `differential_diagnoses` table, and added indexes/documentation. It is now obsolete and has been removed as its actions are incorporated into the final schema.
 *   `scripts/phase4_final_cleanup.sql`: This script focused on dropping deprecated columns and inserting comprehensive test data. It is now obsolete and has been removed.
 *   `scripts/phase4_test_data_loader.ts`: A TypeScript-based loader for programmatic insertion of test data. While the specific "phase 4" version is part of this historical context, the practice of using a programmatic loader for test data might persist. This specific script is considered part of the finalized refactoring and is removed from the active scripts list.
+*   `docs/phase4_corrected_sql_instructions.md`: Obsolete documentation file providing detailed corrections to the Phase 4 SQL script; its content has been merged into this consolidated document and the file has been removed.
 
 ## Current Post-Refactor Architecture
 
