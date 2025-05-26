@@ -1,188 +1,227 @@
 # Synthetic Data Generation Guide for Foresight CDSS
 
 ## Overview
-This guide provides instructions for generating synthetic clinical data for the Foresight CDSS system. The data should be realistic and follow the formats specified below.
+This guide provides instructions for an LLM to generate synthetic clinical data for the Foresight CDSS system.
+The LLM will receive a CSV export of existing patient and encounter data. For each encounter in the CSV, the LLM should generate new associated clinical data as specified below.
 
-## Important Schema Notes
+## Input Data Context
+The LLM will be provided with rows from a data export. Each row represents an **existing encounter** and includes the following key identifiers from the database, which **MUST be used** to link the newly generated data:
+- `patient_supabase_id`: The Supabase UUID of the patient.
+- `encounter_supabase_id`: The Supabase UUID of the specific encounter.
+- Various demographic and existing encounter details to provide context.
 
-### ⚠️ Schema Discrepancies
-The actual database schema differs from `schema.sql` in several important ways:
+## Fields to Generate Synthetically
+For each provided encounter (`encounter_supabase_id`), the LLM must generate the following:
 
-1. **encounters.patient_supabase_id**: In the actual database, the foreign key to patients is named `patient_supabase_id`, NOT `patient_id`
-2. **encounters.observations**: This field exists in the actual DB but not in schema.sql
-3. **conditions.onset_date**: The actual DB uses `onset_date` (DATE), not `onset_datetime` (TIMESTAMPTZ)
-4. **Missing columns**: Some columns like `clinical_status`, `verification_status`, `value_type`, and `interpretation` don't exist in the actual tables
+### 1. Updates for the Existing Encounter Record
+These fields should be generated to update the existing encounter identified by `encounter_supabase_id`.
 
-## Data Export Query
-Use the query in `scripts/data_export_query.sql` to export existing data.
+- **`reason_code`**:
+    - **Type**: `TEXT`
+    - **Description**: Medical code for the encounter reason (e.g., SNOMED CT, ICD-10).
+    - **Example**: `"185349003"` (Streptococcal sore throat)
+- **`reason_display_text`**:
+    - **Type**: `TEXT`
+    - **Description**: Human-readable reason for the visit.
+    - **Example**: `"Patient presents with sore throat and fever for 3 days."`
+- **`transcript`**:
+    - **Type**: `TEXT`
+    - **Description**: A realistic, detailed transcript of the patient-clinician interaction during the encounter.
+    - **Example**: `"Doctor: Good morning, how are you feeling today?\nPatient: I've had this terrible sore throat..."` (Ensure newlines are properly escaped if the final JSON is a single string).
+- **`soap_note`**:
+    - **Type**: `TEXT`
+    - **Description**: A structured clinical note in SOAP format (Subjective, Objective, Assessment, Plan).
+    - **Example**: `"S: Patient complains of sore throat x3 days...\nO: Vital signs...\nA: Acute pharyngitis...\nP: Amoxicillin..."`
+- **`observations`**: (This field is `TEXT` in the `encounters` table)
+    - **Type**: `TEXT`
+    - **Description**: General clinical observations made during the encounter not captured elsewhere.
+    - **Example**: `"Patient appears ill but not in acute distress. Mild dehydration noted. Positive rapid strep test."`
+- **`treatments`**:
+    - **Type**: `JSONB` (The LLM should generate a JSON array of objects as a string)
+    - **Description**: An array of treatment objects. Each object should detail a specific treatment.
+    - **Example JSON structure for the array**:
+      ```json
+      [
+        {
+          "treatment_name": "Amoxicillin",
+          "treatment_type": "medication",
+          "dosage": "500mg",
+          "route": "PO",
+          "frequency": "TID",
+          "duration": "10 days",
+          "instructions": "Take with food",
+          "prescribed_date": "YYYY-MM-DD"
+        },
+        {
+          "treatment_name": "Rest and hydration",
+          "treatment_type": "lifestyle",
+          "instructions": "Get plenty of rest and drink warm fluids"
+        }
+      ]
+      ```
 
-## Fields to Generate
+### 2. New Associated `conditions` Records
+For each encounter, generate one or more related condition records. Each condition record is an object.
 
-### 1. For Existing Encounters (UPDATE operations)
+- **`code`**:
+    - **Type**: `TEXT`
+    - **Description**: Standardized medical code (e.g., ICD-10, SNOMED CT).
+    - **Example**: `"J02.0"`
+- **`description`**:
+    - **Type**: `TEXT`
+    - **Description**: Human-readable diagnosis name.
+    - **Example**: `"Streptococcal pharyngitis"`
+- **`category`**:
+    - **Type**: `TEXT`
+    - **Description**: Must be either `'encounter-diagnosis'` (for conditions diagnosed during this encounter) or `'problem-list-item'` (for pre-existing or chronic conditions relevant to this encounter).
+    - **Example**: `"encounter-diagnosis"`
+- **`clinical_status`**:
+    - **Type**: `TEXT`
+    - **Description**: FHIR Condition.clinicalStatus.
+    - **Allowed Values**: `'active'`, `'recurrence'`, `'relapse'`, `'inactive'`, `'remission'`, `'resolved'`. (Default to `'active'` if unsure).
+    - **Example**: `"active"`
+- **`verification_status`**:
+    - **Type**: `TEXT`
+    - **Description**: FHIR Condition.verificationStatus.
+    - **Allowed Values**: `'unconfirmed'`, `'provisional'`, `'differential'`, `'confirmed'`, `'refuted'`, `'entered-in-error'`. (Default to `'confirmed'` if unsure).
+    - **Example**: `"confirmed"`
+- **`onset_date`**:
+    - **Type**: `DATE`
+    - **Description**: Date the condition started (format: `YYYY-MM-DD`). Must be on or before the encounter date.
+    - **Example**: `"2023-10-23"`
+- **`note`**:
+    - **Type**: `TEXT` (Optional)
+    - **Description**: Additional clinical notes about this specific condition.
+    - **Example**: `"Rapid strep test was positive."`
 
-#### reason_code
-- **Type**: `TEXT`
-- **Description**: Medical code for the encounter reason
-- **Examples**:
-  - `"185349003"` (Streptococcal sore throat - SNOMED CT)
-  - `"R10.9"` (Unspecified abdominal pain - ICD-10)
-  - `"44054006"` (Diabetes mellitus type 2 - SNOMED CT)
-- **Format**: Prefer SNOMED CT codes for conditions, ICD-10 for billing
+### 3. New Associated `lab_results` Records
+For each encounter, generate plausible lab results. Each lab result is an object.
 
-#### reason_display_text
-- **Type**: `TEXT`
-- **Description**: Human-readable reason for visit
-- **Examples**:
-  - `"Patient presents with sore throat and fever for 3 days"`
-  - `"Follow-up visit for diabetes management"`
-  - `"Annual physical examination"`
-- **Format**: Clear, concise clinical language
+- **`name`**:
+    - **Type**: `TEXT`
+    - **Description**: Name or code of the lab test (e.g., LOINC).
+    - **Example**: `"Hemoglobin A1c"`, `"Rapid Strep Test"`
+- **`value`**:
+    - **Type**: `TEXT`
+    - **Description**: The result of the lab test.
+    - **Example**: `"7.2"`, `"Positive"`, `"120"`
+- **`value_type`**:
+    - **Type**: `TEXT`
+    - **Description**: Helps interpret the `value` field.
+    - **Allowed Values**: `'numeric'`, `'string'`, `'coded'`, `'boolean'`, `'datetime'`.
+    - **Example**: `"numeric"` for `"7.2"`, `"string"` for `"Positive"`
+- **`units`**:
+    - **Type**: `TEXT` (Optional, use if `value_type` is `'numeric'`)
+    - **Description**: Units for numeric values.
+    - **Example**: `"%"`, `"mg/dL"`
+- **`date_time`**:
+    - **Type**: `TIMESTAMPTZ`
+    - **Description**: When the observation was made or result recorded (ISO 8601 format: `YYYY-MM-DDTHH:MM:SSZ`). Should be around the encounter time.
+    - **Example**: `"2023-10-26T10:30:00Z"`
+- **`reference_range`**:
+    - **Type**: `TEXT` (Optional)
+    - **Description**: Normal range for the observation.
+    - **Example**: `"4.0-5.6 %"`
+- **`flag`**:
+    - **Type**: `TEXT` (Optional)
+    - **Description**: Abnormality indicator.
+    - **Allowed Values**: `'H'` (High), `'L'` (Low), `'A'` (Abnormal), `NULL` (Normal or not applicable).
+    - **Example**: `"H"`
+- **`interpretation`**:
+    - **Type**: `TEXT` (Optional)
+    - **Description**: Textual interpretation of the result.
+    - **Example**: `"Above target range, indicates poor glycemic control."`
 
-#### transcript
-- **Type**: `TEXT`
-- **Description**: Full conversation transcript
-- **Example Format**:
-```
-Doctor: Good morning, how are you feeling today?
-Patient: I've had this terrible sore throat for about three days now.
-Doctor: I see. Any fever or other symptoms?
-Patient: Yes, I've been running a fever of about 101°F, and I feel really tired.
-Doctor: Let me take a look at your throat...
-[Continue with realistic clinical dialogue]
-```
+## Expected Output Format
 
-#### soap_note
-- **Type**: `TEXT`
-- **Description**: Structured clinical note
-- **Format**:
-```
-S (Subjective): Patient complains of sore throat x3 days, fever up to 101°F, fatigue, difficulty swallowing. Denies cough, runny nose.
+The LLM should output a **single JSON object**. This object will contain one key: `"synthetic_data"`.
+The value of `"synthetic_data"` will be an **array of objects**.
+Each object in this array corresponds to **one of the input encounters** and must include:
 
-O (Objective): Vital signs: T 100.8°F, BP 120/80, HR 88, RR 16. HEENT: Pharynx erythematous with white exudate on tonsils bilaterally. Anterior cervical lymphadenopathy present. Lungs clear to auscultation.
+1.  `patient_supabase_id`: Copied directly from the input for that encounter.
+2.  `encounter_supabase_id`: Copied directly from the input for that encounter.
+3.  `generated_encounter_updates`: An object containing the synthetically generated fields for updating the existing encounter record (`reason_code`, `reason_display_text`, `transcript`, `soap_note`, `observations`, `treatments`). The `treatments` field itself should be a JSON array (represented as a string if the final output must be purely string-based JSON, or as a native JSON array if the target system can parse it).
+4.  `generated_conditions`: An array of objects, where each object represents a new condition record to be associated with this encounter. Each condition object should contain all fields specified under "New Associated `conditions` Records".
+5.  `generated_lab_results`: An array of objects, where each object represents a new lab result record to be associated with this encounter. Each lab result object should contain all fields specified under "New Associated `lab_results` Records".
 
-A (Assessment): Acute pharyngitis, likely streptococcal given clinical presentation. Rapid strep test positive.
-
-P (Plan): 
-1. Amoxicillin 500mg PO TID x 10 days
-2. Acetaminophen PRN for fever and pain
-3. Increase fluid intake
-4. Return if symptoms worsen or no improvement in 48-72 hours
-```
-
-#### observations
-- **Type**: `TEXT`
-- **Description**: Clinical observations during the encounter
-- **Note**: This field exists in the actual DB but not in schema.sql
-- **Example**: `"Patient appears ill but not in acute distress. Mild dehydration noted. Positive rapid strep test."`
-
-#### treatments
-- **Type**: `JSONB`
-- **Description**: Array of treatment objects
-- **Example**:
+**Example of the final JSON output structure for a single encounter:**
 ```json
-[
-  {
-    "treatment_name": "Amoxicillin",
-    "treatment_type": "medication",
-    "dosage": "500mg",
-    "route": "PO",
-    "frequency": "TID",
-    "duration": "10 days",
-    "instructions": "Take with food",
-    "prescribed_date": "2023-10-26"
-  },
-  {
-    "treatment_name": "Throat lozenges",
-    "treatment_type": "symptomatic",
-    "instructions": "Use as needed for throat pain",
-    "otc": true
-  },
-  {
-    "treatment_name": "Rest and hydration",
-    "treatment_type": "lifestyle",
-    "instructions": "Get plenty of rest and drink warm fluids"
-  }
-]
-```
-
-### 2. For New Conditions Records (INSERT operations)
-
-#### Key Linking Fields
-- `patient_id`: Use `patient_supabase_id` from the export query
-- `encounter_id`: Use `encounter_supabase_id` from the export query (can be NULL for problem list items)
-
-#### condition fields
-- **code**: `TEXT` - ICD-10 or SNOMED CT code
-  - Examples: `"J02.0"` (Streptococcal pharyngitis), `"E11.9"` (Type 2 diabetes)
-- **description**: `TEXT` - Human-readable diagnosis
-  - Examples: `"Acute streptococcal pharyngitis"`, `"Type 2 diabetes mellitus without complications"`
-- **category**: `TEXT` - Must be either:
-  - `"encounter-diagnosis"` - Diagnosis made during this specific encounter
-  - `"problem-list-item"` - Ongoing condition in patient's problem list
-- **onset_date**: `DATE` - When the condition started (format: `YYYY-MM-DD`)
-- **note**: `TEXT` (Optional) - Additional clinical notes
-
-### 3. For New Lab Results Records (INSERT operations)
-
-#### Key Linking Fields
-- `patient_id`: Use `patient_supabase_id` from the export query
-- `encounter_id`: Use `encounter_supabase_id` from the export query (can be NULL)
-
-#### lab_results fields
-- **name**: `TEXT` - Lab test name or LOINC code
-  - Examples: `"Hemoglobin A1c"`, `"LOINC:4548-4"`, `"Rapid Strep Test"`
-- **value**: `TEXT` - Test result
-  - Examples: `"7.2"`, `"Positive"`, `"120"`
-- **units**: `TEXT` - Units of measurement
-  - Examples: `"%"`, `"mg/dL"`, `"mmol/L"`
-- **date_time**: `TIMESTAMPTZ` - When test was performed
-  - Format: `"2023-10-26T10:30:00Z"`
-- **reference_range**: `TEXT` - Normal range
-  - Examples: `"4.0-5.6 %"`, `"70-100 mg/dL"`
-- **flag**: `TEXT` - Abnormality indicator
-  - Values: `"H"` (High), `"L"` (Low), `"A"` (Abnormal), `NULL` (Normal)
-
-## SQL Commands for Data Import
-
-### Update existing encounters
-```sql
-UPDATE public.encounters
-SET 
-  reason_code = $1,
-  reason_display_text = $2,
-  transcript = $3,
-  soap_note = $4,
-  observations = $5,
-  treatments = $6,
-  updated_at = NOW()
-WHERE id = $7;  -- Use encounter_supabase_id from export
-```
-
-### Insert new conditions
-```sql
-INSERT INTO public.conditions (
-  patient_id, encounter_id, code, description, category, onset_date, note
-) VALUES (
-  $1, $2, $3, $4, $5, $6, $7
-);
-```
-
-### Insert new lab results
-```sql
-INSERT INTO public.lab_results (
-  patient_id, encounter_id, name, value, units, date_time, reference_range, flag
-) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
-);
+{
+  "synthetic_data": [
+    {
+      "patient_supabase_id": "provided_patient_uuid_from_input_csv",
+      "encounter_supabase_id": "provided_encounter_uuid_from_input_csv",
+      "generated_encounter_updates": {
+        "reason_code": "J02.9",
+        "reason_display_text": "Acute pharyngitis, unspecified",
+        "transcript": "Doctor: Hello... Patient: I have a sore throat...",
+        "soap_note": "S: Patient reports sore throat... O: Temp 38.1C... A: Pharyngitis... P: Rest, fluids.",
+        "observations": "Tonsils are red and swollen.",
+        "treatments": "[{"treatment_name": "Acetaminophen", "dosage": "500mg", "route": "PO", "frequency": "PRN"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "J02.9",
+          "description": "Acute pharyngitis, unspecified",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2023-10-25",
+          "note": "Rapid strep test negative."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Rapid Strep Test",
+          "value": "Negative",
+          "value_type": "string",
+          "units": null,
+          "date_time": "2023-10-28T09:15:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "No evidence of Group A Streptococcus."
+        },
+        {
+          "name": "White Blood Cell Count",
+          "value": "11.5",
+          "value_type": "numeric",
+          "units": "x10^9/L",
+          "date_time": "2023-10-28T09:30:00Z",
+          "reference_range": "4.0-11.0",
+          "flag": "H",
+          "interpretation": "Slightly elevated, may indicate infection."
+        }
+      ]
+    }
+    // ... more objects, one for each encounter from the input CSV
+  ]
+}
 ```
 
 ## Generation Guidelines
 
-1. **Medical Accuracy**: Ensure generated data is medically plausible
-2. **Consistency**: Match conditions with appropriate lab results and treatments
-3. **Temporal Logic**: Ensure dates make sense (onset before encounter, lab results during encounter)
-4. **Privacy**: Never use real patient data; all generated data should be synthetic
-5. **Variety**: Include a mix of common conditions (diabetes, hypertension) and acute issues (infections, injuries)
+1.  **Medical Plausibility**: All generated data must be medically realistic and consistent with the provided patient and encounter context.
+2.  **Consistency**:
+    - Conditions should align with lab results and treatments.
+    - Transcripts and SOAP notes should reflect the generated conditions, labs, and treatments.
+3.  **Temporal Logic**:
+    - `onset_date` for conditions should be on or before the encounter date.
+    - `lab_results.date_time` should be contemporaneous with the encounter.
+    - `treatments.prescribed_date` (if included) should be on the encounter date.
+4.  **Data Types and Formats**: Adhere strictly to the specified data types and formats (e.g., `YYYY-MM-DD` for dates, ISO 8601 for TIMESTAMPTZ).
+5.  **Variety**: Generate a diverse range of plausible clinical scenarios, conditions, lab results, and treatments.
+6.  **Completeness**: For each encounter row from the input, provide all requested generated fields. If a field is optional and not applicable, use `null` (for JSON `null`) or omit it if appropriate for the JSON structure (e.g., optional text fields could be empty strings or null).
+
+## Important Schema Notes (For LLM Context - Do Not Output This Section)
+The following notes describe the target database schema for context but are not part of the LLM's output instructions.
+- `encounters.patient_supabase_id` is the correct FK to `patients.id`.
+- `encounters.observations` is a `TEXT` field.
+- `conditions.onset_date` is `DATE`.
+- `conditions` table has `clinical_status` and `verification_status`.
+- `lab_results` table has `value_type` and `interpretation`.
+
+## Data Export Query
+Use the query in `scripts/data_export_query.sql` to export existing data.
 
 ## Common Condition Examples
 
