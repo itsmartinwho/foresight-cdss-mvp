@@ -8,6 +8,7 @@ The LLM will receive a CSV export of existing patient and encounter data. For ea
 The LLM will be provided with rows from a data export. Each row represents an **existing encounter** and includes the following key identifiers from the database, which **MUST be used** to link the newly generated data:
 - `patient_supabase_id`: The Supabase UUID of the patient.
 - `encounter_supabase_id`: The Supabase UUID of the specific encounter.
+- `first_name` and `last_name`: The actual patient's name, which **MUST be used** in transcripts when the clinician addresses the patient.
 - Various demographic and existing encounter details to provide context.
 
 ## Fields to Generate Synthetically
@@ -26,8 +27,8 @@ These fields should be generated to update the existing encounter identified by 
     - **Example**: `"Patient presents with sore throat and fever for 3 days."`
 - **`transcript`**:
     - **Type**: `TEXT`
-    - **Description**: A realistic, detailed transcript of the patient-clinician interaction during the encounter.
-    - **Example**: `"Doctor: Good morning, how are you feeling today?\nPatient: I've had this terrible sore throat..."` (Ensure newlines are properly escaped if the final JSON is a single string).
+    - **Description**: A realistic, detailed transcript of the patient-clinician interaction during the encounter. **IMPORTANT**: Use the actual patient's first name from the input data when the clinician addresses the patient in the transcript. Do not use generic names like "Kevin" or "John".
+    - **Example**: `"Doctor: Good morning [Patient's First Name], how are you feeling today?\nPatient: I've had this terrible sore throat..."` (Ensure newlines are properly escaped if the final JSON is a single string).
 - **`soap_note`**:
     - **Type**: `TEXT`
     - **Description**: A structured clinical note in SOAP format (Subjective, Objective, Assessment, Plan).
@@ -201,16 +202,17 @@ Each object in this array corresponds to **one of the input encounters** and mus
 ## Generation Guidelines
 
 1.  **Medical Plausibility**: All generated data must be medically realistic and consistent with the provided patient and encounter context.
-2.  **Consistency**:
+2.  **Patient Name Usage**: **CRITICAL** - Always use the actual patient's first name from the input data when generating transcripts. Never use generic placeholder names like "Kevin", "John", "Sarah", etc. The clinician should address the patient by their real first name throughout the transcript.
+3.  **Consistency**:
     - Conditions should align with lab results and treatments.
     - Transcripts and SOAP notes should reflect the generated conditions, labs, and treatments.
-3.  **Temporal Logic**:
+4.  **Temporal Logic**:
     - `onset_date` for conditions should be on or before the encounter date.
     - `lab_results.date_time` should be contemporaneous with the encounter.
     - `treatments.prescribed_date` (if included) should be on the encounter date.
-4.  **Data Types and Formats**: Adhere strictly to the specified data types and formats (e.g., `YYYY-MM-DD` for dates, ISO 8601 for TIMESTAMPTZ).
-5.  **Variety**: Generate a diverse range of plausible clinical scenarios, conditions, lab results, and treatments.
-6.  **Completeness**: For each encounter row from the input, provide all requested generated fields. If a field is optional and not applicable, use `null` (for JSON `null`) or omit it if appropriate for the JSON structure (e.g., optional text fields could be empty strings or null).
+5.  **Data Types and Formats**: Adhere strictly to the specified data types and formats (e.g., `YYYY-MM-DD` for dates, ISO 8601 for TIMESTAMPTZ).
+6.  **Variety**: Generate a diverse range of plausible clinical scenarios, conditions, lab results, and treatments.
+7.  **Completeness**: For each encounter row from the input, provide all requested generated fields. If a field is optional and not applicable, use `null` (for JSON `null`) or omit it if appropriate for the JSON structure (e.g., optional text fields could be empty strings or null).
 
 ## Important Schema Notes (For LLM Context - Do Not Output This Section)
 The following notes describe the target database schema for context but are not part of the LLM's output instructions.
