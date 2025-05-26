@@ -10,7 +10,7 @@ import { Encounter, Patient, ClinicalOutputPackage, DifferentialDiagnosis } from
 import { supabaseDataService } from '@/lib/supabaseDataService'; // Import supabaseDataService
 import AIAnalysisPanel from '@/components/AIAnalysisPanel'; // Ensure this is the correct path
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast"; // Corrected: import useToast hook
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -38,13 +38,34 @@ function useDebouncedCallback(callback: (...args: any[]) => void, delay: number)
 
 interface ConsultationTabProps {
   selectedEncounter: Encounter | null;
-  patientName: string;
+  patientName?: string; // Made optional as it might not always be directly passed if patient object is available
   patient: Patient | null;
+  // Props for new consultation UI, passed from PatientWorkspaceView
+  isStartingNewConsultation?: boolean;
+  newConsultationReason?: string;
+  onNewConsultationReasonChange?: (reason: string) => void;
+  newConsultationDate?: Date | null;
+  onNewConsultationDateChange?: (date: Date | null) => void;
+  newConsultationDuration?: number | null;
+  onNewConsultationDurationChange?: (duration: number | null) => void;
+  onStartTranscriptionForNewConsult?: () => Promise<Encounter | null>; // Callback when starting transcription for a new (just created) consult
 }
 
-const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedEncounter, patientName, patient }) => {
+const ConsultationTab: React.FC<ConsultationTabProps> = ({ 
+  selectedEncounter, 
+  patientName, 
+  patient, 
+  isStartingNewConsultation,
+  newConsultationReason,
+  onNewConsultationReasonChange,
+  newConsultationDate,
+  onNewConsultationDateChange,
+  newConsultationDuration,
+  onNewConsultationDurationChange,
+  onStartTranscriptionForNewConsult
+}) => {
   const supabase = getSupabaseClient(); // Initialize supabase client
-  const { toast } = useToast();
+  const { toast } = useToast(); // Corrected: call useToast hook to get the toast function
   const [isLoading, setIsLoading] = useState(true);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
@@ -107,21 +128,37 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedEncounter, pa
     }
   }, [selectedEncounter, patient, ws]);
 
+  const getCursorPosition = (): number | null => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      return range.startOffset;
+    }
+    return null;
+  };
+
   const debouncedSaveTranscript = useDebouncedCallback(async () => {
     const currentSaveState = encounterStateForAutoSaveRef.current;
     if (currentSaveState && selectedEncounter && currentSaveState.patientBusinessId && selectedEncounter.encounterIdentifier && currentSaveState.transcriptToSave !== currentSaveState.lastSaved) {
       console.log("Auto-saving transcript for patient (business ID):", currentSaveState.patientBusinessId, "encounter (business ID):", selectedEncounter.encounterIdentifier);
       try {
-        const compositeEncounterId = `${currentSaveState.patientBusinessId}_${selectedEncounter.encounterIdentifier}`;
+        const encounterIdVal = typeof selectedEncounter.encounterIdentifier === 'string' 
+          ? selectedEncounter.encounterIdentifier
+          : String(selectedEncounter.encounterIdentifier);
+
+        const compositeEncounterId = `${currentSaveState.patientBusinessId}_${encounterIdVal}`;
+        
         await supabaseDataService.updateEncounterTranscript(currentSaveState.patientBusinessId, compositeEncounterId, currentSaveState.transcriptToSave);
-        console.log("Transcript auto-saved for encounter (business ID):", selectedEncounter.encounterIdentifier);
+        console.log("Transcript auto-saved for encounter (business ID):", encounterIdVal);
         if (encounterStateForAutoSaveRef.current && encounterStateForAutoSaveRef.current.encounterSupabaseId === selectedEncounter.id) {
           encounterStateForAutoSaveRef.current.lastSaved = currentSaveState.transcriptToSave;
         }
         setLastSavedTranscript(currentSaveState.transcriptToSave);
         setTranscriptChanged(false);
+        toast({ title: "Transcript Auto-Saved", description: "Changes to the transcript have been saved automatically." });
       } catch (error) {
         console.error("Error auto-saving transcript:", error);
+        toast({ title: "Save Error", description: "Could not auto-save transcript.", variant: "destructive" });
       }
     }
   }, 1000);
@@ -321,7 +358,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedEncounter, pa
           }
       }
 
-      toast({ title: "Success", description: "AI Analysis (Differentials & SOAP) saved.", variant: "success" });
+      toast({ title: "Success", description: "AI Analysis (Differentials & SOAP) saved." });
     } catch (error) {
       console.error("Error saving AI Analysis to encounter:", error);
       toast({ title: "Error", description: `Failed to save AI Analysis: ${(error as Error).message}`, variant: "destructive" });
@@ -348,6 +385,40 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedEncounter, pa
       toast({title: "No Prior Auth Document", description: "AI analysis did not generate a prior authorization document.", variant: "default"})
     }
   }
+
+  const handleSaveTranscript = async () => {
+    const currentSaveState = encounterStateForAutoSaveRef.current;
+    if (currentSaveState && selectedEncounter && currentSaveState.patientBusinessId && selectedEncounter.encounterIdentifier && currentSaveState.transcriptToSave !== currentSaveState.lastSaved) {
+      setIsLoading(true); // Indicate loading state
+      console.log("Manually saving transcript for patient (business ID):", currentSaveState.patientBusinessId, "encounter (business ID):", selectedEncounter.encounterIdentifier);
+      try {
+        const encounterIdVal = typeof selectedEncounter.encounterIdentifier === 'string' 
+        ? selectedEncounter.encounterIdentifier
+        : String(selectedEncounter.encounterIdentifier); // Or handle error/default
+
+        const compositeEncounterId = `${currentSaveState.patientBusinessId}_${encounterIdVal}`;
+        await supabaseDataService.updateEncounterTranscript(currentSaveState.patientBusinessId, compositeEncounterId, currentSaveState.transcriptToSave);
+        console.log("Transcript manually saved for encounter (business ID):", selectedEncounter.encounterIdentifier);
+        if (encounterStateForAutoSaveRef.current && encounterStateForAutoSaveRef.current.encounterSupabaseId === selectedEncounter.id) {
+          encounterStateForAutoSaveRef.current.lastSaved = currentSaveState.transcriptToSave;
+        }
+        setLastSavedTranscript(currentSaveState.transcriptToSave);
+        setTranscriptChanged(false);
+        toast({ title: "Transcript Saved", description: "The transcript has been successfully saved." });
+      } catch (error) {
+        console.error("Error manually saving transcript:", error);
+        toast({ title: "Save Error", description: `Failed to save transcript: ${(error as Error).message}`, variant: "destructive" });
+      } finally {
+        setIsLoading(false); // Reset loading state
+      }
+    } else if (currentSaveState && currentSaveState.transcriptToSave === currentSaveState.lastSaved) {
+      toast({ title: "No Changes", description: "No changes to save in the transcript.", variant: "default" });
+    } else {
+      toast({ title: "Save Error", description: "Cannot save transcript. Patient or encounter context is missing.", variant: "destructive" });
+    }
+  };
+  
+  const handleManualSave = handleSaveTranscript; // Alias for JSX
 
   // JSX for rendering will be added here
   return (

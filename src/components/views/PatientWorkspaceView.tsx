@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Users, CaretLeft as ChevronLeft, Trash as Trash2, PlusCircle, X } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
-import type { Patient, Admission, AdmissionDetailsWrapper, ComplexCaseAlert } from "@/lib/types";
+import type { Patient, Encounter, EncounterDetailsWrapper, ComplexCaseAlert } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { useSearchParams, useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { cn } from "@/lib/utils";
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
-import ConsultationTab from "@/components/patient-workspace-tabs/ConsultationTab";
+import ConsultationTab from "@/app/consultation/[id]/ConsultationTab";
 import DiagnosisTab from "@/components/patient-workspace-tabs/DiagnosisTab";
 import TreatmentTab from "@/components/patient-workspace-tabs/TreatmentTab";
 import LabsTab from "@/components/patient-workspace-tabs/LabsTab";
@@ -28,7 +28,7 @@ import { AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { buttonVariants } from "@/components/ui/button";
 
 interface PatientWorkspaceProps {
@@ -37,14 +37,15 @@ interface PatientWorkspaceProps {
   onBack: () => void;
 }
 
-export type DetailedPatientDataType = { patient: Patient; admissions: AdmissionDetailsWrapper[] } | null;
+export type DetailedPatientDataType = { patient: Patient; encounters: EncounterDetailsWrapper[] } | null;
 
 export default function PatientWorkspaceView({ patient: initialPatientStub, initialTab, onBack }: PatientWorkspaceProps) {
   const [activeTab, setActiveTab] = useState("consultation");
+  const { toast } = useToast();
   const [detailedPatientData, setDetailedPatientData] = useState<DetailedPatientDataType>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedEncounterForConsultation, setSelectedEncounterForConsultation] = useState<Admission | null>(null);
+  const [selectedEncounterForConsultation, setSelectedEncounterForConsultation] = useState<Encounter | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
   const [isStartingNewConsultation, setIsStartingNewConsultation] = useState(false);
@@ -56,9 +57,9 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const activeAdmissionDetails: AdmissionDetailsWrapper[] = React.useMemo(() => {
-    if (!detailedPatientData?.admissions) return [];
-    return detailedPatientData.admissions.filter(adWrapper => !adWrapper.admission.isDeleted);
+  const activeEncounterDetails: EncounterDetailsWrapper[] = React.useMemo(() => {
+    if (!detailedPatientData?.encounters) return [];
+    return detailedPatientData.encounters.filter(ew => !ew.encounter.isDeleted);
   }, [detailedPatientData]);
 
   useEffect(() => {
@@ -75,14 +76,19 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
     try {
       const data = await supabaseDataService.getPatientData(initialPatientStub.id);
       if (data) {
-        setDetailedPatientData(data);
-        const paramAd = searchParams?.get('ad');
-        const admissionsToSearch = data.admissions || [];
-        const firstActiveNonDeleted = admissionsToSearch.find(aWrapper => !aWrapper.admission.isDeleted)?.admission || null;
+        const typedData: DetailedPatientDataType = {
+          patient: data.patient,
+          encounters: data.encounters || [] 
+        };
+        setDetailedPatientData(typedData);
+        
+        const paramEncounterId = searchParams?.get('encounterId') || searchParams?.get('ad');
+        const encountersToSearch = typedData.encounters || [];
+        const firstActiveNonDeleted = encountersToSearch.find(eWrapper => !eWrapper.encounter.isDeleted)?.encounter || null;
 
-        if (paramAd) {
-          const foundAdmissionWrapper = admissionsToSearch.find(aWrapper => aWrapper.admission.id === paramAd && !aWrapper.admission.isDeleted);
-          setSelectedEncounterForConsultation(foundAdmissionWrapper?.admission || firstActiveNonDeleted);
+        if (paramEncounterId) {
+          const foundEncounterWrapper = encountersToSearch.find(eWrapper => eWrapper.encounter.id === paramEncounterId && !eWrapper.encounter.isDeleted);
+          setSelectedEncounterForConsultation(foundEncounterWrapper?.encounter || firstActiveNonDeleted);
         } else {
           setSelectedEncounterForConsultation(firstActiveNonDeleted);
         }
@@ -141,28 +147,41 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
   
   const { patient } = detailedPatientData;
 
-  const handleDeleteEncounter = () => {
+  const handleDeleteEncounter = async () => {
     if (encounterToDeleteId && patient?.id) {
       const currentPatientId = patient.id;
-      if (supabaseDataService.markEncounterAsDeleted(currentPatientId, encounterToDeleteId)) {
-        if (activeAdmissionDetails) {
-          const updatedDetails = activeAdmissionDetails.filter(
-            ew => ew.encounter.id !== encounterToDeleteId
-          );
-          setActiveAdmissionDetails(updatedDetails);
-          if (selectedEncounterForConsultation?.id === encounterToDeleteId) {
-            setSelectedEncounterForConsultation(null);
-            if (updatedDetails.length > 0) {
-              const firstEncounterWrapper = updatedDetails[0];
-              setSelectedEncounterForConsultation(firstEncounterWrapper.encounter);
-              router.push(`/patients/${currentPatientId}?encounterId=${firstEncounterWrapper.encounter.id}`);
+      try {
+        await supabaseDataService.markEncounterAsDeleted(currentPatientId, encounterToDeleteId);
+        
+        setDetailedPatientData(prevData => {
+          if (!prevData) return null;
+          return {
+            ...prevData,
+            encounters: prevData.encounters.map(ew => 
+              ew.encounter.id === encounterToDeleteId 
+                ? { ...ew, encounter: { ...ew.encounter, isDeleted: true } } 
+                : ew
+            ),
+          };
+        });
+
+        if (selectedEncounterForConsultation?.id === encounterToDeleteId) {
+            const activeEncountersAfterDelete = (detailedPatientData?.encounters || [])
+                .filter(ew => !ew.encounter.isDeleted && ew.encounter.id !== encounterToDeleteId)
+                .map(ew => ew.encounter);
+
+            const nextSelected = activeEncountersAfterDelete.length > 0 ? activeEncountersAfterDelete[0] : null;
+            setSelectedEncounterForConsultation(nextSelected);
+            if (nextSelected) {
+                router.push(`/patients/${currentPatientId}?encounterId=${nextSelected.id}`);
             } else {
-              router.push(`/patients/${currentPatientId}`);
+                router.push(`/patients/${currentPatientId}`);
             }
-          }
         }
+        
         toast({ title: "Encounter Deleted", description: "The encounter has been marked as deleted." });
-      } else {
+      } catch (err) {
+        console.error("Failed to delete encounter:", err);
         toast({ title: "Error", description: "Failed to delete encounter.", variant: "destructive" });
       }
       setEncounterToDeleteId(null);
@@ -177,27 +196,35 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
     setShowDeleteConfirmation(false);
   };
 
-  const handleFinalizeNewConsultation = async (): Promise<Admission | null> => {
+  const handleFinalizeNewConsultation = async (): Promise<Encounter | null> => {
     if (!patient?.id) return null;
     try {
-      const newAd = await supabaseDataService.createNewAdmission(patient.id, {
+      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, {
         reason: newConsultationReason || undefined,
         scheduledStart: newConsultationDate ? newConsultationDate.toISOString() : new Date().toISOString(),
-        duration: newConsultationDuration || undefined,
       });
+      
+      const newEncounterWrapper: EncounterDetailsWrapper = { 
+        encounter: newEncounter, 
+        diagnoses: [], 
+        labResults: [] 
+      };
+
       setDetailedPatientData((prev) => {
-        const newAdmissionEntry: AdmissionDetailsWrapper = { admission: newAd, diagnoses: [], labResults: [] };
-        if (!prev || !prev.patient) return { patient: patient, admissions: [newAdmissionEntry] };
-        const newAdmissionsList = [newAdmissionEntry, ...(prev.admissions || [])];
-        return { ...prev, admissions: newAdmissionsList };
+        if (!prev || !prev.patient) return { patient: patient, encounters: [newEncounterWrapper] };
+        const newEncountersList = [newEncounterWrapper, ...(prev.encounters || [])];
+        return { ...prev, encounters: newEncountersList };
       });
-      setSelectedEncounterForConsultation(newAd);
+
+      setSelectedEncounterForConsultation(newEncounter);
       setIsStartingNewConsultation(false);
-      setActiveTab('consult');
-      return newAd;
+      setActiveTab('consultation');
+      router.push(`/patients/${patient.id}?encounterId=${newEncounter.id}`);
+      return newEncounter;
     } catch (err: unknown) {
       console.error("Failed to finalize new consultation", err);
       setError(err instanceof Error ? err.message : "Failed to create new consultation visit.");
+      toast({ title: "Error", description: `Failed to create new encounter: ${err instanceof Error ? err.message : "Unknown error"}`, variant: "destructive" });
       return null;
     }
   };
@@ -234,28 +261,28 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
             </div>
             <Button
               variant="default"
-              iconLeft={isStartingNewConsultation ? <X /> : <PlusCircle />}
               onClick={async () => {
                 if (isStartingNewConsultation) {
                   setIsStartingNewConsultation(false);
-                  if (activeAdmissionDetails && activeAdmissionDetails.length > 0) {
+                  if (activeEncounterDetails && activeEncounterDetails.length > 0) {
                     const previouslySelectedId = selectedEncounterForConsultation?.id;
                     setSelectedEncounterForConsultation(null); 
-                    const reselectAdmission = previouslySelectedId 
-                      ? activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === previouslySelectedId && !adWrapper.admission.isDeleted)?.admission
-                      : activeAdmissionDetails.find(adWrapper => !adWrapper.admission.isDeleted)?.admission;
-                    setSelectedEncounterForConsultation(reselectAdmission || null);
+                    const reselectEncounter = previouslySelectedId 
+                      ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
+                      : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
+                    setSelectedEncounterForConsultation(reselectEncounter || null);
                   } else {
                     setSelectedEncounterForConsultation(null);
                   }
                 } else {
                   setSelectedEncounterForConsultation(null); 
                   setIsStartingNewConsultation(true);
-                  setActiveTab('consult');
+                  setActiveTab('consultation');
                 }
               }}
               className="ml-auto"
             >
+              {isStartingNewConsultation ? <X className="mr-2 h-4 w-4"/> : <PlusCircle className="mr-2 h-4 w-4"/>}
               {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
             </Button>
           </div>
@@ -265,24 +292,22 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
             <div>
               <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
               <Select
-                id="consultation-select-main"
-                className={cn(
-                  "block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm",
-                  !selectedEncounterForConsultation ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
-                )}
                 value={selectedEncounterForConsultation?.id || ""}
                 onValueChange={(value) => {
-                  const foundAd = activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === value)?.admission || null;
-                  setSelectedEncounterForConsultation(foundAd);
-                  if(foundAd) setActiveTab('consult');
+                  const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
+                  setSelectedEncounterForConsultation(foundEncounter);
+                  if(foundEncounter) setActiveTab('consultation');
                 }}
                 disabled={showDeleteConfirmation || isStartingNewConsultation}
               >
-                <SelectTrigger>
+                <SelectTrigger className={cn(
+                  "w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm",
+                  !selectedEncounterForConsultation ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
+                )}>
                   <SelectValue placeholder="Select an encounter..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {activeAdmissionDetails.map((ew) => (
+                  {activeEncounterDetails.map((ew) => (
                     <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
                       {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
                     </SelectItem>
@@ -313,9 +338,9 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
               <AlertDialogDescription>
                 Are you sure you want to delete this encounter? This action cannot be undone immediately, but encounters can be restored by an admin.
                 <br /> <br />
-                Encounter Date: {format(activeAdmissionDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.scheduledStart || new Date(), 'PPP ppp')}
+                Encounter Date: {format(activeEncounterDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.scheduledStart || new Date(), 'PPP ppp')}
                 <br />
-                Reason: {activeAdmissionDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.reasonDisplayText || activeAdmissionDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.reasonCode || 'N/A'}
+                Reason: {activeEncounterDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.reasonDisplayText || activeEncounterDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.reasonCode || 'N/A'}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -328,7 +353,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
 
       <div className="bg-background/70 backdrop-blur-sm border-b px-4 py-1 flex gap-2 sticky top-[calc(2.5rem+3rem)] z-20 overflow-x-auto shadow-sm">
         {[
-          { key: "consult", label: "Consultation" },
+          { key: "consultation", label: "Consultation" },
           { key: "diagnosis", label: "Diagnosis" },
           { key: "treatment", label: "Treatment" },
           { key: "labs", label: "Labs" },
@@ -343,12 +368,10 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
         ))}
       </div>
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "consult" &&
+        {activeTab === "consultation" && selectedEncounterForConsultation && patient &&
           <ConsultationTab
             patient={patient}
-            allAdmissions={activeAdmissionDetails}
             selectedEncounter={selectedEncounterForConsultation}
-            onSelectEncounter={setSelectedEncounterForConsultation}
             isStartingNewConsultation={isStartingNewConsultation}
             newConsultationReason={newConsultationReason}
             onNewConsultationReasonChange={setNewConsultationReason}
@@ -358,12 +381,26 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
             onNewConsultationDurationChange={setNewConsultationDuration}
             onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
           />}
-        {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allAdmissions={activeAdmissionDetails} />}
-        {activeTab === "treatment" && <TreatmentTab patient={patient} allAdmissions={activeAdmissionDetails} />}
-        {activeTab === "labs" && <LabsTab patient={patient} allAdmissions={activeAdmissionDetails} />}
-        {activeTab === "prior" && <PriorAuthTab patient={patient} allAdmissions={activeAdmissionDetails} />}
+        {activeTab === "consultation" && isStartingNewConsultation && patient &&
+           <ConsultationTab
+            patient={patient}
+            selectedEncounter={null}
+            isStartingNewConsultation={isStartingNewConsultation}
+            newConsultationReason={newConsultationReason}
+            onNewConsultationReasonChange={setNewConsultationReason}
+            newConsultationDate={newConsultationDate}
+            onNewConsultationDateChange={setNewConsultationDate}
+            newConsultationDuration={newConsultationDuration}
+            onNewConsultationDurationChange={setNewConsultationDuration}
+            onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
+          />
+        }
+        {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />}
+        {activeTab === "treatment" && <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />}
+        {activeTab === "labs" && <LabsTab patient={patient} allEncounters={activeEncounterDetails} />}
+        {activeTab === "prior" && <PriorAuthTab patient={patient} allEncounters={activeEncounterDetails} />}
         {activeTab === "trials" && <TrialsTab patient={patient} />}
-        {activeTab === "history" && <HistoryTab patient={patient} allAdmissions={activeAdmissionDetails} />}
+        {activeTab === "history" && <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />}
         {activeTab === "allData" && <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />}
       </div>
     </div>

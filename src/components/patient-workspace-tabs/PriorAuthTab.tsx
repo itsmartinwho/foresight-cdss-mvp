@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types";
+import type { Patient, Encounter, Diagnosis, LabResult, Treatment, EncounterDetailsWrapper } from "@/lib/types";
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,70 +8,69 @@ import { Button } from "@/components/ui/button";
 import { FileText } from '@phosphor-icons/react';
 import LoadingAnimation from "@/components/LoadingAnimation";
 
-export default function PriorAuthTab({ patient: currentPatientInfo, allAdmissions }: { 
-  patient: Patient; 
-  allAdmissions: Array<{ 
-    admission: Admission; 
-    diagnoses: Diagnosis[]; 
-    labResults: LabResult[]; 
-    treatments?: Treatment[] 
-  }>
-}) {
-  const [selectedAdmissionState, setSelectedAdmissionState] = useState<Admission | null>(null);
+interface PriorAuthTabProps {
+  patient: Patient | null;
+  allEncounters: EncounterDetailsWrapper[] | null;
+}
+
+export default function PriorAuthTab({ patient: currentPatientInfo, allEncounters }: PriorAuthTabProps) {
+  const [selectedEncounterState, setSelectedEncounterState] = useState<Encounter | null>(null);
   const [isLoadingPA, setIsLoadingPA] = useState(true);
 
-  // const searchParams = useSearchParams(); // Not used in this tab directly, but kept if original logic had a reason
-
   useEffect(() => {
-    if (allAdmissions && allAdmissions.length > 0) {
-      const sortedAdmissions = [...allAdmissions].sort((a, b) =>
-        new Date(b.admission.scheduledStart).getTime() - new Date(a.admission.scheduledStart).getTime()
+    if (allEncounters && allEncounters.length > 0) {
+      const sortedEncounters = [...allEncounters].sort((a, b) =>
+        new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime()
       );
-      setSelectedAdmissionState(sortedAdmissions[0].admission);
+      setSelectedEncounterState(sortedEncounters[0].encounter);
     } else {
-      setSelectedAdmissionState(null);
+      setSelectedEncounterState(null);
     }
     setIsLoadingPA(false);
-  }, [allAdmissions]);
+  }, [allEncounters]);
 
-  if (isLoadingPA) {
+  if (isLoadingPA || !currentPatientInfo) {
     return <LoadingAnimation />;
   }
 
-  const selectedAdmissionDetails = allAdmissions.find(ad => ad.admission.id === selectedAdmissionState?.id);
-  const medicationForAuth = selectedAdmissionDetails?.admission.treatments?.[0]?.drug || "N/A";
-  const diagnosisForAuth = selectedAdmissionDetails?.diagnoses?.[0]?.description || "N/A";
-  const diagnosisCodeForAuth = selectedAdmissionDetails?.diagnoses?.[0]?.code || "N/A";
-  const justificationForAuth = selectedAdmissionDetails?.admission.priorAuthJustification || "No specific justification provided for this admission.";
+  if (!allEncounters || allEncounters.length === 0) {
+    return <div className="p-6 text-center text-muted-foreground">No encounters available for this patient.</div>;
+  }
+
+  const selectedEncounterDetails = allEncounters.find(ew => ew.encounter.id === selectedEncounterState?.id);
+  const medicationForAuth = selectedEncounterDetails?.encounter.treatments?.[0]?.drug || "N/A";
+  const diagnosisForAuth = selectedEncounterDetails?.diagnoses?.[0]?.description || "N/A";
+  const diagnosisCodeForAuth = selectedEncounterDetails?.diagnoses?.[0]?.code || "N/A";
+  const justificationForAuth = selectedEncounterDetails?.encounter.priorAuthJustification || "No specific justification provided for this encounter.";
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
-        <label htmlFor="priorauth-admission-select" className="block text-sm font-medium text-muted-foreground mb-1">Select Consultation for Prior Authorization:</label>
+        <label htmlFor="priorauth-encounter-select" className="block text-sm font-medium text-muted-foreground mb-1">Select Encounter for Prior Authorization:</label>
         <select
-          id="priorauth-admission-select"
+          id="priorauth-encounter-select"
           className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-border bg-background focus:outline-none focus:ring-neon focus:border-neon rounded-md shadow-sm"
-          value={selectedAdmissionState?.id || ""}
+          value={selectedEncounterState?.id || ""}
           onChange={(e) => {
-            const admissionId = e.target.value;
-            const newSelected = allAdmissions.find(ad => ad.admission.id === admissionId)?.admission || null;
-            setSelectedAdmissionState(newSelected);
+            const encounterId = e.target.value;
+            const newSelected = allEncounters.find(ew => ew.encounter.id === encounterId)?.encounter || null;
+            setSelectedEncounterState(newSelected);
           }}
         >
-          <option value="" disabled={!selectedAdmissionState}>-- Select a consultation --</option>
-          {allAdmissions.map(({ admission }) => (
-            <option key={admission.id} value={admission.id}>
-              {new Date(admission.scheduledStart).toLocaleString()} - {admission.reasonDisplayText || admission.reasonCode || 'N/A'}
+          <option value="" disabled={!selectedEncounterState}>-- Select an encounter --</option>
+          {allEncounters.map(({ encounter }) => (
+            <option key={encounter.id} value={encounter.id}>
+              {new Date(encounter.scheduledStart).toLocaleString()} - {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
             </option>
           ))}
         </select>
       </div>
 
-      {selectedAdmissionState ? (
+      {selectedEncounterState ? (
         <Card className="bg-glass glass-dense backdrop-blur-lg">
           <CardHeader>
             <CardTitle className="text-step-0">Prior Authorization Draft</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground/80">For consultation on: {new Date(selectedAdmissionState.scheduledStart).toLocaleString()}</CardDescription>
+            <CardDescription className="text-xs text-muted-foreground/80">For encounter on: {new Date(selectedEncounterState.scheduledStart).toLocaleString()}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
@@ -103,11 +102,13 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allAdmission
                 className="mt-1 block w-full shadow-sm sm:text-sm border-border rounded-md h-24 bg-muted/30 p-2"
               />
             </div>
-            <Button className="mt-3 text-step--1" size="sm" iconLeft={<FileText />}>Generate PDF (Placeholder)</Button>
+            <Button className="mt-3 text-step--1" size="sm">
+              <FileText className="mr-2 h-4 w-4" /> Generate PDF (Placeholder)
+            </Button>
           </CardContent>
         </Card>
       ) : (
-        <p className="text-center text-muted-foreground">Please select a consultation to view prior authorization details.</p>
+        <p className="text-center text-muted-foreground">Please select an encounter to view prior authorization details.</p>
       )}
     </div>
   );
