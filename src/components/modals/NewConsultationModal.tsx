@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PlusCircle, UserPlus, MagnifyingGlass, PlayCircle } from "@phosphor-icons/react";
 import { supabaseDataService } from '@/lib/supabaseDataService';
-import type { Admission } from '@/lib/types';
+import type { Encounter } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -22,7 +22,7 @@ interface Props {
   /** Controls open state from parent */
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onConsultationCreated?: (patient: Patient | null, newAdmission: Admission | null) => void;
+  onConsultationCreated?: (patient: Patient | null, newEncounter: Encounter | null) => void;
 }
 
 // Custom DatePicker wrapper component
@@ -126,30 +126,30 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
     }
     try {
       let createdPatient: Patient | null = null;
-      let createdAdmission: Admission | null = null;
+      let createdEncounter: Encounter | null = null;
 
       if (tab === 'existing') {
         if (!selectedPatient) return;
-        const ad = await supabaseDataService.createNewAdmission(selectedPatient.id, {
+        const enc = await supabaseDataService.createNewEncounter(selectedPatient.id, {
           reason: reason || undefined,
           scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined,
           duration: duration || undefined,
         });
         createdPatient = selectedPatient;
-        createdAdmission = ad;
-        router.push(`/patients/${selectedPatient.id}?ad=${ad.id}`);
+        createdEncounter = enc;
+        router.push(`/patients/${selectedPatient.id}?encounterId=${enc.id}`);
       } else {
-        const { patient, admission } = await supabaseDataService.createNewPatientWithAdmission(
+        const { patient, encounter } = await supabaseDataService.createNewPatientWithEncounter(
           { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
           { reason: reason || undefined, scheduledStart: scheduledDate ? scheduledDate.toISOString() : undefined, duration: duration || undefined }
         );
         createdPatient = patient;
-        createdAdmission = admission;
-        router.push(`/patients/${patient.id}?ad=${admission.id}`);
+        createdEncounter = encounter;
+        router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
       }
 
       if (onConsultationCreated) {
-        onConsultationCreated(createdPatient, createdAdmission);
+        onConsultationCreated(createdPatient, createdEncounter);
       }
       onOpenChange(false);
     } catch (e) {

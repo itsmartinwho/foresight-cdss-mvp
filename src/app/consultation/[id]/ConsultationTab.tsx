@@ -445,7 +445,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">Reason for visit</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Reason for consultation</label>
               <input
                 type="text"
                 placeholder="E.g., joint pain, generalized inflammation"

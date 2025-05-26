@@ -99,7 +99,7 @@ def sample_patient_data_dict() -> Dict[str, Any]:
             "language": "English",
             "poverty_percentage": 120.5
         },
-        "visits": [],
+        "encounters": [],
         "lab_results": []
     }
 

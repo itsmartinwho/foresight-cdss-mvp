@@ -45,7 +45,7 @@ class Patient(BaseModel):
     # poverty_percentage: float # Consider moving to raw_data or Patient.extra_data if used
     raw_data: Optional[Dict[str, Any]] = None # This will hold the full patient data dict
 
-class Encounter(BaseModel): # Renamed from Admission
+class Encounter(BaseModel): # Formerly Admission, now fully migrated
     id: str # This corresponds to encounter_id from the schema for the business key
     patient_id: str # This is the patient_supabase_id (FK to patients.id)
     encounter_type: Optional[str] = None

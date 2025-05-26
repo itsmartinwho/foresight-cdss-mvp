@@ -65,9 +65,9 @@ export const PatientList = () => {
   // });
 
   const upcomingPatients = filteredPatients.filter(patient => {
-    const admissions = supabaseDataService.getPatientEncounters(patient.id) || [];
+    const encounters = supabaseDataService.getPatientEncounters(patient.id) || [];
     const now = new Date();
-    return admissions.some(ad => ad.scheduledStart && new Date(ad.scheduledStart) > now);
+    return encounters.some(enc => enc.scheduledStart && new Date(enc.scheduledStart) > now);
   });
 
   const renderPatientTable = (patientList: Patient[]) => {

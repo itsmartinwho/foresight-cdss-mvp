@@ -45,9 +45,6 @@ export interface Encounter {
   extra_data?: any; // Added to match schema and usage
 }
 
-// TODO: delete in July 2024 when all downstream code is migrated
-export type Admission = Encounter; // TEMPORARY alias for backward compatibility
-
 export interface Diagnosis {
   patientId: string;
   encounterId: string;
