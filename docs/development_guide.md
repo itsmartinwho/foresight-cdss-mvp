@@ -342,5 +342,61 @@ _Primary project documentation, including architecture, AI tool descriptions, an
 - Set up alerting for critical errors.
 - Document common error resolution steps.
 
+### Deployment Troubleshooting
+
+#### Systematic Error Resolution Process
+When encountering deployment errors, follow this iterative approach:
+
+1. **Identify the Error:** Read Vercel build logs carefully to identify the specific file and line causing the issue
+2. **Fix One Issue at a Time:** Address each error individually rather than attempting multiple fixes simultaneously
+3. **Commit and Test:** After each fix, commit the changes and trigger a new deployment to reveal the next error
+4. **Document the Fix:** Keep track of what was changed and why for future reference
+
+#### Common Deployment Error Categories
+
+**Import/Module Errors:**
+- Missing dependencies: Install required packages (`pnpm add <package>`)
+- Incorrect import paths: Verify relative paths and component exports
+- Missing UI components: Create missing components or use proper ShadCN UI templates
+
+**TypeScript Type Errors:**
+- Interface mismatches: Ensure props and function signatures match their definitions
+- Missing type definitions: Add proper TypeScript types for all variables and functions
+- FHIR type alignment: Ensure data transformation matches expected FHIR-like structures
+
+**Code Quality Issues:**
+- Non-English variable names: All code must use English terminology to avoid character encoding issues
+- Undefined variables: Ensure all referenced variables are properly defined
+- Unused imports: Remove imports that are not being used
+
+**Component Integration Issues:**
+- Missing component functions: Implement all required functions referenced in JSX
+- Prop type mismatches: Ensure components receive props in the expected format
+- State management: Verify state updates and data flow between components
+
+#### Best Practices for Deployment Stability
+
+**Pre-Deployment Checks:**
+- Run `pnpm run build` locally to catch build errors before deployment
+- Run `pnpm run lint` to catch code quality issues
+- Verify all imports resolve correctly
+- Test critical user flows in development environment
+
+**Code Quality Standards:**
+- Use English for all variable names, function names, and comments
+- Follow consistent naming conventions (camelCase for variables, PascalCase for components)
+- Ensure all TypeScript types are properly defined
+- Remove debugging code and console logs before deployment
+
+**Dependency Management:**
+- Keep `package.json` and `pnpm-lock.yaml` in sync
+- Document any new dependencies in commit messages
+- Verify compatibility of new packages with existing codebase
+
+**Error Recovery:**
+- Maintain detailed commit history for easy rollback if needed
+- Test fixes in isolation before combining multiple changes
+- Keep deployment logs for troubleshooting patterns
+
 ## Conclusion
 Following these development guidelines will help ensure consistent, high-quality development of the Foresight CDSS MVP. All team members are expected to adhere to these guidelines and suggest improvements to the process as needed. 
