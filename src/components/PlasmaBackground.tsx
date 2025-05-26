@@ -98,51 +98,67 @@ const vertexShader = `
 `;
 
 const fragmentShader = `
-  precision highp float;
+  precision highp float; // Necessary for some mobile devices
   uniform vec2 u_resolution;
   uniform float u_time;
   varying vec2 vUv;
 
-  ${noiseGLSL}
+  ${noiseGLSL} // Include the noise function
 
-  // Organic flow parameters
-  const float FLOW_SCALE = 3.0;
-  const float TIME_SPEED = 0.01;
-  const float FLOW_STRENGTH = 0.3;
+  // Constants for plasma effect - tweak these!
+  const float PLASMA_SCALE = 1.5; // How zoomed in the noise pattern is
+  const float TIME_SPEED = 0.015; // How fast the pattern evolves (slower)
+  const float COLOR_FREQ_R = 0.8;
+  const float COLOR_FREQ_G = 0.7;
+  const float COLOR_FREQ_B = 0.9;
+  const float COLOR_PHASE_R = 0.0;
+  const float COLOR_PHASE_G = 1.0; // Phase shifts create color variation
+  const float COLOR_PHASE_B = 2.0;
+  const float BRIGHTNESS = 1.1; // Overall brightness of control signals
+  const float CONTRAST = 0.4; // Contrast adjustment of control signals
 
   void main() {
-    vec2 scaledUv = vUv * FLOW_SCALE;
+    vec2 scaledUv = vUv * PLASMA_SCALE; // Scale UV coordinates
     float time = u_time * TIME_SPEED;
 
-    // Create multiple layers of flow
-    float flow1 = snoise(vec3(scaledUv * 1.0, time * 0.8));
-    float flow2 = snoise(vec3(scaledUv * 1.7, time * 1.2));
-    float flow3 = snoise(vec3(scaledUv * 2.3, time * 0.6));
-    
-    // Create directional flow by warping UV coordinates
-    vec2 warpedUv = scaledUv + vec2(flow1, flow2) * FLOW_STRENGTH;
-    float mainFlow = snoise(vec3(warpedUv, time));
-    
-    // Combine flows for organic complexity
-    float combinedFlow = (mainFlow + flow3 * 0.4) * 0.5;
-    
-    // Map to control signals
-    float r_control = (combinedFlow + 1.0) * 0.5;
-    float g_control = (flow2 + 1.0) * 0.5;
-    float b_control = (flow3 + 1.0) * 0.5;
-    
-    // Professional medical palette with flow
-    vec3 color1 = vec3(0.88, 0.94, 0.97); // Soft medical blue
-    vec3 color2 = vec3(0.93, 0.96, 0.98); // Light blue-white
-    vec3 color3 = vec3(0.96, 0.97, 0.99); // Almost white
-    vec3 color4 = vec3(1.0, 1.0, 1.0);    // Pure white
-    
-    // Organic color mixing based on flow
-    vec3 finalColor = mix(color1, color2, r_control * 0.6);
-    finalColor = mix(finalColor, color3, g_control * 0.4);
-    finalColor = mix(finalColor, color4, smoothstep(0.75, 1.0, b_control) * 0.3);
+    // Calculate noise value - using 3D noise with time as the third dimension
+    float noiseValue = snoise(vec3(scaledUv * 2.0, time));
 
-    gl_FragColor = vec4(finalColor, 0.45);
+    // Map noise value to color components using sine waves (these become control signals)
+    float r_control = sin(noiseValue * COLOR_FREQ_R * 3.14159 + COLOR_PHASE_R) * 0.5 + 0.5;
+    float g_control = sin(noiseValue * COLOR_FREQ_G * 3.14159 + COLOR_PHASE_G) * 0.5 + 0.5;
+    float b_control = sin(noiseValue * COLOR_FREQ_B * 3.14159 + COLOR_PHASE_B) * 0.5 + 0.5;
+
+    // Apply brightness and contrast to control signals
+    vec3 control_signals = vec3(r_control, g_control, b_control);
+    control_signals = (control_signals - 0.5) * (1.0 + CONTRAST) + 0.5; // Contrast
+    control_signals *= BRIGHTNESS; // Brightness
+
+    // Clamp control signals to valid range
+    control_signals = clamp(control_signals, 0.0, 1.0);
+
+    // Define base colors (Neon Teal & Lighter Greyscale Palette)
+    // Neon Teal (approx #1AF2D9, now 15% darker -> #16CEB8)
+    vec3 color1 = vec3(0.1 * 0.85, 0.95 * 0.85, 0.85 * 0.85); 
+    vec3 color2 = vec3(0.90, 0.90, 0.90); // Lighter Grey (approx #E6E6E6)
+    vec3 color3 = vec3(0.96, 0.96, 0.96); // Almost-White Grey (approx #F5F5F5)
+    vec3 color4 = vec3(1.0, 1.0, 1.0);    // White (for highlights)
+
+
+    // Blend colors based on noise-derived control signals
+    // Mix (darker) Neon Teal with Lighter Grey, reducing Lighter Grey's influence
+    vec3 finalColor = mix(color1, color2, control_signals.r * 0.5); 
+    // Mix that result with Almost-White Grey, reducing its influence
+    finalColor = mix(finalColor, color3, control_signals.g * 0.3); // Was control_signals.g * 0.6
+    // Add subtle white highlights, reducing their influence
+    finalColor = mix(finalColor, color4, smoothstep(0.7, 0.9, control_signals.b) * 0.15); // Was * 0.3
+
+
+    // Subtle vignette effect
+    // float vignette = smoothstep(0.95, 0.4, length(vUv - 0.5));
+    // finalColor *= vignette * 0.8 + 0.2; // Apply vignette
+
+    gl_FragColor = vec4(finalColor, 0.65); // Opacity
   }
 `;
 
@@ -164,18 +180,20 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   const gradient = ctx.createRadialGradient(
-    canvas.width * 0.3,
-    canvas.height * 0.3,
+    canvas.width / 2,
+    canvas.height / 2,
     0,
-    canvas.width * 0.7,
-    canvas.height * 0.7,
-    Math.max(canvas.width, canvas.height) * 0.8
+    canvas.width / 2,
+    canvas.height / 2,
+    Math.max(canvas.width, canvas.height) / 1.5
   );
-  // Organic flow static gradient
-  gradient.addColorStop(0, 'rgba(224, 240, 247, 0.4)');    
-  gradient.addColorStop(0.4, 'rgba(237, 245, 249, 0.3)'); 
-  gradient.addColorStop(0.8, 'rgba(245, 248, 251, 0.2)');   
-  gradient.addColorStop(1, 'rgba(250, 251, 252, 0.1)');   
+  // Neon Teal & Lighter Greyscale theme for static gradient
+  // Corresponds to darker color1 (Neon Teal #16CEB8)
+  gradient.addColorStop(0, 'rgba(22, 206, 184, 0.6)');    
+  // Corresponds to color2 (Lighter Grey), with reduced opacity
+  gradient.addColorStop(0.5, 'rgba(230, 230, 230, 0.25)'); 
+  // Corresponds to color3 (Almost-White Grey), with reduced opacity
+  gradient.addColorStop(1, 'rgba(245, 245, 245, 0.2)');   
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -199,9 +217,9 @@ export default function PlasmaBackground() {
     canvas.style.height = '100%';
     canvas.style.zIndex = '0';
     canvas.style.pointerEvents = 'none';
-    canvas.style.backgroundColor = 'white';
+    canvas.style.backgroundColor = 'white'; // Set initial background to white
 
-    document.body.prepend(canvas);
+    document.body.prepend(canvas); // ensure it is the first child so always behind
 
     if (prefersReducedMotion) {
       paintStaticGradient(canvas);
@@ -212,7 +230,7 @@ export default function PlasmaBackground() {
           globalAny.__plasmaSingleton = null;
         },
       } as PlasmaSingleton;
-      return;
+      return; // Done – static only
     }
 
     // ------------------  Three.js init  ------------------
@@ -265,5 +283,5 @@ export default function PlasmaBackground() {
     window.addEventListener('beforeunload', destroy, { once: true });
   }, []);
 
-  return null;
+  return null; // React renders nothing
 }

@@ -1,0 +1,669 @@
+{
+  "synthetic_data": [
+    {
+      "patient_supabase_id": "1a5752b8-e5bf-4f2e-9ebc-74af7e4d4351",
+      "encounter_supabase_id": "184e963d-d066-4947-9428-0a90c68591ae",
+      "generated_encounter_updates": {
+        "reason_code": "E09.2",
+        "reason_display_text": "Drug or chemical induced diabetes mellitus with skin complications",
+        "transcript": "Doctor: Good morning, Sandra. You're here today because of some ongoing skin issues and our previous discussion about your blood sugars being high after you were on that course of prednisone for your asthma flare-up. How are things?\nSandra: Morning, Doctor. Well, the asthma is much better, thanks to the prednisone. But my skin has been so dry and itchy, especially on my shins, and I've noticed a few rashes that come and go. And yes, my sugars have been higher than usual.\nDoctor: I see. High blood sugar, which can be induced by corticosteroids like prednisone, can sometimes affect the skin, causing dryness, itching, or making you more prone to certain rashes. Let's take a look at your skin. (Examines skin) Yes, I see some xerosis, which is dry skin, and a bit of a fungal rash in one of the skin folds. This can happen when blood sugars are elevated. We'll need to recheck your A1c today. How long have you been off the prednisone now?\nSandra: About two weeks.\nDoctor: Okay. Sometimes the blood sugar can take a little while to come back to normal. We'll treat the skin rash topically, and focus on getting your blood sugars back into a good range. It's important to monitor your skin for any new sores or infections, especially on your feet, while your sugars are still settling down, Sandra.\nSandra: Okay, Doctor. What can I use for the rash?\nDoctor: I'll prescribe a topical antifungal cream for that specific rash. And a good, thick moisturizer for the dry skin.",
+        "soap_note": "S: Sandra, a 39 y/o female, presents for follow-up. History of asthma, recently completed a course of prednisone. Reports improved asthma but new onset dry, itchy skin, particularly on shins, and intermittent rashes. Also notes higher than usual blood glucose readings post-prednisone.\nO: Vitals stable. Skin exam: Xerosis noted on bilateral lower legs. Intertriginous area (e.g., inguinal fold) shows a mildly erythematous rash with satellite lesions, suggestive of cutaneous candidiasis. Random fingerstick glucose 185 mg/dL.\nA: 1. Drug-induced hyperglycemia secondary to recent corticosteroid use. 2. Xerosis cutis (dry skin) likely exacerbated by hyperglycemia. 3. Cutaneous candidiasis in skin fold, likely potentiated by hyperglycemia.\nP: 1. Recheck HbA1c today. 2. Prescribe Clotrimazole cream 1% topical BID to affected rash. 3. Recommend liberal use of emollients (e.g., Eucerin, CeraVe) for xerosis. 4. Counsel on lifestyle modifications (diet, exercise) to help normalize blood glucose. 5. Advise daily skin checks, especially feet. 6. Follow-up in 4 weeks to review A1c, skin condition, and blood glucose trends.",
+        "observations": "Xerotic skin on shins. Erythematous rash with satellite papules in left inguinal fold. Fingerstick glucose elevated.",
+        "treatments": [
+          {
+            "treatment_name": "Clotrimazole Cream 1%",
+            "treatment_type": "medication",
+            "dosage": "Apply thin layer",
+            "route": "Topical",
+            "frequency": "BID",
+            "duration": "2 weeks",
+            "instructions": "Apply to affected rash area twice daily.",
+            "prescribed_date": "2010-09-06"
+          },
+          {
+            "treatment_name": "Emollient Cream",
+            "treatment_type": "medication",
+            "instructions": "Apply liberally to dry skin areas, especially after bathing.",
+            "prescribed_date": "2010-09-06"
+          },
+          {
+            "treatment_name": "Blood Glucose Monitoring",
+            "treatment_type": "monitoring",
+            "instructions": "Encourage home blood glucose monitoring, especially fasting and post-prandial if symptoms of hyperglycemia persist.",
+            "prescribed_date": "2010-09-06"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "1a5752b8-e5bf-4f2e-9ebc-74af7e4d4351",
+          "encounter_id": "184e963d-d066-4947-9428-0a90c68591ae",
+          "code": "E09.2",
+          "description": "Drug or chemical induced diabetes mellitus with skin complications",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-08-20",
+          "note": "Hyperglycemia and associated cutaneous candidiasis following recent prednisone course."
+        },
+        {
+          "patient_id": "1a5752b8-e5bf-4f2e-9ebc-74af7e4d4351",
+          "encounter_id": "184e963d-d066-4947-9428-0a90c68591ae",
+          "code": "L30.4",
+          "description": "Erythema intertrigo",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2010-08-25",
+          "note": "Appearance consistent with candidal intertrigo but considered broader category initially."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "1a5752b8-e5bf-4f2e-9ebc-74af7e4d4351",
+          "encounter_id": "184e963d-d066-4947-9428-0a90c68591ae",
+          "name": "HbA1c",
+          "value": "7.2",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "2010-09-06T09:00:00Z",
+          "reference_range": "4.0-5.6 %",
+          "flag": "H",
+          "interpretation": "Elevated, consistent with recent hyperglycemia post-steroid use."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "4a8e3bef-e83d-46e7-9aed-97fc91cf8a88",
+      "encounter_supabase_id": "e35840bb-7961-41fa-91b2-2c03890bb814",
+      "generated_encounter_updates": {
+        "reason_code": "F51.02",
+        "reason_display_text": "Difficulty sleeping and increased daytime fatigue, related to stress.",
+        "transcript": "Doctor: Good morning, Christine. Your chart says you've been having some trouble with sleep?\nChristine: Yes, Doctor. For the past month or so, I've had a really hard time falling asleep. I just lie there, and my mind races. And then I wake up frequently during the night. I'm exhausted during the day.\nDoctor: I'm sorry to hear that, Christine. That sounds very disruptive. Has anything changed in your life recently? Any new stressors or worries?\nChristine: Well, work has been incredibly stressful lately, a big project with tight deadlines. And I've been worried about my mother's health too.\nDoctor: That's a lot to deal with. It's very common for stress and anxiety to impact sleep. Are you doing anything before bed to try and wind down? Any caffeine or heavy meals late in the evening?\nChristine: I try to read, but my mind still wanders. I do have a cup of tea in the evening, but it's herbal. No big meals late.\nDoctor: Okay. We call this adjustment insomnia when it's related to specific stressors. Let's talk about some sleep hygiene strategies first – things like maintaining a regular sleep schedule, creating a relaxing bedtime routine, and making sure your bedroom is a comfortable environment for sleep. We can also discuss some short-term options if these don't help enough, but often improving sleep habits and addressing the underlying stress can make a big difference, Christine.",
+        "soap_note": "S: Christine, a 25 y/o female, presents with c/o difficulty falling asleep and frequent nocturnal awakenings for approximately 1 month. Reports associated daytime fatigue. Identifies significant work-related stress and worry about mother's health as potential contributors. Denies late-night caffeine or heavy meals. Uses reading to try to wind down, with limited success.\nO: Vitals: BP 118/75, HR 70, RR 14. General: Appears tired but alert and articulate. Affect appropriate. No psychomotor agitation.\nA: Adjustment insomnia (F51.02) secondary to psychosocial stressors. Differential includes Generalized Anxiety Disorder (less prominent daytime anxiety reported, focus on sleep).\nP: 1. Educate on sleep hygiene principles: consistent sleep-wake cycle, cool/dark/quiet bedroom, avoid screens before bed, limit daytime naps. 2. Discuss stress management techniques (e.g., mindfulness, journaling before bed). 3. Recommend avoiding caffeine after noon. 4. Consider short-term trial of melatonin 3-5mg QHS if sleep hygiene ineffective after 1-2 weeks. 5. Advise follow-up in 2-4 weeks to assess progress. If no improvement, consider referral for CBT-I (Cognitive Behavioral Therapy for Insomnia) or further evaluation for underlying anxiety disorder.",
+        "observations": "Patient appears fatigued. Describes racing thoughts at bedtime. No overt signs of depression on brief screening. Expresses concern about impact of poor sleep on work performance.",
+        "treatments": [
+          {
+            "treatment_name": "Sleep Hygiene Education",
+            "treatment_type": "education",
+            "instructions": "Provided handout and discussed key sleep hygiene principles: regular sleep schedule, wind-down routine, optimal sleep environment, limit caffeine/alcohol.",
+            "prescribed_date": "1988-12-16"
+          },
+          {
+            "treatment_name": "Stress Reduction Techniques",
+            "treatment_type": "counseling",
+            "instructions": "Briefly discussed mindfulness exercises and journaling as potential tools for managing pre-sleep anxiety.",
+            "prescribed_date": "1988-12-16"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "4a8e3bef-e83d-46e7-9aed-97fc91cf8a88",
+          "encounter_id": "e35840bb-7961-41fa-91b2-2c03890bb814",
+          "code": "F51.02",
+          "description": "Adjustment insomnia",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1988-11-16",
+          "note": "Sleep disturbance clearly linked to recent psychosocial stressors."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "7d613d9f-f23e-4b6e-9682-ec214aa6d38a",
+      "encounter_supabase_id": "0fc13df0-19fe-4ce5-bbf8-723fccc24b84",
+      "generated_encounter_updates": {
+        "reason_code": "N50.89",
+        "reason_display_text": "Patient presents with right testicular pain and swelling for one week.",
+        "transcript": "Doctor: Good morning, Joshua. Please have a seat. What brings you in today?\nJoshua: Hi Doctor. Um, it's a bit embarrassing, but I've been having some pain in my right testicle for about a week now. It's also a bit swollen.\nDoctor: Thank you for telling me, Joshua. It's important to get these things checked out. Can you describe the pain? Is it sharp, dull, constant, or does it come and go?\nJoshua: It's mostly a dull ache, but sometimes it gets a bit sharper, especially if I move a certain way. And it feels heavier than the other one.\nDoctor: Any injury you can recall? Or any fevers, problems with urination, or discharge?\nJoshua: No injury that I can think of. No fever. Urination is fine, no discharge either.\nDoctor: Okay. I'll need to examine you, Joshua. There are a few things that can cause testicular pain and swelling, like an infection such as epididymitis, a torsion which is a twisting and is a surgical emergency, or sometimes a benign cyst or, much less commonly in your age group but something we always consider, a tumor. The examination will help us narrow things down.\nJoshua: Okay.\nDoctor: (After examination) Alright Joshua, there is definite tenderness and some swelling on the right side, particularly at the back of the testicle, which is where the epididymis is. I don't feel any distinct new lumps that are immediately alarming, but given the swelling and pain, I'd like to get an ultrasound of your scrotum to get a better look at the structures inside and confirm epididymitis. We'll also do a urine test to rule out a urinary tract infection which can sometimes be related.\nJoshua: So you think it's an infection?\nDoctor: That's high on the list, Joshua, especially with the tenderness located where it is. The ultrasound will give us more information.",
+        "soap_note": "S: Joshua, a 22 y/o male, presents with a 1-week history of R testicular pain and swelling. Describes pain as a dull ache, sometimes sharper with movement. Feels 'heavier' on R side. Denies trauma, fever, dysuria, or urethral discharge. Sexually active with one partner, uses condoms inconsistently.\nO: Vitals stable, afebrile. Genitourinary Exam: R testicle mildly swollen, exquisitely tender to palpation, particularly posterolaterally over the epididymis. No discrete testicular mass palpated. L testicle WNL. No inguinal lymphadenopathy. Cremasteric reflex intact bilaterally. Prehn's sign positive (mild relief with elevation).\nA: Acute Epididymitis, right (N45.90 without abscess, N45.9 with abscess, N45.1orchitis with epididymitis ). Likely infectious etiology. R/O testicular torsion (less likely given 1-week duration, intact cremasteric, positive Prehn's but still needs U/S). R/O testicular tumor.\nP: 1. STAT Scrotal Ultrasound with Doppler to confirm epididymitis, assess for testicular torsion, abscess, or tumor. 2. Urinalysis, urine culture, and urethral swabs for GC/Chlamydia. 3. Empiric antibiotics: Ceftriaxone 500mg IM x1 dose + Doxycycline 100mg PO BID x10 days (covering likely pathogens for sexually active young male). 4. Scrotal support, ice packs, NSAIDs (e.g., ibuprofen) for pain and inflammation. 5. Counsel on safe sex practices. 6. Follow up in 2-3 days to assess response to treatment and review test results, or sooner if pain worsens or fever develops.",
+        "observations": "Right hemiscrotum appears mildly swollen and erythematous. Marked tenderness on palpation of the right epididymis. Cremasteric reflex is present. Patient anxious but cooperative.",
+        "treatments": [
+          {
+            "treatment_name": "Ceftriaxone",
+            "treatment_type": "medication",
+            "dosage": "500mg",
+            "route": "IM",
+            "frequency": "STAT",
+            "instructions": "Administered in clinic.",
+            "prescribed_date": "1973-11-24"
+          },
+          {
+            "treatment_name": "Doxycycline",
+            "treatment_type": "medication",
+            "dosage": "100mg",
+            "route": "PO",
+            "frequency": "BID",
+            "duration": "10 days",
+            "instructions": "Take with food to minimize GI upset. Complete full course.",
+            "prescribed_date": "1973-11-24"
+          },
+          {
+            "treatment_name": "Ibuprofen",
+            "treatment_type": "medication",
+            "dosage": "600mg",
+            "route": "PO",
+            "frequency": "q6-8h PRN",
+            "instructions": "For pain and inflammation.",
+            "prescribed_date": "1973-11-24"
+          },
+          {
+            "treatment_name": "Scrotal Support and Ice",
+            "treatment_type": "supportive_care",
+            "instructions": "Advised scrotal elevation/support and intermittent ice pack application.",
+            "prescribed_date": "1973-11-24"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7d613d9f-f23e-4b6e-9682-ec214aa6d38a",
+          "encounter_id": "0fc13df0-19fe-4ce5-bbf8-723fccc24b84",
+          "code": "N45.90",
+          "description": "Epididymitis without abscess, right",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1973-11-17",
+          "note": "Clinical presentation strongly suggestive of epididymitis. Awaiting ultrasound."
+        },
+        {
+          "patient_id": "7d613d9f-f23e-4b6e-9682-ec214aa6d38a",
+          "encounter_id": "0fc13df0-19fe-4ce5-bbf8-723fccc24b84",
+          "code": "N44.00",
+          "description": "Torsion of testis, unspecified",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "1973-11-17",
+          "note": "Important to rule out urgently with ultrasound, though less likely given duration."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7d613d9f-f23e-4b6e-9682-ec214aa6d38a",
+          "encounter_id": "0fc13df0-19fe-4ce5-bbf8-723fccc24b84",
+          "name": "Scrotal Ultrasound with Doppler",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "1973-11-24T10:00:00Z",
+          "interpretation": "Ordered STAT to evaluate for epididymitis, orchitis, torsion, or mass."
+        },
+        {
+          "patient_id": "7d613d9f-f23e-4b6e-9682-ec214aa6d38a",
+          "encounter_id": "0fc13df0-19fe-4ce5-bbf8-723fccc24b84",
+          "name": "Urinalysis",
+          "value": "1+ Leukocytes, trace bacteria",
+          "value_type": "string",
+          "date_time": "1973-11-24T09:30:00Z",
+          "interpretation": "Suggestive of possible UTI or urethritis, culture pending."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "ff269d77-0e14-4b72-b481-9af810666ebf",
+      "encounter_supabase_id": "13978bed-772e-40fa-acd7-db33490afd17",
+      "generated_encounter_updates": {
+        "reason_code": "K62.5",
+        "reason_display_text": "Patient with history of Crohn's disease presenting with perianal pain and discharge, query fistula.",
+        "transcript": "Doctor: Hello John, come in. You're here for some issues related to your Crohn's disease today?\nJohn: Yes, Doctor. The Crohn's has been pretty quiet overall with the medication, but for the past couple of weeks, I've had this nagging pain around my backside, and sometimes a bit of discharge I notice on the toilet paper.\nDoctor: I see. And you've had perianal Crohn's disease with fistulas in the past, correct?\nJohn: Unfortunately, yes. A few years ago.\nDoctor: Okay, John. New pain or discharge in that area, especially with your history, makes us concerned about a possible recurrence or a new fistula. I'll need to do an examination of the area today. \nJohn: Alright.\nDoctor: (After examination) John, there is an external opening I can see, and it looks like there might be an active fistula tract. We'll need to get an MRI of your pelvis to better define the extent of it. This will help us decide on the best course of treatment, which might involve adjusting your Crohn's medication, possibly adding an antibiotic, or in some cases, a surgical procedure if it's complex.\nJohn: Not another surgery, I hope.\nDoctor: Let's get the imaging first, John, and then we'll discuss all the options with you and your gastroenterologist.",
+        "soap_note": "S: John, a 22 y/o male (DOB 1978-08-06, encounter 2000-09-03) with known Crohn's disease, previously complicated by perianal fistulas (status post Seton placement 3 years prior, currently removed). Presents with a 2-week history of increasing perianal pain, rated 5/10, and intermittent, small amount of purulent discharge from perianal region. Reports good adherence to current Crohn's medication (e.g., Adalimumab). Denies fever, chills, or significant change in bowel habits otherwise.\nO: Vitals stable, afebrile. Perianal exam: Reveals an external opening at the 5 o'clock position, approximately 2cm from anal verge, with mild surrounding induration and expressible scant purulent discharge. No acute abscess palpated. Digital rectal exam reveals no palpable fistula tract internally, but area is tender.\nA: 1. Recurrent perianal fistula in setting of Crohn's disease (K60.3 - Anal fistula, likely complex K50.113 - Crohn's disease of small intestine with fistula or K50.813 - Crohn's disease of both small and large intestine with fistula if applicable from history). 2. Rule out perianal abscess.\nP: 1. MRI Pelvis with fistula protocol to delineate fistula tract(s) and assess for associated collections. 2. Start Metronidazole 500mg PO TID and Ciprofloxacin 500mg PO BID for 7-10 days for presumptive treatment of fistula-associated infection. 3. Refer back to Gastroenterology for management of Crohn's flare/fistulizing disease; consider optimization of biologic therapy or addition of immunomodulator. 4. Surgical consultation (Colorectal) if MRI shows complex fistula or abscess requiring drainage/intervention. 5. Sitz baths for comfort. 6. Follow up closely.",
+        "observations": "External fistula opening noted at 5 o'clock position near anal verge with expressible purulent material. Area is indurated and tender. Patient has well-healed scars from previous perianal surgeries.",
+        "treatments": [
+          {
+            "treatment_name": "Metronidazole",
+            "treatment_type": "medication",
+            "dosage": "500mg",
+            "route": "PO",
+            "frequency": "TID",
+            "duration": "10 days",
+            "instructions": "For treatment of suspected fistula infection. May cause metallic taste or nausea.",
+            "prescribed_date": "2000-09-03"
+          },
+          {
+            "treatment_name": "Ciprofloxacin",
+            "treatment_type": "medication",
+            "dosage": "500mg",
+            "route": "PO",
+            "frequency": "BID",
+            "duration": "10 days",
+            "instructions": "For broad-spectrum coverage of fistula infection. Take with plenty of water. Avoid antacids.",
+            "prescribed_date": "2000-09-03"
+          },
+          {
+            "treatment_name": "MRI Pelvis (Fistula Protocol)",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "To delineate fistula anatomy and guide further management.",
+            "prescribed_date": "2000-09-03"
+          },
+          {
+            "treatment_name": "Gastroenterology Referral",
+            "treatment_type": "referral",
+            "instructions": "For reassessment and optimization of Crohn's disease therapy.",
+            "prescribed_date": "2000-09-03"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "ff269d77-0e14-4b72-b481-9af810666ebf",
+          "encounter_id": "13978bed-772e-40fa-acd7-db33490afd17",
+          "code": "K60.3",
+          "description": "Anal fistula",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2000-08-20",
+          "note": "Recurrent perianal fistula suspected in patient with Crohn's. MRI ordered."
+        },
+        {
+          "patient_id": "ff269d77-0e14-4b72-b481-9af810666ebf",
+          "encounter_id": "13978bed-772e-40fa-acd7-db33490afd17",
+          "code": "K50.00",
+          "description": "Crohn's disease of small intestine without complications (assuming previous immunoproliferative disease was Crohn's related)",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1995-01-01",
+          "note": "Long-standing Crohn's disease, known to have fistulizing complications."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "ff269d77-0e14-4b72-b481-9af810666ebf",
+          "encounter_id": "13978bed-772e-40fa-acd7-db33490afd17",
+          "name": "C-Reactive Protein (CRP)",
+          "value": "35",
+          "value_type": "numeric",
+          "units": "mg/L",
+          "date_time": "2000-09-03T06:00:00Z",
+          "reference_range": "<10 mg/L",
+          "flag": "H",
+          "interpretation": "Elevated, suggesting active inflammation/infection associated with fistula."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+      "encounter_supabase_id": "fc8db8f1-a8aa-4c69-aad9-6ca4e45a5b30",
+      "generated_encounter_updates": {
+        "reason_code": "K21.9",
+        "reason_display_text": "Follow-up for gastroesophageal reflux disease, assessing symptom control.",
+        "transcript": "Doctor: Good morning, Katherine. You're here for a follow-up on your acid reflux symptoms. How have you been feeling since we started the omeprazole?\nKatherine: Much better, Doctor, thank you. The heartburn is almost completely gone, and I'm not having that awful taste in my mouth in the mornings anymore.\nDoctor: That's excellent news! So, the omeprazole 20mg once a day seems to be doing the trick for you?\nKatherine: Yes, it really has made a difference. I'm sleeping better too, not having to prop myself up with pillows as much.\nDoctor: Wonderful. Any side effects from the medication that you've noticed? Like headache or diarrhea?\nKatherine: No, nothing like that at all.\nDoctor: Great. Well, Katherine, since you're doing so well on the current dose, I'd recommend we continue it for another few months. We can then try to see if we can step down the dose or even stop it, depending on how you're doing. It's still important to be mindful of dietary triggers – spicy foods, caffeine, fatty foods – and try to avoid eating too close to bedtime.\nKatherine: I've been trying to be more careful with that, and it helps. So, just continue the omeprazole for now?\nDoctor: Yes, that's the plan. We'll see you back in about 3 months to reassess.",
+        "soap_note": "S: Katherine, a 28 y/o female, presents for GERD follow-up. Started Omeprazole 20mg PO daily 4 weeks ago for symptoms of heartburn and regurgitation. Reports significant improvement: heartburn nearly resolved, no further regurgitation. Sleeping better. Tolerating omeprazole well without side effects. Mindful of dietary triggers.\nO: Vitals stable. Weight stable. Abdominal exam: Soft, non-tender, no epigastric tenderness.\nA: Gastroesophageal Reflux Disease (K21.9), well-controlled on Omeprazole 20mg daily.\nP: 1. Continue Omeprazole 20mg PO daily. 2. Reinforce lifestyle modifications: avoid trigger foods (spicy, fatty, caffeine, chocolate), avoid eating 2-3 hours before bedtime, elevate head of bed if nighttime symptoms recur. 3. Counsel that long-term PPI use has potential risks, aim for lowest effective dose. 4. Follow up in 3 months. Consider trial of dose reduction or discontinuation if remains asymptomatic.",
+        "observations": "Patient reports excellent symptomatic relief on current PPI therapy. No signs of complications from GERD noted on exam. Seems pleased with progress.",
+        "treatments": [
+          {
+            "treatment_name": "Omeprazole",
+            "treatment_type": "medication",
+            "dosage": "20mg",
+            "route": "PO",
+            "frequency": "QD",
+            "instructions": "Continue taking one capsule daily before breakfast.",
+            "prescribed_date": "1980-07-25"
+          },
+          {
+            "treatment_name": "Lifestyle Modification Counseling",
+            "treatment_type": "education",
+            "instructions": "Reviewed dietary triggers, meal timing, and benefits of elevating head of bed for GERD management.",
+            "prescribed_date": "1980-07-25"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+          "encounter_id": "fc8db8f1-a8aa-4c69-aad9-6ca4e45a5b30",
+          "code": "K21.9",
+          "description": "Gastro-esophageal reflux disease without esophagitis",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1980-06-01",
+          "note": "Symptoms well-controlled on Omeprazole 20mg daily."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+      "encounter_supabase_id": "df6a7d20-151d-4914-94f5-6c9d72083835",
+      "generated_encounter_updates": {
+        "reason_code": "E11.00",
+        "reason_display_text": "New diagnosis of Type 2 Diabetes Mellitus, uncontrolled.",
+        "transcript": "Doctor: Good morning, Katherine. We have your lab results back from your screening tests last week. I asked you to come in to discuss them.\nKatherine: Oh, okay. Is everything alright?\nDoctor: Well, Katherine, your fasting blood sugar was 180 mg/dL, and your Hemoglobin A1c, which gives us an average of your blood sugar over the past three months, was 9.2%. Both of these are quite high and indicate that you have Type 2 Diabetes Mellitus.\nKatherine: Diabetes? I... I had no idea. I've been feeling a bit more tired lately and maybe thirstier than usual, but I just thought it was stress.\nDoctor: Those can certainly be symptoms. This is a new diagnosis for you, and I understand it can be a lot to take in. The good news is that Type 2 Diabetes is a manageable condition. Our first steps will be to focus on lifestyle changes – diet and exercise – and we'll also start you on a medication called Metformin to help lower your blood sugar. I'm going to refer you to our diabetes educator and a nutritionist who can give you detailed guidance.\nKatherine: Medication right away?\nDoctor: Yes, Katherine. Given your A1c level, medication along with lifestyle changes is the recommended approach to get your blood sugar under control more quickly and reduce the risk of complications down the road. We'll monitor you closely.",
+        "soap_note": "S: Katherine, a 44 y/o female (DOB 1952-07-19, encounter 1996-11-07 based on prev treatment, actually 2010-11-07 for current encounter), presents for review of screening lab results. Reports recent onset of increased fatigue and polydipsia over past 2-3 months. Denies polyuria, blurred vision, or unexplained weight loss. No known family history of diabetes.\nO: Vitals: BP 130/84, HR 76, BMI 31.2 kg/m2. Random capillary glucose in office: 210 mg/dL. Funduscopic exam: No diabetic retinopathy noted today.\nLabs (from 1 week prior): Fasting Plasma Glucose 180 mg/dL. HbA1c 9.2%. Lipid panel: Total Chol 220, LDL 140, HDL 40, Trig 190. Urinalysis: 1+ glucosuria, no ketones.\nA: 1. New onset Type 2 Diabetes Mellitus (E11.9, will change to E11.00 as now complicated), currently uncontrolled (HbA1c 9.2%). 2. Obesity (E66.9). 3. Dyslipidemia (E78.5).\nP: 1. Start Metformin 500mg PO BID with meals. Counsel on potential GI side effects and importance of gradual titration if needed. 2. Refer to Diabetes Self-Management Education and Support (DSMES) program and Registered Dietitian for medical nutrition therapy. 3. Emphasize lifestyle modifications: weight loss goal of 5-7%, increased physical activity (150 min/week moderate intensity). 4. Provide home blood glucose monitor and instructions for SMBG (fasting and 2-hr postprandial). 5. Schedule follow-up in 1 month to assess tolerance to metformin, review glucose logs, and titrate medication. Repeat A1c in 3 months. 6. Address dyslipidemia with lifestyle changes initially; consider statin if not improved in 3-6 months.",
+        "observations": "Patient appears mildly overweight. Urine dipstick positive for glucose. No overt signs of diabetic complications on focused exam today (e.g., foot exam normal, fundi clear by direct ophthalmoscope).",
+        "treatments": [
+          {
+            "treatment_name": "Metformin",
+            "treatment_type": "medication",
+            "dosage": "500mg",
+            "route": "PO",
+            "frequency": "BID",
+            "instructions": "Take one tablet twice daily with meals. Start with this dose to assess tolerance.",
+            "prescribed_date": "2010-11-07"
+          },
+          {
+            "treatment_name": "Diabetes Self-Management Education (DSMES) Referral",
+            "treatment_type": "referral",
+            "instructions": "For comprehensive education on T2DM, glucose monitoring, diet, and exercise.",
+            "prescribed_date": "2010-11-07"
+          },
+          {
+            "treatment_name": "Nutritional Counseling Referral",
+            "treatment_type": "referral",
+            "instructions": "To Registered Dietitian for medical nutrition therapy tailored for diabetes.",
+            "prescribed_date": "2010-11-07"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+          "encounter_id": "df6a7d20-151d-4914-94f5-6c9d72083835",
+          "code": "E11.00",
+          "description": "Type 2 diabetes mellitus with hyperosmolarity without nonketotic hyperglycemic-hyperosmolar coma (NKHHC)",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-08-01",
+          "note": "New diagnosis based on FPG 180 and HbA1c 9.2%. Patient symptomatic with fatigue and polydipsia."
+        },
+        {
+          "patient_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+          "encounter_id": "df6a7d20-151d-4914-94f5-6c9d72083835",
+          "code": "E66.9",
+          "description": "Obesity, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2005-01-01",
+          "note": "BMI 31.2 kg/m2, contributing risk factor for T2DM."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+          "encounter_id": "df6a7d20-151d-4914-94f5-6c9d72083835",
+          "name": "Fasting Plasma Glucose",
+          "value": "180",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "2010-10-30T08:00:00Z",
+          "reference_range": "70-99 mg/dL",
+          "flag": "H",
+          "interpretation": "Diagnostic for diabetes mellitus."
+        },
+        {
+          "patient_id": "3c86fee3-73af-4f67-b5c3-14e5ed0a249d",
+          "encounter_id": "df6a7d20-151d-4914-94f5-6c9d72083835",
+          "name": "Hemoglobin A1c",
+          "value": "9.2",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "2010-10-30T08:00:00Z",
+          "reference_range": "4.0-5.6%",
+          "flag": "H",
+          "interpretation": "Diagnostic for diabetes mellitus, indicating poor glycemic control over past 3 months."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+      "encounter_supabase_id": "51e7d53b-c3b4-456d-9f74-ef0e5baebbb2",
+      "generated_encounter_updates": {
+        "reason_code": "E85.4",
+        "reason_display_text": "Follow up for known organ-limited amyloidosis; monitoring for progression.",
+        "transcript": "Doctor: Betty, good to see you. We're here for your regular check-up for the amyloidosis. How have you been feeling generally?\nBetty: I'm doing okay, Doctor. Still have some of that tiredness, but nothing new or worse, really. The swelling in my ankles comes and goes a bit, but it's not too bad.\nDoctor: Any shortness of breath, chest pain, or significant weight change?\nBetty: No, none of that. My appetite has been pretty normal.\nDoctor: That's good. We've been monitoring your kidney and heart function closely because those are the organs most commonly affected by this type of amyloidosis. Your recent echocardiogram showed stable heart function, and your kidney blood tests and urine protein levels are also stable compared to six months ago. That's reassuring, Betty.\nBetty: So, no change is good news then?\nDoctor: In this situation, stable is definitely good news. It suggests the condition is not actively progressing right now. We'll continue with your current supportive measures, keep an eye on your blood pressure, and repeat the blood and urine tests in another six months. It's important to report any new symptoms promptly, especially increased swelling, shortness of breath, or unusual fatigue.",
+        "soap_note": "S: Betty, a 98 y/o female (DOB 1930-04-08, encounter 1948-07-21) with known organ-limited amyloidosis (assumed AL amyloidosis with primarily renal and cardiac involvement, specific type from 'Disorders of ornithine metabolism' unclear but interpreted as a metabolic disorder leading to amyloid-like deposition or a co-existing condition with amyloidosis being the primary focus now). Reports stable chronic fatigue and intermittent mild ankle edema. Denies new dyspnea, chest pain, orthopnea, or significant weight change. Adherent to current medications (e.g., diuretic, BP med).\nO: Vitals: BP 130/75, HR 68, Wt stable. General: Appears comfortable. CV: RRR, trace pedal edema. Lungs: Clear. Labs (recent): Serum creatinine stable at 1.5 mg/dL, eGFR stable ~40 mL/min/1.73m2. Urine protein/creatinine ratio stable at 500 mg/g. Echocardiogram (1 month ago): Stable mild LVH, EF 55%, grade I diastolic dysfunction, no new wall motion abnormalities.\nA: 1. Organ-limited amyloidosis (E85.4), currently stable with respect to renal and cardiac parameters. 2. Chronic Kidney Disease Stage 3b secondary to amyloidosis. 3. Mild congestive heart failure symptoms (edema) controlled with diuretic.\nP: 1. Continue current supportive management (e.g., Furosemide for edema, Lisinopril for BP/proteinuria). 2. Monitor for signs/symptoms of progression (worsening edema, dyspnea, fatigue). 3. Repeat renal panel, UACR, CBC, NT-proBNP in 6 months. 4. Annual echocardiogram. 5. Reinforce low salt diet.",
+        "observations": "Patient has trace bilateral pitting edema of ankles. Heart sounds are regular. Lungs are clear. Overall stable clinical picture for chronic amyloidosis with organ involvement.",
+        "treatments": [
+          {
+            "treatment_name": "Furosemide",
+            "treatment_type": "medication",
+            "dosage": "20mg",
+            "route": "PO",
+            "frequency": "QD",
+            "instructions": "Continue for management of edema.",
+            "prescribed_date": "1948-07-21"
+          },
+          {
+            "treatment_name": "Lisinopril",
+            "treatment_type": "medication",
+            "dosage": "10mg",
+            "route": "PO",
+            "frequency": "QD",
+            "instructions": "For blood pressure control and renal protection.",
+            "prescribed_date": "1948-07-21"
+          },
+          {
+            "treatment_name": "Low Sodium Diet",
+            "treatment_type": "lifestyle",
+            "instructions": "Continue to manage fluid retention and blood pressure.",
+            "prescribed_date": "1948-07-21"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "51e7d53b-c3b4-456d-9f74-ef0e5baebbb2",
+          "code": "E85.4",
+          "description": "Organ-limited amyloidosis",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1940-01-01",
+          "note": "Long-standing diagnosis, currently clinically stable with renal and cardiac involvement."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "51e7d53b-c3b4-456d-9f74-ef0e5baebbb2",
+          "code": "N18.32",
+          "description": "Chronic kidney disease, stage 3b",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1945-01-01",
+          "note": "Secondary to amyloidosis, eGFR ~40 mL/min."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "51e7d53b-c3b4-456d-9f74-ef0e5baebbb2",
+          "code": "I50.9",
+          "description": "Heart failure, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1946-01-01",
+          "note": "Likely diastolic dysfunction due to cardiac amyloid infiltration, symptoms of mild edema."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "51e7d53b-c3b4-456d-9f74-ef0e5baebbb2",
+          "name": "Serum Creatinine",
+          "value": "1.5",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "1948-07-15T09:00:00Z",
+          "reference_range": "0.6-1.2 mg/dL",
+          "flag": "H",
+          "interpretation": "Stable elevation consistent with CKD stage 3b."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "51e7d53b-c3b4-456d-9f74-ef0e5baebbb2",
+          "name": "Urine Protein/Creatinine Ratio",
+          "value": "500",
+          "value_type": "numeric",
+          "units": "mg/g",
+          "date_time": "1948-07-15T09:00:00Z",
+          "reference_range": "<150 mg/g",
+          "flag": "H",
+          "interpretation": "Persistent proteinuria, consistent with amyloid nephropathy."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+      "encounter_supabase_id": "37c842fd-b801-4a44-a93c-5d68c5b2b85a",
+      "generated_encounter_updates": {
+        "reason_code": "C34.2",
+        "reason_display_text": "Patient with history of lung cancer presenting with worsening cough and new hemoptysis.",
+        "transcript": "Doctor: Betty, I understand you've had a cough that's been getting worse, and now you've coughed up some blood? That's very concerning given your history.\nBetty: Yes, Doctor. The cough has been there for a few weeks, but this morning, there was definitely blood in what I coughed up. Just a streak, but it scared me.\nDoctor: I can understand why. You had treatment for lung cancer in your right middle lobe a few years ago, is that correct?\nBetty: Yes, I had surgery and then some radiation.\nDoctor: Okay, Betty. Coughing up blood, especially with your history, is a red flag. We need to rule out a recurrence of the cancer, or perhaps a new primary lung cancer, or even an infection. I'm going to send you for an urgent CT scan of your chest today, and we'll get some sputum samples to check for infection and cancer cells. We also need to repeat any tumor markers that were relevant for you before.\nBetty: More cancer? I was hoping that was all behind me.\nDoctor: We need to find out what's causing this, Betty. The CT scan will give us the best initial picture. We'll get you seen by the oncology team as soon as we have some results.",
+        "soap_note": "S: Betty, a 58 y/o female (DOB 1930-04-08, encounter 1988-11-19) with history of RML lung cancer (assumed adenocarcinoma, s/p lobectomy and adjuvant radiation ~3 years prior), presents with a 2-week history of worsening productive cough and one episode of hemoptysis (streaks of bright red blood) this morning. Reports associated mild dyspnea on exertion. Denies fever, chills, or chest pain unrelated to cough. Reports weight loss of 5 lbs over last month.\nO: Vitals: BP 130/80, HR 92, RR 18, Temp 37.1C, O2 Sat 96% on RA. General: Appears anxious, mild tachypnea. Lungs: Decreased breath sounds at R base with scattered rhonchi. Surgical scar R thoracotomy well-healed. No palpable lymphadenopathy.\nA: 1. Hemoptysis and worsening cough in patient with history of lung cancer - high suspicion for recurrence of lung cancer (C34.2) or new primary. 2. Rule out post-obstructive pneumonia or bronchitis. 3. Rule out bronchiectasis as a late radiation effect.\nP: 1. STAT CT Chest with contrast. 2. Sputum for cytology x3, Gram stain, and culture. 3. Labs: CBC, CMP, Coagulation studies. Repeat relevant tumor markers (e.g., CEA if previously informative). 4. Urgent referral to Pulmonology/Thoracic Oncology for bronchoscopy if CT findings are suspicious or inconclusive. 5. Symptomatic cough relief (e.g., Tessalon Perles). 6. Patient education on serious nature of symptoms and need for urgent investigation.",
+        "observations": "Patient is audibly coughing during the interview, cough is dry at present. Mild tachypnea noted. Right lower lung fields have diminished breath sounds. Significant concern for malignancy recurrence.",
+        "treatments": [
+          {
+            "treatment_name": "CT Chest with Contrast",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "STAT order to evaluate for recurrent/new lung malignancy, infection, or other causes of hemoptysis.",
+            "prescribed_date": "1988-11-19"
+          },
+          {
+            "treatment_name": "Sputum for Cytology & Culture",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "Collect 3 morning sputum samples for cytological examination and bacterial/fungal culture.",
+            "prescribed_date": "1988-11-19"
+          },
+          {
+            "treatment_name": "Oncology Referral",
+            "treatment_type": "referral",
+            "instructions": "Urgent referral pending CT results for management of potential lung cancer recurrence.",
+            "prescribed_date": "1988-11-19"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "37c842fd-b801-4a44-a93c-5d68c5b2b85a",
+          "code": "C34.2",
+          "description": "Malignant neoplasm of middle lobe, bronchus or lung",
+          "category": "encounter-diagnosis",
+          "clinical_status": "recurrence",
+          "verification_status": "provisional",
+          "onset_date": "1988-11-05",
+          "note": "Suspected recurrence given history and new symptoms of hemoptysis and worsening cough. Imaging pending."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "37c842fd-b801-4a44-a93c-5d68c5b2b85a",
+          "code": "Z85.118",
+          "description": "Personal history of other malignant neoplasm of bronchus and lung",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1985-01-01",
+          "note": "History of RML lung cancer s/p surgery and radiation."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "37c842fd-b801-4a44-a93c-5d68c5b2b85a",
+          "code": "R04.2",
+          "description": "Hemoptysis",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1988-11-19",
+          "note": "New onset, alarming symptom."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "37c842fd-b801-4a44-a93c-5d68c5b2b85a",
+          "name": "Hemoglobin",
+          "value": "10.5",
+          "value_type": "numeric",
+          "units": "g/dL",
+          "date_time": "1988-11-19T12:45:00Z",
+          "reference_range": "12.0-16.0 g/dL",
+          "flag": "L",
+          "interpretation": "Mild anemia, could be due to chronic disease or blood loss from hemoptysis."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+      "encounter_supabase_id": "2def4bd0-bcbe-4e5f-bfb8-4b91d63f6d7a",
+      "generated_encounter_updates": {
+        "reason_code": "H16.403",
+        "reason_display_text": "Localized vascularization of cornea, bilateral - follow up after chemical burn to eyes",
+        "transcript": "Doctor: Betty, it's been a week since your chemical eye injury. How are your eyes feeling now with the steroid drops and lubricants?\nBetty: A little better, Doctor. The gritty feeling isn't as constant, and the redness has gone down some. But my vision is still quite blurry, especially when I first wake up or if I'm in bright light.\nDoctor: Okay. (Examines eyes with slit lamp) Well, the good news is the surface inflammation is definitely less, and those small epithelial defects we saw are healing nicely. However, I'm still seeing those new blood vessels, the neovascularization, creeping onto your corneas. This is a response to the injury, but we need to ensure it doesn't progress and cloud your vision permanently.\nBetty: So the vessels are still there?\nDoctor: Yes, they are. It often takes time for them to regress, and sometimes they don't completely go away. The steroid drops are crucial for this. How are you managing with putting them in four times a day?\nBetty: It's a bit of a hassle, but I'm doing it. My daughter helps sometimes.\nDoctor: Good. We need to continue the Prednisolone drops for now, and also keep up with the frequent lubricating drops. The ophthalmologist you saw last week, did they suggest any other interventions at this point?\nBetty: They want to see me back in two weeks to monitor. They mentioned something about a special contact lens if it doesn't improve, or even a small surgery with amniotic membrane if these vessels get worse.\nDoctor: That sounds like a good plan. We'll work closely with them. For today, let's continue the current treatment and I'll see you back here as scheduled by the ophthalmologist, or sooner if anything changes for the worse, Betty.",
+        "soap_note": "S: Betty, a 70 y/o female (DOB 1930-04-08, encounter 2010-09-03), 1 week s/p chemical (alkaline) burn to bilateral eyes. Follow-up from ER. Currently on Prednisolone acetate 1% QID OU & frequent artificial tears. Reports some improvement in foreign body sensation & redness, but persistent blurred vision and photophobia.\nO: VA OD 20/50, OS 20/60 (improved from 20/70, 20/80). Slit Lamp Exam: Bilateral conjunctival injection (1-2+). Corneas: Resolved epithelial defects. Persistent mild stromal haze. Bilateral peripheral corneal neovascularization extending ~1.5-2mm centrally, appears stable from initial ophthalmology report from 1 week prior. AC quiet. IOP normal.\nA: 1. Bilateral chemical keratitis with corneal neovascularization (H16.403), showing some response to topical steroids but neovascularization persists. 2. Blurred vision secondary to corneal haze and neovascularization.\nP: 1. Continue Prednisolone acetate 1% ophthalmic suspension QID OU. 2. Continue preservative-free artificial tears Q1-2H and PRN OU. 3. Reinforce importance of adherence to ophthalmology follow-up (scheduled in 2 weeks). 4. Discussed red flag symptoms (increased pain, decreased vision, purulent discharge) prompting earlier return. 5. Eye protection (sunglasses outdoors).",
+        "observations": "Corneal neovascularization appears stable but still present despite one week of topical steroid therapy. Patient understands the treatment plan and importance of follow-up with ophthalmology.",
+        "treatments": [
+          {
+            "treatment_name": "Prednisolone Acetate 1% Ophthalmic Suspension",
+            "treatment_type": "medication",
+            "dosage": "1 drop",
+            "route": "Ophthalmic (OU)",
+            "frequency": "QID",
+            "instructions": "Continue instilling one drop into each eye four times daily.",
+            "prescribed_date": "2010-09-03"
+          },
+          {
+            "treatment_name": "Preservative-Free Artificial Tears",
+            "treatment_type": "medication",
+            "dosage": "1 drop",
+            "route": "Ophthalmic (OU)",
+            "frequency": "Q1-2H PRN",
+            "instructions": "Continue frequent lubrication of both eyes.",
+            "prescribed_date": "2010-09-03"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "2def4bd0-bcbe-4e5f-bfb8-4b91d63f6d7a",
+          "code": "H16.403",
+          "description": "Corneal neovascularization, unspecified, bilateral",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-08-25",
+          "note": "Persistent corneal neovascularization secondary to chemical injury."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "2def4bd0-bcbe-4e5f-bfb8-4b91d63f6d7a",
+          "code": "H18.603",
+          "description": "Keratoconus, unspecified, bilateral",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2010-08-25",
+          "note": "While chemical injury is primary, underlying corneal conditions are always a remote consideration for visual changes, though unlikely given history."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "2def4bd0-bcbe-4e5f-bfb8-4b91d63f6d7a",
+          "name": "Visual Acuity OD (Right Eye)",
+          "value": "20/50",
+          "value_type": "string",
+          "date_time": "2010-09-03T03:00:00Z",
+          "interpretation": "Moderately reduced visual acuity in right eye."
+        },
+        {
+          "patient_id": "7b9bfa93-30fc-4dd7-a310-e00242f6372f",
+          "encounter_id": "2def4bd0-bcbe-4e5f-bfb8-4b91d63f6d7a",
+          "name": "Visual Acuity OS (Left Eye)",
+          "value": "20/60",
+          "value_type": "string",
+          "date_time": "2010-09-03T03:00:00Z",
+          "interpretation": "Moderately reduced visual acuity in left eye."
+        }
+      ]
+    }
+  ]
+}

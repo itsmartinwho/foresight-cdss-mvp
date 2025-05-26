@@ -1,17 +1,17 @@
 {
   "summary": {
-    "totalRecords": 24,
-    "processedRecords": 24,
-    "successfulUpdates": 24,
+    "totalRecords": 9,
+    "processedRecords": 9,
+    "successfulUpdates": 9,
     "failedUpdates": 0,
-    "successfulConditions": 71,
+    "successfulConditions": 18,
     "failedConditions": 0,
-    "successfulLabResults": 47,
+    "successfulLabResults": 11,
     "failedLabResults": 0
   },
   "errorCount": 0,
   "warningCount": 0,
   "errors": [],
   "warnings": [],
-  "reportGeneratedAt": "2025-05-26T23:14:00.390Z"
+  "reportGeneratedAt": "2025-05-26T23:45:05.447Z"
 }
