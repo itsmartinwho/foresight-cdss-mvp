@@ -141,7 +141,7 @@ const fragmentShader = `
     
     // Define a more professional color palette
     // Muted teal (medical/healthcare appropriate)
-    vec3 color1 = vec3(0.4, 0.7, 0.75);  // Soft medical teal
+    vec3 color1 = vec3(0.145, 0.427, 0.612);  // Custom Blue-Teal (was Soft medical teal)
     vec3 color2 = vec3(0.85, 0.88, 0.9); // Cool light grey
     vec3 color3 = vec3(0.94, 0.95, 0.96); // Near white
     vec3 color4 = vec3(0.98, 0.98, 0.99); // Subtle white
@@ -194,7 +194,7 @@ function paintStaticGradient(canvas: HTMLCanvasElement) {
     canvas.height
   );
   // Professional medical teal gradient
-  gradient.addColorStop(0, 'rgba(102, 178, 191, 0.4)');    // Soft medical teal
+  gradient.addColorStop(0, 'rgba(37, 109, 156, 0.4)');    // Custom Blue-Teal (was Soft medical teal)
   gradient.addColorStop(0.5, 'rgba(217, 224, 230, 0.3)');  // Cool light grey
   gradient.addColorStop(1, 'rgba(240, 242, 245, 0.2)');    // Near white
   

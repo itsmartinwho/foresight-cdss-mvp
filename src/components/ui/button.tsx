@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-black dark:text-white bg-white/10 dark:bg-black/10 backdrop-blur-sm border-transparent relative before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)),hsl(var(--neon-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[1px] after:rounded-[4px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.4),transparent_50%)] after:z-[-1] focus-visible:ring-[hsl(var(--neon-teal))]",
+          "text-black dark:text-white bg-white/10 dark:bg-black/10 backdrop-blur-sm border-transparent relative before:absolute before:-inset-[1px] before:-z-10 before:rounded-md before:bg-[linear-gradient(to_right,hsl(var(--custom-blue-teal)),hsl(var(--white-val)))] before:content-[''] hover:before:bg-[conic-gradient(from_180deg_at_50%_50%,hsl(var(--custom-blue-teal)),hsl(var(--white-val)),hsl(var(--custom-blue-teal)))] hover:before:animate-conic-spin after:absolute after:inset-[1px] after:rounded-[4px] after:bg-[linear-gradient(to_right_bottom,rgba(255,255,255,0.4),transparent_50%)] after:z-[-1] focus-visible:ring-[hsl(var(--custom-blue-teal))]",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
@@ -18,13 +18,13 @@ const buttonVariants = cva(
         secondary:
           "relative inline-flex items-center justify-center gap-2 whitespace-nowrap \\\
 rounded-md text-sm font-medium isolate overflow-hidden \\\
-focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--neon-teal))] \\\
+focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--custom-blue-teal))] \\\
 disabled:pointer-events-none disabled:opacity-50 \\\
 /* glass interior */ \\\
 bg-white/10 dark:bg-black/10 backdrop-blur-sm \\\
 /* static teal→yellow rim */ \\\
 border-[2px] border-transparent \\\
-[border-image:linear-gradient(to_right,hsl(var(--neon-teal)),hsl(var(--whitish-yellow)))_1] \\\
+[border-image:linear-gradient(to_right,hsl(var(--custom-blue-teal)),hsl(var(--white-val)))_1] \\\
 /* permanent edge shine */ \\\
 shadow-[inset_0_0_8px_0_rgba(255,255,255,0.35)]",
         ghost: "hover:bg-accent hover:text-accent-foreground",
