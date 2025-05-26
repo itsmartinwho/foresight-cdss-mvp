@@ -130,7 +130,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         if (sortConfig.key === 'patientName' && a.patient && b.patient) {
           aValue = (a.patient.name || `${a.patient.firstName} ${a.patient.lastName}`).toLowerCase();
           bValue = (b.patient.name || `${b.patient.firstName} ${b.patient.lastName}`).toLowerCase();
-        } else if (sortConfig.key === 'scheduledStart' && a.encounter && b.encounter) {
+        } else if (sortConfig.key === 'scheduledDate' && a.encounter && b.encounter) {
           aValue = new Date(a.encounter.scheduledStart).getTime();
           bValue = new Date(b.encounter.scheduledStart).getTime();
         } else if (sortConfig.key === 'reason' && a.encounter && b.encounter) {
@@ -304,8 +304,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
               <TableBody>
                 {data.map(({ patient, encounter }) => (
                   <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${encounter.id}`} onClick={() => {
-                    if (onSelect && patient?.id && encounter.id) {
-                      onSelect(patient.id, encounter.id);
+                    if (onSelect && patient) {
+                      onSelect(patient);
                     } else if (patient?.id && encounter.id) {
                       router.push(`/patients/${patient.id}?enc=${encounter.id}`);
                     }
