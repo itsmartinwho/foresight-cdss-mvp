@@ -6,7 +6,7 @@ require('dotenv').config({ path: '.env.local' });
 // Configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const SYNTHETIC_DATA_PATH = path.join(__dirname, '../public/data/synthetic-data-cleaned.json');
+const DEFAULT_SYNTHETIC_DATA_PATH = path.join(__dirname, '../public/data/synthetic-data-cleaned.json');
 const ERROR_LOG_PATH = path.join(__dirname, 'import_errors.log');
 const DRY_RUN = process.argv.includes('--dry-run');
 const BATCH_SIZE = 50; // Process in batches to manage memory
@@ -438,84 +438,93 @@ async function importLabResults(record, errorTracker) {
 }
 
 // Main import function
-async function importSyntheticData() {
-  console.log(`\n=== Synthetic Data Import ${DRY_RUN ? '(DRY RUN)' : ''} ===\n`);
-  
+async function importSyntheticData(inputPath) {
+  const dataPath = inputPath || DEFAULT_SYNTHETIC_DATA_PATH;
   const errorTracker = new ErrorTracker();
+  console.log('\n=== Synthetic Data Import  ===');
+  if (DRY_RUN) {
+    console.log('\n*** Running in DRY-RUN mode. No actual data will be written. ***\n');
+  }
 
+  console.log(`Reading synthetic data file from: ${dataPath}...`);
+  let syntheticData;
   try {
-    // Read and parse synthetic data
-    console.log('Reading synthetic data file...');
-    const rawData = fs.readFileSync(SYNTHETIC_DATA_PATH, 'utf8');
-    
-    let syntheticData;
-    try {
-      syntheticData = JSON.parse(rawData);
-    } catch (parseError) {
-      errorTracker.addError('PARSE', null, null, 'Failed to parse synthetic data JSON', { error: parseError.message });
-      errorTracker.generateReport();
-      return;
-    }
+    syntheticData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+  } catch (error) {
+    console.error(`Failed to read or parse synthetic data file: ${dataPath}`, error);
+    errorTracker.addError('FILE_READ', null, null, `Failed to read/parse ${dataPath}`, { error: error.message });
+    errorTracker.generateReport();
+    process.exit(1);
+  }
 
-    if (!syntheticData.synthetic_data || !Array.isArray(syntheticData.synthetic_data)) {
-      errorTracker.addError('PARSE', null, null, 'Invalid synthetic data structure', {});
-      errorTracker.generateReport();
-      return;
-    }
+  if (!syntheticData.synthetic_data || !Array.isArray(syntheticData.synthetic_data)) {
+    errorTracker.addError('PARSE', null, null, 'Invalid synthetic data structure', {});
+    errorTracker.generateReport();
+    return;
+  }
 
-    const records = syntheticData.synthetic_data;
-    errorTracker.summary.totalRecords = records.length;
+  const records = syntheticData.synthetic_data;
+  errorTracker.summary.totalRecords = records.length;
 
-    console.log(`Found ${records.length} records to process\n`);
+  console.log(`Found ${records.length} records to process\n`);
 
-    // Process records in batches
-    for (let i = 0; i < records.length; i += BATCH_SIZE) {
-      const batch = records.slice(i, Math.min(i + BATCH_SIZE, records.length));
-      console.log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1} (records ${i + 1}-${Math.min(i + BATCH_SIZE, records.length)})...`);
+  // Process records in batches
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, Math.min(i + BATCH_SIZE, records.length));
+    console.log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1} (records ${i + 1}-${Math.min(i + BATCH_SIZE, records.length)})...`);
 
-      for (const record of batch) {
-        errorTracker.summary.processedRecords++;
-        
-        const { patient_supabase_id, encounter_supabase_id } = record;
-        
-        console.log(`\nProcessing record for patient ${patient_supabase_id}, encounter ${encounter_supabase_id}`);
+    for (const record of batch) {
+      errorTracker.summary.processedRecords++;
+      
+      const { patient_supabase_id, encounter_supabase_id } = record;
+      
+      console.log(`\nProcessing record for patient ${patient_supabase_id}, encounter ${encounter_supabase_id}`);
 
-        // Validate UUIDs
-        const isValid = await validateUUIDs(patient_supabase_id, encounter_supabase_id, errorTracker);
-        if (!isValid) continue;
+      // Validate UUIDs
+      const isValid = await validateUUIDs(patient_supabase_id, encounter_supabase_id, errorTracker);
+      if (!isValid) continue;
 
-        // Validate encounter update data
-        if (record.generated_encounter_updates && 
-            !validateEncounterData(record.generated_encounter_updates, errorTracker, patient_supabase_id, encounter_supabase_id)) {
-          continue;
-        }
+      // Validate encounter update data
+      if (record.generated_encounter_updates && 
+          !validateEncounterData(record.generated_encounter_updates, errorTracker, patient_supabase_id, encounter_supabase_id)) {
+        continue;
+      }
 
-        // Import encounter updates
-        if (record.generated_encounter_updates) {
-          await importEncounterUpdates(record, errorTracker);
-        }
+      // Import encounter updates
+      if (record.generated_encounter_updates) {
+        await importEncounterUpdates(record, errorTracker);
+      }
 
-        // Import conditions
-        if (record.generated_conditions) {
-          await importConditions(record, errorTracker);
-        }
+      // Import conditions
+      if (record.generated_conditions) {
+        await importConditions(record, errorTracker);
+      }
 
-        // Import lab results
-        if (record.generated_lab_results) {
-          await importLabResults(record, errorTracker);
-        }
+      // Import lab results
+      if (record.generated_lab_results) {
+        await importLabResults(record, errorTracker);
       }
     }
-
-    // Generate final report
-    errorTracker.generateReport();
-
-  } catch (error) {
-    console.error('Fatal error during import:', error);
-    errorTracker.addError('FATAL', null, null, 'Fatal error during import process', { error: error.message });
-    errorTracker.generateReport();
   }
+
+  // Generate final report
+  errorTracker.generateReport();
 }
 
 // Run the import
-importSyntheticData(); 
+if (require.main === module) {
+  const inputFile = process.argv.find(arg => arg.endsWith('.json'));
+  if (!inputFile && !process.argv.includes('--dry-run') && process.argv.length > 2) {
+    // Check if an argument was provided that doesn't end in .json, and it's not just a dry run flag
+    console.log("Usage: node import_synthetic_data.js [path/to/your-data-file.json] [--dry-run]");
+    console.log("If providing a file, it must be a .json file.");
+    console.log("Using default data path as fallback.");
+    importSyntheticData(DEFAULT_SYNTHETIC_DATA_PATH);
+  } else if (inputFile) {
+    importSyntheticData(inputFile);
+  } else {
+    importSyntheticData(DEFAULT_SYNTHETIC_DATA_PATH); // Default behavior if just `node import_synthetic_data.js` or `node import_synthetic_data.js --dry-run`
+  }
+} else {
+  module.exports = importSyntheticData; // Export for potential programmatic use
+} 

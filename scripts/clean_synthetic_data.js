@@ -1,15 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-const SYNTHETIC_DATA_PATH = path.join(__dirname, '../public/data/synthetic-data.json');
-const CLEANED_DATA_PATH = path.join(__dirname, '../public/data/synthetic-data-cleaned.json');
+// Default paths (can be overridden by command-line arguments)
+const DEFAULT_SYNTHETIC_DATA_PATH = path.join(__dirname, '../public/data/synthetic-data3-minimal.json');
+const DEFAULT_CLEANED_DATA_PATH = path.join(__dirname, '../public/data/synthetic-data3-cleaned.json');
 
-function cleanSyntheticData() {
-  console.log('Cleaning synthetic data...');
+function cleanSyntheticData(inputPath, outputPath) {
+  const dataPath = inputPath || DEFAULT_SYNTHETIC_DATA_PATH;
+  const cleanedDataPath = outputPath || DEFAULT_CLEANED_DATA_PATH;
+
+  console.log(`Cleaning synthetic data from: ${dataPath}`);
   
   try {
     // Read the raw data
-    const rawData = fs.readFileSync(SYNTHETIC_DATA_PATH, 'utf8');
+    const rawData = fs.readFileSync(dataPath, 'utf8');
     
     // Fix known malformed JSON issues
     let cleanedData = rawData;
@@ -89,13 +93,13 @@ function cleanSyntheticData() {
     }
     
     // Write the cleaned data
-    fs.writeFileSync(CLEANED_DATA_PATH, JSON.stringify(jsonData, null, 2));
+    fs.writeFileSync(cleanedDataPath, JSON.stringify(jsonData, null, 2));
     
     console.log('✅ Synthetic data cleaned successfully!');
-    console.log(`Cleaned data saved to: ${CLEANED_DATA_PATH}`);
+    console.log(`Cleaned data saved to: ${cleanedDataPath}`);
     
     // Verify the cleaned data
-    const verifyData = JSON.parse(fs.readFileSync(CLEANED_DATA_PATH, 'utf8'));
+    const verifyData = JSON.parse(fs.readFileSync(cleanedDataPath, 'utf8'));
     console.log(`\nVerification: ${verifyData.synthetic_data.length} records found in cleaned data.`);
     
   } catch (error) {
@@ -105,4 +109,16 @@ function cleanSyntheticData() {
 }
 
 // Run the cleaning
-cleanSyntheticData(); 
+if (require.main === module) {
+  const inputFile = process.argv[2];
+  const outputFile = process.argv[3];
+  if (!inputFile || !outputFile) {
+    console.log("Usage: node clean_synthetic_data.js <inputFile> <outputFile>");
+    console.log("Using default paths as fallback (not recommended for general use).");
+    cleanSyntheticData(DEFAULT_SYNTHETIC_DATA_PATH, DEFAULT_CLEANED_DATA_PATH); // Maintain old behavior if no args
+  } else {
+    cleanSyntheticData(inputFile, outputFile);
+  }
+} else {
+  module.exports = cleanSyntheticData; // Export for potential programmatic use
+} 
