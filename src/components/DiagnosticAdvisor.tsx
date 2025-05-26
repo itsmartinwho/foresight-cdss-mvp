@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DiagnosticPlan, DiagnosticStep, DiagnosticResult, ClinicalTrial, Patient, AdmissionDetailsWrapper } from '@/lib/types';
+import { DiagnosticPlan, DiagnosticStep, DiagnosticResult, ClinicalTrial, Patient, EncounterDetailsWrapper } from '@/lib/types';
 import { clinicalEngineService } from '@/lib/clinicalEngineService';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ interface DiagnosticAdvisorProps {
   patientId?: string;
   initialObservations?: string[];
   patientFullData?: Patient | null;
-  admissionsData?: AdmissionDetailsWrapper[] | null;
+  admissionsData?: EncounterDetailsWrapper[] | null;
 }
 
 export default function DiagnosticAdvisor({ patientId, initialObservations, patientFullData, admissionsData }: DiagnosticAdvisorProps) {
@@ -109,12 +109,12 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
       if (patientFullData && admissionsData) {
         patientDataDict = {
           patient: patientFullData,
-          admissions: admissionsData,
+          encounters: admissionsData,
         };
       } else if (patientFullData) {
         patientDataDict = {
           patient: patientFullData,
-          admissions: [], // Or handle as appropriate if admissions are expected
+          encounters: [],
         };
       }
       
