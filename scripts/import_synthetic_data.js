@@ -280,7 +280,13 @@ async function importEncounterUpdates(record, errorTracker) {
       reason_display_text: generated_encounter_updates.reason_display_text,
       transcript: generated_encounter_updates.transcript,
       soap_note: generated_encounter_updates.soap_note,
-      observations: generated_encounter_updates.observations,
+      observations: generated_encounter_updates.observations ? 
+        // Convert text observations to array format (split by sentences)
+        generated_encounter_updates.observations
+          .split(/\.\s+/)
+          .filter(obs => obs.trim().length > 0)
+          .map(obs => obs.trim() + (obs.endsWith('.') ? '' : '.'))
+        : null,
       treatments: typeof generated_encounter_updates.treatments === 'string' 
         ? JSON.parse(generated_encounter_updates.treatments) 
         : generated_encounter_updates.treatments,

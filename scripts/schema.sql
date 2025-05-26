@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS public.encounters (
   transcript TEXT,
   soap_note TEXT, -- Or consider a separate 'clinical_notes' table linked to encounters
   treatments JSONB, -- Array of treatment objects or references
-  observations TEXT, -- Clinical observations made during the encounter
+  observations TEXT[], -- Clinical observations made during the encounter (array of observation strings)
   prior_auth_justification TEXT,
   insurance_status TEXT,
   is_deleted BOOLEAN DEFAULT FALSE,
