@@ -714,7 +714,7 @@ class SupabaseDataService {
         await this.loadPatientData();
       }
       if (!this.patients[patientId]) {
-        throw new Error(`Patient with original ID ${patientId} not found in cache; cannot create admission.`);
+        throw new Error(`Patient with original ID ${patientId} not found in cache; cannot create encounter.`);
       }
     }
 

@@ -223,7 +223,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
       return newEncounter;
     } catch (err: unknown) {
       console.error("Failed to finalize new consultation", err);
-      setError(err instanceof Error ? err.message : "Failed to create new consultation visit.");
+      setError(err instanceof Error ? err.message : "Failed to create new consultation encounter.");
       toast({ title: "Error", description: `Failed to create new encounter: ${err instanceof Error ? err.message : "Unknown error"}`, variant: "destructive" });
       return null;
     }
@@ -290,7 +290,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
         <div className="ml-auto flex-shrink-0 flex items-center gap-2">
           {!isStartingNewConsultation && (
             <div>
-              <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
+              <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Consultation:</label>
               <Select
                 value={selectedEncounterForConsultation?.id || ""}
                 onValueChange={(value) => {

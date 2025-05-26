@@ -10,10 +10,10 @@ interface DiagnosticAdvisorProps {
   patientId?: string;
   initialObservations?: string[];
   patientFullData?: Patient | null;
-  admissionsData?: EncounterDetailsWrapper[] | null;
+  encountersData?: EncounterDetailsWrapper[] | null;
 }
 
-export default function DiagnosticAdvisor({ patientId, initialObservations, patientFullData, admissionsData }: DiagnosticAdvisorProps) {
+export default function DiagnosticAdvisor({ patientId, initialObservations, patientFullData, encountersData }: DiagnosticAdvisorProps) {
   const [observations, setObservations] = useState<string[]>(initialObservations || []);
   const [observationInput, setObservationInput] = useState<string>('');
   const [diagnosticPlan, setDiagnosticPlan] = useState<DiagnosticPlan | null>(null);
@@ -106,10 +106,10 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
       const transcript = observations.join(', ');
       
       let patientDataDict: Record<string, any> = {};
-      if (patientFullData && admissionsData) {
+      if (patientFullData && encountersData) {
         patientDataDict = {
           patient: patientFullData,
-          encounters: admissionsData,
+          encounters: encountersData,
         };
       } else if (patientFullData) {
         patientDataDict = {

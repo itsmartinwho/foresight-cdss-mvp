@@ -110,8 +110,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       if (typeof bValue === 'string') bValue = bValue.toLowerCase();
       
       // if (key === 'consultationsCount') { // Example for a derived value
-      //   aValue = supabaseDataService.getPatientAdmissions(a.id)?.length || 0;
-      //   bValue = supabaseDataService.getPatientAdmissions(b.id)?.length || 0;
+      //   aValue = supabaseDataService.getPatientEncounters(a.id)?.length || 0;
+      //   bValue = supabaseDataService.getPatientEncounters(b.id)?.length || 0;
       // }
 
 
@@ -207,7 +207,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
             </TableHeader>
             <TableBody>
               {sortedAllPatients.map((patient) => {
-                const patientAdmissions = supabaseDataService.getPatientEncounters(patient.id) || [];
+                const patientEncounters = supabaseDataService.getPatientEncounters(patient.id) || [];
                 return (
                   <TableRow 
                     key={patient.id} 
@@ -240,24 +240,24 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
 
                     {/* Consultations column */}
                     <TableCell className="w-[260px]">
-                      {patientAdmissions.length > 0 ? (
+                      {patientEncounters.length > 0 ? (
                         <ul className="list-none p-0 m-0 space-y-1">
-                          {patientAdmissions.slice(0, 3).map(admission => (
-                            <li key={admission.id}>
+                          {patientEncounters.slice(0, 3).map(encounter => (
+                            <li key={encounter.id}>
                               <Button
                                 variant="secondary"
                                 size="sm"
                                 iconLeft={<Calendar />}
                                 className="truncate text-xs"
-                                onClick={() => router.push(`/patients/${patient.id}?enc=${admission.id}`)}
-                                title={new Date(admission.scheduledStart).toLocaleString()}
+                                onClick={() => router.push(`/patients/${patient.id}?encounterId=${encounter.id}`)}
+                                title={new Date(encounter.scheduledStart).toLocaleString()}
                               >
-                                {new Date(admission.scheduledStart).toLocaleDateString()}
+                                {new Date(encounter.scheduledStart).toLocaleDateString()}
                               </Button>
                             </li>
                           ))}
-                          {patientAdmissions.length > 3 && (
-                            <li><span className="text-xs text-slate-400">+{patientAdmissions.length - 3} more</span></li>
+                          {patientEncounters.length > 3 && (
+                            <li><span className="text-xs text-slate-400">+{patientEncounters.length - 3} more</span></li>
                           )}
                         </ul>
                       ) : "No consultations"}
@@ -307,7 +307,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     if (onSelect && patient) {
                       onSelect(patient);
                     } else if (patient?.id && encounter.id) {
-                      router.push(`/patients/${patient.id}?enc=${encounter.id}`);
+                      router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
                     }
                   }} className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <TableCell>
@@ -328,7 +328,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent row click
                         if (patient?.id && encounter.id) {
-                          router.push(`/patients/${patient?.id}?tab=consultation&enc=${encounter.id}`);
+                          router.push(`/patients/${patient?.id}?tab=consultation&encounterId=${encounter.id}`);
                         }
                       }}
                       title="Go to Consultation"
@@ -391,8 +391,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}
-        onConsultationCreated={(patient, admission) => {
-          if (patient && admission) {
+        onConsultationCreated={(patient, encounter) => {
+          if (patient && encounter) {
             onSelect(patient);
           } else {
             fetchData();
