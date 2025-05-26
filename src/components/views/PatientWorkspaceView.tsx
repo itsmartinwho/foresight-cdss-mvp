@@ -368,7 +368,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
         ))}
       </div>
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "consultation" && selectedEncounterForConsultation && patient &&
+        {activeTab === "consultation" && patient && (
           <ConsultationTab
             patient={patient}
             selectedEncounter={selectedEncounterForConsultation}
@@ -380,21 +380,8 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
             newConsultationDuration={newConsultationDuration}
             onNewConsultationDurationChange={setNewConsultationDuration}
             onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
-          />}
-        {activeTab === "consultation" && isStartingNewConsultation && patient &&
-           <ConsultationTab
-            patient={patient}
-            selectedEncounter={null}
-            isStartingNewConsultation={isStartingNewConsultation}
-            newConsultationReason={newConsultationReason}
-            onNewConsultationReasonChange={setNewConsultationReason}
-            newConsultationDate={newConsultationDate}
-            onNewConsultationDateChange={setNewConsultationDate}
-            newConsultationDuration={newConsultationDuration}
-            onNewConsultationDurationChange={setNewConsultationDuration}
-            onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
           />
-        }
+        )}
         {activeTab === "diagnosis" && <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />}
         {activeTab === "treatment" && <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />}
         {activeTab === "labs" && <LabsTab patient={patient} allEncounters={activeEncounterDetails} />}

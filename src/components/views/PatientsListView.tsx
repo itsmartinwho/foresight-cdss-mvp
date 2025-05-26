@@ -328,7 +328,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent row click
                         if (patient?.id && encounter.id) {
-                          router.push(`/patients/${patient?.id}?tab=consult&enc=${encounter.id}`);
+                          router.push(`/patients/${patient?.id}?tab=consultation&enc=${encounter.id}`);
                         }
                       }}
                       title="Go to Consultation"

@@ -27,7 +27,7 @@ function ForesightApp() {
   const patientIdFromPath = activeView === "patients" ? pathSegments[2] : undefined;
 
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
-  const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consult");
+  const [selectedPatientTab, setSelectedPatientTab] = useState<string>("consultation");
   const [complexCaseAlerts, setComplexCaseAlerts] = useState<Array<ComplexCaseAlert & { patientName?: string }>>([]);
   const [isAppLoading, setIsAppLoading] = useState(true);
 
@@ -76,12 +76,12 @@ function ForesightApp() {
   };
 
   const handleStartConsult = (patient: Patient) => {
-    setSelectedPatientTab("consult");
+    setSelectedPatientTab("consultation");
     router.push(`/patients/${patient.id}`);
   };
 
   const handlePatientSelect = (patient: Patient) => {
-    setSelectedPatientTab("consult");
+    setSelectedPatientTab("consultation");
     router.push(`/patients/${patient.id}`);
   };
   

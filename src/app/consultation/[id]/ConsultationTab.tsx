@@ -197,6 +197,21 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
     let encounterToUse = selectedEncounter;
 
+    if (!encounterToUse && isStartingNewConsultation && onStartTranscriptionForNewConsult) {
+        // Create new encounter first
+        try {
+          encounterToUse = await onStartTranscriptionForNewConsult();
+          if (!encounterToUse) {
+            alert("Failed to create new consultation. Cannot start transcription.");
+            return;
+          }
+        } catch (error) {
+          console.error("Error creating new consultation:", error);
+          alert("Failed to create new consultation. Cannot start transcription.");
+          return;
+        }
+    }
+
     if (!encounterToUse) {
         alert("No active consultation selected. Cannot start transcription.");
         return;
@@ -423,6 +438,48 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   // JSX for rendering will be added here
   return (
     <div className="space-y-4">
+      {isStartingNewConsultation && (
+        <Card>
+          <CardHeader>
+            <CardTitle>New Consultation Setup</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Reason for visit</label>
+              <input
+                type="text"
+                placeholder="E.g., joint pain, generalized inflammation"
+                className="w-full px-3 py-2 border rounded-md bg-background text-step--1 border-border"
+                value={newConsultationReason || ''}
+                onChange={(e) => onNewConsultationReasonChange?.(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Date and time</label>
+              <input
+                type="datetime-local"
+                className="w-full px-3 py-2 border rounded-md bg-background text-step--1 border-border"
+                value={newConsultationDate ? newConsultationDate.toISOString().slice(0, 16) : ''}
+                onChange={(e) => onNewConsultationDateChange?.(e.target.value ? new Date(e.target.value) : null)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Duration</label>
+              <select
+                value={newConsultationDuration || ''}
+                onChange={(e) => onNewConsultationDurationChange?.(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full px-3 py-2 border rounded-md bg-background text-step--1 border-border"
+              >
+                <option value="" disabled>Select duration</option>
+                {Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(minutes => (
+                  <option key={minutes} value={minutes}>{minutes} min</option>
+                ))}
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card className="flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
@@ -433,7 +490,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
                 <Save className="h-4 w-4 mr-2" /> Save
               </Button>
             )}
-            {!isTranscribing && selectedEncounter && (
+            {!isTranscribing && (selectedEncounter || isStartingNewConsultation) && (
               <Button variant="ghost" size="icon" onClick={startTranscription} title="Start Transcription">
                 <Mic className="h-5 w-5" />
               </Button>
@@ -484,7 +541,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
       </CardHeader>
       <CardContent className="flex-grow overflow-y-auto">
-        {(selectedEncounter || editableTranscript || isTranscribing) ? (
+        {(selectedEncounter || editableTranscript || isTranscribing || isStartingNewConsultation) ? (
           <div
             ref={transcriptAreaRef}
             contentEditable={!isTranscribing}

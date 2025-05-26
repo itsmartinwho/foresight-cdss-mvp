@@ -221,7 +221,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
     let url = `/patients/${res.patient.id}`;
     if (res.kind === "diagnosis") url += "?tab=diagnosis";
     else if (res.kind === "treatment") url += "?tab=treatment";
-    else if (res.kind === "reason") url += "?tab=consult";
+            else if (res.kind === "reason") url += "?tab=consultation";
     // name matches keep default (consult)
     router.push(url);
     setQuery("");
