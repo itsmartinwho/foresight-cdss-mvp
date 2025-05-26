@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ClinicalOutputPackage } from '@/lib/types';
 import { Brain, FloppyDisk as Save, CircleNotch } from '@phosphor-icons/react';
-import { Spinner } from '@/components/ui/spinner';
 import { Sparkle } from '@phosphor-icons/react';
 
 interface AIAnalysisPanelProps {
