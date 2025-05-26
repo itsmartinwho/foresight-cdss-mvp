@@ -37,8 +37,8 @@ _The application flow centers around clinician interaction with patient data and
     - Browse, search, view, and manage patient records.
 
 3.  **Consultation Data Entry/Review Flow (Current - Basic; Aspirational - Detailed for Tool B)**
-    `Patient Details → New Consultation (Modal) → Input Basic Clinical Data → Save`
-    - Current: Input basic visit information.
+    `Patient Details → New Consultation (Modal) → Input Basic Encounter Information → Save`
+    - Current: Input basic encounter information.
     - Aspirational (for Tool B): Capture detailed consultation transcript.
 
 4.  **Tool A: Advisor (AI Chatbot - Current)**
@@ -147,10 +147,13 @@ _Refer to [./frontend_guide.md](./frontend_guide.md) for detailed frontend guide
 
 ### Data Source (Supabase)
 *   **Primary Database:** PostgreSQL hosted on Supabase.
-*   **Schema Management:** `scripts/schema.sql` (defines `patients`, `visits`, `transcripts` tables, etc.).
+*   **Schema Management:** `scripts/schema.sql` (defines `patients`, `encounters`, `conditions`, `lab_results` tables, etc.).
 *   **Key Tables:**
     *   `patients`: Demographics, **`alerts` (mock data for Tool D)**, primary diagnosis.
-    *   `visits`: Consultations, notes, treatments.
+    *   `encounters`: Consultations, notes, treatments.
+    *   `conditions`: Diagnoses and problem list items.
+    *   `lab_results`: Observations like labs and vitals.
+    *   `differential_diagnoses`: AI-generated differentials.
     *   `transcripts`: Detailed consultation transcripts (input for aspirational Tool B).
 *   **Data Interaction:** `supabaseClient.ts`, `supabaseDataService.ts`.
 *   **No Local Mock Data Files for Primary Data:** All live data from Supabase.
@@ -228,4 +231,29 @@ _Refer to [./development_guide.md#testing-standards](./development_guide.md#test
     *   **Benefits:** Robust, secure (no `dangerouslySetInnerHTML`), extensible.
 
 ## Plasma Background Effect
-_For details on the Three.js + GLSL plasma background, see [./PLASMA_EFFECT.md](./PLASMA_EFFECT.md). It runs outside the React tree for stability._ 
+_For details on the Three.js + GLSL plasma background, see [./PLASMA_EFFECT.md](./PLASMA_EFFECT.md). It runs outside the React tree for stability._
+
+#### Physician Experience (PX)
+
+-   **AI Chat & Advisor (Tool A):**
+    -   Interface: Chat panel, potentially integrated within patient workspace tabs.
+    -   Input: Text queries, voice commands, clicks on suggested follow-ups.
+    -   Output: Text responses, citations, suggested actions.
+-   **Clinical Workup & Plan (Tool B):**
+    -   Interface: Structured input forms, review panels for AI suggestions.
+    -   Input: Basic encounter information, symptoms/observations, potentially EMR data via FHIR.
+    -   Output: Differential diagnoses, diagnostic plan, recommended tests/treatments, draft notes/referrals.
+
+### Data Flow
+*   **Patient Workspace Backend (`/api/patient/[id]/`, etc. - TBD):**
+    *   Manages CRUD for patient core data, encounters, conditions, labs etc.
+    *   Handles saving of AI-generated content to appropriate records (e.g., SOAP notes to encounters, diagnoses to conditions).
+*   **Schema Management:** `scripts/schema.sql` (defines `patients`, `encounters`, `conditions`, `lab_results` tables, etc.).
+*   **Data Store (Supabase/Postgres):**
+    *   `patients`: Core demographics.
+    *   `encounters`: Consultations, notes, treatments.
+    *   `conditions`: Diagnoses and problem list items.
+    *   `lab_results`: Observations like labs and vitals.
+    *   `differential_diagnoses`: AI-generated differentials.
+*   **Data Interaction:** `supabaseClient.ts`, `supabaseDataService.ts`.
+*   **No Local Mock Data Files for Primary Data:** All live data from Supabase. 

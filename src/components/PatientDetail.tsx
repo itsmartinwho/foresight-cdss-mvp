@@ -1,24 +1,33 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Patient, Admission, Diagnosis, LabResult, Treatment, AdmissionDetailsWrapper, ClinicalTrial } from '@/lib/types';
+import { Patient, Encounter, Diagnosis, LabResult, Treatment, EncounterDetailsWrapper, ClinicalTrial } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import Link from 'next/link';
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import { Button } from "@/components/ui/button";
 import { FileText } from '@phosphor-icons/react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { EncounterSummaryList, DiagnosisList, LabResultList } from "@/components/EncounterLists";
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 interface PatientDetailProps {
   patientId: string;
 }
 
 export default function PatientDetail({ patientId }: PatientDetailProps) {
-  const [detailedPatientData, setDetailedPatientData] = useState<{ patient: Patient; admissions: AdmissionDetailsWrapper[] } | null>(null);
+  const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const encounterIdFromQuery = searchParams.get('encounterId');
+
+  const [detailedPatientData, setDetailedPatientData] = useState<{ patient: Patient; encounters: EncounterDetailsWrapper[] } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('consultation');
-  const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("consultation");
+  const [selectedEncounterId, setSelectedEncounterId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -32,12 +41,12 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
           setDetailedPatientData(null);
         } else {
           setDetailedPatientData(data);
-          if (data.admissions && data.admissions.length > 0) {
-            // Default to the most recent admission if possible, otherwise the first one
-            const sortedAdmissions = [...data.admissions].sort((a, b) => 
-              new Date(b.admission.scheduledStart).getTime() - new Date(a.admission.scheduledStart).getTime()
+          if (data.encounters && data.encounters.length > 0) {
+            // Default to the most recent encounter if possible, otherwise the first one
+            const sortedEncounters = [...data.encounters].sort((a, b) => 
+              new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime()
             );
-            setSelectedAdmissionId(sortedAdmissions[0].admission.id);
+            setSelectedEncounterId(sortedEncounters[0].encounter.id);
           }
         }
       } catch (err: unknown) {
@@ -99,8 +108,18 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
     );
   }
 
-  const { patient, admissions: admissionsWithDetails } = detailedPatientData;
-  const currentAdmissionDetails = admissionsWithDetails?.find((adWrapper: AdmissionDetailsWrapper) => adWrapper.admission.id === selectedAdmissionId);
+  const { patient, encounters: encounterDetails } = detailedPatientData;
+  const currentEncounterWrapper = encounterDetails?.find((ew: EncounterDetailsWrapper) => ew.encounter.id === selectedEncounterId);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
+  const handleEncounterChange = (value: string) => {
+    setSelectedEncounterId(value);
+    // Update URL query parameter without full page reload
+    router.push(`/patients/${patientId}?encounterId=${value}`, { scroll: false });
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -135,26 +154,26 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               </div>
             </div>
             
-            {admissionsWithDetails && admissionsWithDetails.length > 0 && (
+            {encounterDetails && encounterDetails.length > 0 && (
               <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 w-full md:w-auto md:max-w-xs">
-                <label htmlFor="visitSelector" className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Visit:
+                <label htmlFor="encounterSelector" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Encounter:
                 </label>
                 <Select
-                  value={selectedAdmissionId || ''}
-                  onValueChange={(val) => setSelectedAdmissionId(val)}
+                  value={selectedEncounterId || ''}
+                  onValueChange={handleEncounterChange}
                 >
-                  <SelectTrigger id="visitSelector" className="w-full">
-                    <SelectValue placeholder="Select visit" />
+                  <SelectTrigger id="encounterSelector" className="w-full">
+                    <SelectValue placeholder="Select encounter" />
                   </SelectTrigger>
                   <SelectContent>
-                    {admissionsWithDetails.map((adWrapper: AdmissionDetailsWrapper) => (
+                    {encounterDetails.map((ew: EncounterDetailsWrapper) => (
                       <SelectItem
-                        key={adWrapper.admission.id}
-                        value={adWrapper.admission.id}
+                        key={ew.encounter.id}
+                        value={ew.encounter.id}
                       >
-                        {formatDateTime(adWrapper.admission.scheduledStart)} -{' '}
-                        {adWrapper.admission.reasonDisplayText || adWrapper.admission.reasonCode || 'Visit'}
+                        {formatDateTime(ew.encounter.scheduledStart)} -{' '}
+                        {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -169,14 +188,10 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
           <div className="max-w-full mx-auto px-2 sm:px-4">
             <nav className="flex space-x-1 overflow-x-auto">
               {[
-                { key: 'consultation', label: 'Consultation' },
-                { key: 'diagnosis', label: 'Diagnosis' },
-                { key: 'treatment', label: 'Treatment' },
+                { key: 'consultation', label: 'Consultation Notes' },
+                { key: 'diagnosis', label: 'Diagnoses' },
                 { key: 'labs', label: 'Labs' },
-                { key: 'prior_auth', label: 'Prior Auth' },
-                { key: 'trials', label: 'Clinical Trials' },
-                { key: 'history', label: 'Patient History' },
-                { key: 'all_data', label: 'All Data' },
+                { key: 'treatment', label: 'Treatments' },
               ].map(tab => (
                 <Button
                   key={tab.key}
@@ -195,14 +210,14 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
           </div>
         </div>
 
-        {/* Current Visit Context (if a visit is selected) */}
-        {currentAdmissionDetails && (
+        {/* Current Encounter Context (if an encounter is selected) */}
+        {currentEncounterWrapper && (
           <div className="bg-blue-50 px-4 sm:px-6 lg:px-8 py-3 border-b border-blue-200">
             <div className="max-w-full mx-auto">
               <h2 className="text-md font-semibold text-blue-700">
-                Current Visit: {formatDateTime(currentAdmissionDetails.admission.scheduledStart)}
+                Selected Encounter Details: {formatDateTime(currentEncounterWrapper.encounter.scheduledStart)}
               </h2>
-              <p className="text-sm text-blue-600">Reason: {currentAdmissionDetails.admission.reasonDisplayText || currentAdmissionDetails.admission.reasonCode || 'N/A'}</p>
+              <p className="text-sm text-blue-600">Reason: {currentEncounterWrapper.encounter.reasonDisplayText || currentEncounterWrapper.encounter.reasonCode || 'N/A'}</p>
             </div>
           </div>
         )}
@@ -210,63 +225,63 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
         {/* Tab Content Area */}
         <div className="p-4 sm:p-6 lg:p-8">
           {(() => { 
-            const filteredAdmissions = selectedAdmissionId && admissionsWithDetails
-              ? admissionsWithDetails.filter((adWrapper: AdmissionDetailsWrapper) => adWrapper.admission.id === selectedAdmissionId) 
-              : []; // If no visit selected, or no admissions, provide empty array
+            const filteredEncounters = selectedEncounterId && encounterDetails
+              ? encounterDetails.filter((ew: EncounterDetailsWrapper) => ew.encounter.id === selectedEncounterId) 
+              : []; // If no encounter selected, or no encounters, provide empty array
             
-            if (!selectedAdmissionId || !currentAdmissionDetails) { 
+            if (!selectedEncounterId || !currentEncounterWrapper) { 
               return (
                 <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-6 text-center shadow-sm">
                   <p className="text-yellow-700 font-medium">
-                    {admissionsWithDetails && admissionsWithDetails.length > 0 
-                      ? 'Please select a visit from the dropdown above to see details.' 
-                      : 'No visits found for this patient.'}
+                    {encounterDetails && encounterDetails.length > 0 
+                      ? 'Please select an encounter from the dropdown above to see details.' 
+                      : 'No encounters found for this patient.'}
                   </p>
                 </div>
               );
             } 
             
-            // Render content based on activeTab and filteredAdmissions (which now refers to the single selected admission)
-            const adDetail = currentAdmissionDetails; // Use the already found currentAdmissionDetails
+            // Render content based on activeTab and filteredEncounters (which now refers to the single selected encounter)
+            const ewDetail = currentEncounterWrapper; // Use the already found currentEncounterWrapper
 
             return <React.Fragment>
               {activeTab === 'consultation' && (
                 <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-gray-900 sr-only">Consultation Details</h3>
-                  {adDetail.admission.transcript && (
+                  <h3 className="text-xl font-semibold text-gray-900 sr-only">Consultation Notes</h3>
+                  {ewDetail.encounter.transcript && (
                     <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
                       <h4 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
                         Transcript
                       </h4>
                       <div className="bg-gray-50 p-4 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
-                        <pre className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{adDetail.admission.transcript}</pre>
+                        <pre className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{ewDetail.encounter.transcript}</pre>
                       </div>
                     </div>
                   )}
-                  {adDetail.admission.soapNote && (
+                  {ewDetail.encounter.soapNote && (
                     <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
                       <h4 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         SOAP Note
                       </h4>
                       <div className="bg-gray-50 p-4 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
-                        <pre className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{adDetail.admission.soapNote}</pre>
+                        <pre className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{ewDetail.encounter.soapNote}</pre>
                       </div>
                     </div>
                   )}
-                  {!adDetail.admission.transcript && !adDetail.admission.soapNote && (
-                     <p className="text-center text-gray-500 py-4">No consultation notes (transcript or SOAP) available for this visit.</p>
+                  {!ewDetail.encounter.transcript && !ewDetail.encounter.soapNote && (
+                     <p className="text-center text-gray-500 py-4">No consultation notes available for this encounter.</p>
                   )}
                 </div>
               )}
 
               {activeTab === 'diagnosis' && (
                 <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagnoses for this Visit</h3>
-                  {adDetail.diagnoses && adDetail.diagnoses.length > 0 ? (
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagnoses for this Encounter</h3>
+                  {ewDetail.encounter.diagnoses && ewDetail.encounter.diagnoses.length > 0 ? (
                     <ul className="divide-y divide-gray-200">
-                      {adDetail.diagnoses.map((dx: Diagnosis) => (
+                      {ewDetail.encounter.diagnoses.map((dx: Diagnosis) => (
                         <li key={dx.code} className="py-3 flex justify-between items-center">
                           <span className="text-gray-800 text-sm md:text-base">{dx.description}</span>
                           <span className="font-mono text-xs md:text-sm bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 tracking-tight">{dx.code}</span>
@@ -274,17 +289,17 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-center text-gray-500 py-4">No diagnoses recorded for this visit.</p>
+                    <p className="text-center text-gray-500 py-4">No diagnoses recorded for this encounter.</p>
                   )}
                 </div>
               )}
 
               {activeTab === 'treatment' && (
                 <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Treatments for this Visit</h3>
-                  {adDetail.admission.treatments && adDetail.admission.treatments.length > 0 ? (
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Treatments for this Encounter</h3>
+                  {ewDetail.encounter.treatments && ewDetail.encounter.treatments.length > 0 ? (
                     <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 lg:grid-cols-3">
-                      {adDetail.admission.treatments.map((tx: Treatment) => (
+                      {ewDetail.encounter.treatments.map((tx: Treatment) => (
                         <div key={tx.drug} className="p-4 border rounded-lg bg-slate-50 hover:shadow-lg transition-shadow duration-200">
                           <h4 className="font-semibold text-md text-blue-700 mb-2 truncate" title={tx.drug}>{tx.drug}</h4>
                           <div className="space-y-1.5 text-sm">
@@ -305,7 +320,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-4">No treatments recorded for this visit.</p>
+                    <p className="text-center text-gray-500 py-4">No treatments recorded for this encounter.</p>
                   )}
                 </div>
               )}
@@ -313,7 +328,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
               {activeTab === 'labs' && (
                 <div className="bg-white p-0 md:p-5 shadow-md rounded-lg border border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4 px-5 pt-5 md:px-0 md:pt-0">Lab Results</h3>
-                  {adDetail.labResults && adDetail.labResults.length > 0 ? (
+                  {ewDetail.encounter.labResults && ewDetail.encounter.labResults.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200 text-sm">
                         <thead className="bg-gray-50">
@@ -327,7 +342,7 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {adDetail.labResults.map((lab: LabResult, idx: number) => (
+                          {ewDetail.encounter.labResults.map((lab: LabResult, idx: number) => (
                             <tr key={idx} className={lab.flag ? 'bg-yellow-50 hover:bg-yellow-100' : 'hover:bg-gray-50'}>
                               <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{lab.name}</td>
                               <td className="px-4 py-3 whitespace-nowrap text-gray-700">{lab.value}</td>
@@ -343,122 +358,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                       </table>
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-4 px-5 md:px-0">No lab results recorded for this visit.</p>
+                    <p className="text-center text-gray-500 py-4 px-5 md:px-0">No lab results recorded for this encounter.</p>
                   )}
                 </div>
-              )}
-
-              {activeTab === 'prior_auth' && (
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-white p-6 shadow-md rounded-lg border border-gray-200">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">Prior Authorization Request</h3>
-                    <div className="space-y-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                        <div>
-                          <p className="text-gray-500 font-medium">Patient:</p>
-                          <p className="text-gray-800">{patient.name} (DOB: {formatDate(patient.dateOfBirth)})</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 font-medium">Medication:</p>
-                          <p className="text-gray-800">Methotrexate 15 mg weekly</p> {/* Example data */}
-                        </div>
-                        <div>
-                          <p className="text-gray-500 font-medium">Diagnosis:</p>
-                          <p className="text-gray-800">Rheumatoid Arthritis (ICD-10: M06.9)</p> {/* Example data */}
-                        </div>
-                        <div>
-                          <p className="text-gray-500 font-medium">Justification:</p>
-                          <p className="text-gray-800">Failed NSAIDs, elevated CRP 18 mg/L</p> {/* Example data */}
-                        </div>
-                      </div>
-                      <div className="border-t border-gray-200 pt-5 flex justify-center">
-                        <Button variant="default" iconLeft={<FileText />} className="px-6 py-2.5">
-                          Generate PDF Draft
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'trials' && (
-                <div className="bg-white p-0 md:p-5 shadow-md rounded-lg border border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 px-5 pt-5 md:px-0 md:pt-0">Matching Clinical Trials</h3>
-                  {/* {adDetail.trials && adDetail.trials.length > 0 ? ( // COMMENTING_OUT - adDetail (AdmissionDetailsWrapper) does not have .trials
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Trial ID</th>
-                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Distance</th>
-                            <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Patient Fit Score</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {adDetail.trials.map((trial: Record<string, any>, idx:number) => (
-                            <tr key={trial.id || idx} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 whitespace-nowrap font-medium text-blue-600 hover:underline">
-                                <a href={`#trial-${trial.id}`} onClick={(e) => e.preventDefault()}>{trial.id}</a>
-                              </td>
-                              <td className="px-4 py-3 whitespace-normal text-gray-800">{trial.title}</td>
-                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">{trial.distance}</td>
-                              <td className="px-4 py-3 whitespace-nowrap text-gray-500">
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  parseFloat(trial.fit) > 0.7 ? 'bg-green-100 text-green-800' : 
-                                  parseFloat(trial.fit) > 0.4 ? 'bg-yellow-100 text-yellow-800' : 
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {trial.fit}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : ( */}
-                     <p className="text-center text-gray-500 py-4 px-5 md:px-0">No clinical trial matches found for this patient based on current data. (Trials feature in this view temporarily adjusted)</p>
-                  {/* )} */}
-                </div>
-              )}
-              
-              {activeTab === 'history' && (
-                <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Patient Timeline</h3>
-                  <div className="relative pl-2.5">
-                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200 rounded-full" aria-hidden="true"></div> {/* Timeline bar */}
-                    <div className="space-y-8">
-                      {/* Example History Item 1 */}
-                      <div className="relative pl-8">
-                        <div className="absolute left-[-7px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 border-2 border-white"></div>
-                        <p className="text-xs text-gray-500 mb-0.5">Apr 24, 2025</p>
-                        <p className="text-sm text-gray-700">Initial consult: reports fatigue & joint pain.</p>
-                      </div>
-                      {/* Example History Item 2 */}
-                      <div className="relative pl-8">
-                        <div className="absolute left-[-7px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 border-2 border-white"></div>
-                        <p className="text-xs text-gray-500 mb-0.5">Apr 24, 2025</p>
-                        <p className="text-sm text-gray-700">Labs ordered: ESR, CRP, RF, anti-CCP.</p>
-                      </div>
-                       {/* Example History Item 3 */}
-                      <div className="relative pl-8">
-                        <div className="absolute left-[-7px] top-1 h-3.5 w-3.5 rounded-full bg-blue-500 border-2 border-white"></div>
-                        <p className="text-xs text-gray-500 mb-0.5">Apr 24, 2025</p>
-                        <p className="text-sm text-gray-700">AI suggested provisional RA diagnosis based on initial symptoms and common patterns.</p>
-                      </div>
-                      {/* Add more history items as needed */}
-                    </div>
-                  </div>
-                  {/* {(patient?.history?.length === 0 || !patient?.history) && ( // COMMENTED_OUT - patient.history does not exist
-                     <p className="text-center text-gray-500 py-4">No historical events recorded for this patient.</p>
-                  )} */}
-                   <p className="text-center text-gray-500 py-4">(Patient history feature in this view temporarily adjusted)</p>
-                </div>
-              )}
-
-              {activeTab === 'all_data' && (
-                 <div className="p-6 text-center text-gray-500">All Data view temporarily disabled for testing.</div>
               )}
             </React.Fragment>; 
           })()}

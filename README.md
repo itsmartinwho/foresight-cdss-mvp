@@ -19,7 +19,8 @@ The vision includes additional advanced AI tools (C, D, F) that are planned for 
 
 ## Features (Current Prototype Highlights)
 
-*   **Supabase Integration:** Patient and admission data managed in Supabase (PostgreSQL).
+*   **FHIR-Aligned Data Model:** Core data structures (Patient, Encounter, Condition, Observation) map to FHIR concepts.
+*   **Supabase Integration:** Patient and encounter data managed in Supabase (PostgreSQL).
 *   **Tool A - Foresight Advisor:** AI medical advisor chat (OpenAI powered via `/api/advisor`).
     *   Features citations, follow-up questions, voice input/playback, streamed responses.
 *   **Tool B - Clinical Engine:** Functional AI diagnostic pipeline with:

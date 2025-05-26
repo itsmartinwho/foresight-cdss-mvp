@@ -18,7 +18,7 @@ interface SearchResult {
   patient: Patient;
   snippet?: string; // undefined for name matches
   kind: MatchKind;
-  admissionId?: string; // Needed for consult-specific navigation (future)
+  encounterId?: string; // Needed for consult-specific navigation (future)
 }
 
 interface QuickSearchProps {
@@ -108,24 +108,24 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
 
         if (matches.length >= 10) return;
 
-        // 3) Deep search in admissions / diagnoses / treatments.
-        const admissions = supabaseDataService.getPatientEncounters(p.id);
-        for (const ad of admissions) {
+        // 3) Deep search in encounters / diagnoses / treatments.
+        const encounters = supabaseDataService.getPatientEncounters(p.id);
+        for (const enc of encounters) {
           if (matches.length >= 10) break;
 
           // Reason (Consultation tab)
-          const reasonText = ad.reasonDisplayText || ad.reasonCode;
+          const reasonText = enc.reasonDisplayText || enc.reasonCode;
           if (reasonText && reasonText.toLowerCase().includes(lower)) {
             addIfNotExceeded({
               patient: p,
               kind: "reason",
-              admissionId: ad.id,
+              encounterId: enc.id,
               snippet: buildSnippet(reasonText),
             });
           }
 
           // Diagnoses (Diagnosis tab)
-          const key = `${p.id}_${ad.id}`;
+          const key = `${p.id}_${enc.id}`;
           // const diagMap = (supabaseDataService as any).allDiagnosesByAdmission;
           // const diagnoses: Diagnosis[] = diagMap ? diagMap[key] || [] : [];
           // for (const dx of diagnoses) {
@@ -133,7 +133,7 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
           //     addIfNotExceeded({
           //       patient: p,
           //       kind: "diagnosis",
-          //       admissionId: ad.id,
+          //       encounterId: enc.id,
           //       snippet: buildSnippet(dx.description),
           //     });
           //     break;
@@ -141,13 +141,13 @@ export default function QuickSearch({ className, inputClassName, dropdownClassNa
           // }
 
           // Treatments (Treatment tab)
-          const treatments: Treatment[] = ad.treatments || [];
+          const treatments: Treatment[] = enc.treatments || [];
           for (const t of treatments) {
             if (t.drug && t.drug.toLowerCase().includes(lower)) {
               addIfNotExceeded({
                 patient: p,
                 kind: "treatment",
-                admissionId: ad.id,
+                encounterId: enc.id,
                 snippet: buildSnippet(t.drug),
               });
               break;

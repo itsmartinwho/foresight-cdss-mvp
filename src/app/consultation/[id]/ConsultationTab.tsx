@@ -5,142 +5,136 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea was used, or a contentEditable div
 import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextB as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from '@phosphor-icons/react';
-import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import
-import { Admission, Patient, ClinicalOutputPackage } from '@/lib/types'; // Assuming types path, Import Patient type
+import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import path
+import { Encounter, Patient, ClinicalOutputPackage, DifferentialDiagnosis } from '@/lib/types'; // Renamed Admission to Encounter
 import { supabaseDataService } from '@/lib/supabaseDataService'; // Import supabaseDataService
-import AIAnalysisPanel from '@/components/AIAnalysisPanel';
+import AIAnalysisPanel from '@/components/AIAnalysisPanel'; // Ensure this is the correct path
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { useToast } from "@/components/ui/use-toast";
+import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-interface ConsultationTabProps {
-  selectedAdmission: Admission | null;
-  patientName: string;
-  patient: Patient; // Add patient prop
+function useDebouncedCallback(callback: (...args: any[]) => void, delay: number): (...args: any[]) => void {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (...args: any[]) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  };
 }
 
-const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, patientName, patient }) => {
+interface ConsultationTabProps {
+  selectedEncounter: Encounter | null;
+  patientName: string;
+  patient: Patient | null;
+}
+
+const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedEncounter, patientName, patient }) => {
   const supabase = getSupabaseClient(); // Initialize supabase client
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
   const [editableTranscript, setEditableTranscript] = useState<string>('');
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [lastSavedTranscript, setLastSavedTranscript] = useState<string>('');
   const [transcriptChanged, setTranscriptChanged] = useState<boolean>(false);
   const [cursorPosition, setCursorPosition] = useState<number | null>(null);
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState<boolean>(false); // Added isPaused state
+  const [showPriorAuthModal, setShowPriorAuthModal] = useState(false);
 
   const transcriptAreaRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Added mediaRecorderRef
   const socketRef = useRef<WebSocket | null>(null); // Added socketRef for consistency with original file
 
-  const admissionStateForAutoSaveRef = useRef<{
-    patientId: string | undefined; // Corrected to patientId
-    admissionId: string | undefined;
+  const encounterStateForAutoSaveRef = useRef<{
+    patientBusinessId: string | undefined; // Business ID of the patient
+    encounterSupabaseId: string | undefined; // Stores selectedEncounter.id (UUID)
     transcriptToSave: string;
-    lastSaved: string; // Corrected to lastSaved
+    lastSaved: string;
   } | null>(null);
 
+  // State for AI Analysis Panel
+  const [aiOutput, setAiOutput] = useState<ClinicalOutputPackage | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isSavingAI, setIsSavingAI] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [referralDetails, setReferralDetails] = useState<any>(null);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [priorAuthDetails, setPriorAuthDetails] = useState<any>(null);
+
   useEffect(() => {
-    if (selectedAdmission) {
-      const currentTranscript = selectedAdmission.transcript || '';
+    if (selectedEncounter && patient) { 
+      const currentTranscript = selectedEncounter.transcript || '';
       setEditableTranscript(currentTranscript);
       setLastSavedTranscript(currentTranscript);
       setTranscriptChanged(false);
-      // Reset transcription state if admission changes
       if (ws) {
         ws.close();
         setWs(null);
       }
-      setIsTranscribing(false);
-      setTranscriptionStartTime(null);
-
-      // Initialize admissionStateForAutoSaveRef
-      admissionStateForAutoSaveRef.current = {
-        patientId: patient?.id,
-        admissionId: selectedAdmission.id, // selectedAdmission is confirmed to be non-null here
+      setAiOutput(null);
+      encounterStateForAutoSaveRef.current = {
+        patientBusinessId: selectedEncounter.patientId, 
+        encounterSupabaseId: selectedEncounter.id, // Using the UUID for this ref state
         transcriptToSave: currentTranscript,
         lastSaved: currentTranscript,
       };
-
     } else {
-      setEditableTranscript('');
-      setLastSavedTranscript('');
+      setEditableTranscript("");
+      setLastSavedTranscript("");
       setTranscriptChanged(false);
-      admissionStateForAutoSaveRef.current = null; // Clear ref if no admission
+      if (ws) {
+        ws.close();
+        setWs(null);
+      }
+      setAiOutput(null);
+      encounterStateForAutoSaveRef.current = null;
     }
-  }, [selectedAdmission, ws, patient?.id]); // Added patient?.id, ws is correctly in deps
+  }, [selectedEncounter, patient, ws]);
 
-  // Effect to keep the auto-save ref's transcript data up-to-date
-  useEffect(() => {
-    if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === selectedAdmission?.id) {
-      admissionStateForAutoSaveRef.current.transcriptToSave = editableTranscript;
-      admissionStateForAutoSaveRef.current.lastSaved = lastSavedTranscript;
-    }
-  }, [editableTranscript, lastSavedTranscript, selectedAdmission?.id]);
-
-  const performSave = useCallback(async (patientId: string, admissionId: string, transcriptToSave: string, currentLastSaved: string) => {
-    if (transcriptToSave !== currentLastSaved) {
-      console.log(`Attempting to save. Changed: ${transcriptToSave !== currentLastSaved}. To Save: "${transcriptToSave.substring(0,100)}"...", Last Saved: "${currentLastSaved.substring(0,100)}"..."`);
+  const debouncedSaveTranscript = useDebouncedCallback(async () => {
+    const currentSaveState = encounterStateForAutoSaveRef.current;
+    if (currentSaveState && selectedEncounter && currentSaveState.patientBusinessId && selectedEncounter.encounterIdentifier && currentSaveState.transcriptToSave !== currentSaveState.lastSaved) {
+      console.log("Auto-saving transcript for patient (business ID):", currentSaveState.patientBusinessId, "encounter (business ID):", selectedEncounter.encounterIdentifier);
       try {
-        // Assuming supabaseDataService is available globally or imported elsewhere
-        await supabaseDataService.updateAdmissionTranscript(patientId, admissionId, transcriptToSave);
-        if (admissionId === selectedAdmission?.id) { // Use selectedAdmission from props
-            setLastSavedTranscript(transcriptToSave);
-            setTranscriptChanged(false);
+        const compositeEncounterId = `${currentSaveState.patientBusinessId}_${selectedEncounter.encounterIdentifier}`;
+        await supabaseDataService.updateEncounterTranscript(currentSaveState.patientBusinessId, compositeEncounterId, currentSaveState.transcriptToSave);
+        console.log("Transcript auto-saved for encounter (business ID):", selectedEncounter.encounterIdentifier);
+        if (encounterStateForAutoSaveRef.current && encounterStateForAutoSaveRef.current.encounterSupabaseId === selectedEncounter.id) {
+          encounterStateForAutoSaveRef.current.lastSaved = currentSaveState.transcriptToSave;
         }
-        if (admissionStateForAutoSaveRef.current && admissionStateForAutoSaveRef.current.admissionId === admissionId) {
-            admissionStateForAutoSaveRef.current.lastSaved = transcriptToSave;
-        }
-        console.log("Transcript saved successfully via performSave for admission:", admissionId);
-        return true;
+        setLastSavedTranscript(currentSaveState.transcriptToSave);
+        setTranscriptChanged(false);
       } catch (error) {
-        console.error("Error saving transcript via performSave for admission:", admissionId, error);
-        return false;
+        console.error("Error auto-saving transcript:", error);
       }
-    } else {
-        if (transcriptChanged && admissionId === selectedAdmission?.id){ // Use selectedAdmission from props
-            setTranscriptChanged(false);
-        }
     }
-    return false;
-  }, [selectedAdmission, setLastSavedTranscript, setTranscriptChanged, transcriptChanged]); // Added transcriptChanged
-  
-  const handleSaveTranscript = async () => {
-    if (!selectedAdmission || !patient?.id) { // Combined checks
-        console.warn("Cannot save: Patient or admission data missing.");
-        return;
+  }, 1000);
+
+  const handleTranscriptChange = (newTranscript: string) => {
+    setEditableTranscript(newTranscript);
+    const changed = newTranscript !== (encounterStateForAutoSaveRef.current?.lastSaved || "");
+    setTranscriptChanged(changed);
+    if (encounterStateForAutoSaveRef.current) {
+      encounterStateForAutoSaveRef.current.transcriptToSave = newTranscript;
     }
-    performSave(patient.id, selectedAdmission.id, editableTranscript, lastSavedTranscript);
-  };
-
-  // Add auto-save effect
-  useEffect(() => {
-    const autoSaveOnCleanup = () => {
-      const stateToSave = admissionStateForAutoSaveRef.current;
-      if (stateToSave && stateToSave.patientId && stateToSave.admissionId && (stateToSave.transcriptToSave !== stateToSave.lastSaved)) {
-        console.log(`Auto-saving transcript for previous/unmounting admission ${stateToSave.admissionId}`);
-        performSave(stateToSave.patientId, stateToSave.admissionId, stateToSave.transcriptToSave, stateToSave.lastSaved);
-      }
-    };
-    return autoSaveOnCleanup;
-  }, [selectedAdmission?.id, performSave]); // Added performSave to dependencies
-
-  const getCursorPosition = () => {
-    const selection = window.getSelection();
-    const editor = transcriptAreaRef.current;
-    if (selection && selection.rangeCount > 0 && editor && editor.contains(selection.anchorNode)) {
-      const range = selection.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(editor);
-      preCaretRange.setEnd(range.startContainer, range.startOffset);
-      return preCaretRange.toString().length;
-    }
-    return null;
-  };
-
-  const handleTranscriptChange = (newText: string) => {
-    setEditableTranscript(newText);
-    if (newText !== lastSavedTranscript) {
-      setTranscriptChanged(true);
+    if (changed) {
+      debouncedSaveTranscript();
     }
   };
   
@@ -164,9 +158,9 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
     setCursorPosition(currentCursor);
     console.log("Starting transcription, cursor at:", currentCursor);
 
-    let admissionToUse = selectedAdmission; // Use selectedAdmission from props
+    let encounterToUse = selectedEncounter;
 
-    if (!admissionToUse) {
+    if (!encounterToUse) {
         alert("No active consultation selected. Cannot start transcription.");
         return;
     }
@@ -188,7 +182,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
         'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=false',
         ['token', apiKey]
       );
-      socketRef.current = wsInstance; // Use wsInstance to avoid confusion with state variable ws
+      socketRef.current = wsInstance;
       mediaRecorderRef.current = mediaRecorder;
 
       wsInstance.onmessage = (e) => {
@@ -200,7 +194,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
               setEditableTranscript((prevText) => {
                 const currentText = prevText || '';
                 let newComposedText;
-                let nextCursorPos = cursorPosition; // Use state cursorPosition
+                let nextCursorPos = cursorPosition;
 
                 if (nextCursorPos !== null && nextCursorPos >= 0 && nextCursorPos <= currentText.length) {
                   newComposedText = currentText.slice(0, nextCursorPos) + newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ') + currentText.slice(nextCursorPos);
@@ -209,7 +203,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
                   newComposedText = currentText + (currentText.length > 0 && !currentText.endsWith(' ') && !newTextChunk.startsWith(' ') ? ' ' : '') + newTextChunk;
                   nextCursorPos = newComposedText.length;
                 }
-                setCursorPosition(nextCursorPos); // Update state cursorPosition
+                setCursorPosition(nextCursorPos);
                 setTranscriptChanged(true);
                 return newComposedText;
               });
@@ -290,39 +284,70 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
 
   const applyFormat = (command: string, value?: string) => {
     if (transcriptAreaRef.current) {
-      transcriptAreaRef.current.focus(); // Ensure editor has focus
+      transcriptAreaRef.current.focus();
       document.execCommand(command, false, value);
-      // Update state from DOM after execCommand
       const newText = transcriptAreaRef.current.innerHTML;
-      handleTranscriptChange(newText); // This will set editableTranscript and transcriptChanged
+      handleTranscriptChange(newText); // Call with the string content
     }
   };
 
-  const handleAIResultsSave = async (results: ClinicalOutputPackage) => {
-    if (!selectedAdmission || !patient?.id) {
-      throw new Error('Missing patient or admission data');
+  const handleAIResultsSave = async () => {
+    if (!aiOutput || !aiOutput.diagnosticResult || !selectedEncounter || !patient) {
+      toast({ title: "Error", description: "No AI analysis results to save or patient/encounter not available.", variant: "destructive" });
+      return;
     }
-
+    setIsSavingAI(true);
     try {
-      // Save the AI-generated results to the database
-      // This would typically call supabaseDataService methods to:
-      // 1. Update encounters table with SOAP note and treatments
-      // 2. Insert diagnosis into conditions table
-      // 3. Store any additional data in extra_data
-
-      // For now, we'll just update the SOAP note and treatments
-      if (results.soapNote) {
-        const soapText = `S: ${results.soapNote.subjective}\nO: ${results.soapNote.objective}\nA: ${results.soapNote.assessment}\nP: ${results.soapNote.plan}`;
-        await supabaseDataService.updateAdmissionSOAPNote(patient.id, selectedAdmission.id, soapText);
+      let soapNoteString: string | null = null;
+      if (aiOutput.soapNote) {
+        soapNoteString = typeof aiOutput.soapNote === 'string' ? aiOutput.soapNote : JSON.stringify(aiOutput.soapNote);
       }
 
-      // Refresh the patient data to show the updates
-      window.location.reload(); // Simple refresh for now
+      if (aiOutput.diagnosticResult.differentialDiagnoses && selectedEncounter.encounterIdentifier) {
+        await supabaseDataService.saveDifferentialDiagnoses(
+          selectedEncounter.patientId, // patient business ID
+          selectedEncounter.encounterIdentifier, // encounter business ID
+          aiOutput.diagnosticResult.differentialDiagnoses as DifferentialDiagnosis[] // Type assertion
+        );
+      }
+      
+      if (soapNoteString && selectedEncounter.patientId && selectedEncounter.encounterIdentifier) {
+          const compositeEncounterId = `${selectedEncounter.patientId}_${selectedEncounter.encounterIdentifier}`;
+          await supabaseDataService.updateEncounterSOAPNote(selectedEncounter.patientId, compositeEncounterId, soapNoteString);
+          // Update local encounter state if necessary
+          if(selectedEncounter.soapNote !== soapNoteString) {
+            // This would typically involve re-fetching or updating the selectedEncounter object in parent state
+            console.log("SOAP note updated, UI refresh might be needed for selectedEncounter");
+          }
+      }
+
+      toast({ title: "Success", description: "AI Analysis (Differentials & SOAP) saved.", variant: "success" });
     } catch (error) {
-      console.error('Error saving AI results:', error);
-      throw error;
+      console.error("Error saving AI Analysis to encounter:", error);
+      toast({ title: "Error", description: `Failed to save AI Analysis: ${(error as Error).message}`, variant: "destructive" });
+    } finally {
+      setIsSavingAI(false);
     }
   };
+
+  const openReferralModal = () => {
+    if (aiOutput?.referralDocument?.generatedContent) {
+      setReferralDetails(aiOutput.referralDocument.generatedContent);
+      setShowReferralModal(true);
+    } else {
+      toast({title: "No Referral Document", description: "AI analysis did not generate a referral document.", variant: "default"})
+    }
+  }
+
+  const openPriorAuthModal = () => {
+    if (aiOutput?.priorAuthDocument?.generatedContent) {
+      setPriorAuthDetails(aiOutput.priorAuthDocument.generatedContent);
+      setShowPriorAuthModal(true);
+    }
+     else {
+      toast({title: "No Prior Auth Document", description: "AI analysis did not generate a prior authorization document.", variant: "default"})
+    }
+  }
 
   // JSX for rendering will be added here
   return (
@@ -333,11 +358,11 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
           Consultation Notes & Transcript
           <div className="flex items-center gap-2">
             {transcriptChanged && !isTranscribing && (
-              <Button variant="default" size="sm" onClick={handleSaveTranscript}>
+              <Button variant="default" size="sm" onClick={handleManualSave}>
                 <Save className="h-4 w-4 mr-2" /> Save
               </Button>
             )}
-            {!isTranscribing && selectedAdmission && (
+            {!isTranscribing && selectedEncounter && (
               <Button variant="ghost" size="icon" onClick={startTranscription} title="Start Transcription">
                 <Mic className="h-5 w-5" />
               </Button>
@@ -365,7 +390,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
           </div>
         )}
 
-        {!isTranscribing && selectedAdmission && (
+        {!isTranscribing && selectedEncounter && (
            <div className="mt-2 p-2 border-b border-border flex items-center gap-1">
             <Button variant="outline" size="sm" onClick={() => applyFormat('bold')} title="Bold">
               <Bold className="h-4 w-4" />
@@ -376,7 +401,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
             <Button variant="outline" size="sm" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List">
               <List className="h-4 w-4" />
             </Button>
-            <div className="mx-1 h-5 border-l border-border"></div> {/* Separator */}
+            <div className="mx-1 h-5 border-l border-border"></div>
             <Button variant="outline" size="sm" onClick={() => applyFormat('undo')} title="Undo">
               <Undo className="h-4 w-4" />
             </Button>
@@ -388,7 +413,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
 
       </CardHeader>
       <CardContent className="flex-grow overflow-y-auto">
-        {(selectedAdmission || editableTranscript || isTranscribing) ? (
+        {(selectedEncounter || editableTranscript || isTranscribing) ? (
           <div
             ref={transcriptAreaRef}
             contentEditable={!isTranscribing}
@@ -403,7 +428,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <p>
-              No transcript available. Select an admission or start a new consultation.
+              No transcript available. Select an encounter or start a new consultation.
             </p>
           </div>
         )}
@@ -411,10 +436,10 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({ selectedAdmission, pa
     </Card>
     
     {/* AI Analysis Panel */}
-    {selectedAdmission && patient?.id && (
+    {selectedEncounter && patient?.id && (
       <AIAnalysisPanel
         patientId={patient.id}
-        encounterId={selectedAdmission.id}
+        encounterId={selectedEncounter.id}
         onSave={handleAIResultsSave}
       />
     )}

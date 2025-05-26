@@ -23,6 +23,13 @@ import AllDataViewTab from "@/components/patient-workspace-tabs/AllDataViewTab";
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format } from "date-fns";
+import { toast } from "@/components/ui/use-toast";
+import { buttonVariants } from "@/components/ui/button";
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -33,17 +40,18 @@ interface PatientWorkspaceProps {
 export type DetailedPatientDataType = { patient: Patient; admissions: AdmissionDetailsWrapper[] } | null;
 
 export default function PatientWorkspaceView({ patient: initialPatientStub, initialTab, onBack }: PatientWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState("consultation");
   const [detailedPatientData, setDetailedPatientData] = useState<DetailedPatientDataType>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAdmissionForConsultation, setSelectedAdmissionForConsultation] = useState<Admission | null>(null);
+  const [selectedEncounterForConsultation, setSelectedEncounterForConsultation] = useState<Admission | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [visitToDeleteId, setVisitToDeleteId] = useState<string | null>(null);
+  const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
   const [isStartingNewConsultation, setIsStartingNewConsultation] = useState(false);
   const [newConsultationReason, setNewConsultationReason] = useState('');
   const [newConsultationDate, setNewConsultationDate] = useState<Date | null>(new Date());
   const [newConsultationDuration, setNewConsultationDuration] = useState<number | null>(null);
+  const [sidebarKey, setSidebarKey] = useState(Date.now());
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -74,9 +82,9 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
 
         if (paramAd) {
           const foundAdmissionWrapper = admissionsToSearch.find(aWrapper => aWrapper.admission.id === paramAd && !aWrapper.admission.isDeleted);
-          setSelectedAdmissionForConsultation(foundAdmissionWrapper?.admission || firstActiveNonDeleted);
+          setSelectedEncounterForConsultation(foundAdmissionWrapper?.admission || firstActiveNonDeleted);
         } else {
-          setSelectedAdmissionForConsultation(firstActiveNonDeleted);
+          setSelectedEncounterForConsultation(firstActiveNonDeleted);
         }
       } else {
         setError(`Patient data not found for ${initialPatientStub.id}`);
@@ -133,59 +141,40 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
   
   const { patient } = detailedPatientData;
 
-  const handleDeleteInitiate = () => {
-    if (selectedAdmissionForConsultation) {
-      setVisitToDeleteId(selectedAdmissionForConsultation.id);
-      setShowDeleteConfirmation(true);
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (visitToDeleteId && patient?.id) {
+  const handleDeleteEncounter = () => {
+    if (encounterToDeleteId && patient?.id) {
       const currentPatientId = patient.id;
-      if (supabaseDataService.markAdmissionAsDeleted(currentPatientId, visitToDeleteId)) {
-        setDetailedPatientData((prevData) => {
-          if (!prevData) return prevData;
-          const newAdmissions = prevData.admissions.map(adWrapper => {
-            if (adWrapper.admission.id === visitToDeleteId) {
-              return {
-                ...adWrapper,
-                admission: { ...adWrapper.admission, isDeleted: true, deletedAt: new Date().toISOString() },
-              };
+      if (supabaseDataService.markEncounterAsDeleted(currentPatientId, encounterToDeleteId)) {
+        if (activeAdmissionDetails) {
+          const updatedDetails = activeAdmissionDetails.filter(
+            ew => ew.encounter.id !== encounterToDeleteId
+          );
+          setActiveAdmissionDetails(updatedDetails);
+          if (selectedEncounterForConsultation?.id === encounterToDeleteId) {
+            setSelectedEncounterForConsultation(null);
+            if (updatedDetails.length > 0) {
+              const firstEncounterWrapper = updatedDetails[0];
+              setSelectedEncounterForConsultation(firstEncounterWrapper.encounter);
+              router.push(`/patients/${currentPatientId}?encounterId=${firstEncounterWrapper.encounter.id}`);
+            } else {
+              router.push(`/patients/${currentPatientId}`);
             }
-            return adWrapper;
-          });
-          return { ...prevData, admissions: newAdmissions };
-        });
-
-        const stillActiveAdmissions = activeAdmissionDetails
-            .map(adWrapper => adWrapper.admission)
-            .filter(adm => adm.id !== visitToDeleteId);
-
-        if (stillActiveAdmissions.length > 0) {
-          const sortedActive = [...stillActiveAdmissions].sort((a,b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime());
-          setSelectedAdmissionForConsultation(sortedActive[0]);
-        } else {
-          const newAd = await supabaseDataService.createNewAdmission(currentPatientId);
-          setDetailedPatientData((prevData) => {
-            if (!prevData) return { patient, admissions: [{ admission: newAd, diagnoses: [], labResults: [] }] };
-            const baseAdmissions = prevData.admissions.filter(w => w.admission.id !== visitToDeleteId);
-            return { 
-              ...prevData, 
-              admissions: [{ admission: newAd, diagnoses: [], labResults: [] }, ...baseAdmissions]
-            };
-          });
-          setSelectedAdmissionForConsultation(newAd);
+          }
         }
+        toast({ title: "Encounter Deleted", description: "The encounter has been marked as deleted." });
+      } else {
+        toast({ title: "Error", description: "Failed to delete encounter.", variant: "destructive" });
       }
+      setEncounterToDeleteId(null);
       setShowDeleteConfirmation(false);
-      setVisitToDeleteId(null);
+    } else {
+      toast({ title: "Error", description: "No encounter selected for deletion or patient context missing.", variant: "destructive" });
     }
   };
 
-  const handleDeleteCancel = () => {
+  const handleCancelDelete = () => {
+    setEncounterToDeleteId(null);
     setShowDeleteConfirmation(false);
-    setVisitToDeleteId(null);
   };
 
   const handleFinalizeNewConsultation = async (): Promise<Admission | null> => {
@@ -202,7 +191,7 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
         const newAdmissionsList = [newAdmissionEntry, ...(prev.admissions || [])];
         return { ...prev, admissions: newAdmissionsList };
       });
-      setSelectedAdmissionForConsultation(newAd);
+      setSelectedEncounterForConsultation(newAd);
       setIsStartingNewConsultation(false);
       setActiveTab('consult');
       return newAd;
@@ -211,6 +200,11 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
       setError(err instanceof Error ? err.message : "Failed to create new consultation visit.");
       return null;
     }
+  };
+
+  const openDeleteConfirmation = (encounterId: string) => {
+    setEncounterToDeleteId(encounterId);
+    setShowDeleteConfirmation(true);
   };
 
   return (
@@ -239,31 +233,28 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
               <span>Gender: {patient.gender || 'N/A'}</span>
             </div>
             <Button
-              variant="default" // Use the new default gradient style
-              iconLeft={isStartingNewConsultation ? <X /> : <PlusCircle />} // Conditional icon: X for cancel, PlusCircle for new
+              variant="default"
+              iconLeft={isStartingNewConsultation ? <X /> : <PlusCircle />}
               onClick={async () => {
                 if (isStartingNewConsultation) {
                   setIsStartingNewConsultation(false);
-                  // If cancelling, try to reselect the previously selected (or first available) admission
                   if (activeAdmissionDetails && activeAdmissionDetails.length > 0) {
-                    const previouslySelectedId = selectedAdmissionForConsultation?.id;
-                    // It's important to clear the selection first if your logic relies on it for form reset elsewhere
-                    setSelectedAdmissionForConsultation(null); 
+                    const previouslySelectedId = selectedEncounterForConsultation?.id;
+                    setSelectedEncounterForConsultation(null); 
                     const reselectAdmission = previouslySelectedId 
                       ? activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === previouslySelectedId && !adWrapper.admission.isDeleted)?.admission
                       : activeAdmissionDetails.find(adWrapper => !adWrapper.admission.isDeleted)?.admission;
-                    setSelectedAdmissionForConsultation(reselectAdmission || null);
+                    setSelectedEncounterForConsultation(reselectAdmission || null);
                   } else {
-                    setSelectedAdmissionForConsultation(null);
+                    setSelectedEncounterForConsultation(null);
                   }
                 } else {
-                  // If starting a new one, clear previous selection to allow the new consult form to show correctly
-                  setSelectedAdmissionForConsultation(null); 
+                  setSelectedEncounterForConsultation(null); 
                   setIsStartingNewConsultation(true);
-                  setActiveTab('consult'); // Switch to consult tab for the new form
+                  setActiveTab('consult');
                 }
               }}
-              className="ml-auto" // Keeps it aligned to the right if that was intended
+              className="ml-auto"
             >
               {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
             </Button>
@@ -273,37 +264,39 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
           {!isStartingNewConsultation && (
             <div>
               <label htmlFor="consultation-select-main" className="block text-xs font-medium text-muted-foreground mb-0.5">Select Visit:</label>
-              <select
+              <Select
                 id="consultation-select-main"
                 className={cn(
                   "block w-full max-w-xs pl-3 pr-7 py-1.5 text-sm border-border bg-background focus:outline-none focus:ring-1 focus:ring-neon focus:border-neon rounded-md shadow-sm",
-                  !selectedAdmissionForConsultation ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
+                  !selectedEncounterForConsultation ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                 )}
-                value={selectedAdmissionForConsultation?.id || ""}
-                onChange={(e) => {
-                  const adId = e.target.value;
-                  const foundAd = activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === adId)?.admission || null;
-                  setSelectedAdmissionForConsultation(foundAd);
+                value={selectedEncounterForConsultation?.id || ""}
+                onValueChange={(value) => {
+                  const foundAd = activeAdmissionDetails.find(adWrapper => adWrapper.admission.id === value)?.admission || null;
+                  setSelectedEncounterForConsultation(foundAd);
                   if(foundAd) setActiveTab('consult');
                 }}
                 disabled={showDeleteConfirmation || isStartingNewConsultation}
               >
-                <option value="" disabled>-- Select a consultation --</option>
-                {activeAdmissionDetails.map((adDetailWrapper: AdmissionDetailsWrapper) => (
-                  <option key={adDetailWrapper.admission.id} value={adDetailWrapper.admission.id}>
-                    {new Date(adDetailWrapper.admission.scheduledStart).toLocaleString()} - {adDetailWrapper.admission.reasonDisplayText || adDetailWrapper.admission.reasonCode || 'N/A'}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an encounter..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeAdmissionDetails.map((ew) => (
+                    <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
+                      {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
-          {selectedAdmissionForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
+          {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
             <Button 
               variant="destructive" 
-              onClick={handleDeleteInitiate} 
-              iconLeft={<Trash2 />}
+              onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
               className="mt-4"
-              aria-label="Delete selected visit"
+              aria-label="Delete selected encounter"
               size="sm"
             >
               Delete
@@ -312,29 +305,25 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
         </div>
       </div>
 
-      {showDeleteConfirmation && visitToDeleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="p-6 bg-background shadow-xl max-w-sm">
-            <CardHeader>
-              <CardTitle>Confirm Deletion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Are you sure you want to delete this visit? <br />
-                Scheduled: {
-                  new Date(
-                    activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.scheduledStart || new Date()
-                  ).toLocaleString()
-                }
+      {showDeleteConfirmation && encounterToDeleteId && (
+        <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this encounter? This action cannot be undone immediately, but encounters can be restored by an admin.
+                <br /> <br />
+                Encounter Date: {format(activeAdmissionDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.scheduledStart || new Date(), 'PPP ppp')}
                 <br />
-                Reason: {activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.reasonDisplayText || activeAdmissionDetails.find(adWrap => adWrap.admission.id === visitToDeleteId)?.admission.reasonCode || 'N/A'}
-              </p>
-            </CardContent>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={handleDeleteCancel}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDeleteConfirm}>Delete</Button>
-            </div>
-          </Card>
-        </div>
+                Reason: {activeAdmissionDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.reasonDisplayText || activeAdmissionDetails.find(ew => ew.encounter.id === encounterToDeleteId)?.encounter.reasonCode || 'N/A'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteEncounter} className={buttonVariants({ variant: "destructive" })}>Delete Encounter</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
       <div className="bg-background/70 backdrop-blur-sm border-b px-4 py-1 flex gap-2 sticky top-[calc(2.5rem+3rem)] z-20 overflow-x-auto shadow-sm">
@@ -358,8 +347,8 @@ export default function PatientWorkspaceView({ patient: initialPatientStub, init
           <ConsultationTab
             patient={patient}
             allAdmissions={activeAdmissionDetails}
-            selectedAdmission={selectedAdmissionForConsultation}
-            onSelectAdmission={setSelectedAdmissionForConsultation}
+            selectedEncounter={selectedEncounterForConsultation}
+            onSelectEncounter={setSelectedEncounterForConsultation}
             isStartingNewConsultation={isStartingNewConsultation}
             newConsultationReason={newConsultationReason}
             onNewConsultationReasonChange={setNewConsultationReason}

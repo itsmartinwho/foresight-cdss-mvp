@@ -37,32 +37,44 @@ ENABLE_SOURCE_VERIFICATION = os.getenv("ENABLE_SOURCE_VERIFICATION", "true").low
 class Patient(BaseModel):
     id: str
     gender: str
-    date_of_birth: str
+    date_of_birth: str # Should align with schema: birth_date
     race: str
-    marital_status: str
-    language: str
-    poverty_percentage: float
-    raw_data: Optional[Dict[str, Any]] = None
+    ethnicity: Optional[str] = None # Added
+    # marital_status: str # Consider moving to raw_data or Patient.extra_data if used
+    # language: str # Consider moving to raw_data or Patient.extra_data if used
+    # poverty_percentage: float # Consider moving to raw_data or Patient.extra_data if used
+    raw_data: Optional[Dict[str, Any]] = None # This will hold the full patient data dict
 
-class Admission(BaseModel):
-    id: str
-    patient_id: str
-    start_date: str
-    end_date: str
+class Encounter(BaseModel): # Renamed from Admission
+    id: str # This corresponds to encounter_id from the schema for the business key
+    patient_id: str # This is the patient_supabase_id (FK to patients.id)
+    encounter_type: Optional[str] = None
+    status: Optional[str] = None
+    period_start: Optional[str] = None # Replaces start_date, aligns with schema
+    period_end: Optional[str] = None # Replaces end_date, aligns with schema
+    reason_code: Optional[str] = None
+    reason_display_text: Optional[str] = None
+    # Add other relevant fields from schema if engine needs them directly
+    # e.g. transcript, soap_note. For now, keeping it minimal.
 
-class Diagnosis(BaseModel):
+class Diagnosis(BaseModel): # Assuming this refers to Conditions table
     patient_id: str
-    admission_id: str
+    encounter_id: Optional[str] = None # FK to encounters.id
     code: str
     description: str
+    category: str # problem-list-item or encounter-diagnosis
+    # Add other relevant fields like clinical_status, verification_status
 
 class LabResult(BaseModel):
     patient_id: str
-    admission_id: str
+    encounter_id: Optional[str] = None # FK to encounters.id
     name: str
-    value: float
-    units: str
-    date_time: str
+    value: Optional[str] = None # Changed to str to match schema.sql value TEXT
+    value_type: Optional[str] = None # Added
+    units: Optional[str] = None
+    date_time: Optional[str] = None
+    reference_range: Optional[str] = None
+    flag: Optional[str] = None
 
 class ClinicalSource(BaseModel):
     type: str  # "patient_data", "guideline", "clinical_trial", "research"
@@ -143,6 +155,7 @@ class ClinicalOutputPackage(BaseModel):
     referral_document: Optional[ReferralDocument] = None
     prior_auth_document: Optional[PriorAuthDocument] = None
     evidence_sources: List[ClinicalSource] = []
+    encounter_id: Optional[str] = None # Added to link package to a specific encounter
     # Future: Could add physician_override_details here if captured at point of save
 
 class DebugLogger:
@@ -273,7 +286,17 @@ class ClinicalEngine:
         if not patient_data_dict or patient_data_dict.get("patient", {}).get("id") != patient_id:
             logger.warning(f"Patient data for {patient_id} not provided or ID mismatch.")
             return None
-        return patient_data_dict
+        
+        # Construct a dict that includes demographics and encounters for context
+        # This is a simplified representation. A more robust solution would map
+        # patient_data_dict (which can be complex) to a structured FHIR-like context.
+        context_data = {
+            "patient_demographics": patient_data_dict.get("patient"),
+            "encounters": patient_data_dict.get("encounters", []), # Changed from "admissions"
+            "conditions": patient_data_dict.get("conditions", []),
+            "lab_results": patient_data_dict.get("lab_results", [])
+        }
+        return context_data
 
     async def generate_diagnostic_plan(self, symptoms: List[str], patient: Optional[Patient] = None) -> DiagnosticPlan:
         """
@@ -797,19 +820,17 @@ class ClinicalEngine:
         
         # Get recent lab results if available from patient.raw_data
         recent_labs_data = []
-        if patient.raw_data and "admissions" in patient.raw_data:
-            for admission_data_item in patient.raw_data.get("admissions", []): # Renamed to avoid conflict
-                # Ensure admission_data_item is a dictionary before calling .get()
-                if isinstance(admission_data_item, dict):
-                    recent_labs_data.extend(admission_data_item.get("lab_results", []))
-                else:
-                    logger.warning(f"Skipping admission data item, not a dictionary: {admission_data_item}")
-
+        if patient.raw_data and "lab_results" in patient.raw_data: # Directly access lab_results
+            recent_labs_data = patient.raw_data.get("lab_results", [])
 
         recent_labs = []
         for lab_data in recent_labs_data:
              try:
                 # Assuming lab_data is a dictionary that can be unpacked into LabResult
+                # Ensure lab_data has encounter_id (can be None)
+                if "encounter_id" not in lab_data: # if labs are not tied to encounters in the input
+                    lab_data["encounter_id"] = None
+
                 lab_result = LabResult(**lab_data)
                 recent_labs.append(lab_result)
              except Exception as e: # Broad exception to catch Pydantic validation errors or others
@@ -1054,14 +1075,15 @@ async def run_full_diagnostic(
     llm_client: Any,
     guideline_client: Any,
     clinical_trial_client: Any,
-    observations: Optional[List[str]] = None  # Observations provided by frontend
+    observations: Optional[List[str]] = None,  # Observations provided by frontend
+    target_encounter_id: Optional[str] = None # Optional: to associate output with a specific encounter
 ) -> ClinicalOutputPackage:
     """
     High-level function to run the full diagnostic pipeline.
     Returns a ClinicalOutputPackage.
     
     CURRENT (MVP v0): This function expects `patient_data_dict` to be a comprehensive JSON object
-    containing all relevant patient information (demographics, visits, labs, etc.),
+    containing all relevant patient information (demographics, encounters, labs, etc.),
     pre-fetched and bundled by the calling service (e.g., the FastAPI backend, which in turn
     receives it from the frontend).
     
@@ -1086,20 +1108,32 @@ async def run_full_diagnostic(
     current_patient_id = patient_info_from_dict.get("id", patient_id) # Prefer ID from dict if available
 
     try:
-        patient_model_data = {**patient_info_from_dict}
-        patient_model_data['raw_data'] = patient_data_dict
-        patient = Patient(**patient_model_data)
+        patient_model_input = {
+            "id": current_patient_id,
+            "gender": patient_info_from_dict.get("gender", "Unknown"),
+            "date_of_birth": patient_info_from_dict.get("birth_date", patient_info_from_dict.get("date_of_birth", "Unknown")), # Accommodate birth_date
+            "race": patient_info_from_dict.get("race", "Unknown"),
+            "ethnicity": patient_info_from_dict.get("ethnicity"), # Optional
+            # "marital_status": patient_info_from_dict.get("marital_status", "Unknown"), # If needed by model
+            # "language": patient_info_from_dict.get("language", "Unknown"), # If needed by model
+            # "poverty_percentage": patient_info_from_dict.get("poverty_percentage", 0.0), # If needed by model
+            "raw_data": patient_data_dict # Pass the whole dict here
+        }
+
+        patient = Patient(**patient_model_input)
     except Exception as e:
         logger.error(f"Error creating Patient model for {current_patient_id}: {e}")
         # Fallback to a minimal patient model for robustness, though this might impact downstream quality.
+        # Ensure all required fields for Patient are provided even in fallback
         patient = Patient(
-            id=current_patient_id, 
-            gender=patient_info_from_dict.get("gender", "Unknown"), 
-            date_of_birth=patient_info_from_dict.get("date_of_birth", "Unknown"), 
-            race=patient_info_from_dict.get("race", "Unknown"), 
-            marital_status=patient_info_from_dict.get("marital_status", "Unknown"), 
-            language=patient_info_from_dict.get("language", "Unknown"), 
-            poverty_percentage=patient_info_from_dict.get("poverty_percentage", 0.0),
+            id=current_patient_id,
+            gender=patient_model_input["gender"],
+            date_of_birth=patient_model_input["date_of_birth"],
+            race=patient_model_input["race"],
+            ethnicity=patient_model_input.get("ethnicity"),
+            # marital_status=patient_model_input.get("marital_status", "Unknown"),
+            # language=patient_model_input.get("language", "Unknown"),
+            # poverty_percentage=patient_model_input.get("poverty_percentage", 0.0),
             raw_data=patient_data_dict
         )
         logger.warning(f"Created Patient model with potentially default values for patient_id: {current_patient_id}")
@@ -1121,7 +1155,8 @@ async def run_full_diagnostic(
         return ClinicalOutputPackage(
             patient_id=current_patient_id,
             diagnostic_result=diag_result_error,
-            evidence_sources=[]
+            evidence_sources=[],
+            encounter_id=target_encounter_id
         )
 
     # Stage 2: Plan creation
@@ -1180,7 +1215,8 @@ async def run_full_diagnostic(
         soap_note=soap_note_doc,
         referral_document=referral_doc_obj,
         prior_auth_document=prior_auth_doc_obj,
-        evidence_sources=sources
+        evidence_sources=sources,
+        encounter_id=target_encounter_id # Pass through the encounter_id
     )
 
 if __name__ == "__main__":
@@ -1206,7 +1242,8 @@ if __name__ == "__main__":
             "language": "English",
             "poverty_percentage": 0.0
         },
-        "admissions": [],
+        "encounters": [], # Changed from "admissions"
+        "conditions": [], # Added for completeness
         "lab_results": []
     }
 
@@ -1218,7 +1255,8 @@ if __name__ == "__main__":
             sample_patient_data,
             dummy_llm,
             dummy_guidelines,
-            dummy_trials
+            dummy_trials,
+            target_encounter_id="encounterA1" # Example encounter_id
         )
         # Print the resulting ClinicalOutputPackage as JSON
         print(result.model_dump_json(indent=2))

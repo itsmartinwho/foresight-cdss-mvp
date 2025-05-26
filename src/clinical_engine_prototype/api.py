@@ -30,9 +30,10 @@ class RunDxRequest(BaseModel):
     # by fetching all relevant patient data from Supabase (or other EMR sources)
     # and bundling it into a single JSON object. This reuses existing frontend data-fetching logic.
     # FUTURE: This might be replaced or augmented by a FHIR Bundle, or the backend might
-    # take more responsibility for fetching/constructing this data from patient_id and visit_ids.
+    # take more responsibility for fetching/constructing this data from patient_id and encounter_ids.
     patient_data_dict: Dict[str, Any]
     # fhir_bundle: FHIRBundle # Placeholder for future FHIR-based input
+    target_encounter_id: Optional[str] = None # To associate with a specific encounter
 
 # Dummy clients for the clinical engine - replace with actual client initializations
 class DummyLLMClient:
@@ -96,7 +97,8 @@ async def run_dx_endpoint(request: RunDxRequest):
             patient_data_dict=request.patient_data_dict,
             llm_client=llm_client,
             guideline_client=guideline_client,
-            clinical_trial_client=clinical_trial_client
+            clinical_trial_client=clinical_trial_client,
+            target_encounter_id=request.target_encounter_id
         )
         return diagnostic_package
     except ValueError as ve: # Catching specific errors like circular reference or missing symptoms
@@ -110,6 +112,6 @@ async def run_dx_endpoint(request: RunDxRequest):
 # To run this FastAPI app:
 # uvicorn src.clinical_engine_prototype.api:app --reload
 #
-# Example curl request:
-# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d \'{"patient_id": "patient123", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "date_of_birth": "1980-01-01", "race": "Caucasian", "marital_status": "Married", "language": "English", "poverty_percentage": 150.0}, "visits": [{"id": "visit1", "patient_id": "patient123", "start_date": "2023-01-15T09:00:00Z", "end_date": "2023-01-15T09:30:00Z", "reason": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "lab_results": [{"patient_id": "patient123", "admission_id": "visit1", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}\'
-# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d \'{"patient_id": "patient123", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "date_of_birth": "1980-01-01", "race": "Caucasian", "marital_status": "Married", "language": "English", "poverty_percentage": 150.0}, "visits": [{"id": "visit1", "patient_id": "patient123", "start_date": "2023-01-15T09:00:00Z", "end_date": "2023-01-15T09:30:00Z", "reason": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "lab_results": [{"patient_id": "patient123", "admission_id": "visit1", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}\' 
+# Example curl request (ensure patient_data_dict structure matches schema, e.g. encounters instead of visits, encounter_id instead of admission_id):
+# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d '{"patient_id": "patient123", "target_encounter_id": "enc456", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "birth_date": "1980-01-01", "race": "Caucasian", "ethnicity": "Not Hispanic or Latino"}, "encounters": [{"id": "enc456", "encounter_id": "E001", "patient_id": "patient123", "period_start": "2023-01-15T09:00:00Z", "period_end": "2023-01-15T09:30:00Z", "reason_display_text": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "conditions": [], "lab_results": [{"patient_id": "patient123", "encounter_id": "enc456", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}'
+# curl -X POST "http://127.0.0.1:8000/run-dx" -H "Content-Type: application/json" -d '{"patient_id": "patient123", "target_encounter_id": "enc789", "transcript": "Patient complains of fatigue and joint pain.", "patient_data_dict": {"patient": {"id": "patient123", "gender": "Female", "birth_date": "1980-01-01", "race": "Caucasian", "ethnicity": "Not Hispanic or Latino"}, "encounters": [{"id": "enc789", "encounter_id": "E002", "patient_id": "patient123", "period_start": "2023-01-15T09:00:00Z", "period_end": "2023-01-15T09:30:00Z", "reason_display_text": "Routine checkup", "transcript": "Patient notes mild fatigue.", "soap_note": "S: Mild fatigue. O: Vitals stable. A: Possible viral infection. P: Rest and hydration."}], "conditions": [], "lab_results": [{"patient_id": "patient123", "encounter_id": "enc789", "name": "CBC", "value": "Normal", "units": "", "date_time": "2023-01-15T09:15:00Z"}]}}' 

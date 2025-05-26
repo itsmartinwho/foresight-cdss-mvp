@@ -4,7 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
-import type { Patient, Admission } from "@/lib/types";
+import type { Patient, Encounter } from "@/lib/types";
 import { ArrowUp, ArrowDown, PlusCircle, PlayCircle, Eye, Calendar } from '@phosphor-icons/react';
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DataTable } from "@/components/ui/data-table";
+import { columns as patientColumns } from "./patient-columns";
 
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate' | 'reason';
@@ -36,8 +38,8 @@ interface PatientsListViewProps {
 }
 
 export default function PatientsListView({ onSelect }: PatientsListViewProps) {
-  const [upcomingRowsData, setUpcomingRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
-  const [pastRowsData, setPastRowsData] = useState<Array<{ patient: Patient | null; visit: Admission }>>([]);
+  const [upcomingRowsData, setUpcomingRowsData] = useState<Array<{ patient: Patient | null; encounter: Encounter }>>([]);
+  const [pastRowsData, setPastRowsData] = useState<Array<{ patient: Patient | null; encounter: Encounter }>>([]);
   const [allPatientsData, setAllPatientsData] = useState<Patient[]>([]); // Added state for all patients
   const [isLoading, setIsLoading] = useState(true);
   const [upcomingSortConfig, setUpcomingSortConfig] = useState<SortConfig | null>(null);
@@ -120,25 +122,22 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   }, [allPatientsData, allPatientsSortConfig]);
 
   const sortedRows = useMemo(() => {
-    const sortData = (data: { patient: Patient | null; visit: Admission }[], sortConfig: SortConfig | null) => {
+    const sortData = (data: { patient: Patient | null; encounter: Encounter }[], sortConfig: SortConfig | null) => {
       if (!sortConfig) return data;
       return [...data].sort((a, b) => {
-        let aValue: string | number;
-        let bValue: string | number;
-
-        if (sortConfig.key === 'patientName') {
-          aValue = displayName(a.patient).toLowerCase();
-          bValue = displayName(b.patient).toLowerCase();
-        } else if (sortConfig.key === 'scheduledDate') {
-          aValue = new Date(a.visit.scheduledStart).getTime();
-          bValue = new Date(b.visit.scheduledStart).getTime();
-        } else if (sortConfig.key === 'reason') {
-          aValue = (a.visit.reasonDisplayText || a.visit.reasonCode || "").toLowerCase();
-          bValue = (b.visit.reasonDisplayText || b.visit.reasonCode || "").toLowerCase();
-        } else {
-          return 0; // Should not happen
+        let aValue: any = 'N/A';
+        let bValue: any = 'N/A';
+        if (sortConfig.key === 'patientName' && a.patient && b.patient) {
+          aValue = (a.patient.name || `${a.patient.firstName} ${a.patient.lastName}`).toLowerCase();
+          bValue = (b.patient.name || `${b.patient.firstName} ${b.patient.lastName}`).toLowerCase();
+        } else if (sortConfig.key === 'scheduledStart' && a.encounter && b.encounter) {
+          aValue = new Date(a.encounter.scheduledStart).getTime();
+          bValue = new Date(b.encounter.scheduledStart).getTime();
+        } else if (sortConfig.key === 'reason' && a.encounter && b.encounter) {
+          aValue = (a.encounter.reasonDisplayText || a.encounter.reasonCode || "").toLowerCase();
+          bValue = (b.encounter.reasonDisplayText || b.encounter.reasonCode || "").toLowerCase();
         }
-
+        
         if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
@@ -148,7 +147,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       upcoming: sortData(upcomingRowsData, upcomingSortConfig),
       past: sortData(pastRowsData, pastSortConfig),
     };
-  }, [upcomingRowsData, pastRowsData, upcomingSortConfig, pastSortConfig, displayName]);
+  }, [upcomingRowsData, pastRowsData, upcomingSortConfig, pastSortConfig]);
 
   const renderAllPatientsTable = () => {
     // Core columns in required order
@@ -250,7 +249,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                                 size="sm"
                                 iconLeft={<Calendar />}
                                 className="truncate text-xs"
-                                onClick={() => router.push(`/patients/${patient.id}?ad=${admission.id}`)}
+                                onClick={() => router.push(`/patients/${patient.id}?enc=${admission.id}`)}
                                 title={new Date(admission.scheduledStart).toLocaleString()}
                               >
                                 {new Date(admission.scheduledStart).toLocaleDateString()}
@@ -282,7 +281,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
 
   const renderTable = (
     title: string,
-    data: Array<{ patient: Patient | null; visit: Admission }>,
+    data: Array<{ patient: Patient | null; encounter: Encounter }>,
     tableType: 'upcoming' | 'past'
   ) => {
     const currentSortConfig = tableType === 'upcoming' ? upcomingSortConfig : pastSortConfig;
@@ -303,28 +302,38 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map(({ patient, visit }) => (
-                  <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${visit.id}`} onClick={() => {
-                    if (patient) {
-                      router.push(`/patients/${patient.id}?ad=${visit.id}`);
+                {data.map(({ patient, encounter }) => (
+                  <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${encounter.id}`} onClick={() => {
+                    if (onSelect && patient?.id && encounter.id) {
+                      onSelect(patient.id, encounter.id);
+                    } else if (patient?.id && encounter.id) {
+                      router.push(`/patients/${patient.id}?enc=${encounter.id}`);
                     }
-                  }} className={patient ? "cursor-pointer hover:bg-slate-700/30 border-slate-700/50 transition-colors duration-150 ease-in-out" : "opacity-60"}>
-                  <TableCell className="flex items-center gap-2">
-                    {patient?.photo && (
-                      <Image src={patient.photo} alt={displayName(patient)} width={24} height={24} className="rounded-full inline-block mr-2" />
-                    )}
-                    {displayName(patient)}
+                  }} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Avatar className="h-8 w-8 mr-3">
+                        <AvatarImage src={patient?.photo || "/images/default-avatar.png"} alt={patient?.name || 'Patient'} />
+                        <AvatarFallback>{patient?.firstName?.charAt(0)}{patient?.lastName?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      {patient?.name || `${patient?.firstName} ${patient?.lastName}`.trim()}
+                    </div>
                   </TableCell>
-                  <TableCell>{visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                  <TableCell>{(visit.reasonDisplayText || visit.reasonCode) ?? "—"}</TableCell>
+                  <TableCell>{encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}</TableCell>
+                  <TableCell>{(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     <Button 
-                      variant="secondary"
-                      iconLeft={tableType === 'upcoming' ? <PlayCircle /> : <Eye />}
-                      size="sm"
-                      onClick={() => router.push(`/patients/${patient?.id}?tab=consult&ad=${visit.id}`)}
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click
+                        if (patient?.id && encounter.id) {
+                          router.push(`/patients/${patient?.id}?tab=consult&enc=${encounter.id}`);
+                        }
+                      }}
+                      title="Go to Consultation"
                     >
-                      {tableType === 'upcoming' ? 'Start' : 'View'}
+                      <PlayCircle size={20} className="mr-1" /> Go to Consult
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabaseDataService } from "@/lib/supabaseDataService";
-import type { Patient, ComplexCaseAlert, Admission } from "@/lib/types";
+import type { Patient, ComplexCaseAlert, Encounter } from "@/lib/types";
 import ContentSurface from '@/components/layout/ContentSurface';
 
 // Import shared UI components
@@ -31,19 +31,19 @@ export default function AlertsScreenView({ onAlertClick, allAlerts: rawAlerts }:
 
       for (const alert of alertsToEnrich) {
         let lastConsultDate: string | undefined;
-        const patientAdmissions: Admission[] = supabaseDataService.getPatientEncounters(alert.patientId);
+        const patientEncounters: Encounter[] = supabaseDataService.getPatientEncounters(alert.patientId);
         
-        if (patientAdmissions && patientAdmissions.length > 0) {
-          const sortedAdmissions = [...patientAdmissions].sort((a, b) => {
+        if (patientEncounters && patientEncounters.length > 0) {
+          const sortedEncounters = [...patientEncounters].sort((a, b) => {
             const dateA = a.actualEnd || a.actualStart || a.scheduledStart;
             const dateB = b.actualEnd || b.actualStart || b.scheduledStart;
             return new Date(dateB).getTime() - new Date(dateA).getTime();
           });
-          const mostRecentAdmission = sortedAdmissions[0];
-          if (mostRecentAdmission) {
-            const admissionDate = mostRecentAdmission.actualEnd || mostRecentAdmission.actualStart || mostRecentAdmission.scheduledStart;
-            if (admissionDate) {
-              lastConsultDate = new Date(admissionDate).toLocaleDateString();
+          const mostRecentEncounter = sortedEncounters[0];
+          if (mostRecentEncounter) {
+            const encounterDate = mostRecentEncounter.actualEnd || mostRecentEncounter.actualStart || mostRecentEncounter.scheduledStart;
+            if (encounterDate) {
+              lastConsultDate = new Date(encounterDate).toLocaleDateString();
             }
           }
         }

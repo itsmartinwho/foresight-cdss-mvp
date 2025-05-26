@@ -1,5 +1,7 @@
+import { supabase } from './supabaseClient'; // Assuming supabase client is initialized here
 import { supabaseDataService } from './supabaseDataService';
-import { Patient, Encounter, Diagnosis, LabResult } from './types';
+import { Patient, Encounter, Diagnosis, LabResult, FHIRPatientContext } from './types'; // Removed PatientDataPayload as it's defined by service
+// import { logger } from './logger'; // Removed logger import
 
 export interface FHIRPatientContext {
   patient: Patient;
@@ -22,53 +24,107 @@ export class PatientContextLoader {
     currentEncounterId?: string,
     includeEncounterIds?: string[]
   ): Promise<FHIRPatientContext> {
-    // Ensure data is loaded
+    // Default empty context
+    const defaultContext: FHIRPatientContext = {
+      patient: {
+        id: '',
+        firstName: '',
+        lastName: '',
+        gender: '',
+        dateOfBirth: '',
+        race: '',
+        ethnicity: '',
+        maritalStatus: '',
+        language: '',
+        alerts: []
+      },
+      currentEncounter: undefined,
+      priorEncounters: [],
+      conditions: [],
+      observations: []
+    };
+
+    // Attempt to get data using the service
     const patientData = await supabaseDataService.getPatientData(patientId);
-    
+
     if (!patientData || !patientData.patient) {
-      throw new Error(`Patient ${patientId} not found`);
+      // logger.warn(`PatientContextLoader: Patient data not found for ID: ${patientId}`);
+      console.warn(`PatientContextLoader: Patient data not found for ID: ${patientId}`); // Reverted to console.warn
+      // Consider throwing an error or returning a more specific error state if critical
+      return defaultContext; 
     }
 
     const patient = patientData.patient;
-    const allAdmissions = patientData.admissions || [];
-    
-    // Find current encounter if specified
-    let currentEncounter: Encounter | undefined;
+    const allEncounters = patientData.encounters || []; // Renamed from patientData.admissions
+    // logger.info(`PatientContextLoader: Found ${allEncounters.length} encounters for patient ${patientId}.`);
+    console.log(`PatientContextLoader: Found ${allEncounters.length} encounters for patient ${patientId}.`);
+
+    let currentEncounter: Encounter | undefined = undefined;
     if (currentEncounterId) {
-      console.log(`PatientContextLoader: Searching for currentEncounterId: '${currentEncounterId}'`);
-      allAdmissions.forEach((wrapper, index) => {
-        console.log(`PatientContextLoader: Encounter ${index} has encounterIdentifier: '${wrapper.admission.encounterIdentifier}', id: '${wrapper.admission.id}'`);
-      });
-      const currentEncounterWrapper = allAdmissions.find(
-        wrapper => wrapper.admission.encounterIdentifier === currentEncounterId
+      // The patientData.encounters array from supabaseDataService contains EncounterDetailsWrapper which has an 'encounter' field
+      const currentEncounterWrapper = allEncounters.find(
+        wrapper => wrapper.encounter.encounterIdentifier === currentEncounterId || wrapper.encounter.id === currentEncounterId
       );
-      currentEncounter = currentEncounterWrapper?.admission;
+      if (currentEncounterWrapper) {
+        currentEncounter = currentEncounterWrapper.encounter;
+        defaultContext.currentEncounter = currentEncounter;
+        // logger.info(`PatientContextLoader: Successfully matched currentEncounterId '${currentEncounterId}' to encounter with UUID '${currentEncounter.id}'.`);
+        console.log(`PatientContextLoader: Successfully matched currentEncounterId '${currentEncounterId}' to encounter with UUID '${currentEncounter.id}'.`);
+      } else {
+        // logger.warn(`PatientContextLoader: Provided currentEncounterId '${currentEncounterId}' not found for patient ${patientId}.`);
+        console.warn(`PatientContextLoader: Provided currentEncounterId '${currentEncounterId}' not found for patient ${patientId}.`);
+      }
     }
 
-    // Filter prior encounters based on includeEncounterIds or get all except current
-    const priorEncounters = allAdmissions
+    // Process prior encounters
+    const priorEncounters = allEncounters
       .filter(wrapper => {
+        // Filter based on includeEncounterIds if provided
         if (includeEncounterIds && includeEncounterIds.length > 0) {
-          return includeEncounterIds.includes(wrapper.admission.id);
+          return includeEncounterIds.includes(wrapper.encounter.id); // Check against Encounter UUID
         }
-        // If currentEncounter is defined, exclude it. Otherwise, include all (as none is current).
-        return currentEncounter ? wrapper.admission.id !== currentEncounter.id : true;
+        // Default: if currentEncounter is set, exclude it from priors. Otherwise, include all.
+        return currentEncounter ? wrapper.encounter.id !== currentEncounter.id : true;
       })
-      .map(wrapper => wrapper.admission);
+      .map(wrapper => wrapper.encounter); // Extract the Encounter object
+    
+    defaultContext.priorEncounters = priorEncounters;
+    // logger.info(`PatientContextLoader: Processed ${priorEncounters.length} prior encounters.`);
+    console.log(`PatientContextLoader: Processed ${priorEncounters.length} prior encounters.`);
 
-    // Collect all conditions (diagnoses) for the patient
+    // Process all conditions for the patient from supabaseDataService
     const conditions = supabaseDataService.getPatientDiagnoses(patientId);
+    defaultContext.conditions = conditions.map(cond => ({
+      resourceType: "Condition",
+      clinicalStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-clinical", code: "active" }] }, 
+      verificationStatus: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-verification", code: "confirmed" }] }, 
+      category: [{ coding: [{ system: "http://terminology.hl7.org/CodeSystem/condition-category", code: "encounter-diagnosis" }] }], 
+      code: { text: cond.description || "Unknown Condition", coding: [{ display: cond.description, code: cond.code }] },
+      subject: { reference: `Patient/${patientId}` },
+      encounter: cond.encounterId ? { reference: `Encounter/${cond.encounterId}` } : undefined, 
+    }));
+    // logger.info(`PatientContextLoader: Loaded ${context.conditions.length} conditions.`);
+    console.log(`PatientContextLoader: Loaded ${defaultContext.conditions.length} conditions.`);
 
-    // Collect all observations (lab results) for the patient
-    const observations = supabaseDataService.getPatientLabResults(patientId);
-
-    return {
-      patient,
-      currentEncounter,
-      priorEncounters,
-      conditions,
-      observations
-    };
+    // Process all lab results for the patient from supabaseDataService
+    const labResults = supabaseDataService.getPatientLabResults(patientId);
+    defaultContext.observations = labResults.map(lab => ({
+      resourceType: "Observation",
+      status: "final", 
+      category: [{ coding: [{ system: "http://terminology.hl7.org/CodeSystem/observation-category", code: "laboratory" }] }],
+      code: { text: lab.name || "Unknown Lab Test" },
+      subject: { reference: `Patient/${patientId}` },
+      encounter: lab.encounterId ? { reference: `Encounter/${lab.encounterId}` } : undefined, 
+      effectiveDateTime: lab.dateTime,
+      valueQuantity: typeof lab.value === 'number' ? { value: lab.value, unit: lab.units } : undefined,
+      valueString: typeof lab.value === 'string' ? lab.value : undefined,
+    }));
+    // logger.info(`PatientContextLoader: Loaded ${context.labResults.length} lab results.`);
+    console.log(`PatientContextLoader: Loaded ${defaultContext.observations.length} lab results.`);
+    
+    // logger.info(`PatientContextLoader: Context built successfully for patient ${patientId}. Current Encounter ID (if any): ${currentEncounter?.id}`);
+    console.log(`PatientContextLoader: Context built successfully for patient ${patientId}. Current Encounter ID (if any): ${currentEncounter?.id}`);
+    return defaultContext;
   }
 
   /**
@@ -106,7 +162,7 @@ export class PatientContextLoader {
       conditions: context.conditions.map(cond => ({
         code: cond.code,
         description: cond.description,
-        admissionId: cond.admissionId
+        encounterId: cond.encounterId
       })),
       observations: context.observations.map(obs => ({
         name: obs.name,

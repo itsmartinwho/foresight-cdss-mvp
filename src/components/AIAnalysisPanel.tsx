@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ClinicalOutputPackage } from '@/lib/types';
 import { Brain, FloppyDisk as Save, CircleNotch } from '@phosphor-icons/react';
+import { Spinner } from '@/components/ui/spinner';
+import { Sparkle } from '@phosphor-icons/react';
 
 interface AIAnalysisPanelProps {
   patientId: string;
@@ -209,7 +211,7 @@ export default function AIAnalysisPanel({ patientId, encounterId, onSave }: AIAn
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Save Plan to Visit
+                  Save Plan to Encounter
                 </>
               )}
             </Button>

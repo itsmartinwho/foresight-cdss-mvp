@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { PlusCircle, UserPlus, MagnifyingGlass, PlayCircle } from "@phosphor-icons/react";
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import type { Admission } from '@/lib/types';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Props {
   /** Controls open state from parent */
@@ -213,8 +215,9 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
               )}
               {/* Reason */}
               <div>
-                <label className="font-semibold text-step--1">Reason for visit</label>
-                <Input
+                <Label htmlFor="consultReason" className="font-semibold text-step--1">Reason for encounter</Label>
+                <Textarea 
+                  id="consultReason"
                   placeholder="E.g., joint pain, generalized inflammation"
                   className="mt-1 text-step--1"
                   value={reason}
@@ -322,8 +325,9 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
               </div>
               {/* Reason */}
               <div>
-                <label className="font-semibold text-step--1">Reason for visit</label>
-                <Input
+                <Label htmlFor="consultReasonSm" className="font-semibold text-step--1">Reason for encounter</Label>
+                <Textarea 
+                  id="consultReasonSm"
                   placeholder="E.g., joint pain, generalized inflammation"
                   className="mt-1 text-step--1"
                   value={reason}

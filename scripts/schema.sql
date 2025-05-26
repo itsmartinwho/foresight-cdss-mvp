@@ -1,51 +1,132 @@
--- Schema for Foresight CDSS MVP - Unbundled Fields
+-- Schema for Foresight CDSS MVP - FHIR-Aligned
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Patients Table
 CREATE TABLE IF NOT EXISTS public.patients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Internal Supabase ID
-  patient_id TEXT UNIQUE NOT NULL, -- Original PatientID from TSV
-  name TEXT,
+  patient_id TEXT UNIQUE NOT NULL, -- Original PatientID from TSV (globally unique business ID)
   first_name TEXT,
   last_name TEXT,
   gender TEXT,
-  dob DATE, -- Date of Birth
-  photo_url TEXT,
+  birth_date DATE, -- Changed from dob
   race TEXT,
-  marital_status TEXT,
-  language TEXT,
-  poverty_percentage NUMERIC,
-  alerts JSONB, -- Array of alert objects
-  primary_diagnosis_description TEXT,
-  general_diagnosis_details TEXT, -- General diagnosis notes
-  next_appointment_date TIMESTAMPTZ, -- Timestamp with time zone
-  patient_level_reason TEXT, -- General patient-level reason for contact
+  ethnicity TEXT, -- Added field
+  -- marital_status TEXT, -- Consider moving to extra_data if not consistently available or core
+  -- language TEXT, -- Consider moving to extra_data
+  -- poverty_percentage NUMERIC, -- Consider moving to extra_data
+  -- photo_url TEXT, -- Retained from original, move to extra_data if not core FHIR alignment
+  -- alerts JSONB, -- Retained from original, consider specific alert table or extra_data
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
-  extra_data JSONB -- For any other miscellaneous original fields
+  extra_data JSONB -- For any other miscellaneous fields or less structured FHIR extensions
 );
 
--- Visits/Admissions Table
-CREATE TABLE IF NOT EXISTS public.visits (
+COMMENT ON TABLE public.patients IS 'Stores patient demographic information, aligned with FHIR Patient resource concepts. Contains one record per unique patient.';
+COMMENT ON COLUMN public.patients.id IS 'Internal Supabase UUID, primary key.';
+COMMENT ON COLUMN public.patients.patient_id IS 'Business identifier for the patient (e.g., MRN from source system). Must be unique.';
+COMMENT ON COLUMN public.patients.birth_date IS 'Patient''s date of birth.';
+COMMENT ON COLUMN public.patients.extra_data IS 'JSONB field for storing additional, non-standardized patient information or extensions.';
+
+-- Encounters Table
+CREATE TABLE IF NOT EXISTS public.encounters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Internal Supabase ID
-  admission_id TEXT NOT NULL, -- Original AdmissionID from TSV (not globally unique)
-  patient_supabase_id UUID REFERENCES public.patients(id) ON DELETE CASCADE, -- FK to patients table internal Supabase UUID
-  admission_type TEXT,
-  scheduled_start_datetime TIMESTAMPTZ,
-  scheduled_end_datetime TIMESTAMPTZ,
-  actual_start_datetime TIMESTAMPTZ,
-  actual_end_datetime TIMESTAMPTZ,
-  reason_for_visit TEXT,
+  encounter_id TEXT NOT NULL, -- Original AdmissionID/EncounterID from source (unique per patient)
+  patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE, -- FK to patients table internal Supabase UUID
+  encounter_type TEXT, -- FHIR-aligned: e.g., 'ambulatory', 'inpatient', 'emergency'
+  status TEXT DEFAULT 'finished', -- FHIR-aligned: e.g., 'planned', 'in-progress', 'finished', 'cancelled'
+  -- scheduled_start_datetime TIMESTAMPTZ, -- Retained from original schema
+  -- scheduled_end_datetime TIMESTAMPTZ, -- Retained from original schema
+  -- actual_start_datetime TIMESTAMPTZ, -- Retained from original schema
+  -- actual_end_datetime TIMESTAMPTZ, -- Retained from original schema
+  period_start TIMESTAMPTZ, -- FHIR Period.start
+  period_end TIMESTAMPTZ, -- FHIR Period.end
+  reason_code TEXT, -- Coded reason for encounter (e.g., SNOMED CT code)
+  reason_display_text TEXT, -- Human-readable reason for encounter
   transcript TEXT,
-  soap_note TEXT,
-  treatments JSONB, -- Array of treatment objects
-  prior_auth_justification TEXT,
-  insurance_status TEXT,
+  soap_note TEXT, -- Or consider a separate 'clinical_notes' table linked to encounters
+  treatments JSONB, -- Array of treatment objects or references
+  -- prior_auth_justification TEXT, -- This seems specific, consider moving to extra_data or linking to a document
+  -- insurance_status TEXT, -- This is patient-level or coverage-level, not typically per encounter. Consider linking to a Coverage resource.
+  is_deleted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
-  extra_data JSONB -- For any other miscellaneous original fields from admissions TSV
+  extra_data JSONB -- For any other miscellaneous original fields or FHIR extensions
 );
+
+COMMENT ON TABLE public.encounters IS 'Stores information about patient encounters (visits, consultations), aligned with FHIR Encounter resource concepts.';
+COMMENT ON COLUMN public.encounters.id IS 'Internal Supabase UUID, primary key.';
+COMMENT ON COLUMN public.encounters.encounter_id IS 'Business identifier for the encounter (e.g., Visit ID from source system). Unique within a patient context.';
+COMMENT ON COLUMN public.encounters.patient_id IS 'Foreign key referencing the patient associated with this encounter.';
+COMMENT ON COLUMN public.encounters.encounter_type IS 'Category of the encounter (e.g., outpatient, inpatient).';
+COMMENT ON COLUMN public.encounters.status IS 'The status of the encounter (e.g., planned, finished).';
+COMMENT ON COLUMN public.encounters.period_start IS 'The start date and time of the encounter period.';
+COMMENT ON COLUMN public.encounters.period_end IS 'The end date and time of the encounter period.';
+COMMENT ON COLUMN public.encounters.reason_code IS 'Coded reason for the encounter (e.g., SNOMED CT).';
+COMMENT ON COLUMN public.encounters.reason_display_text IS 'Human-readable description of the reason for the encounter.';
+COMMENT ON COLUMN public.encounters.is_deleted IS 'Flag for soft-deleting encounters.';
+COMMENT ON COLUMN public.encounters.extra_data IS 'JSONB field for storing additional, non-standardized encounter information.';
+
+-- Conditions Table (Diagnoses and Problems)
+CREATE TABLE IF NOT EXISTS public.conditions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+    encounter_id UUID REFERENCES public.encounters(id) ON DELETE SET NULL, -- Encounter where condition was recorded
+    code TEXT NOT NULL, -- ICD-10, SNOMED CT code
+    description TEXT, -- Human-readable description of the condition
+    category TEXT NOT NULL, -- 'problem-list-item' or 'encounter-diagnosis'
+    clinical_status TEXT DEFAULT 'active', -- FHIR Condition.clinicalStatus (active, recurrence, relapse, inactive, remission, resolved)
+    verification_status TEXT DEFAULT 'confirmed', -- FHIR Condition.verificationStatus (unconfirmed, provisional, differential, confirmed, refuted, entered-in-error)
+    onset_datetime TIMESTAMPTZ,
+    recorded_date DATE DEFAULT CURRENT_DATE,
+    note TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    extra_data JSONB
+);
+
+COMMENT ON TABLE public.conditions IS 'Stores patient conditions (diagnoses, problems), aligned with FHIR Condition resource concepts.';
+COMMENT ON COLUMN public.conditions.category IS 'Distinguishes between a problem list item and an encounter diagnosis.';
+COMMENT ON COLUMN public.conditions.clinical_status IS 'The clinical status of the condition.';
+COMMENT ON COLUMN public.conditions.verification_status IS 'The verification status of the condition.';
+
+-- Lab Results (Observations)
+CREATE TABLE IF NOT EXISTS public.lab_results (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+    encounter_id UUID REFERENCES public.encounters(id) ON DELETE SET NULL, -- Encounter where observation was made
+    name TEXT NOT NULL, -- LOINC code or textual name of the lab/observation
+    value TEXT, -- Value of the observation (can be numeric, string, coded)
+    value_type TEXT DEFAULT 'string', -- Helps interpret value: 'numeric', 'string', 'coded', 'boolean', 'datetime'
+    units TEXT,
+    date_time TIMESTAMPTZ, -- When the observation was made or result recorded
+    reference_range TEXT, -- e.g., "70-100"
+    flag TEXT, -- e.g., 'H', 'L', 'A' (abnormal)
+    interpretation TEXT, -- Interpretation of the result
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    extra_data JSONB
+);
+
+COMMENT ON TABLE public.lab_results IS 'Stores laboratory results and other observations, aligned with FHIR Observation resource concepts.';
+COMMENT ON COLUMN public.lab_results.name IS 'Name or code for the observation (e.g., LOINC).';
+COMMENT ON COLUMN public.lab_results.value_type IS 'Indicates the data type of the observation value.';
+
+-- Differential Diagnoses Table
+CREATE TABLE IF NOT EXISTS public.differential_diagnoses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+    encounter_id UUID REFERENCES public.encounters(id) ON DELETE SET NULL,
+    diagnosis_name TEXT NOT NULL,
+    likelihood TEXT, -- e.g., 'High', 'Medium', 'Low', or a numeric score
+    key_factors TEXT,
+    rank_order INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    extra_data JSONB
+);
+
+COMMENT ON TABLE public.differential_diagnoses IS 'Stores differential diagnoses generated by the clinical engine for a given encounter.';
 
 -- Create a function to update the updated_at column
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
@@ -77,58 +158,91 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM pg_trigger
-    WHERE tgname = 'set_visits_updated_at' AND tgrelid = 'public.visits'::regclass
+    WHERE tgname = 'set_encounters_updated_at' AND tgrelid = 'public.encounters'::regclass  -- Changed from visits
   ) THEN
-    CREATE TRIGGER set_visits_updated_at
-    BEFORE UPDATE ON public.visits
+    CREATE TRIGGER set_encounters_updated_at -- Changed from set_visits_updated_at
+    BEFORE UPDATE ON public.encounters -- Changed from visits
     FOR EACH ROW
     EXECUTE FUNCTION trigger_set_timestamp();
   END IF;
 END
 $$;
 
--- DO $$
--- BEGIN
---   IF NOT EXISTS (
---     SELECT 1
---     FROM pg_trigger
---     WHERE tgname = 'set_transcripts_updated_at' AND tgrelid = 'public.transcripts'::regclass
---   ) THEN
---     CREATE TRIGGER set_transcripts_updated_at
---     BEFORE UPDATE ON public.transcripts
---     FOR EACH ROW
---     EXECUTE FUNCTION trigger_set_timestamp();
---   END IF;
--- END
--- $$;
-
--- Ensure the visits.admission_id is not globally unique but is unique per patient.
+-- Add triggers for new tables
 DO $$
 BEGIN
-  -- Drop legacy unique constraint if it exists
-  IF EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'visits_admission_id_key'
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_conditions_updated_at' AND tgrelid = 'public.conditions'::regclass
   ) THEN
-    ALTER TABLE public.visits DROP CONSTRAINT visits_admission_id_key;
+    CREATE TRIGGER set_conditions_updated_at
+    BEFORE UPDATE ON public.conditions
+    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
   END IF;
 END $$;
 
--- Create a composite unique constraint on (patient_supabase_id, admission_id)
-ALTER TABLE public.visits
-  ADD CONSTRAINT visits_patient_admission_unique UNIQUE (patient_supabase_id, admission_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_lab_results_updated_at' AND tgrelid = 'public.lab_results'::regclass
+  ) THEN
+    CREATE TRIGGER set_lab_results_updated_at
+    BEFORE UPDATE ON public.lab_results
+    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_differential_diagnoses_updated_at' AND tgrelid = 'public.differential_diagnoses'::regclass
+  ) THEN
+    CREATE TRIGGER set_differential_diagnoses_updated_at
+    BEFORE UPDATE ON public.differential_diagnoses
+    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+  END IF;
+END $$;
+
+-- Create a composite unique constraint on (patient_id, encounter_id) for the encounters table
+-- Ensure this is added only if it doesn't exist to prevent errors on re-runs.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conrelid = 'public.encounters'::regclass 
+    AND conname = 'encounters_patient_encounter_unique'
+  ) THEN
+    ALTER TABLE public.encounters
+      ADD CONSTRAINT encounters_patient_encounter_unique UNIQUE (patient_id, encounter_id);
+  END IF;
+END $$;
 
 -- Optional: Add indexes for frequently queried columns
 CREATE INDEX IF NOT EXISTS idx_patients_patient_id ON public.patients(patient_id);
-CREATE INDEX IF NOT EXISTS idx_visits_admission_id ON public.visits(admission_id);
-CREATE INDEX IF NOT EXISTS idx_visits_patient_supabase_id ON public.visits(patient_supabase_id);
-CREATE INDEX IF NOT EXISTS idx_transcripts_visit_supabase_id ON public.transcripts(visit_supabase_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_encounter_id ON public.encounters(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_patient_id ON public.encounters(patient_id); -- Changed from idx_visits_patient_supabase_id
+-- CREATE INDEX IF NOT EXISTS idx_transcripts_visit_supabase_id ON public.transcripts(visit_supabase_id); -- Removed as transcripts table is not in the core schema
 
--- Rename patient_id column in visits table to patient_supabase_id to avoid confusion with the original PatientID from TSV
--- This is done last to ensure FK constraints are handled if tables already exist and are being altered.
--- If running on a fresh DB, this ALTER might not be necessary if the CREATE TABLE already has the new name.
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_conditions_patient_id ON public.conditions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_conditions_encounter_id ON public.conditions(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_conditions_code ON public.conditions(code);
+CREATE INDEX IF NOT EXISTS idx_conditions_category ON public.conditions(category);
+
+CREATE INDEX IF NOT EXISTS idx_lab_results_patient_id ON public.lab_results(patient_id);
+CREATE INDEX IF NOT EXISTS idx_lab_results_encounter_id ON public.lab_results(encounter_id);
+CREATE INDEX IF NOT EXISTS idx_lab_results_name ON public.lab_results(name);
+CREATE INDEX IF NOT EXISTS idx_lab_results_date_time ON public.lab_results(date_time);
+
+CREATE INDEX IF NOT EXISTS idx_differential_diagnoses_patient_id ON public.differential_diagnoses(patient_id);
+CREATE INDEX IF NOT EXISTS idx_differential_diagnoses_encounter_id ON public.differential_diagnoses(encounter_id);
+
+-- Removed: Old RENAME COLUMN logic for patient_id to patient_supabase_id as table 'visits' is replaced by 'encounters'
+-- and 'patient_id' is used directly as FK.
+/*
 DO $$ 
 BEGIN
   IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='visits' AND column_name='patient_id') THEN
     ALTER TABLE public.visits RENAME COLUMN patient_id TO patient_supabase_id;
   END IF;
 END $$; 
+*/ 

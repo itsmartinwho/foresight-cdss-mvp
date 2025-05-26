@@ -34,7 +34,7 @@ export interface Encounter {
   actualStart?: string;
   actualEnd?: string;
   reasonCode?: string; // FHIR Encounter.reasonCode.text
-  reasonDisplayText?: string; // User-friendly, verbose reason for visit
+  reasonDisplayText?: string; // User-friendly, verbose reason for encounter
   transcript?: string;
   observations?: string[]; // New field for observations
   soapNote?: string;
@@ -42,6 +42,7 @@ export interface Encounter {
   priorAuthJustification?: string;
   isDeleted?: boolean;
   deletedAt?: string;
+  extra_data?: any; // Added to match schema and usage
 }
 
 // TODO: delete in July 2024 when all downstream code is migrated
@@ -49,14 +50,14 @@ export type Admission = Encounter; // TEMPORARY alias for backward compatibility
 
 export interface Diagnosis {
   patientId: string;
-  admissionId: string;
+  encounterId: string;
   code?: string;
   description?: string;
 }
 
 export interface LabResult {
   patientId: string;
-  admissionId: string;
+  encounterId: string;
   name: string;
   value: number | string;
   units?: string;
@@ -261,19 +262,19 @@ export interface Consultation {
   reason?: string;
 }
 
-// New type for the wrapper around admission details
-export interface AdmissionDetailsWrapper {
-  admission: Admission;
+// New type for the wrapper around encounter details
+export interface EncounterDetailsWrapper {
+  encounter: Encounter;
   diagnoses: Diagnosis[];
   labResults: LabResult[];
-  // Treatments are typically part of the Admission object itself now as per `Admission` type above.
-  // If a specific tab needs treatments at this wrapper level, it can be added, but prefer it on Admission.
+  // Treatments are typically part of the Encounter object itself now as per `Encounter` type above.
+  // If a specific tab needs treatments at this wrapper level, it can be added, but prefer it on Encounter.
 }
 
 export interface PatientDataPayload {
   patient: Patient | null;
-  admissions: Array<{
-    admission: Admission;
+  encounters: Array<{
+    encounter: Encounter;
     diagnoses: Diagnosis[];
     labResults: LabResult[];
   }>;

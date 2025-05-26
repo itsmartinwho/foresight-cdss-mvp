@@ -173,7 +173,7 @@ class SupabaseDataService {
         if (dxRows) {
           this.diagnoses[patientId] = dxRows.map(dx => ({
             patientId: patientId,
-            admissionId: dx.encounter_id || '',
+            encounterId: dx.encounter_id || '',
             code: dx.code,
             description: dx.description,
           }));
@@ -184,7 +184,7 @@ class SupabaseDataService {
         if (labRows) {
           this.labResults[patientId] = labRows.map(lab => ({
             patientId: patientId,
-            admissionId: lab.encounter_id || '',
+            encounterId: lab.encounter_id || '',
             name: lab.name,
             value: lab.value,
             units: lab.units,
@@ -422,7 +422,7 @@ class SupabaseDataService {
             
             const diagnosis: Diagnosis = {
               patientId: originalPatientId,
-              admissionId: dx.encounter_id || '',
+              encounterId: dx.encounter_id || '',
               code: dx.code,
               description: dx.description,
             };
@@ -454,7 +454,7 @@ class SupabaseDataService {
             
             const labResult: LabResult = {
               patientId: originalPatientId,
-              admissionId: lab.encounter_id || '',
+              encounterId: lab.encounter_id || '',
               name: lab.name,
               value: lab.value,
               units: lab.units,
@@ -553,11 +553,11 @@ class SupabaseDataService {
 
     const patientEncounters = this.getPatientEncounters(patientId);
     const encounterDetails = patientEncounters.map(encounter => ({
-      admission: encounter, // Keep 'admission' key for backward compatibility
+      encounter: encounter,
       diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
       labResults: this.getLabResultsForEncounter(patientId, encounter.id),
     }));
-    return { patient, admissions: encounterDetails }; // Keep 'admissions' key for backward compatibility
+    return { patient, encounters: encounterDetails };
   }
 
   getAllAdmissions(): { patient: Patient | null; admission: Encounter }[] {
@@ -574,61 +574,61 @@ class SupabaseDataService {
     return allAds;
   }
 
-  getUpcomingConsultations(): { patient: Patient; visit: Encounter }[] {
+  getUpcomingConsultations(): { patient: Patient; encounter: Encounter }[] {
     if (!this.isLoaded && !this.isLoading) {
         console.error("SupabaseDataService: getUpcomingConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
     }
-    const upcoming: { patient: Patient; visit: Encounter }[] = [];
+    const upcoming: { patient: Patient; encounter: Encounter }[] = [];
     const now = new Date();
     const nowTime = now.getTime();
 
-    Object.values(this.encounters).forEach(ad => {
-      if ((ad as any).isDeleted) return;
-      if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
+    Object.values(this.encounters).forEach(enc => {
+      if ((enc as any).isDeleted) return;
+      if (enc.scheduledStart && typeof enc.scheduledStart === 'string' && enc.scheduledStart.length > 0) {
         try {
-          const startDate = new Date(ad.scheduledStart);
+          const startDate = new Date(enc.scheduledStart);
           const startTime = startDate.getTime();
           if (startDate instanceof Date && !isNaN(startTime)) { 
             const isInFuture = startTime > nowTime;
             if (isInFuture) {
-              const patient = this.patients[ad.patientId];
+              const patient = this.patients[enc.patientId];
               if (patient) {
-                upcoming.push({ patient, visit: ad });
+                upcoming.push({ patient, encounter: enc });
               } else {
-                 console.warn(`SupabaseDataService (Prod Debug): Found upcoming visit ${ad.id} but patient ${ad.patientId} not found in cache.`);
+                 console.warn(`SupabaseDataService (Prod Debug): Found upcoming encounter ${enc.id} but patient ${enc.patientId} not found in cache.`);
               }
             }
           } else {
-             console.warn(`SupabaseDataService (Prod Debug): Invalid date object after parsing scheduledStart for admission ${ad.id}. Original string: ${ad.scheduledStart}`);
+             console.warn(`SupabaseDataService (Prod Debug): Invalid date object after parsing scheduledStart for encounter ${enc.id}. Original string: ${enc.scheduledStart}`);
           }
         } catch (e) {
-            console.warn(`SupabaseDataService (Prod Debug): Error processing date for admission ${ad.id}. Original string: ${ad.scheduledStart}. Error: ${e instanceof Error ? e.message : String(e)}`);
+            console.warn(`SupabaseDataService (Prod Debug): Error processing date for encounter ${enc.id}. Original string: ${enc.scheduledStart}. Error: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     });
-    return upcoming.sort((a, b) => new Date(a.visit.scheduledStart).getTime() - new Date(b.visit.scheduledStart).getTime());
+    return upcoming.sort((a, b) => new Date(a.encounter.scheduledStart).getTime() - new Date(b.encounter.scheduledStart).getTime());
   }
 
-  getPastConsultations(): { patient: Patient; visit: Encounter }[] {
+  getPastConsultations(): { patient: Patient; encounter: Encounter }[] {
     if (!this.isLoaded && !this.isLoading) {
       console.error("SupabaseDataService: getPastConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
     }
-    const past: { patient: Patient; visit: Encounter }[] = [];
+    const past: { patient: Patient; encounter: Encounter }[] = [];
     const now = new Date();
     const nowTime = now.getTime();
 
-    Object.values(this.encounters).forEach(ad => {
-      if ((ad as any).isDeleted) return;
-      if (ad.scheduledStart && typeof ad.scheduledStart === 'string' && ad.scheduledStart.length > 0) {
+    Object.values(this.encounters).forEach(enc => {
+      if ((enc as any).isDeleted) return;
+      if (enc.scheduledStart && typeof enc.scheduledStart === 'string' && enc.scheduledStart.length > 0) {
         try {
-          const startDate = new Date(ad.scheduledStart);
+          const startDate = new Date(enc.scheduledStart);
           const startTime = startDate.getTime();
           if (startDate instanceof Date && !isNaN(startTime)) {
             const isInPast = startTime <= nowTime;
             if (isInPast) {
-              const patient = this.patients[ad.patientId];
+              const patient = this.patients[enc.patientId];
               if (patient) {
-                past.push({ patient, visit: ad });
+                past.push({ patient, encounter: enc });
               }
             }
           }
@@ -637,7 +637,7 @@ class SupabaseDataService {
         }
       }
     });
-    return past.sort((a, b) => new Date(b.visit.scheduledStart).getTime() - new Date(a.visit.scheduledStart).getTime());
+    return past.sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime());
   }
 
   async updateEncounterTranscript(patientId: string, encounterCompositeId: string, transcript: string): Promise<void> {
@@ -1002,12 +1002,12 @@ class SupabaseDataService {
 
   getDiagnosesForEncounter(patientId: string, encounterId: string): Diagnosis[] {
     const patientDiagnoses = this.diagnoses[patientId] || [];
-    return patientDiagnoses.filter(dx => dx.admissionId === encounterId);
+    return patientDiagnoses.filter(dx => dx.encounterId === encounterId);
   }
 
   getLabResultsForEncounter(patientId: string, encounterId: string): LabResult[] {
     const patientLabs = this.labResults[patientId] || [];
-    return patientLabs.filter(lab => lab.admissionId === encounterId);
+    return patientLabs.filter(lab => lab.encounterId === encounterId);
   }
 
   // Backward compatibility aliases

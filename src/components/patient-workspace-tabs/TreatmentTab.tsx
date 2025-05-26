@@ -2,6 +2,8 @@
 import React from 'react';
 import type { Patient, Admission, Diagnosis, LabResult, Treatment } from "@/lib/types";
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function TreatmentTab({ patient, allAdmissions }: { 
   patient: Patient; 
@@ -13,15 +15,25 @@ export default function TreatmentTab({ patient, allAdmissions }: {
   }>
 }) {
   return (
-    <div className="p-6 space-y-6">
-      {allAdmissions.length === 0 && <p className="text-muted-foreground">No admission data to display treatments for.</p>}
-      {allAdmissions.map(({ admission }) => (
-        <div key={admission.id} className="mb-6 pb-4 border-b last:border-b-0">
-          <h3 className="text-step-0 font-semibold text-foreground mb-1">Visit on: {new Date(admission.scheduledStart).toLocaleString()}</h3>
-          <p className="text-xs text-muted-foreground mb-2">Reason: {admission.reasonDisplayText || admission.reasonCode || 'N/A'}</p>
-          <RenderDetailTable title='Treatments for this visit' dataArray={admission.treatments || []} headers={['Drug', 'Status', 'Rationale']} columnAccessors={['drug', 'status', 'rationale']} />
-        </div>
-      ))}
-    </div>
+    <ScrollArea className="h-full p-1">
+      <div className="space-y-4 p-3">
+        {allAdmissions.map(({ admission }) => (
+          <Card key={admission.id} className="shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">
+                Encounter on: {new Date(admission.scheduledStart).toLocaleString()}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Reason: {admission.reasonDisplayText || admission.reasonCode || 'N/A'}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <h4 className="text-sm font-medium mb-2">Treatments for this encounter:</h4>
+              <RenderDetailTable title='Treatments for this encounter' dataArray={admission.treatments || []} headers={['Drug', 'Status', 'Rationale']} columnAccessors={['drug', 'status', 'rationale']} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </ScrollArea>
   );
 } 

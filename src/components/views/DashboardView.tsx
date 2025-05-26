@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { PlayCircle, PlusCircle } from '@phosphor-icons/react';
 import { supabaseDataService } from "@/lib/supabaseDataService";
-import type { Patient, Admission, ComplexCaseAlert } from "@/lib/types";
+import type { Patient, Encounter, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import ContentSurface from '@/components/layout/ContentSurface';
 import { Progress } from "@/components/ui/progress";
 import Image from 'next/image';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Import shared UI components
 import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
@@ -18,7 +19,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import AlertSidePanel from "@/components/ui/AlertSidePanel";
 
 // Type for upcoming appointments, specific to this view
-type UpcomingEntry = { patient: Patient; visit: Admission };
+type UpcomingEntry = { patient: Patient; encounter: Encounter };
 
 interface DashboardViewProps {
   onStartConsult: (p: Patient) => void;
@@ -38,7 +39,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       if (supabaseDataService.getAllPatients().length === 0) {
         await supabaseDataService.loadPatientData();
       }
-      const upcoming = supabaseDataService.getUpcomingConsultations();
+      const upcoming = supabaseDataService.getUpcomingConsultations() as UpcomingEntry[];
       setUpcomingAppointments(upcoming);
       setIsLoadingAppointments(false);
     };
@@ -82,14 +83,14 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
               </TableRow>
             </TableHeader>
             <TableBody className="mobile-card:block sm:table-row-group">
-              {upcomingAppointments.map(({ patient: p, visit }) => (
+              {upcomingAppointments.map(({ patient: p, encounter }) => (
                 <TableRow
-                  key={`upcoming_dashboard_${p.id}_${visit.id}`}
+                  key={`upcoming_dashboard_${p.id}_${encounter.id}`}
                   className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
                 >
                   <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
-                    {visit.scheduledStart ? new Date(visit.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
+                    {encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
                   </TableCell>
                   <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
@@ -100,7 +101,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                   </TableCell>
                   <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                    {visit.reasonDisplayText || visit.reasonCode || 'N/A'}
+                    {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
                   </TableCell>
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
                     <Button
