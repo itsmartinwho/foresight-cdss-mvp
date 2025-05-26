@@ -44,7 +44,7 @@
       "generated_conditions": [
         {
           "patient_id": "a3bf64f7-b223-4b7d-b6e1-16bd35db6a85",
-          "encounterid": "758f8fb5-7d08-4bfd-bc84-1fd53a2e7ded",
+          "encounter_id": "758f8fb5-7d08-4bfd-bc84-1fd53a2e7ded",
           "code": "J01.90",
           "description": "Acute sinusitis, unspecified",
           "category": "encounter-diagnosis",
@@ -829,9 +829,6 @@
           "interpretation": "Low albumin, may indicate malnutrition or protein-losing enteropathy."
         }
       ]
-    }
-  ]
-}
     }
   ]
 }
