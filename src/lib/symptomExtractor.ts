@@ -115,7 +115,7 @@ export class SymptomExtractor {
   }
 }
 
-const симптомы = ["fever", "cough", "headache"];
+const basicSymptoms = ["fever", "cough", "headache"];
 
 /**
  * Placeholder for symptom extraction logic.
@@ -128,11 +128,11 @@ const симптомы = ["fever", "cough", "headache"];
  * - For MVP, a basic keyword spotter might suffice.
  * - Integrate with the main data service to update the encounter record.
  */
-export const симптомыДляПациента = (
-  текстКонсультации: string,
-  известныеСимптомы: string[] = базовыеСимптомы
+export const extractSymptomsForPatient = (
+  consultationText: string,
+  knownSymptoms: string[] = basicSymptoms
 ): string[] => {
-  // Implementation of симптомыДляПациента function
+  // Implementation of extractSymptomsForPatient function
   return [];
 };
 
