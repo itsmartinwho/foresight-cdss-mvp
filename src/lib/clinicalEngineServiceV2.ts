@@ -249,7 +249,9 @@ export class ClinicalEngineServiceV2 {
       } else if (step.description.includes("existing conditions")) {
         if (context.conditions.length > 0) {
           findings = `Patient has ${context.conditions.length} conditions on problem list: `;
-          findings += context.conditions.map(c => c.description || c.code).join(', ');
+          findings += context.conditions.map(c => 
+            c.code?.text || c.code?.coding?.[0]?.display || c.code?.coding?.[0]?.code || "Unknown Condition"
+          ).join(', ');
         } else {
           findings = "No significant past medical history documented.";
         }
@@ -257,7 +259,7 @@ export class ClinicalEngineServiceV2 {
         if (context.observations.length > 0) {
           findings = "Recent lab results:\n";
           context.observations.slice(0, 5).forEach(lab => {
-            findings += `- ${lab.name}: ${lab.value} ${lab.units || ''}`;
+            findings += `- ${lab.code?.text || 'Unknown Test'}: ${lab.valueQuantity?.value ?? lab.valueString ?? 'N/A'} ${lab.valueQuantity?.unit || ''}`;
             if (lab.flag) findings += ` (${lab.flag})`;
             findings += '\n';
           });
@@ -304,10 +306,12 @@ export class ClinicalEngineServiceV2 {
       ];
     } else if (symptoms.includes('fatigue') && symptoms.includes('joint pain')) {
       // Check if patient has existing autoimmune condition
-      const hasAutoimmune = context.conditions.some(c => 
-        c.description?.toLowerCase().includes('arthritis') ||
-        c.code?.startsWith('M05') || c.code?.startsWith('M06')
-      );
+      const hasAutoimmune = context.conditions.some(c => {
+        const descriptionText = c.code?.text || c.code?.coding?.[0]?.display;
+        const conditionCode = c.code?.coding?.[0]?.code;
+        return descriptionText?.toLowerCase().includes('arthritis') ||
+        conditionCode?.startsWith('M05') || conditionCode?.startsWith('M06');
+      });
       
       if (hasAutoimmune) {
         primaryDx = { code: "M06.9", name: "Rheumatoid arthritis, unspecified" };
@@ -396,7 +400,9 @@ export class ClinicalEngineServiceV2 {
       : `Patient reports ${symptoms.join(', ')}.`;
       
     const objective = context.observations.length > 0
-      ? `Recent labs: ${context.observations.slice(0, 2).map(o => `${o.name} ${o.value}${o.units || ''}`).join(', ')}`
+      ? `Recent labs: ${context.observations.slice(0, 2).map(o => 
+          `${o.code?.text || 'Unknown Test'} ${o.valueQuantity?.value ?? o.valueString ?? 'N/A'}${o.valueQuantity?.unit || ''}`
+        ).join(', ')}`
       : "Vital signs stable. Physical exam as documented.";
       
     const assessment = `${diagnosis.diagnosisName} (${diagnosis.diagnosisCode}). ` +

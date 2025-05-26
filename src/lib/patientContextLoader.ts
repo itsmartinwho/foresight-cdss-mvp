@@ -30,6 +30,8 @@ interface FHIRObservation {
   effectiveDateTime?: string;
   valueQuantity?: { value?: number; unit?: string };
   valueString?: string;
+  flag?: string;
+  referenceRange?: string;
 }
 
 export interface FHIRPatientContext {
@@ -147,6 +149,8 @@ export class PatientContextLoader {
       effectiveDateTime: lab.dateTime,
       valueQuantity: typeof lab.value === 'number' ? { value: lab.value, unit: lab.units } : undefined,
       valueString: typeof lab.value === 'string' ? lab.value : undefined,
+      flag: lab.flag,
+      referenceRange: lab.referenceRange
     }));
     // logger.info(`PatientContextLoader: Loaded ${context.labResults.length} lab results.`);
     console.log(`PatientContextLoader: Loaded ${defaultContext.observations.length} lab results.`);
@@ -198,8 +202,8 @@ export class PatientContextLoader {
         value: obs.valueQuantity?.value ?? obs.valueString ?? '',
         units: obs.valueQuantity?.unit,
         dateTime: obs.effectiveDateTime,
-        flag: undefined,
-        referenceRange: undefined
+        flag: obs.flag,
+        referenceRange: obs.referenceRange
       }))
     };
   }
