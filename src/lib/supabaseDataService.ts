@@ -563,20 +563,6 @@ class SupabaseDataService {
     return { patient, encounters: encounterDetails };
   }
 
-  getAllAdmissions(): { patient: Patient | null; admission: Encounter }[] {
-    // console.log('SupabaseDataService (Prod Debug): getAllAdmissions called. isLoaded:', this.isLoaded, 'isLoading:', this.isLoading, 'Count:', Object.keys(this.encounters).length);
-    if (!this.isLoaded && !this.isLoading) {
-        console.error("SupabaseDataService: getAllAdmissions called when data not loaded and not currently loading. THIS IS A BUG.");
-    }
-    const allAds: { patient: Patient | null; admission: Encounter }[] = [];
-    Object.values(this.encounters).forEach(encounter => {
-      if ((encounter as any).isDeleted) return; // skip deleted
-      const patient = this.patients[encounter.patientId] ?? null;
-      allAds.push({ patient, admission: encounter });
-    });
-    return allAds;
-  }
-
   getUpcomingConsultations(): { patient: Patient; encounter: Encounter }[] {
     if (!this.isLoaded && !this.isLoading) {
         console.error("SupabaseDataService: getUpcomingConsultations called when data not loaded and not currently loading. THIS IS A BUG.");
@@ -660,11 +646,6 @@ class SupabaseDataService {
     }
   }
 
-  // Backward compatibility alias
-  async updateAdmissionTranscript(patientId: string, admissionCompositeId: string, transcript: string): Promise<void> {
-    return this.updateEncounterTranscript(patientId, admissionCompositeId, transcript);
-  }
-
   async updateEncounterObservations(
     patientId: string, // Though not directly used in the SQL, good for context/caching if needed
     encounterCompositeId: string, 
@@ -696,15 +677,6 @@ class SupabaseDataService {
     console.log("Observations updated successfully in DB and cache for encounter:", encounterCompositeId);
   }
 
-  // Backward compatibility alias
-  async updateAdmissionObservations(
-    patientId: string,
-    admissionCompositeId: string,
-    observations: string[]
-  ): Promise<void> {
-    return this.updateEncounterObservations(patientId, admissionCompositeId, observations);
-  }
-
   async updateEncounterSOAPNote(patientId: string, encounterCompositeId: string, soapNote: string): Promise<void> {
     const originalEncounterId = encounterCompositeId.split('_').pop();
     if (!originalEncounterId) {
@@ -730,11 +702,6 @@ class SupabaseDataService {
       console.warn(`SupabaseDataService: updateEncounterSOAPNote - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
     }
     console.log("SOAP note updated successfully in DB and cache for encounter:", encounterCompositeId);
-  }
-
-  // Backward compatibility alias
-  async updateAdmissionSOAPNote(patientId: string, admissionCompositeId: string, soapNote: string): Promise<void> {
-    return this.updateEncounterSOAPNote(patientId, admissionCompositeId, soapNote);
   }
 
   async createNewEncounter(
@@ -796,14 +763,6 @@ class SupabaseDataService {
     this.encountersByPatient[patientId].unshift(compositeId);
     this.emitChange();
     return encounter;
-  }
-
-  // Backward compatibility alias
-  async createNewAdmission(
-    patientId: string,
-    opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
-  ): Promise<Encounter> {
-    return this.createNewEncounter(patientId, opts);
   }
 
   // ------------------------------------------------------------------
@@ -868,15 +827,6 @@ class SupabaseDataService {
     return { patient, encounter };
   }
 
-  // Backward compatibility alias
-  async createNewPatientWithAdmission(
-    patientInput: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string },
-    admissionInput?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
-  ): Promise<{ patient: Patient; admission: Encounter }> {
-    const result = await this.createNewPatientWithEncounter(patientInput, admissionInput);
-    return { patient: result.patient, admission: result.encounter };
-  }
-
   // ------------------------------------------------------------------
   // Soft delete helpers (in-memory updates; DB persistence TBD)
   // ------------------------------------------------------------------
@@ -914,11 +864,6 @@ class SupabaseDataService {
     return true;
   }
 
-  // Backward compatibility alias
-  markAdmissionAsDeleted(patientId: string, admissionId: string): boolean {
-    return this.markEncounterAsDeleted(patientId, admissionId);
-  }
-
   /** Restore a previously soft-deleted encounter */
   restoreEncounter(patientId: string, encounterId: string): boolean {
     const enc = this.encounters[encounterId];
@@ -946,11 +891,6 @@ class SupabaseDataService {
 
     this.emitChange();
     return true;
-  }
-
-  // Backward compatibility alias
-  restoreAdmission(patientId: string, admissionId: string): boolean {
-    return this.restoreEncounter(patientId, admissionId);
   }
 
   /** Permanently remove an encounter from cache (DB removal TBD) */
@@ -983,11 +923,6 @@ class SupabaseDataService {
 
     this.emitChange();
     return true;
-  }
-
-  // Backward compatibility alias
-  permanentlyDeleteAdmission(patientId: string, admissionId: string): boolean {
-    return this.permanentlyDeleteEncounter(patientId, admissionId);
   }
 
   unsubscribe(cb: () => void) {
@@ -1025,15 +960,6 @@ class SupabaseDataService {
     const filtered = patientLabs.filter(lab => lab.encounterId === encounterId);
     console.log(`  - Filtered to ${filtered.length} lab results for encounter UUID ${encounterId}`);
     return filtered;
-  }
-
-  // Backward compatibility aliases
-  getDiagnosesForAdmission(patientId: string, admissionId: string): Diagnosis[] {
-    return this.getDiagnosesForEncounter(patientId, admissionId);
-  }
-
-  getLabResultsForAdmission(patientId: string, admissionId: string): LabResult[] {
-    return this.getLabResultsForEncounter(patientId, admissionId);
   }
 
   // Differential Diagnoses methods
