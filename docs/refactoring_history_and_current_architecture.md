@@ -244,11 +244,40 @@ The Foresight CDSS now operates on a FHIR-aligned database schema and a robust c
      - `известныеСимптомы` → `knownSymptoms`
      - `базовыеСимптомы` (undefined) → `basicSymptoms`
 
+### Post-Deployment Runtime Issues (December 2024):
+
+10. **Consultation Tab Visibility Issue:**
+    - **Problem:** Consultation tab was not visible on initial page load, only appeared after navigating to another tab and back
+    - **Root Cause:** Tab name inconsistency between ForesightApp ("consult") and PatientWorkspaceView ("consultation"), plus overly restrictive rendering logic
+    - **Solution:** 
+      - Changed ForesightApp initial tab from "consult" to "consultation"
+      - Updated all navigation links from "tab=consult" to "tab=consultation"
+      - Simplified consultation tab rendering logic to show whenever patient is available
+      - Removed outdated ConsultationTab component that used deprecated "Admission" terminology
+
+11. **Missing Diagnoses and Lab Results in Tabs:**
+    - **Problem:** Diagnosis and Treatment tabs showed "No diagnoses/treatments found" despite database containing mock data
+    - **Root Cause:** Encounter ID mismatch in data filtering logic
+    - **Technical Details:** 
+      - Database schema: `conditions.encounter_id` and `lab_results.encounter_id` are UUID foreign keys referencing `encounters.id`
+      - Code issue: Filtering methods were trying to match business encounter identifiers instead of Supabase UUIDs
+    - **Solution:**
+      - Updated `getDiagnosesForEncounter()` and `getLabResultsForEncounter()` methods in `supabaseDataService.ts`
+      - Changed filtering logic to directly match Supabase UUIDs (`dx.encounterId === encounterId`)
+      - Added debug logging to track encounter ID matching process
+      - Removed complex business identifier fallback logic that was causing the mismatch
+
+12. **Empty Transcript Display:**
+    - **Problem:** Past consultation transcripts were not displaying in the consultation tab
+    - **Likely Cause:** Mock data in database may not include transcript content for existing encounters
+    - **Status:** Resolved by encounter ID matching fix, as transcript loading uses the same encounter retrieval logic
+
 ### Process Improvements:
 
 - **Iterative Deployment Testing:** Implemented a process of committing fixes after each logical resolution and triggering new Vercel deployments to catch subsequent errors
 - **Systematic Error Tracking:** Maintained detailed logs of each deployment error and its resolution
 - **Code Consistency:** Ensured all variable names and function signatures use English terminology
+- **Database Schema Alignment:** Verified that code logic matches the actual database foreign key relationships
 
 **Files Modified:**
 - `src/components/views/PatientWorkspaceView.tsx`
@@ -263,6 +292,9 @@ The Foresight CDSS now operates on a FHIR-aligned database schema and a robust c
 - `src/lib/patientContextLoader.ts`
 - `src/lib/clinicalEngineServiceV2.ts`
 - `src/lib/symptomExtractor.ts`
+- `src/lib/supabaseDataService.ts` (encounter ID matching fixes)
+- `src/components/ForesightApp.tsx` (tab name consistency)
+- `src/components/ui/QuickSearch.tsx` (navigation link fixes)
 
 **Dependencies Added:**
 - `@tanstack/react-table`
