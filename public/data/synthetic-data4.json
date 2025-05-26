@@ -1,0 +1,308 @@
+{
+  "synthetic_data": [
+    {
+      "patient_supabase_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+      "encounter_supabase_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+      "generated_encounter_updates": {
+        "reason_code": "M06.9",
+        "reason_display_text": "Follow-up for Rheumatoid Arthritis: fatigue and joint pain",
+        "transcript": "Doctor: Good morning Bob. It's good to see you. How have you been feeling since our last visit? You mentioned ongoing fatigue and joint pain.\nBob: Morning, Doctor. Some days are better than others. The fatigue is still quite persistent, and my hands and knees have been particularly achy this past month, especially in the mornings.\nDoctor: I understand, Bob. We're managing your Rheumatoid Arthritis, and these flare-ups can happen. Have you noticed any new joints becoming swollen or tender?\nBob: My right wrist has been a bit swollen, and the stiffness in my hands in the morning seems to last longer now, maybe an hour or so.\nDoctor: Okay. And are the current medications providing any relief for the pain and stiffness?\nBob: The methotrexate helps generally, but these last few weeks, it feels less effective for these flare-ups. The pain is about a 6 out of 10 on bad days.\nDoctor: We may need to adjust your treatment plan. Let's do an examination and then we can discuss ordering some blood tests to check your inflammation markers. We'll get to the bottom of this, Bob.",
+        "soap_note": "S: Bob, a 75-year-old male, presents for follow-up of Rheumatoid Arthritis. Reports persistent fatigue and increased joint pain, particularly in hands (MCPs, PIPs) and knees, over the past month. Morning stiffness lasts about 60 minutes. Notes new swelling in the right wrist. Current medication (Methotrexate) feels less effective recently. Pain rated 6/10 on bad days.\nO: Temp 37.1C, HR 78, BP 130/80. Examination reveals tenderness and mild swelling in bilateral MCP and PIP joints. Right wrist shows mild synovitis with restricted range of motion. Knees demonstrate mild crepitus and tenderness. No new skin rashes or nodules noted.\nA: Rheumatoid Arthritis, likely experiencing a flare. Fatigue and joint pain consistent with active disease.\nP: 1. Order labs: CBC, ESR, CRP, Anti-CCP, RF to assess disease activity and inflammation. 2. Consider adding a short course of low-dose corticosteroids for flare management. 3. Discuss potential adjustment of DMARD therapy if labs confirm significant flare and current regimen is sub-optimal. 4. Reinforce joint protection strategies and refer to occupational therapy if hand function significantly impaired. 5. Follow-up in 2 weeks to review lab results and assess response to any new interventions.",
+        "observations": "Patient appears fatigued but in no acute distress. Mild ulnar deviation noted in hands. Swelling and tenderness more pronounced in right wrist compared to left. Gait is slow but stable.",
+        "treatments": "[{\"treatment_name\":\"Continue Methotrexate\",\"treatment_type\":\"medication\",\"dosage\":\"15mg weekly\",\"route\":\"PO\",\"instructions\":\"Continue current dosage, take with folic acid as prescribed.\",\"prescribed_date\":\"2025-05-25\"},{\"treatment_name\":\"Prednisone\",\"treatment_type\":\"medication\",\"dosage\":\"5mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"7 days\",\"instructions\":\"For acute flare, take with food in the morning. Taper as directed if symptoms improve.\",\"prescribed_date\":\"2025-05-25\"},{\"treatment_name\":\"Rest and Joint Protection\",\"treatment_type\":\"lifestyle\",\"instructions\":\"Balance rest and activity. Use assistive devices if needed to reduce joint stress.\"},{\"treatment_name\":\"Cold/Heat Therapy\",\"treatment_type\":\"physical_therapy\",\"instructions\":\"Apply cold packs to swollen joints for 15-20 minutes, or heat for stiffness as needed.\"}]"
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+          "encounter_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+          "code": "M05.9",
+          "description": "Rheumatoid arthritis with rheumatoid factor, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-03-15",
+          "note": "Patient has a long-standing history of RA, currently experiencing a flare."
+        },
+        {
+          "patient_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+          "encounter_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+          "code": "M06.09",
+          "description": "Rheumatoid arthritis without rheumatoid factor, multiple sites",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-04-25",
+          "note": "Current flare involving hands, wrists, and knees."
+        },
+        {
+          "patient_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+          "encounter_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+          "code": "M19.90",
+          "description": "Osteoarthritis, unspecified site",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2020-01-01",
+          "note": "Considered as a contributing factor to joint pain given age, but primary picture is RA flare."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+          "encounter_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+          "name": "Erythrocyte Sedimentation Rate (ESR)",
+          "value": "45",
+          "value_type": "numeric",
+          "units": "mm/hr",
+          "date_time": "2025-05-25T10:00:00Z",
+          "reference_range": "0-22 mm/hr (men under 50), 0-29 mm/hr (men over 50)",
+          "flag": "H",
+          "interpretation": "Elevated ESR, suggestive of active inflammation."
+        },
+        {
+          "patient_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+          "encounter_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+          "name": "C-Reactive Protein (CRP)",
+          "value": "15.2",
+          "value_type": "numeric",
+          "units": "mg/L",
+          "date_time": "2025-05-25T10:00:00Z",
+          "reference_range": "< 10.0 mg/L",
+          "flag": "H",
+          "interpretation": "Elevated CRP, indicating inflammation, consistent with RA flare."
+        },
+        {
+          "patient_id": "457f70f6-eef0-4ba9-b9c9-d0ca0f45e392",
+          "encounter_id": "c166f2ef-6498-4b44-8411-b6e31615110b",
+          "name": "Rheumatoid Factor (RF)",
+          "value": "120",
+          "value_type": "numeric",
+          "units": "IU/mL",
+          "date_time": "2025-05-25T10:00:00Z",
+          "reference_range": "< 14 IU/mL",
+          "flag": "H",
+          "interpretation": "Positive Rheumatoid Factor, consistent with seropositive RA."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "dec7a5a1-abc4-4df7-8d39-5dc99d523e95",
+      "encounter_supabase_id": "06d3b7d1-cd1d-461c-82a0-369e443870ca",
+      "generated_encounter_updates": {
+        "reason_code": "H81.10",
+        "reason_display_text": "Workup for difficulty walking and dizziness in elderly patient",
+        "transcript": "Doctor: Hello Eleanor, please come in. Your chart says you've been having some difficulty walking and episodes of dizziness. Can you tell me more about that?\nEleanor: Yes, Doctor. It's been happening for a few months now, but it seems to be getting a bit worse. Sometimes when I stand up too quickly, or if I turn my head suddenly, the room starts to spin for a little while. And I just don't feel as steady on my feet as I used to.\nDoctor: I see. When the room spins, Eleanor, how long does that usually last?\nEleanor: Oh, just a few seconds, maybe up to a minute at most. But it's quite unsettling.\nDoctor: Any nausea with it? Or any hearing changes or ringing in your ears?\nEleanor: Sometimes a little bit of nausea, but no changes to my hearing or ringing. My daughter is worried I might fall.\nDoctor: That's a valid concern. We'll certainly look into this. We'll do a few tests today, including checking your blood pressure lying and standing, and some balance tests. Depending on what we find, we might consider a referral. How does that sound, Eleanor?\nEleanor: That sounds like a good plan, Doctor. Thank you.",
+        "soap_note": "S: Eleanor, an 84-year-old female, presents with a several-month history of intermittent dizziness and difficulty walking. Describes dizziness as room-spinning vertigo, lasting seconds to a minute, often triggered by quick head movements or postural changes (standing up). Occasional mild nausea associated. Denies tinnitus, hearing loss, or focal neurological deficits. Daughter is concerned about fall risk.\nO: BP supine 140/82, HR 70. BP standing 125/75, HR 78 (Orthostatic drop noted). Gait slightly wide-based and cautious. Romberg test negative. Dix-Hallpike maneuver to the right elicits transient nystagmus and vertigo. Cranial nerves II-XII intact. Strength 5/5 globally. Coordination intact.\nA: 1. Benign Paroxysmal Positional Vertigo (BPPV) likely, given history and positive Dix-Hallpike. 2. Orthostatic hypotension contributing to dizziness on standing. 3. Age-related gait instability. \nP: 1. Perform Epley maneuver for right-sided BPPV in office. 2. Educate on managing orthostatic hypotension: rise slowly, ensure adequate hydration, consider compression stockings. 3. Recommend home safety evaluation and use of assistive device (e.g., cane) if gait instability persists. 4. Refer to Physical Therapy for vestibular rehabilitation and balance training. 5. Follow-up in 1-2 weeks to assess BPPV symptoms and tolerance to interventions.",
+        "observations": "Patient is alert and oriented. Dix-Hallpike maneuver positive for right posterior canal BPPV. Mild orthostatic drop in blood pressure observed. Uses a cane for ambulation today, appears slightly unsteady.",
+        "treatments": "[{\"treatment_name\":\"Epley Maneuver\",\"treatment_type\":\"procedure\",\"instructions\":\"Performed in office for right posterior canal BPPV.\",\"prescribed_date\":\"2025-05-26\"},{\"treatment_name\":\"Patient Education on Orthostatic Hypotension\",\"treatment_type\":\"education\",\"instructions\":\"Advised to rise slowly from sitting/lying, ensure adequate fluid intake, and consider compression stockings.\"},{\"treatment_name\":\"Referral to Physical Therapy\",\"treatment_type\":\"referral\",\"instructions\":\"For vestibular rehabilitation and balance training to improve gait stability and reduce fall risk.\"},{\"treatment_name\":\"Home Safety Recommendations\",\"treatment_type\":\"lifestyle\",\"instructions\":\"Discussed removing trip hazards, ensuring good lighting, and using handrails.\"}]"
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "dec7a5a1-abc4-4df7-8d39-5dc99d523e95",
+          "encounter_id": "06d3b7d1-cd1d-461c-82a0-369e443870ca",
+          "code": "H81.13",
+          "description": "Benign paroxysmal positional vertigo, bilateral",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-03-01",
+          "note": "Right posterior canal BPPV confirmed by Dix-Hallpike. Symptoms reported for several months."
+        },
+        {
+          "patient_id": "dec7a5a1-abc4-4df7-8d39-5dc99d523e95",
+          "encounter_id": "06d3b7d1-cd1d-461c-82a0-369e443870ca",
+          "code": "I95.1",
+          "description": "Orthostatic hypotension",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-03-01",
+          "note": "Documented drop in BP upon standing, contributing to dizziness."
+        },
+        {
+          "patient_id": "dec7a5a1-abc4-4df7-8d39-5dc99d523e95",
+          "encounter_id": "06d3b7d1-cd1d-461c-82a0-369e443870ca",
+          "code": "R29.6",
+          "description": "Repeated falls",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2025-02-01",
+          "note": "High risk of falls due to dizziness and gait instability; specific fall history to be explored."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "dec7a5a1-abc4-4df7-8d39-5dc99d523e95",
+          "encounter_id": "06d3b7d1-cd1d-461c-82a0-369e443870ca",
+          "name": "Complete Blood Count (CBC)",
+          "value": "See individual components",
+          "value_type": "string",
+          "units": null,
+          "date_time": "2025-05-26T09:45:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "Ordered to rule out anemia as a contributor to fatigue/dizziness. Results pending."
+        },
+        {
+          "patient_id": "dec7a5a1-abc4-4df7-8d39-5dc99d523e95",
+          "encounter_id": "06d3b7d1-cd1d-461c-82a0-369e443870ca",
+          "name": "Basic Metabolic Panel (BMP)",
+          "value": "See individual components",
+          "value_type": "string",
+          "units": null,
+          "date_time": "2025-05-26T09:45:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "Ordered to check electrolytes and renal function. Results pending."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "ab29fbcf-e1b3-4842-8a55-53249741a685",
+      "encounter_supabase_id": "ec2c2089-78c2-4838-85de-05c78e1ab688",
+      "generated_encounter_updates": {
+        "reason_code": "J06.9",
+        "reason_display_text": "Patient presents with cough and mild upper respiratory symptoms for 3 days.",
+        "transcript": "Doctor: Good morning Alice, I understand you've been having a cough. Tell me more about it.\nAlice: Hi Doctor. Yes, it started about three days ago, just a bit of a tickle and now it's a more persistent cough. I've also been feeling a bit stuffy and tired.\nDoctor: Any fever, sore throat, or body aches, Alice?\nAlice: No fever, maybe a very mild sore throat this morning, but no significant body aches.\nDoctor: Alright, let's take a listen to your lungs. (Doctor performs auscultation) Your lungs sound clear. Based on your symptoms, it sounds like a common cold, an upper respiratory infection, likely viral.\nAlice: That's what I was thinking. Is there anything I should take?\nDoctor: For now, I recommend symptomatic treatment. Plenty of rest, stay hydrated. You can use saline nasal spray for the stuffiness. If the cough is bothersome, an over-the-counter cough suppressant might help. We generally don't prescribe antibiotics for viral infections as they aren't effective. Watch for any worsening symptoms, like a high fever or difficulty breathing, and if those occur, please come back or seek urgent care, Alice.\nAlice: Okay, Doctor. That makes sense. Thank you.",
+        "soap_note": "S: Alice, a 35-year-old female, presents with a 3-day history of cough and mild upper respiratory symptoms including nasal congestion and fatigue. Reports onset of tickle in throat progressing to persistent cough. Denies fever, significant body aches. Notes a very mild sore throat this morning. No known sick contacts.\nO: Vitals: Temp 37.0C, HR 72 bpm, RR 16/min, BP 120/78 mmHg, O2 Sat 99% on RA. General: Alert, in no acute distress. HEENT: Nasal mucosa mildly congested, pharynx mildly erythematous without exudate. Neck: No cervical lymphadenopathy. Lungs: Clear to auscultation bilaterally, no wheezes or crackles. Heart: RRR, no murmurs.\nA: Acute upper respiratory infection (URI), likely viral, given symptom complex and absence of significant fever or signs of bacterial infection. Differential includes common cold, mild influenza, allergic rhinitis (less likely given acute onset).\nP: 1. Reassurance provided regarding likely viral etiology. 2. Advised symptomatic care: rest, hydration, saline nasal spray. 3. OTC analgesics (e.g., acetaminophen or ibuprofen) for mild discomfort if needed. 4. OTC cough suppressant (e.g., dextromethorphan) for bothersome cough if desired. 5. Advised to monitor symptoms and return to clinic or seek urgent care if symptoms worsen, high fever develops, or respiratory distress occurs. 6. No antibiotics prescribed at this time.",
+        "observations": "Patient appears in no acute distress. Mild nasal congestion observed. Cough is currently non-productive. Pharynx shows mild erythema.",
+        "treatments": "[{\"treatment_name\":\"Symptomatic care\",\"treatment_type\":\"self-care\",\"instructions\":\"Encourage rest, increase fluid intake (water, tea, broth), use a humidifier if available to ease congestion and cough.\",\"prescribed_date\":\"2025-05-24\"},{\"treatment_name\":\"Saline Nasal Spray\",\"treatment_type\":\"medication\",\"dosage\":\"2 sprays per nostril\",\"route\":\"Nasal\",\"frequency\":\"PRN\",\"instructions\":\"For nasal congestion, may use every 4-6 hours as needed.\",\"prescribed_date\":\"2025-05-24\"},{\"treatment_name\":\"Dextromethorphan\",\"treatment_type\":\"medication\",\"dosage\":\"10-20mg\",\"route\":\"PO\",\"frequency\":\"q4-6h PRN\",\"instructions\":\"For bothersome cough. Do not exceed 120mg in 24 hours.\",\"prescribed_date\":\"2025-05-24\"}]"
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "ab29fbcf-e1b3-4842-8a55-53249741a685",
+          "encounter_id": "ec2c2089-78c2-4838-85de-05c78e1ab688",
+          "code": "J06.9",
+          "description": "Acute upper respiratory infection, unspecified",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-05-21",
+          "note": "Patient reports symptoms started 3 days prior to visit. Likely viral etiology."
+        },
+        {
+          "patient_id": "ab29fbcf-e1b3-4842-8a55-53249741a685",
+          "encounter_id": "ec2c2089-78c2-4838-85de-05c78e1ab688",
+          "code": "J00",
+          "description": "Acute nasopharyngitis [common cold]",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2025-05-21",
+          "note": "Symptoms highly consistent with common cold."
+        },
+        {
+          "patient_id": "ab29fbcf-e1b3-4842-8a55-53249741a685",
+          "encounter_id": "ec2c2089-78c2-4838-85de-05c78e1ab688",
+          "code": "J30.9",
+          "description": "Allergic rhinitis, unspecified",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2025-05-21",
+          "note": "Less likely due to acute onset and lack of typical allergic features, but kept in differential due to congestion."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "ab29fbcf-e1b3-4842-8a55-53249741a685",
+          "encounter_id": "ec2c2089-78c2-4838-85de-05c78e1ab688",
+          "name": "Rapid Influenza Diagnostic Test (RIDT)",
+          "value": "Negative",
+          "value_type": "coded",
+          "units": null,
+          "date_time": "2025-05-24T10:00:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "No influenza A or B antigen detected. Does not rule out influenza as sensitivity varies."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "00e5e926-02a2-4069-8c0f-d32e7bbcbcee",
+      "encounter_supabase_id": "36f97d91-babd-413b-820a-dc330a4312cc",
+      "generated_encounter_updates": {
+        "reason_code": "G44.209",
+        "reason_display_text": "Tension-type headache, unspecified, not intractable",
+        "transcript": "Doctor: Hi Charlie, come on in. You're here today because of a headache, is that right?\nCharlie: Yes, Doctor. I've had this dull ache in my head for the past two days. It's mostly around my temples and sometimes feels like a band around my head.\nDoctor: I see. On a scale of 1 to 10, with 10 being the worst, how would you rate the pain, Charlie?\nCharlie: Right now, it's about a 3 or 4. It was a bit worse yesterday. It's not throbbing, just a constant pressure.\nDoctor: Any nausea, vomiting, or sensitivity to light or sound?\nCharlie: No, none of that. Just the headache and I've been feeling a bit stressed with work lately.\nDoctor: Stress can certainly be a trigger. Have you taken anything for it?\nCharlie: I took some ibuprofen yesterday, and it helped a little.\nDoctor: Okay, Charlie. Let's check a few things. I'll check your blood pressure and then do a quick neurological exam.",
+        "soap_note": "S: Charlie, a 40-year-old male, presents with a 2-day history of bilateral headache described as a dull, constant pressure, like a 'band around the head,' localized to the temples. Pain rated 3-4/10 currently, was higher yesterday. Denies nausea, vomiting, photophobia, phonophobia, or visual disturbances. Reports recent work-related stress. Ibuprofen provided mild relief.\nO: Vitals: Temp 36.8C, HR 68, BP 125/80, RR 16. General: Alert, well-appearing. HEENT: No scalp tenderness. PERRLA. EOMI. Neck: Supple, no nuchal rigidity. Neuro: Cranial nerves II-XII intact. Motor strength 5/5 throughout. Sensation intact. Reflexes 2+ symmetric. Cerebellar exam normal. Gait normal.\nA: Tension-type headache, likely exacerbated by stress. No red flag symptoms suggestive of more serious pathology.\nP: 1. Reassurance given. 2. Recommend continued use of OTC analgesics (e.g., ibuprofen or acetaminophen) as needed for pain. 3. Discuss stress management techniques (e.g., exercise, relaxation). 4. Advise to maintain regular sleep, meals, and hydration. 5. Follow up if headaches worsen, change in character, become more frequent, or if new neurological symptoms develop.",
+        "observations": "Patient appears tired. No focal neurological deficits on examination. Scalp is non-tender to palpation. Good range of motion in neck.",
+        "treatments": "[{\"treatment_name\":\"Ibuprofen\",\"treatment_type\":\"medication\",\"dosage\":\"400mg\",\"route\":\"PO\",\"frequency\":\"q6-8h PRN with food\",\"instructions\":\"For headache relief. Do not exceed 1200mg in 24 hours.\",\"prescribed_date\":\"2025-05-23\"},{\"treatment_name\":\"Stress Management Education\",\"treatment_type\":\"education\",\"instructions\":\"Discussed importance of stress reduction techniques such as regular exercise, adequate sleep, and relaxation practices.\"},{\"treatment_name\":\"Hydration and Regular Meals\",\"treatment_type\":\"lifestyle\",\"instructions\":\"Advised to maintain adequate fluid intake and regular meal schedule to prevent headache triggers.\"}]"
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "00e5e926-02a2-4069-8c0f-d32e7bbcbcee",
+          "encounter_id": "36f97d91-babd-413b-820a-dc330a4312cc",
+          "code": "G44.209",
+          "description": "Tension-type headache, unspecified, not intractable",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-05-21",
+          "note": "Patient reports 2-day history of headache consistent with tension-type."
+        },
+        {
+          "patient_id": "00e5e926-02a2-4069-8c0f-d32e7bbcbcee",
+          "encounter_id": "36f97d91-babd-413b-820a-dc330a4312cc",
+          "code": "G43.909",
+          "description": "Migraine, unspecified, not intractable, without status migranious condition",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2025-05-21",
+          "note": "Considered, but lack of associated symptoms (nausea, photophobia) makes tension headache more likely."
+        },
+        {
+          "patient_id": "00e5e926-02a2-4069-8c0f-d32e7bbcbcee",
+          "encounter_id": "36f97d91-babd-413b-820a-dc330a4312cc",
+          "code": "R53.1",
+          "description": "Weakness",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-05-20",
+          "note": "Patient reports general fatigue potentially related to stress."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "8b986b1d-8f17-4529-914f-04c557bfb2e0",
+      "encounter_supabase_id": "1db39e2a-6c28-4c57-94ce-0b8abe63f6d4",
+      "generated_encounter_updates": {
+        "reason_code": "H66.001",
+        "reason_display_text": "Acute suppurative otitis media without spontaneous rupture of eardrum, right ear",
+        "transcript": "Doctor: Hi Diana, and hi Mom/Dad. Diana, I hear your ear has been bothering you and you've had a bit of a fever. Can you point to which ear hurts?\nDiana: (Points to right ear) This one.\nParent: Yes, Doctor. She started complaining of ear pain yesterday evening, and she felt warm last night. We gave her some children's acetaminophen which helped with the fever temporarily.\nDoctor: Okay. Diana, does it hurt a lot? Like a sharp pain or an ache?\nDiana: It aches. And it feels full.\nDoctor: Any runny nose or cough, Diana? Or has she been pulling at her ear, Parent?\nParent: A little bit of a runny nose for a couple of days, but not much cough. Yes, she was tugging at her right ear quite a bit last night.\nDoctor: Alright, Diana, I'm going to take a look in your ears with my special light. It won't hurt. (Doctor performs otoscopy). Okay, her right eardrum is quite red and bulging. That looks like an ear infection. \nParent: Oh dear, I was afraid of that.\nDoctor: It's very common in children, Diana. We'll get you some medicine to help it feel better.",
+        "soap_note": "S: Diana, a 10-year-old female, presents with mother, complaining of right ear pain and subjective fever starting yesterday evening. Mother reports Diana was tugging at her right ear. Pain described as an ache with a sensation of fullness. Associated with a mild runny nose for 2 days. Acetaminophen provided temporary fever relief. No significant cough. No known allergies.\nO: Vitals: Temp 38.2C (tympanic), HR 90, RR 20. General: Alert, appears uncomfortable but not in acute distress. HEENT: Right tympanic membrane (TM) erythematous, bulging, with loss of landmarks. Left TM clear, pearly gray. Nasal mucosa mildly congested. Pharynx clear.\n A: Acute Otitis Media (AOM), right ear.\nP: 1. Prescribe Amoxicillin suspension 90mg/kg/day divided BID for 7 days for AOM. 2. Counsel parent on proper administration, potential side effects (e.g., diarrhea), and importance of completing the full course. 3. Recommend continued use of antipyretics/analgesics (acetaminophen or ibuprofen) as needed for fever and pain. 4. Advise follow-up if no improvement in 48-72 hours or if symptoms worsen. 5. Discuss typical course of AOM and signs of complications.",
+        "observations": "Child is cooperative but whimpers slightly during right ear examination. Right TM is markedly erythematous and bulging. No purulent discharge noted in canal.",
+        "treatments": "[{\"treatment_name\":\"Amoxicillin\",\"treatment_type\":\"medication\",\"dosage\":\"Calculated based on weight (e.g., 400mg if child is ~20kg)\",\"route\":\"PO\",\"frequency\":\"BID\",\"duration\":\"7 days\",\"instructions\":\"Complete full course even if feeling better. May cause diarrhea. Take with food if stomach upset occurs.\",\"prescribed_date\":\"2025-05-26\"},{\"treatment_name\":\"Acetaminophen\",\"treatment_type\":\"medication\",\"dosage\":\"Age/weight appropriate dose (e.g., 15mg/kg/dose)\",\"route\":\"PO\",\"frequency\":\"q4-6h PRN\",\"instructions\":\"For fever and pain relief. Do not exceed 5 doses in 24 hours.\",\"prescribed_date\":\"2025-05-26\"},{\"treatment_name\":\"Ibuprofen\",\"treatment_type\":\"medication\",\"dosage\":\"Age/weight appropriate dose (e.g., 10mg/kg/dose)\",\"route\":\"PO\",\"frequency\":\"q6-8h PRN\",\"instructions\":\"For fever and pain relief, can alternate with acetaminophen.\",\"prescribed_date\":\"2025-05-26\"}]"
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "8b986b1d-8f17-4529-914f-04c557bfb2e0",
+          "encounter_id": "1db39e2a-6c28-4c57-94ce-0b8abe63f6d4",
+          "code": "H66.001",
+          "description": "Acute suppurative otitis media without spontaneous rupture of eardrum, right ear",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-05-25",
+          "note": "Right TM erythematous and bulging on otoscopy."
+        },
+        {
+          "patient_id": "8b986b1d-8f17-4529-914f-04c557bfb2e0",
+          "encounter_id": "1db39e2a-6c28-4c57-94ce-0b8abe63f6d4",
+          "code": "J00",
+          "description": "Acute nasopharyngitis [common cold]",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2025-05-24",
+          "note": "Preceding mild runny nose reported by parent."
+        }
+      ],
+      "generated_lab_results": []
+    }
+  ]
+}

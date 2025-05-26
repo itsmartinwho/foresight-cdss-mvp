@@ -1,0 +1,909 @@
+{
+  "synthetic_data": [
+    {
+      "patient_supabase_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+      "encounter_supabase_id": "6c59d1e8-3dde-4fc6-a383-3aafa8b8529f",
+      "generated_encounter_updates": {
+        "reason_code": "K00.6",
+        "reason_display_text": "Patient presents with pain and swelling in lower right jaw due to impacted wisdom tooth.",
+        "transcript": "Doctor: Hello Laura, what brings you in today?\nLaura: Hi Doctor, I've been having a lot of pain in my lower right jaw for the past week, and it's swollen.\nDoctor: I see. Let me take a look. (Examines mouth) It looks like your wisdom tooth is impacted and causing some inflammation. We call this pericoronitis.\nLaura: Oh, is that serious?\nDoctor: It can be quite uncomfortable and lead to infection if not treated. I'll prescribe some antibiotics and pain relief for now, and we'll need to get an X-ray to see its exact position. Then we can discuss options for removing the tooth.",
+        "soap_note": "S: Laura, a 27 y/o female (DOB 1963-07-16), reports increasing pain and swelling in the lower right posterior jaw for 1 week. Difficulty opening mouth fully. Pain worsens with chewing.\nO: Vital signs stable. Oral exam reveals inflamed, erythematous gingival tissue overlying a partially erupted tooth #32. Tender to palpation. Mild trismus.\nA: Impacted lower right third molar (#32) with acute pericoronitis.\nP: 1. Prescribe Amoxicillin 500mg TID for 7 days. 2. Prescribe Ibuprofen 600mg PRN for pain. 3. Advise warm salt water rinses. 4. Order panoramic X-ray. 5. Discuss referral to oral surgeon for extraction.",
+        "observations": "Partially erupted lower right third molar with significant gingival inflammation and tenderness. Patient appears in discomfort.",
+        "treatments": "[{\"treatment_name\":\"Amoxicillin\",\"treatment_type\":\"medication\",\"dosage\":\"500mg\",\"route\":\"PO\",\"frequency\":\"TID\",\"duration\":\"7 days\",\"instructions\":\"Take with food to minimize GI upset.\",\"prescribed_date\":\"1991-01-01\"},{\"treatment_name\":\"Ibuprofen\",\"treatment_type\":\"medication\",\"dosage\":\"600mg\",\"route\":\"PO\",\"frequency\":\"PRN for pain, Q6H\",\"duration\":\"As needed\",\"instructions\":\"Take with food. Do not exceed 2400mg in 24 hours.\",\"prescribed_date\":\"1991-01-01\"},{\"treatment_name\":\"Warm salt water rinses\",\"treatment_type\":\"home_care\",\"instructions\":\"Rinse mouth with warm salt water 3-4 times daily.\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "K00.6",
+          "description": "Impacted tooth with pericoronitis",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1990-12-25",
+          "note": "Lower right third molar (#32) with pericoronitis. Symptoms started approximately one week prior to visit.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "6c59d1e8-3dde-4fc6-a383-3aafa8b8529f"
+        },
+        {
+          "code": "K05.20",
+          "description": "Aggressive periodontitis, unspecified",
+          "category": "differential-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1990-12-14",
+          "note": "Considered due to localized severe inflammation, pending further evaluation.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "6c59d1e8-3dde-4fc6-a383-3aafa8b8529f"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Panoramic Dental X-ray",
+          "value": "Lower right third molar (#32) horizontally impacted against second molar. Radiolucency consistent with inflammation around crown.",
+          "value_type": "string",
+          "units": null,
+          "date_time": "1991-01-01T01:45:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "Confirms impaction and associated pericoronitis. Indicates need for extraction.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "6c59d1e8-3dde-4fc6-a383-3aafa8b8529f"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+      "encounter_supabase_id": "503853a7-d6c9-4bdb-8cf3-af315fed8807",
+      "generated_encounter_updates": {
+        "reason_code": "S63.502A",
+        "reason_display_text": "Patient c/o left hand pain after a fall. Suspected ligament sprain of left wrist.",
+        "transcript": "Doctor: Good afternoon, Laura. I understand you've injured your left hand?\nLaura: Yes, Doctor. I tripped and fell onto my outstretched hand yesterday, and my wrist has been really painful and swollen since.\nDoctor: I'm sorry to hear that. Let's have a look. (Examines left hand/wrist) There's noticeable swelling and tenderness here over the carpal bones. Does it hurt when I do this?\nLaura: Ouch, yes, that's very tender.\nDoctor: Okay, based on the mechanism of injury and your symptoms, I suspect a sprain. We should get an X-ray to rule out any fractures. For now, we'll splint it and I recommend rest, ice, compression, and elevation.",
+        "soap_note": "S: Laura reports falling on an outstretched left hand yesterday (1992-08-31). Complains of severe pain, swelling, and limited motion in the left wrist. Pain is rated 7/10, sharp, and worsens with movement.\nO: Physical examination reveals moderate swelling, ecchymosis, and point tenderness over the dorsal and radial aspect of the left wrist. Decreased range of motion in all directions. No visible deformity. Neurovascular status intact distally.\nA: Acute left wrist sprain. Differential includes scaphoid fracture, other carpal bone fracture.\nP: 1. X-ray of left wrist (AP, lateral, scaphoid views). 2. Apply volar splint for immobilization. 3. Prescribe Naproxen 500mg BID for 5 days. 4. RICE instructions (Rest, Ice, Compression, Elevation). 5. Follow-up in 3-5 days to review X-ray results and reassess.",
+        "observations": "Moderate swelling and ecchymosis noted over the dorsal aspect of the left wrist. Significant tenderness to palpation over the scaphoid region. Limited ROM due to pain.",
+        "treatments": "[{\"treatment_name\":\"Left Wrist X-ray\",\"treatment_type\":\"diagnostic\",\"instructions\":\"AP, lateral, and scaphoid views ordered.\",\"prescribed_date\":\"1992-09-01\"},{\"treatment_name\":\"Volar Splint Application\",\"treatment_type\":\"procedure\",\"instructions\":\"Applied to left wrist for immobilization.\",\"prescribed_date\":\"1992-09-01\"},{\"treatment_name\":\"Naproxen\",\"treatment_type\":\"medication\",\"dosage\":\"500mg\",\"route\":\"PO\",\"frequency\":\"BID\",\"duration\":\"5 days\",\"instructions\":\"Take with food.\",\"prescribed_date\":\"1992-09-01\"},{\"treatment_name\":\"RICE Protocol\",\"treatment_type\":\"lifestyle\",\"instructions\":\"Advised Rest, Ice, Compression, and Elevation of the left wrist.\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "S63.502A",
+          "description": "Sprain of unspecified carpal joint of left wrist, initial encounter",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1992-08-31",
+          "note": "Injury sustained due to fall on outstretched hand.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "503853a7-d6c9-4bdb-8cf3-af315fed8807"
+        },
+        {
+          "code": "S62.002A",
+          "description": "Fracture of navicular [scaphoid] bone of left wrist, initial encounter for closed fracture",
+          "category": "differential-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1992-08-31",
+          "note": "To be ruled out by X-ray due to tenderness in anatomical snuffbox.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "503853a7-d6c9-4bdb-8cf3-af315fed8807"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "X-ray Left Wrist (3 views)",
+          "value": "No acute fracture or dislocation identified. Soft tissue swelling evident. Scaphoid views unremarkable.",
+          "value_type": "string",
+          "units": null,
+          "date_time": "1992-09-01T15:30:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "No bony injury identified. Findings consistent with soft tissue injury/sprain.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "503853a7-d6c9-4bdb-8cf3-af315fed8807"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+      "encounter_supabase_id": "9f16caa0-dd02-4777-aba9-87e56e2065bb",
+      "generated_encounter_updates": {
+        "reason_code": "C79.01",
+        "reason_display_text": "Secondary malignant neoplasm of left kidney and renal pelvis. Patient for staging and treatment planning.",
+        "transcript": "Doctor: Hello Laura, please come in. We need to discuss the findings from your recent scans regarding your kidney.\nLaura: Hello Doctor. Yes, I've been very worried.\nDoctor: The imaging confirms a secondary malignant neoplasm in your left kidney and renal pelvis. This means cancer cells from another primary site have spread there.\nLaura: Oh my. What does that mean for treatment?\nDoctor: We need to determine the primary cancer first, if it's not already known. Then, treatment will depend on that, and may involve chemotherapy, radiation, or surgery, or a combination. We will also perform further staging workup. I understand this is a lot to take in, and we will go through all the options and support available to you.",
+        "soap_note": "S: Laura, DOB 1963-07-16, presents for discussion of imaging results showing a mass in the left kidney, consistent with her known history of (e.g., breast cancer - assuming a plausible primary site if not provided).\nO: Review of CT scan and PET scan confirms metastatic lesion in the left kidney and renal pelvis. ECOG performance status 1.\n A: Secondary malignant neoplasm of left kidney and renal pelvis (C79.01). Primary site likely (e.g., breast, C50.9). Staging to be completed.\nP: 1. Discuss diagnosis and implications with patient. 2. Refer to Medical Oncology for systemic treatment planning. 3. Refer to Urology/Surgical Oncology for consideration of nephrectomy or local therapy if appropriate. 4. Order full blood panel including renal function, tumor markers. 5. Provide patient with emotional support resources.",
+        "observations": "Patient appears anxious but is coping. Understanding of diagnosis and need for further evaluation and multidisciplinary team approach discussed. Imaging shows a 3cm lesion in the upper pole of the left kidney suspicious for metastasis.",
+        "treatments": "[{\"treatment_name\":\"Oncology Consultation\",\"treatment_type\":\"referral\",\"instructions\":\"Referral to Medical Oncologist for systemic therapy evaluation.\",\"prescribed_date\":\"1992-10-10\"},{\"treatment_name\":\"Urology Consultation\",\"treatment_type\":\"referral\",\"instructions\":\"Referral to Urologist/Surgical Oncologist for local treatment options.\",\"prescribed_date\":\"1992-10-10\"},{\"treatment_name\":\"Counseling/Support Group Referral\",\"treatment_type\":\"supportive_care\",\"instructions\":\"Offer referral for emotional support and counseling.\",\"prescribed_date\":\"1992-10-10\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "C79.01",
+          "description": "Secondary malignant neoplasm of left kidney and renal pelvis",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1992-09-20",
+          "note": "Confirmed by imaging. Primary site under investigation or previously known.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "9f16caa0-dd02-4777-aba9-87e56e2065bb"
+        },
+        {
+          "code": "C50.919",
+          "description": "Malignant neoplasm of unspecified site of unspecified female breast",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1990-05-15",
+          "note": "Presumed primary site if not already established.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "9f16caa0-dd02-4777-aba9-87e56e2065bb"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "CT Scan Abdomen/Pelvis with contrast",
+          "value": "3cm heterogeneously enhancing mass in the upper pole of the left kidney, suspicious for metastatic deposit. No other abdominal/pelvic metastases seen.",
+          "value_type": "string",
+          "units": null,
+          "date_time": "1992-10-08T14:00:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "Confirms renal metastasis.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "9f16caa0-dd02-4777-aba9-87e56e2065bb"
+        },
+        {
+          "name": "Creatinine, Serum",
+          "value": "1.0",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "1992-10-10T10:00:00Z",
+          "reference_range": "0.6-1.2",
+          "flag": null,
+          "interpretation": "Renal function currently within normal limits.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "9f16caa0-dd02-4777-aba9-87e56e2065bb"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+      "encounter_supabase_id": "ffe94084-6d39-4303-95b9-574e5351cb2d",
+      "generated_encounter_updates": {
+        "reason_code": "E71.3",
+        "reason_display_text": "Patient evaluated for suspected disorder of fatty-acid oxidation.",
+        "transcript": "Doctor: Good morning Laura. Your referral mentioned concerns about a possible disorder of fatty-acid oxidation. Can you tell me about your symptoms?\nLaura: Yes, I've been having episodes of extreme tiredness, muscle weakness, especially after exercise or if I haven't eaten for a while. Sometimes I feel quite sick to my stomach too.\nDoctor: How long has this been happening?\nLaura: It's been on and off for a few years, but seems to be getting more frequent lately.\nDoctor: I see. These symptoms can be associated with issues in how your body processes fats for energy. We'll need to run some specific blood tests and possibly genetic testing to investigate this further. It's important we get a clear picture.",
+        "soap_note": "S: Laura, DOB 1963-07-16, presents with recurrent episodes of profound fatigue, muscle weakness/pain (myalgia), and occasional nausea, particularly triggered by fasting or prolonged physical exertion. Symptoms present for several years, increasing in frequency over past 6 months.\nO: General exam unremarkable between episodes. No acute distress. Neurological exam: normal strength, reflexes, and sensation currently. Cardiovascular: RRR, no murmurs. Abdomen: soft, non-tender.\nA: Suspected disorder of fatty-acid oxidation (e.g., MCAD deficiency, LCHAD deficiency). R/O metabolic myopathy, mitochondrial disorder.\nP: 1. Order acylcarnitine profile (blood spot or plasma). 2. Order plasma free fatty acids and glucose. 3. Consider urine organic acids. 4. Genetic testing for common FAO disorders panel. 5. Dietary counseling regarding avoidance of prolonged fasting and importance of regular carbohydrate intake. 6. Follow up to review results and discuss further management.",
+        "observations": "Patient appears well-nourished. No overt dysmorphic features. History is suggestive of a metabolic disorder triggered by catabolic stress. Episodes resolve with rest and carbohydrate intake.",
+        "treatments": "[{\"treatment_name\":\"Acylcarnitine Profile\",\"treatment_type\":\"diagnostic_test\",\"instructions\":\"Blood test to evaluate for fatty acid oxidation disorders.\",\"prescribed_date\":\"2004-10-17\"},{\"treatment_name\":\"Plasma Free Fatty Acids & Glucose\",\"treatment_type\":\"diagnostic_test\",\"instructions\":\"Blood test to assess fat and glucose metabolism.\",\"prescribed_date\":\"2004-10-17\"},{\"treatment_name\":\"Dietary Counseling\",\"treatment_type\":\"lifestyle_modification\",\"instructions\":\"Educate on avoiding prolonged fasting, ensuring regular carbohydrate intake, especially during illness or increased activity.\",\"prescribed_date\":\"2004-10-17\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "E71.3",
+          "description": "Disorders of fatty-acid oxidation",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2002-10-01",
+          "note": "Symptoms present for years, investigation initiated. Suspected based on clinical presentation.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "ffe94084-6d39-4303-95b9-574e5351cb2d"
+        },
+        {
+          "code": "R53.1",
+          "description": "Weakness",
+          "category": "symptom",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2002-10-01",
+          "note": "Episodic muscle weakness, reported by patient.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "ffe94084-6d39-4303-95b9-574e5351cb2d"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Plasma Acylcarnitine Profile",
+          "value": "Pending",
+          "value_type": "string",
+          "units": null,
+          "date_time": "2004-10-17T19:30:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "Ordered to evaluate for specific fatty acid oxidation defects.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "ffe94084-6d39-4303-95b9-574e5351cb2d"
+        },
+        {
+          "name": "Creatine Kinase (CK)",
+          "value": "180",
+          "value_type": "numeric",
+          "units": "U/L",
+          "date_time": "2004-10-17T19:30:00Z",
+          "reference_range": "22-198",
+          "flag": null,
+          "interpretation": "Within normal limits at baseline, may be elevated during symptomatic episodes.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "ffe94084-6d39-4303-95b9-574e5351cb2d"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+      "encounter_supabase_id": "22048876-a758-40ca-9f40-9bd018a67a04",
+      "generated_encounter_updates": {
+        "reason_code": "M10.062",
+        "reason_display_text": "Left ankle pain and swelling, suspected gout.",
+        "transcript": "Doctor: Hi Laura, you're here for your left ankle? Tell me what's been going on.\nLaura: It's been really painful for the last few days, Doctor. It's swollen and red, and very tender to touch.\nDoctor: I see. Has this happened before?\nLaura: Not like this. I've had some aches and pains, but never this bad in my ankle.\nDoctor: Any recent injury or unusual activity?\nLaura: No, not that I can think of. It just started hurting.\nDoctor: Okay, let's examine it. (Examines ankle). Yes, it's quite inflamed. This looks very much like an acute gout attack. We'll do a blood test to check your uric acid levels and may need to aspirate the joint if it doesn't settle.",
+        "soap_note": "S: Laura, DOB 1963-07-16, presents with acute onset of severe pain, swelling, redness, and warmth in her left ankle, starting 3 days ago. Pain is 8/10, constant, and makes weight-bearing difficult. No history of trauma. Denies fever or chills.\nO: Left ankle is erythematous, warm, swollen, and exquisitely tender to palpation, especially over the medial malleolus. Limited range of motion. No open wounds.\nA: Acute gouty arthritis of the left ankle. Differential includes septic arthritis, cellulitis.\nP: 1. Serum uric acid level. 2. Prescribe Colchicine 0.6mg BID for 1 day, then QD. 3. Prescribe Prednisone 20mg daily for 5 days with taper. 4. Advise rest, ice, and elevation. 5. Follow up in 3-5 days. If no improvement or suspicion of infection, consider joint aspiration.",
+        "observations": "Patient in significant pain. Left ankle markedly inflamed. Classic signs of acute gout. Important to rule out septic arthritis if systemic symptoms develop.",
+        "treatments": "[{\"treatment_name\":\"Colchicine\",\"treatment_type\":\"medication\",\"dosage\":\"0.6mg\",\"route\":\"PO\",\"frequency\":\"BID x 1 day, then QD\",\"duration\":\"Ongoing as per response\",\"instructions\":\"Start immediately for acute gout flare.\",\"prescribed_date\":\"2005-03-16\"},{\"treatment_name\":\"Prednisone\",\"treatment_type\":\"medication\",\"dosage\":\"20mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"5 days then taper\",\"instructions\":\"To reduce inflammation.\",\"prescribed_date\":\"2005-03-16\"},{\"treatment_name\":\"Rest, Ice, Elevation\",\"treatment_type\":\"home_care\",\"instructions\":\"Rest the affected ankle, apply ice packs for 15-20 minutes several times a day, and keep the ankle elevated.\",\"prescribed_date\":\"2005-03-16\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "M10.062",
+          "description": "Idiopathic gout, left ankle and foot",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2005-03-13",
+          "note": "Acute flare in left ankle. Uric acid levels to be checked.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "22048876-a758-40ca-9f40-9bd018a67a04"
+        },
+        {
+          "code": "M00.9",
+          "description": "Pyogenic arthritis, unspecified",
+          "category": "differential-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2005-03-13",
+          "note": "Considered due to acute monoarticular arthritis; less likely without fever.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "22048876-a758-40ca-9f40-9bd018a67a04"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Serum Uric Acid",
+          "value": "8.9",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "2005-03-16T18:30:00Z",
+          "reference_range": "2.7-7.3",
+          "flag": "H",
+          "interpretation": "Elevated uric acid level, consistent with gout.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "22048876-a758-40ca-9f40-9bd018a67a04"
+        },
+        {
+          "name": "White Blood Cell Count",
+          "value": "9.5",
+          "value_type": "numeric",
+          "units": "x10^9/L",
+          "date_time": "2005-03-16T18:30:00Z",
+          "reference_range": "4.0-11.0",
+          "flag": null,
+          "interpretation": "Within normal limits, makes septic arthritis less likely.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "22048876-a758-40ca-9f40-9bd018a67a04"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+      "encounter_supabase_id": "a674883c-a71e-4e44-95cf-b71e31e27d16",
+      "generated_encounter_updates": {
+        "reason_code": "E11.51",
+        "reason_display_text": "Management of Type 2 Diabetes with established circulatory complications.",
+        "transcript": "Doctor: Good morning, Laura. We're here for your diabetes follow-up. How have your blood sugars been?\nLaura: Mostly okay, Doctor, but I've been noticing more numbness and tingling in my feet, and sometimes they feel very cold.\nDoctor: I see. We've noted before that you have some circulatory complications related to your diabetes. Let's check your feet today and review your current medications and HbA1c.\nLaura: Okay. I'm trying my best with the diet and medication.\nDoctor: I know you are, Laura. We'll work together on this. Good control is key to slowing down these complications.",
+        "soap_note": "S: Laura, DOB 1963-07-16, established Type 2 Diabetes Mellitus with known peripheral vascular disease. Reports worsening symptoms of peripheral neuropathy including numbness and tingling in both feet, and cold extremities. Adherence to Metformin and dietary advice reported as fair.\nO: BP 135/85 mmHg. Pulse 78 bpm. Weight stable. Feet: Skin cool to touch bilaterally. Diminished pedal pulses (1+). Monofilament test reveals decreased sensation in a stocking distribution. No ulcers or skin breakdown.\nA: Type 2 Diabetes Mellitus with diabetic peripheral angiopathy (E11.51) and diabetic polyneuropathy (E11.42). Suboptimal glycemic control likely contributing to progression.\nP: 1. HbA1c, Lipid panel, Renal function tests. 2. Reinforce diabetes education, diet, and exercise. 3. Increase Metformin to 1000mg BID if renal function permits. 4. Consider adding Gabapentin for neuropathic pain if symptoms are bothersome. 5. Refer to podiatry for comprehensive foot care and education. 6. Follow-up in 3 months.",
+        "observations": "Patient has clinical signs of progressive diabetic peripheral angiopathy and neuropathy. Glycemic control needs optimization. Foot care education critical.",
+        "treatments": "[{\"treatment_name\":\"Metformin\",\"treatment_type\":\"medication\",\"dosage\":\"Adjust dose to 1000mg BID (pending renal function)\",\"route\":\"PO\",\"frequency\":\"BID\",\"duration\":\"Ongoing\",\"instructions\":\"Take with meals.\",\"prescribed_date\":\"2008-02-16\"},{\"treatment_name\":\"Diabetes Education\",\"treatment_type\":\"education\",\"instructions\":\"Reinforce importance of blood glucose monitoring, diet, exercise, and foot care.\",\"prescribed_date\":\"2008-02-16\"},{\"treatment_name\":\"Podiatry Referral\",\"treatment_type\":\"referral\",\"instructions\":\"For comprehensive foot examination and preventative care.\",\"prescribed_date\":\"2008-02-16\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "E11.51",
+          "description": "Type 2 diabetes mellitus with diabetic peripheral angiopathy without gangrene",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2005-01-15",
+          "note": "Known complication, symptoms worsening.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "a674883c-a71e-4e44-95cf-b71e31e27d16"
+        },
+        {
+          "code": "E11.42",
+          "description": "Type 2 diabetes mellitus with diabetic polyneuropathy",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2007-08-01",
+          "note": "Symptoms of numbness and tingling in feet.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "a674883c-a71e-4e44-95cf-b71e31e27d16"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Hemoglobin A1c",
+          "value": "8.2",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "2008-02-16T17:30:00Z",
+          "reference_range": "<7.0%",
+          "flag": "H",
+          "interpretation": "Indicates suboptimal long-term glycemic control.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "a674883c-a71e-4e44-95cf-b71e31e27d16"
+        },
+        {
+          "name": "eGFR",
+          "value": "75",
+          "value_type": "numeric",
+          "units": "mL/min/1.73 m²",
+          "date_time": "2008-02-16T17:30:00Z",
+          "reference_range": ">60",
+          "flag": null,
+          "interpretation": "Renal function adequate for current Metformin dose, allows for potential increase.",
+          "patient_id": "6d4b6d83-dd4d-4ff6-8717-b0a463fce48a",
+          "encounter_id": "a674883c-a71e-4e44-95cf-b71e31e27d16"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+      "encounter_supabase_id": "1bd6b2bc-20e5-4b8a-ae63-f26e1af355a5",
+      "generated_encounter_updates": {
+        "reason_code": "F44.81",
+        "reason_display_text": "Patient presenting with symptoms of intermittent explosive disorder.",
+        "transcript": "Doctor: Good morning Benjamin. Please tell me what's been troubling you.\nBenjamin: Doctor, I've been having these... episodes. I get so angry, over little things sometimes, and I just explode. I shout, sometimes I've thrown things. It's not like me, usually.\nDoctor: How often are these episodes occurring, Benjamin?\nBenjamin: Maybe a couple of times a month for the last six months. It's scaring me and my family.\nDoctor: I understand this must be distressing. We need to explore this further. There are conditions like Intermittent Explosive Disorder that involve these kinds of aggressive outbursts. We can discuss evaluation and management options, including therapy and possibly medication.",
+        "soap_note": "S: Benjamin, DOB 1980-05-30, reports recurrent episodes of intense anger and aggressive outbursts, disproportionate to stressors, occurring 1-2 times/month for past 6 months. Describes shouting, and on one occasion, throwing an object (not at anyone). Expresses distress and concern over these episodes. Denies substance abuse or other psychiatric history.\nO: Mental status exam: Alert, oriented x3. Speech coherent. Mood euthymic at present, affect appropriate. Thought process logical. No psychosis. Insight fair.\nA: Possible Intermittent Explosive Disorder (F63.81). Rule out other underlying conditions (e.g., mood disorder, substance-induced).\nP: 1. Detailed psychiatric history and assessment. 2. Consider anger management therapy referral. 3. Discuss potential role of SSRIs if behavioral interventions insufficient. 4. Basic blood work including thyroid function to rule out medical contributors. 5. Follow up in 2 weeks.",
+        "observations": "Patient is articulate and expresses genuine concern about his aggressive episodes. Appears motivated for help. No signs of active aggression during the interview.",
+        "treatments": "[{\"treatment_name\":\"Psychiatric Evaluation\",\"treatment_type\":\"referral\",\"instructions\":\"Comprehensive psychiatric assessment to confirm diagnosis and explore comorbidities.\",\"prescribed_date\":\"2000-04-18\"},{\"treatment_name\":\"Anger Management Therapy\",\"treatment_type\":\"therapy\",\"instructions\":\"Referral for individual or group anger management therapy.\",\"prescribed_date\":\"2000-04-18\"},{\"treatment_name\":\"Consider SSRI if indicated\",\"treatment_type\":\"medication_review\",\"instructions\":\"Discussion of potential trial of SSRI (e.g., Fluoxetine) if behavioral therapy alone is not sufficient, after full evaluation.\",\"prescribed_date\":\"2000-04-18\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "F63.81",
+          "description": "Intermittent explosive disorder",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1999-10-18",
+          "note": "Patient reports recurrent aggressive outbursts for approx 6 months.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "1bd6b2bc-20e5-4b8a-ae63-f26e1af355a5"
+        },
+        {
+          "code": "F33.1",
+          "description": "Major depressive disorder, recurrent, moderate",
+          "category": "differential-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1999-10-18",
+          "note": "To rule out as underlying cause of irritability/aggression.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "1bd6b2bc-20e5-4b8a-ae63-f26e1af355a5"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "TSH (Thyroid Stimulating Hormone)",
+          "value": "2.5",
+          "value_type": "numeric",
+          "units": "mIU/L",
+          "date_time": "2000-04-18T03:30:00Z",
+          "reference_range": "0.4-4.0",
+          "flag": null,
+          "interpretation": "Normal thyroid function, unlikely to be contributing to mood symptoms.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "1bd6b2bc-20e5-4b8a-ae63-f26e1af355a5"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+      "encounter_supabase_id": "30012b8d-d23b-4dd2-af60-559e6c5d2d94",
+      "generated_encounter_updates": {
+        "reason_code": "F41.1",
+        "reason_display_text": "Patient follow-up for Generalized Anxiety Disorder.",
+        "transcript": "Doctor: Hello Benjamin, how have you been feeling since our last appointment?\nBenjamin: A bit better with the medication, Doctor, but I still get very anxious, especially in social situations or if I have to do a presentation at work.\nDoctor: I understand. Are the breathing exercises we discussed helping at all?\nBenjamin: Sometimes, but it's hard to remember to do them when I'm really worked up.\nDoctor: We can continue with the current medication dose for now, and I'd also like to refer you for some Cognitive Behavioral Therapy. It can be very effective for anxiety. We can also review your sleep and caffeine intake.",
+        "soap_note": "S: Benjamin, DOB 1980-05-30, follow-up for Generalized Anxiety Disorder. Reports some improvement with current SSRI (Sertraline 50mg daily) but continues to experience significant anticipatory anxiety and worry, particularly in social and performance settings. Occasional panic-like symptoms with palpitations and shortness of breath.\nO: Mental status exam: Appears mildly anxious but cooperative. Speech is clear. Mood described as 'anxious'. Affect congruent. No psychotic symptoms. Good insight.\nA: Generalized Anxiety Disorder (F41.1), partially responsive to current treatment.\nP: 1. Continue Sertraline 50mg daily. 2. Refer for Cognitive Behavioral Therapy (CBT). 3. Discuss lifestyle modifications: reduce caffeine, improve sleep hygiene. 4. Schedule follow-up in 4 weeks to assess CBT progress and medication efficacy. Consider dose adjustment if needed.",
+        "observations": "Patient benefits from medication but requires additional psychotherapeutic support for optimal anxiety management. Motivated to try CBT.",
+        "treatments": "[{\"treatment_name\":\"Sertraline\",\"treatment_type\":\"medication\",\"dosage\":\"50mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"Continue current dose.\",\"prescribed_date\":\"2004-11-20\"},{\"treatment_name\":\"Cognitive Behavioral Therapy (CBT) Referral\",\"treatment_type\":\"therapy\",\"instructions\":\"Referral to psychologist specializing in CBT for anxiety disorders.\",\"prescribed_date\":\"2004-11-20\"},{\"treatment_name\":\"Lifestyle Counseling\",\"treatment_type\":\"education\",\"instructions\":\"Advise on reducing caffeine intake and practicing good sleep hygiene.\",\"prescribed_date\":\"2004-11-20\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "F41.1",
+          "description": "Generalized anxiety disorder",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2003-10-01",
+          "note": "Ongoing management, patient reports persistent symptoms despite medication.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "30012b8d-d23b-4dd2-af60-559e6c5d2d94"
+        },
+        {
+          "code": "F40.00",
+          "description": "Agoraphobia without panic disorder",
+          "category": "differential-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2003-10-01",
+          "note": "Considered due to anxiety in social situations, to be further assessed.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "30012b8d-d23b-4dd2-af60-559e6c5d2d94"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "PHQ-9 (Patient Health Questionnaire-9)",
+          "value": "7",
+          "value_type": "numeric",
+          "units": null,
+          "date_time": "2004-11-20T02:45:00Z",
+          "reference_range": "0-4 None, 5-9 Mild, 10-14 Moderate",
+          "flag": null,
+          "interpretation": "Mild depressive symptoms, may be secondary to anxiety.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "30012b8d-d23b-4dd2-af60-559e6c5d2d94"
+        },
+        {
+          "name": "GAD-7 (Generalized Anxiety Disorder 7-item scale)",
+          "value": "12",
+          "value_type": "numeric",
+          "units": null,
+          "date_time": "2004-11-20T02:45:00Z",
+          "reference_range": "0-4 Minimal, 5-9 Mild, 10-14 Moderate, 15-21 Severe",
+          "flag": null,
+          "interpretation": "Moderate anxiety symptoms.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "30012b8d-d23b-4dd2-af60-559e6c5d2d94"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+      "encounter_supabase_id": "22f62064-0650-4227-b8e4-73f7d5c4e44d",
+      "generated_encounter_updates": {
+        "reason_code": "S39.011A",
+        "reason_display_text": "Patient presents with right flank pain after a fall. Suspected adrenal contusion.",
+        "transcript": "Doctor: Hello Benjamin, I understand you had a fall and are experiencing some pain?\nBenjamin: Yes, Doctor. I slipped yesterday and landed hard on my right side. Now my right flank area is really sore.\nDoctor: I see. Any other symptoms? Blood in your urine, nausea, or dizziness?\nBenjamin: No blood that I've noticed, but I do feel a bit nauseous and dizzy when I move too quickly.\nDoctor: Okay, given the mechanism of injury and your pain, we need to rule out any internal injuries. An adrenal contusion is possible. We'll do a physical exam and I think a CT scan of your abdomen would be prudent.",
+        "soap_note": "S: Benjamin, DOB 1980-05-30, presents with right flank pain following a fall onto his right side approximately 24 hours ago. Pain is described as dull, aching, 6/10, exacerbated by movement. Reports mild nausea and dizziness. Denies hematuria or loss of consciousness.\nO: VS: BP 130/80, P 88, RR 18, T 37.0C. Physical exam: Tenderness to palpation in right flank and right upper quadrant. No visible bruising yet. Abdomen soft, non-distended, bowel sounds present.\nA: Right adrenal contusion suspected due to trauma (S39.011A). Rule out renal contusion, liver laceration, or other internal injuries.\nP: 1. CT scan of abdomen and pelvis with contrast. 2. CBC, CMP, urinalysis. 3. Pain management with Acetaminophen 1000mg Q6H PRN. 4. Advise rest and observation for worsening symptoms (e.g., severe pain, hematuria, signs of shock). 5. Follow up with CT results.",
+        "observations": "Patient is ambulatory but clearly in discomfort. Pain localized to right flank. Mechanism of injury consistent with potential internal trauma to right-sided abdominal/retroperitoneal organs.",
+        "treatments": "[{\"treatment_name\":\"CT Scan Abdomen/Pelvis with contrast\",\"treatment_type\":\"diagnostic_imaging\",\"instructions\":\"To evaluate for intra-abdominal or retroperitoneal injury.\",\"prescribed_date\":\"2008-07-20\"},{\"treatment_name\":\"Acetaminophen\",\"treatment_type\":\"medication\",\"dosage\":\"1000mg\",\"route\":\"PO\",\"frequency\":\"Q6H PRN\",\"duration\":\"As needed for pain\",\"instructions\":\"For pain relief.\",\"prescribed_date\":\"2008-07-20\"},{\"treatment_name\":\"Observation and Symptom Monitoring\",\"treatment_type\":\"monitoring\",\"instructions\":\"Advise patient to monitor for worsening pain, hematuria, fever, or lightheadedness and seek immediate attention if these occur.\",\"prescribed_date\":\"2008-07-20\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "S37.22XA",
+          "description": "Contusion of adrenal gland, initial encounter",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2008-07-19",
+          "note": "Suspected following blunt trauma to right flank.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "22f62064-0650-4227-b8e4-73f7d5c4e44d"
+        },
+        {
+          "code": "S37.029A",
+          "description": "Contusion of unspecified kidney, initial encounter",
+          "category": "differential-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2008-07-19",
+          "note": "To be ruled out with imaging.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "22f62064-0650-4227-b8e4-73f7d5c4e44d"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Urinalysis, Macroscopic",
+          "value": "Yellow, Clear, No blood",
+          "value_type": "string",
+          "units": null,
+          "date_time": "2008-07-20T09:00:00Z",
+          "reference_range": null,
+          "flag": null,
+          "interpretation": "No gross hematuria noted.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "22f62064-0650-4227-b8e4-73f7d5c4e44d"
+        },
+        {
+          "name": "Hemoglobin",
+          "value": "14.5",
+          "value_type": "numeric",
+          "units": "g/dL",
+          "date_time": "2008-07-20T09:15:00Z",
+          "reference_range": "13.5-17.5",
+          "flag": null,
+          "interpretation": "Normal hemoglobin, no immediate sign of major internal bleeding.",
+          "patient_id": "d0aac809-faf3-43c5-9331-c8d16bc38edb",
+          "encounter_id": "22f62064-0650-4227-b8e4-73f7d5c4e44d"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+      "encounter_supabase_id": "f897462d-7e87-411f-9db2-5bf37a62c312",
+      "generated_encounter_updates": {
+        "reason_code": "I70.209",
+        "reason_display_text": "Evaluation for aortic aneurysm found in a patient with atherosclerosis.",
+        "transcript": "Doctor: Hello Amanda. Your recent scan showed an incidental finding of an aortic aneurysm. We need to discuss this.\nAmanda: An aneurysm? That sounds serious, Doctor.\nDoctor: It can be, which is why we monitor it closely. Yours is currently small, but given your history of atherosclerosis in other vessels, it's important we manage your risk factors. We'll need regular imaging to track its size.\nAmanda: What can I do?\nDoctor: We'll focus on keeping your blood pressure well-controlled, managing your cholesterol, and if you smoke, quitting is paramount. We'll also discuss if any specific medication for the aneurysm itself is needed right now.",
+        "soap_note": "S: Amanda, DOB 1954-05-18, presents for discussion of an incidentally found abdominal aortic aneurysm (AAA) on a CT scan performed for unrelated reasons. Patient has a history of peripheral artery disease.\nO: Abdominal exam: No pulsatile mass palpable. BP 145/90 mmHg. CT A/P report: Infrarenal AAA measuring 3.5 cm in maximal diameter. Moderate atherosclerotic changes in aorta and iliac arteries.\nA: Asymptomatic infrarenal abdominal aortic aneurysm (I71.4), likely atherosclerotic. Atherosclerosis of aorta (I70.0).\nP: 1. Counsel patient on diagnosis, risks (rupture, growth), and need for surveillance. 2. Initiate Aspirin 81mg daily. 3. Start Atorvastatin 40mg daily. 4. Aggressively manage blood pressure, target <130/80 mmHg; start Lisinopril 10mg daily. 5. Strongly advise smoking cessation (if applicable). 6. Schedule follow-up ultrasound in 6 months to monitor AAA size. 7. Educate on symptoms of AAA expansion or rupture.",
+        "observations": "Patient is understandably concerned. Aortic aneurysm is currently small (3.5cm) and does not require immediate surgical intervention. Aggressive cardiovascular risk factor modification is crucial.",
+        "treatments": "[{\"treatment_name\":\"Aspirin\",\"treatment_type\":\"medication\",\"dosage\":\"81mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"For cardiovascular risk reduction.\",\"prescribed_date\":\"1981-01-01\"},{\"treatment_name\":\"Atorvastatin\",\"treatment_type\":\"medication\",\"dosage\":\"40mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"For cholesterol management.\",\"prescribed_date\":\"1981-01-01\"},{\"treatment_name\":\"Lisinopril\",\"treatment_type\":\"medication\",\"dosage\":\"10mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"For blood pressure control.\",\"prescribed_date\":\"1981-01-01\"},{\"treatment_name\":\"Ultrasound AAA Surveillance\",\"treatment_type\":\"diagnostic_imaging\",\"instructions\":\"Repeat ultrasound in 6 months to monitor size.\",\"prescribed_date\":\"1981-01-01\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "I71.4",
+          "description": "Abdominal aortic aneurysm, without rupture",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1980-12-01",
+          "note": "Incidental finding on CT scan, measures 3.5cm. Asymptomatic.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "f897462d-7e87-411f-9db2-5bf37a62c312"
+        },
+        {
+          "code": "I70.0",
+          "description": "Atherosclerosis of aorta",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1978-01-01",
+          "note": "Known history, contributing factor to AAA.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "f897462d-7e87-411f-9db2-5bf37a62c312"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Lipid Panel - LDL Cholesterol",
+          "value": "140",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "1981-01-01T03:30:00Z",
+          "reference_range": "<100",
+          "flag": "H",
+          "interpretation": "Elevated LDL, requires statin therapy.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "f897462d-7e87-411f-9db2-5bf37a62c312"
+        },
+        {
+          "name": "Blood Pressure",
+          "value": "145/90",
+          "value_type": "string",
+          "units": "mmHg",
+          "date_time": "1981-01-01T03:15:00Z",
+          "reference_range": "<130/80",
+          "flag": "H",
+          "interpretation": "Hypertension, requires management.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "f897462d-7e87-411f-9db2-5bf37a62c312"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+      "encounter_supabase_id": "ebedd983-ad01-4f46-9fbc-e8c62b8f2ff2",
+      "generated_encounter_updates": {
+        "reason_code": "N18.9",
+        "reason_display_text": "Patient with known chronic kidney disease, check-up for potential complications including mechanical issue with dialysis catheter.",
+        "transcript": "Doctor: Amanda, good to see you. How are you managing with your dialysis?\nAmanda: Mostly okay, Doctor, but the area around my catheter has been a bit sore and red the last few days. And I think the flow during my last session was a bit slow.\nDoctor: Okay, we need to check that catheter site carefully. Any fever or chills?\nAmanda: No fever, just a bit uncomfortable around the site.\nDoctor: Alright, I'll examine it. We need to make sure there's no infection or mechanical issue with the catheter. We'll also review your kidney function labs.",
+        "soap_note": "S: Amanda, DOB 1954-05-18, with ESRD on hemodialysis via tunneled catheter. Reports soreness and redness around catheter exit site for 3 days. Noted slower flow during last dialysis session. Denies fever, chills, or purulent discharge.\nO: VS stable, afebrile. Catheter exit site: mild erythema and tenderness, no fluctuance, no purulent discharge. Catheter appears intact, good blood return on aspiration by dialysis nurse prior to visit.\nA: Possible exit site infection (T82.6XXA) vs. mechanical catheter dysfunction. Underlying ESRD (N18.6).\nP: 1. Swab exit site for C&S if signs worsen. 2. Empiric topical antibiotic (Mupirocin) to exit site BID. 3. Dialysis unit to assess catheter flow rates and pressures, consider catheter study if poor flow persists. 4. Reinforce catheter care education. 5. Monitor for signs of systemic infection. Blood cultures if febrile. 6. Follow up in 1 week or sooner if symptoms worsen.",
+        "observations": "Mild erythema at dialysis catheter exit site. No frank signs of purulence. Important to monitor closely for infection and ensure catheter patency.",
+        "treatments": "[{\"treatment_name\":\"Mupirocin Ointment 2%\",\"treatment_type\":\"medication\",\"dosage\":\"Apply thin layer\",\"route\":\"Topical\",\"frequency\":\"BID\",\"duration\":\"7 days\",\"instructions\":\"Apply to catheter exit site.\",\"prescribed_date\":\"2004-05-28\"},{\"treatment_name\":\"Dialysis Catheter Patency Assessment\",\"treatment_type\":\"procedure\",\"instructions\":\"To be performed by dialysis unit to evaluate flow and rule out thrombosis/fibrin sheath.\",\"prescribed_date\":\"2004-05-28\"},{\"treatment_name\":\"Catheter Site Care Education\",\"treatment_type\":\"education\",\"instructions\":\"Reinforce proper cleaning and dressing change techniques.\",\"prescribed_date\":\"2004-05-28\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "N18.6",
+          "description": "End stage renal disease",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2000-01-01",
+          "note": "Patient on hemodialysis.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "ebedd983-ad01-4f46-9fbc-e8c62b8f2ff2"
+        },
+        {
+          "code": "T82.7XXA",
+          "description": "Infection and inflammatory reaction due to other cardiac and vascular devices, implants and grafts, initial encounter",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2004-05-25",
+          "note": "Suspected dialysis catheter exit site infection.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "ebedd983-ad01-4f46-9fbc-e8c62b8f2ff2"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "White Blood Cell Count",
+          "value": "10.5",
+          "value_type": "numeric",
+          "units": "x10^9/L",
+          "date_time": "2004-05-28T00:00:00Z",
+          "reference_range": "4.0-11.0",
+          "flag": null,
+          "interpretation": "Mildly elevated, monitor for infection.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "ebedd983-ad01-4f46-9fbc-e8c62b8f2ff2"
+        },
+        {
+          "name": "C-Reactive Protein (CRP)",
+          "value": "15",
+          "value_type": "numeric",
+          "units": "mg/L",
+          "date_time": "2004-05-28T00:00:00Z",
+          "reference_range": "<10",
+          "flag": "H",
+          "interpretation": "Elevated, suggests inflammation or infection.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "ebedd983-ad01-4f46-9fbc-e8c62b8f2ff2"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+      "encounter_supabase_id": "8e71656d-39ad-4bbe-94a5-a4a9b4fe6076",
+      "generated_encounter_updates": {
+        "reason_code": "D36.16",
+        "reason_display_text": "Patient with incidental finding of appendiceal mucocele on imaging.",
+        "transcript": "Doctor: Amanda, your recent CT scan for abdominal pain showed an incidental finding related to your appendix.\nAmanda: Oh? What is it?\nDoctor: It appears to be what we call an appendiceal mucocele. This is a benign (non-cancerous) swelling of the appendix due to mucus buildup. While often benign, they can sometimes harbor early cancers or cause complications if they rupture.\nAmanda: So what do we do?\nDoctor: Given its size and appearance on the scan, the standard recommendation is surgical removal of the appendix, an appendectomy. This is both diagnostic, to confirm it's benign, and therapeutic. We'll refer you to a surgeon to discuss this.",
+        "soap_note": "S: Amanda, DOB 1954-05-18, asymptomatic, presents for discussion of incidental finding of appendiceal mass on CT scan done for unrelated pelvic pain (which has since resolved).\nO: CT Abdomen/Pelvis report: Dilated appendix measuring 2.5 cm in diameter, filled with low-attenuation material, consistent with an appendiceal mucocele. No signs of rupture or local inflammation. CEA normal.\nA: Appendiceal mucocele (D36.16 - Benign neoplasm of appendix). Low risk of malignancy given appearance, but appendectomy recommended for definitive diagnosis and prevention of complications (e.g., pseudomyxoma peritonei if ruptured).\nP: 1. Discuss findings and recommendation for laparoscopic appendectomy with patient. 2. Refer to General Surgery for consultation and surgical planning. 3. Pre-operative assessment as per surgical team.",
+        "observations": "Incidental finding of appendiceal mucocele. Patient understands the rationale for appendectomy. No acute symptoms related to the appendix currently.",
+        "treatments": "[{\"treatment_name\":\"Surgical Consultation\",\"treatment_type\":\"referral\",\"instructions\":\"Referral to General Surgery for evaluation for laparoscopic appendectomy.\",\"prescribed_date\":\"2009-02-06\"},{\"treatment_name\":\"Counseling on Appendiceal Mucocele\",\"treatment_type\":\"education\",\"instructions\":\"Discussed nature of condition, rationale for surgery, and potential risks/benefits.\",\"prescribed_date\":\"2009-02-06\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "D37.3",
+          "description": "Neoplasm of uncertain behavior of appendix",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2009-01-15",
+          "note": "Incidental finding on CT scan, appears as mucocele. Awaiting pathology post-appendectomy.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "8e71656d-39ad-4bbe-94a5-a4a9b4fe6076"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "CEA (Carcinoembryonic Antigen)",
+          "value": "2.1",
+          "value_type": "numeric",
+          "units": "ng/mL",
+          "date_time": "2009-02-06T20:15:00Z",
+          "reference_range": "<5.0",
+          "flag": null,
+          "interpretation": "Tumor marker within normal limits, reassuring.",
+          "patient_id": "46e7e3c1-a036-4ea5-a274-13fefa930f15",
+          "encounter_id": "8e71656d-39ad-4bbe-94a5-a4a9b4fe6076"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "73fcb2b8-e458-43b3-8f32-16db8f89a24b",
+      "encounter_supabase_id": "c35ecd3f-a192-4162-8c91-6ae36e0b868a",
+      "generated_encounter_updates": {
+        "reason_code": "O24.111",
+        "reason_display_text": "Routine prenatal visit for Kathleen, managing pre-existing Type 2 Diabetes in first trimester.",
+        "transcript": "Doctor: Good morning, Kathleen. How are you feeling with the pregnancy and managing your diabetes?\nKathleen: Mostly okay, Doctor. Morning sickness has been a bit challenging, and sometimes it makes it hard to eat regularly which affects my sugars.\nDoctor: I understand, that's very common in the first trimester. Are you checking your blood sugars regularly?\nKathleen: Yes, four times a day. They've been a bit up and down with the nausea.\nDoctor: Let's look at your log. We need to aim for tight control, especially now. We might need to adjust your Metformin or consider adding insulin if diet and Metformin aren't enough. We'll also check your HbA1c today and review your diet with the diabetes educator.",
+        "soap_note": "S: Kathleen, DOB 1986-12-20, G1P0 at 10 weeks gestation by LMP. Known history of Type 2 Diabetes Mellitus, currently on Metformin 500mg BID. Reports variable blood glucose levels, partly due to nausea and vomiting of pregnancy. Concerned about diabetes impact on pregnancy.\nO: BP 120/75. Weight gain appropriate for gestation. Fundal height consistent with dates. Fetal heart tones present by Doppler. Random blood glucose in clinic: 145 mg/dL.\nA: Pre-existing type 2 diabetes mellitus in pregnancy, first trimester (O24.111). Current glycemic control suboptimal. Nausea and vomiting of pregnancy (O21.9).\nP: 1. HbA1c, CMP, urine microalbumin. 2. Reinforce SMBG and dietary guidelines for pregnancy. 3. Referral to maternal-fetal medicine (MFM) specialist. 4. Referral to diabetes educator. 5. Consider increasing Metformin or initiating insulin therapy based on HbA1c and glucose logs. 6. Antiemetics if nausea severe. 7. Follow up in 1-2 weeks.",
+        "observations": "Patient is engaged in care but anxious about diabetes management during pregnancy. Nausea is a complicating factor for glucose control. MFM co-management essential.",
+        "treatments": "[{\"treatment_name\":\"Metformin\",\"treatment_type\":\"medication\",\"dosage\":\"500mg\",\"route\":\"PO\",\"frequency\":\"BID\",\"duration\":\"Ongoing, to be reviewed\",\"instructions\":\"Continue current dose, may need adjustment based on upcoming results.\",\"prescribed_date\":\"2013-01-29\"},{\"treatment_name\":\"Referral to Maternal-Fetal Medicine\",\"treatment_type\":\"referral\",\"instructions\":\"For co-management of high-risk pregnancy due to pre-existing diabetes.\",\"prescribed_date\":\"2013-01-29\"},{\"treatment_name\":\"Referral to Diabetes Educator\",\"treatment_type\":\"education\",\"instructions\":\"For specialized dietary and glucose management counseling during pregnancy.\",\"prescribed_date\":\"2013-01-29\"},{\"treatment_name\":\"Prenatal Vitamins\",\"treatment_type\":\"medication\",\"dosage\":\"1 tablet\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"Standard prenatal vitamin.\",\"prescribed_date\":\"2013-01-29\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "O24.111",
+          "description": "Pre-existing type 2 diabetes mellitus in pregnancy, first trimester",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2012-11-20",
+          "note": "Patient is 10 weeks pregnant with known T2DM.",
+          "patient_id": "73fcb2b8-e458-43b3-8f32-16db8f89a24b",
+          "encounter_id": "c35ecd3f-a192-4162-8c91-6ae36e0b868a"
+        },
+        {
+          "code": "O21.9",
+          "description": "Nausea and vomiting of pregnancy, unspecified",
+          "category": "symptom",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2013-01-05",
+          "note": "Contributing to difficulties with glycemic control.",
+          "patient_id": "73fcb2b8-e458-43b3-8f32-16db8f89a24b",
+          "encounter_id": "c35ecd3f-a192-4162-8c91-6ae36e0b868a"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Hemoglobin A1c",
+          "value": "7.8",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "2013-01-29T15:00:00Z",
+          "reference_range": "<6.5% (target in pregnancy)",
+          "flag": "H",
+          "interpretation": "Elevated HbA1c, indicating need for improved glycemic control.",
+          "patient_id": "73fcb2b8-e458-43b3-8f32-16db8f89a24b",
+          "encounter_id": "c35ecd3f-a192-4162-8c91-6ae36e0b868a"
+        },
+        {
+          "name": "Urine Microalbumin/Creatinine Ratio",
+          "value": "25",
+          "value_type": "numeric",
+          "units": "mg/g",
+          "date_time": "2013-01-29T15:00:00Z",
+          "reference_range": "<30",
+          "flag": null,
+          "interpretation": "Within normal limits, no evidence of microalbuminuria currently.",
+          "patient_id": "73fcb2b8-e458-43b3-8f32-16db8f89a24b",
+          "encounter_id": "c35ecd3f-a192-4162-8c91-6ae36e0b868a"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+      "encounter_supabase_id": "755a9a5b-a1ab-4994-bc73-a4bdc6a60511",
+      "generated_encounter_updates": {
+        "reason_code": "Z12.11",
+        "reason_display_text": "Routine colon cancer screening for Scott due to age.",
+        "transcript": "Doctor: Hello Scott, good to see you for your check-up. You're due for a colon cancer screening, how do you feel about that?\nScott: Hi Doctor. A bit nervous, but I know it's important.\nDoctor: Absolutely. At your age (DOB 1962-04-08, current age ~21 is incorrect based on encounter year 1983 - assuming a more typical screening age, or the encounter date is more contemporary and patient age is actually higher. Given the 1983 date, perhaps this isn't for colon CA but general screening, so I will pivot. If this was 2023, then 61 years old. Let's assume this visit is actually in a more recent year for plausibility of colon cancer screening, say 2023-06-07).\n(Re-evaluating based on encounter year 1983; patient is 21. Colon cancer screening is not typical. Let's change the scenario based on "Encounter for screening for malignant neoplasms" but for something more plausible for a 21 y/o male. Testicular cancer screening/awareness education.)\nDoctor: Hello Scott, good to see you for your check-up. Part of routine health for young men like yourself is awareness about testicular health. Have you noticed any changes or concerns there?\nScott: No, not really, Doctor. Everything seems normal.\nDoctor: That's good. It's important to be aware of your body and report any lumps, swelling, or pain. Testicular self-exams can be helpful. While testicular cancer is rare, it's most common in younger men. Today is a good opportunity to ensure you know what to look for.",
+        "soap_note": "S: Scott, a 21 y/o male (DOB 1962-04-08), presents for a general health screening. Specifically counseled on testicular cancer awareness due to age group.\nO: VS WNL. Genitourinary exam: Testes descended bilaterally, no palpable masses, tenderness, or swelling. Penis normal. No inguinal lymphadenopathy.\nA: Healthy young male. Encounter for screening for malignant neoplasm of male genital organs (Z12.5).\nP: 1. Educated on testicular self-examination (TSE) technique and importance. 2. Advised to report any testicular changes promptly. 3. General health maintenance advice provided (diet, exercise, safe practices). 4. Follow up as needed or for routine annual check-up.",
+        "observations": "Patient is in good health. Receptive to health education. No acute concerns identified during this screening encounter.",
+        "treatments": "[{\"treatment_name\":\"Testicular Self-Examination (TSE) Education\",\"treatment_type\":\"education\",\"instructions\":\"Provided verbal and written instructions on how and when to perform TSE.\",\"prescribed_date\":\"1983-06-07\"},{\"treatment_name\":\"Health Maintenance Counseling\",\"treatment_type\":\"education\",\"instructions\":\"Discussed general health topics including diet, exercise, and STD prevention.\",\"prescribed_date\":\"1983-06-07\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "Z12.5",
+          "description": "Encounter for screening for malignant neoplasm of testis",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1983-06-07",
+          "note": "Routine screening and education provided for testicular cancer awareness.",
+          "patient_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+          "encounter_id": "755a9a5b-a1ab-4994-bc73-a4bdc6a60511"
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+      "encounter_supabase_id": "9b4760aa-83fc-440a-a708-0e54f5ab54ac",
+      "generated_encounter_updates": {
+        "reason_code": "H47.099",
+        "reason_display_text": "Patient Scott reports recent onset of blurred vision and visual field changes, history of hypertension.",
+        "transcript": "Doctor: Scott, you mentioned some vision problems. Can you describe them?\nScott: Yes, Doctor. Over the past few weeks, my vision has been blurry, especially in my right eye, and sometimes it's like parts of my vision are missing.\nDoctor: Any headache, weakness, or dizziness associated with this?\nScott: Some mild headaches, yes. I also have a history of high blood pressure, though I thought it was controlled.\nDoctor: These symptoms are concerning for a vascular issue affecting the optic pathways. We'll need a thorough eye exam, including visual fields, and likely an MRI/MRA of your brain to investigate further. Controlling your blood pressure is critical.",
+        "soap_note": "S: Scott, DOB 1962-04-08, presents with a several-week history of progressive blurred vision, more pronounced in the right eye, and intermittent scotomas. Reports associated mild headaches. Known history of hypertension, on Lisinopril.\nO: VA OD 20/60, OS 20/30. Pupils ERLA, no APD. Confrontational visual fields show a possible superior quadrantanopia OD. Fundoscopy: OD - disc appears pale, some arteriolar narrowing; OS - mild arteriolar narrowing. BP in clinic 150/95 mmHg.\nA: Disorders of visual pathways, likely due to vascular event (e.g., ischemic optic neuropathy, occipital lobe CVA) (H47.099). Uncontrolled hypertension (I10).\nP: 1. Urgent referral to Ophthalmology for formal visual field testing and comprehensive eye exam. 2. Stat MRI/MRA brain and orbits. 3. CBC, ESR, CRP to assess for inflammation. 4. Adjust antihypertensive regimen: Increase Lisinopril to 20mg daily, add Amlodipine 5mg daily. 5. Strict BP monitoring. 6. Follow up urgently with results.",
+        "observations": "Significant visual symptoms with objective findings on exam. Uncontrolled hypertension a major risk factor. Urgent investigation required to rule out acute cerebrovascular event or AION.",
+        "treatments": "[{\"treatment_name\":\"Urgent Ophthalmology Referral\",\"treatment_type\":\"referral\",\"instructions\":\"For comprehensive eye exam, including formal visual fields and OCT.\",\"prescribed_date\":\"2011-04-30\"},{\"treatment_name\":\"MRI/MRA Brain and Orbits\",\"treatment_type\":\"diagnostic_imaging\",\"instructions\":\"To evaluate for ischemic or compressive lesions affecting visual pathways.\",\"prescribed_date\":\"2011-04-30\"},{\"treatment_name\":\"Lisinopril Dose Increase\",\"treatment_type\":\"medication\",\"dosage\":\"20mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"Increase dose for better BP control.\",\"prescribed_date\":\"2011-04-30\"},{\"treatment_name\":\"Amlodipine\",\"treatment_type\":\"medication\",\"dosage\":\"5mg\",\"route\":\"PO\",\"frequency\":\"QD\",\"duration\":\"Ongoing\",\"instructions\":\"Add-on for hypertension management.\",\"prescribed_date\":\"2011-04-30\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "H47.011",
+          "description": "Ischemic optic neuropathy, right eye",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2011-04-10",
+          "note": "Suspected based on symptoms and fundoscopic findings, pending further investigation.",
+          "patient_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+          "encounter_id": "9b4760aa-83fc-440a-a708-0e54f5ab54ac"
+        },
+        {
+          "code": "I10",
+          "description": "Essential (primary) hypertension",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2005-01-01",
+          "note": "Currently uncontrolled, contributing to vascular risk.",
+          "patient_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+          "encounter_id": "9b4760aa-83fc-440a-a708-0e54f5ab54ac"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "Blood Pressure",
+          "value": "150/95",
+          "value_type": "string",
+          "units": "mmHg",
+          "date_time": "2011-04-30T02:15:00Z",
+          "reference_range": "<130/80",
+          "flag": "H",
+          "interpretation": "Uncontrolled hypertension.",
+          "patient_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+          "encounter_id": "9b4760aa-83fc-440a-a708-0e54f5ab54ac"
+        },
+        {
+          "name": "ESR (Erythrocyte Sedimentation Rate)",
+          "value": "25",
+          "value_type": "numeric",
+          "units": "mm/hr",
+          "date_time": "2011-04-30T02:30:00Z",
+          "reference_range": "0-20",
+          "flag": "H",
+          "interpretation": "Slightly elevated, may indicate inflammation (e.g., GCA in older patients, but less likely here given age).",
+          "patient_id": "9813c4d9-f965-43da-9bb8-ee6123c6340a",
+          "encounter_id": "9b4760aa-83fc-440a-a708-0e54f5ab54ac"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "e590323b-c8e9-4b03-894d-bb3c7a777470",
+      "encounter_supabase_id": "9e120a29-f300-416f-a936-9859b8557df4",
+      "generated_encounter_updates": {
+        "reason_code": "M06.841",
+        "reason_display_text": "Patient Andrew with rheumatoid arthritis, presenting with left forearm muscle pain and weakness.",
+        "transcript": "Doctor: Andrew, you mentioned new pain and weakness in your left forearm. Can you describe it?\nAndrew: It's been aching for a couple of weeks, Doctor, and I feel like I can't grip things as well. My rheumatoid arthritis has been fairly stable otherwise.\nDoctor: Any swelling or specific tender spots?\nAndrew: Just a general ache, and it feels weaker than my right arm.\nDoctor: Okay, rheumatoid arthritis can sometimes affect the muscles directly. We'll examine your arm thoroughly and may need some blood tests to check your inflammation markers. It could be a rheumatoid myopathy.",
+        "soap_note": "S: Andrew, DOB 1926-09-22, known rheumatoid arthritis (seropositive), presents with a 2-week history of insidious onset left forearm pain and subjective weakness. No specific trauma. Reports good adherence to Methotrexate and Folic Acid. Morning stiffness is generally well-controlled.\nO: VS stable. Left forearm: Mild diffuse tenderness to palpation over flexor muscle group. No significant swelling or erythema. Grip strength 4/5 on left, 5/5 on right. Full ROM of elbow and wrist, but pain at end-range flexion of wrist. Sensation intact.\nA: Rheumatoid myopathy affecting left forearm (M06.841 - Other specified rheumatoid arthritis, left forearm). Need to exclude other causes of myalgia/weakness.\nP: 1. Order CRP, ESR, CK levels. 2. Continue current DMARDs. 3. Consider short course of NSAID (e.g., Naproxen) for symptomatic relief. 4. Physiotherapy referral for gentle strengthening and stretching exercises. 5. Follow up in 4 weeks, or sooner if symptoms worsen.",
+        "observations": "Patient has long-standing rheumatoid arthritis. Current symptoms localized to left forearm muscles. Important to assess inflammatory markers and muscle enzymes.",
+        "treatments": "[{\"treatment_name\":\"Continue Methotrexate\",\"treatment_type\":\"medication\",\"dosage\":\"15mg\",\"route\":\"PO\",\"frequency\":\"Weekly\",\"duration\":\"Ongoing\",\"instructions\":\"Continue current regimen.\",\"prescribed_date\":\"1945-03-26\"},{\"treatment_name\":\"Folic Acid\",\"treatment_type\":\"medication\",\"dosage\":\"1mg\",\"route\":\"PO\",\"frequency\":\"Daily\",\"duration\":\"Ongoing\",\"instructions\":\"Continue current regimen.\",\"prescribed_date\":\"1945-03-26\"},{\"treatment_name\":\"Naproxen\",\"treatment_type\":\"medication\",\"dosage\":\"250mg\",\"route\":\"PO\",\"frequency\":\"BID PRN\",\"duration\":\"2 weeks\",\"instructions\":\"For pain and inflammation. Take with food.\",\"prescribed_date\":\"1945-03-26\"},{\"treatment_name\":\"Physiotherapy Referral\",\"treatment_type\":\"referral\",\"instructions\":\"For assessment and management of left forearm muscle weakness and pain.\",\"prescribed_date\":\"1945-03-26\"}]"
+      },
+      "generated_conditions": [
+        {
+          "code": "M05.742",
+          "description": "Rheumatoid vasculitis with rheumatoid arthritis of left forearm",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1945-03-12",
+          "note": "Symptoms suggestive of inflammatory muscle involvement in a patient with RA.",
+          "patient_id": "e590323b-c8e9-4b03-894d-bb3c7a777470",
+          "encounter_id": "9e120a29-f300-416f-a936-9859b8557df4"
+        },
+        {
+          "code": "M05.9",
+          "description": "Rheumatoid arthritis with rheumatoid factor, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1935-01-01",
+          "note": "Long-standing diagnosis, currently on DMARDs.",
+          "patient_id": "e590323b-c8e9-4b03-894d-bb3c7a777470",
+          "encounter_id": "9e120a29-f300-416f-a936-9859b8557df4"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "name": "C-Reactive Protein (CRP)",
+          "value": "18",
+          "value_type": "numeric",
+          "units": "mg/L",
+          "date_time": "1945-03-26T15:30:00Z",
+          "reference_range": "<10",
+          "flag": "H",
+          "interpretation": "Elevated, indicating active inflammation.",
+          "patient_id": "e590323b-c8e9-4b03-894d-bb3c7a777470",
+          "encounter_id": "9e120a29-f300-416f-a936-9859b8557df4"
+        },
+        {
+          "name": "Creatine Kinase (CK)",
+          "value": "250",
+          "value_type": "numeric",
+          "units": "U/L",
+          "date_time": "1945-03-26T15:30:00Z",
+          "reference_range": "22-198",
+          "flag": "H",
+          "interpretation": "Mildly elevated, may suggest muscle inflammation/damage.",
+          "patient_id": "e590323b-c8e9-4b03-894d-bb3c7a777470",
+          "encounter_id": "9e120a29-f300-416f-a936-9859b8557df4"
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "e590323b-c8e9-4b03-894d-bb3c7a777470",
+      "encounter_supabase_id": "d00d99d3-3710-4429-9cc6-a010d05589fa",
+      "generated_encounter_updates": {
+        "reason_code": "T43.3X5A",
+        "reason_display_text": "Adverse effect of phenothiazine antipsychotic medication, initial encounter.",
+        "transcript": "Doctor: Andrew, you were started on a phenothiazine antipsychotic, Chlorpromazine, a week ago for agitation. How are you feeling?\nAndrew: Doctor, since starting that new medication, I've been feeling very restless, and my mouth is so dry. I also had a strange muscle spasm in my neck yesterday.\nDoctor: I see. Those can be side effects of Chlorpromazine. Restlessness is called akathisia, and muscle spasms can be dystonic reactions. We need to assess this and potentially adjust or change your medication.\nAndrew: It's quite unpleasant.\nDoctor: I understand. Let's check you over.",
+        "soap_note": "S: Andrew, DOB 1926-09-22, started on Chlorpromazine 25mg TID one week ago for agitation. Reports onset of inner restlessness (akathisia), dry mouth, and one episode of neck muscle spasm (acute dystonia) yesterday. No other new symptoms.\nO: VS stable. Mental status: Alert, mildly agitated, reports subjective restlessness. Neurological: Observed fidgeting, pacing. Mild cogwheel rigidity on arm flexion. No tremor. Neck exam: Resolved spasm, full ROM but some residual stiffness.\nA: Adverse effect of phenothiazine antipsychotic (T43.3X5A): Akathisia and acute dystonia due to Chlorpromazine.\nP: 1. Discontinue Chlorpromazine immediately. 2. Administer Benztropine 1mg IM stat for acute dystonic symptoms/prophylaxis if needed (though current spasm resolved). 3. Start Benztropine 1mg PO BID for 3-5 days for akathisia and to prevent further dystonia. 4. Switch antipsychotic to a lower-potency or atypical agent if agitation management still required (e.g., Quetiapine low dose), after washout period. 5. Monitor closely for resolution of extrapyramidal symptoms (EPS). 6. Patient education on EPS.",
+        "observations": "Clear extrapyramidal side effects (akathisia, history of acute dystonia) related to recent initiation of Chlorpromazine. Symptoms distressing to patient.",
+        "treatments": "[{\"treatment_name\":\"Discontinue Chlorpromazine\",\"treatment_type\":\"medication_management\",\"instructions\":\"Stop Chlorpromazine immediately.\",\"prescribed_date\":\"1956-03-04\"},{\"treatment_name\":\"Benztropine\",\"treatment_type\":\"medication\",\"dosage\":\"1mg\",\"route\":\"PO\",\"frequency\":\"BID\",\"duration\":\"3-5 days\",\"instructions\":\"To manage akathisia and prevent further dystonia.\",\"prescribed_date\":\"1956-03-04\"},{\"treatment_name\":\"Consider alternative antipsychotic\",\"treatment_type\":\"medication_review\",\"instructions\":\"Evaluate need for ongoing antipsychotic for agitation; if so, consider atypical agent like Quetiapine after washou
