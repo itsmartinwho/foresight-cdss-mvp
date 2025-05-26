@@ -86,10 +86,11 @@
       },
       "generated_conditions": [
         {
+          "patient_id: "some-uuid-condition-2-1",
           "patient_id": "22a93ea2-1eab-49a0-8c55-00bdb3e5e492",
           "encounter_id": "264da9dc-adfa-4391-88de-6df4d8c0d643",
           "code": "E11.649",
-          "description": "Type 2 diabetes mellitus with hypoglycemia without coma or episode",
+          "description": "Type 2 diabetes coma or episode",
           "category": "encounter-diagnosis",
           "clinical_status": "active",
           "verification_status": "confirmed",
@@ -97,7 +98,7 @@
           "note": "Patient experienced symptomatic hypoglycemia today."
         },
         {
-          "id": "some-uuid-condition-2-2",
+          id: "some-uuid-condition-2-2",
           "patient_id": "22a93ea2-1eab-49a0-8c55-00bdb3e5e492",
           "encounter_id": "264da9dc-adfa-4391-88de-6df4d8c0d643",
           "code": "E11.9",
@@ -109,7 +110,7 @@
           "note": "Established diagnosis of Type 2 DM."
         },
         {
-          "id": "some-uuid-condition-2-3",
+          id: "some-uuid-condition-2-3",
           "patient_id": "22a93ea2-1eab-49a0-8c55-00bdb3e5e492",
           "encounter_id": "264da9dc-adfa-4391-88de-6df4d8c0d643",
           "code": "R73.03",
@@ -611,6 +612,7 @@
     },
     {
       "patient_supabase_id": "525dd1cb-9883-40d4-b94c-744c44b079f3",
+      "encounter_supabase_encounter_id: "ff0b0662-f151-4959-ae63-5909505fd3f5",
       "encounter_supabase_id": "ff0b0662-f151-4959-ae63-5909505fd3f5",
       "generated_encounter_updates": {
         "reason_code": "M02.38",

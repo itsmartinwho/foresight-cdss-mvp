@@ -89,7 +89,7 @@
           "patient_id": "22a93ea2-1eab-49a0-8c55-00bdb3e5e492",
           "encounter_id": "264da9dc-adfa-4391-88de-6df4d8c0d643",
           "code": "E11.649",
-          "description": "Type 2 diabetes mellitus with hypoglycemia without coma or episode",
+          "description": "Type 2 diabetes coma or episode",
           "category": "encounter-diagnosis",
           "clinical_status": "active",
           "verification_status": "confirmed",
@@ -97,7 +97,6 @@
           "note": "Patient experienced symptomatic hypoglycemia today."
         },
         {
-          "id": "some-uuid-condition-2-2",
           "patient_id": "22a93ea2-1eab-49a0-8c55-00bdb3e5e492",
           "encounter_id": "264da9dc-adfa-4391-88de-6df4d8c0d643",
           "code": "E11.9",
@@ -109,7 +108,6 @@
           "note": "Established diagnosis of Type 2 DM."
         },
         {
-          "id": "some-uuid-condition-2-3",
           "patient_id": "22a93ea2-1eab-49a0-8c55-00bdb3e5e492",
           "encounter_id": "264da9dc-adfa-4391-88de-6df4d8c0d643",
           "code": "R73.03",
