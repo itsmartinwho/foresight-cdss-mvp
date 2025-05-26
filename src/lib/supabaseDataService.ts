@@ -1,7 +1,7 @@
 import { getSupabaseClient } from './supabaseClient';
 import {
   Patient, Encounter, Diagnosis, LabResult, ComplexCaseAlert, Treatment,
-  PatientDataPayload // Import the new type
+  PatientDataPayload, DifferentialDiagnosisRecord, DifferentialDiagnosis // Import the new types
 } from './types';
 
 /*
@@ -20,6 +20,7 @@ class SupabaseDataService {
   private encountersByPatient: Record<string, string[]> = {}; // key = original PatientID, value = array of composite encounter keys
   private diagnoses: Record<string, Diagnosis[]> = {}; // key = patient ID, value = array of diagnoses
   private labResults: Record<string, LabResult[]> = {}; // key = patient ID, value = array of lab results
+  private differentialDiagnoses: Record<string, DifferentialDiagnosisRecord[]> = {}; // key = patient ID, value = array of differential diagnoses
   private patientUuidToOriginalId: Record<string, string> = {}; // key = Supabase UUID, value = original patient ID
   /** Simple pub-sub so UI layers can refresh after data-mutating calls */
   private changeSubscribers: Array<() => void> = [];
@@ -466,6 +467,31 @@ class SupabaseDataService {
           }
         });
         console.log(`SupabaseDataService: Loaded ${allLabResults.length} lab results`);
+      }
+
+      // Fetch differential diagnoses for all patients
+      console.log('SupabaseDataService: Fetching differential diagnoses...');
+      const { data: allDifferentialDiagnoses, error: diffErr } = await this.supabase
+        .from('differential_diagnoses')
+        .select('*');
+      
+      if (diffErr) {
+        console.error('SupabaseDataService: Error fetching differential diagnoses:', diffErr);
+      } else if (allDifferentialDiagnoses) {
+        // Group differential diagnoses by patient
+        allDifferentialDiagnoses.forEach((diff) => {
+          // Find the original patient ID from the UUID
+          const originalPatientId = this.patientUuidToOriginalId[diff.patient_id];
+          
+          if (originalPatientId) {
+            if (!this.differentialDiagnoses[originalPatientId]) {
+              this.differentialDiagnoses[originalPatientId] = [];
+            }
+            
+            this.differentialDiagnoses[originalPatientId].push(diff);
+          }
+        });
+        console.log(`SupabaseDataService: Loaded ${allDifferentialDiagnoses.length} differential diagnoses`);
       }
 
       this.emitChange();
@@ -991,6 +1017,98 @@ class SupabaseDataService {
 
   getLabResultsForAdmission(patientId: string, admissionId: string): LabResult[] {
     return this.getLabResultsForEncounter(patientId, admissionId);
+  }
+
+  // Differential Diagnoses methods
+  getPatientDifferentialDiagnoses(patientId: string): DifferentialDiagnosisRecord[] {
+    return this.differentialDiagnoses[patientId] || [];
+  }
+
+  getDifferentialDiagnosesForEncounter(patientId: string, encounterId: string): DifferentialDiagnosisRecord[] {
+    const allDiffs = this.differentialDiagnoses[patientId] || [];
+    return allDiffs.filter(diff => diff.encounter_id === encounterId);
+  }
+
+  async saveDifferentialDiagnoses(
+    patientId: string, 
+    encounterId: string, 
+    differentials: DifferentialDiagnosis[]
+  ): Promise<void> {
+    try {
+      // Get patient UUID
+      const patient = this.patients[patientId];
+      if (!patient) {
+        throw new Error(`Patient ${patientId} not found`);
+      }
+
+      const patientUuid = Object.keys(this.patientUuidToOriginalId).find(
+        uuid => this.patientUuidToOriginalId[uuid] === patientId
+      );
+
+      if (!patientUuid) {
+        throw new Error(`Patient UUID not found for ${patientId}`);
+      }
+
+      // Get encounter UUID
+      const encounter = this.encounters[`${patientId}_${encounterId}`];
+      if (!encounter) {
+        throw new Error(`Encounter ${encounterId} not found for patient ${patientId}`);
+      }
+
+      // Delete existing differential diagnoses for this encounter
+      await this.supabase
+        .from('differential_diagnoses')
+        .delete()
+        .eq('patient_id', patientUuid)
+        .eq('encounter_id', encounter.id);
+
+      // Insert new differential diagnoses
+      if (differentials.length > 0) {
+        const records = differentials.map((diff, index) => ({
+          patient_id: patientUuid,
+          encounter_id: encounter.id,
+          diagnosis_name: diff.name,
+          likelihood: diff.likelihood,
+          key_factors: diff.keyFactors,
+          rank_order: index + 1
+        }));
+
+        const { error } = await this.supabase
+          .from('differential_diagnoses')
+          .insert(records);
+
+        if (error) {
+          throw error;
+        }
+
+        // Update local cache
+        const newRecords: DifferentialDiagnosisRecord[] = records.map(record => ({
+          id: '', // Will be filled by database
+          patient_id: record.patient_id,
+          encounter_id: record.encounter_id,
+          diagnosis_name: record.diagnosis_name,
+          likelihood: record.likelihood,
+          key_factors: record.key_factors,
+          rank_order: record.rank_order,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+
+        if (!this.differentialDiagnoses[patientId]) {
+          this.differentialDiagnoses[patientId] = [];
+        }
+
+        // Remove old records for this encounter and add new ones
+        this.differentialDiagnoses[patientId] = this.differentialDiagnoses[patientId]
+          .filter(diff => diff.encounter_id !== encounter.id)
+          .concat(newRecords);
+      }
+
+      this.emitChange();
+    } catch (error) {
+      console.error('Error saving differential diagnoses:', error);
+      throw error;
+    }
   }
 }
 

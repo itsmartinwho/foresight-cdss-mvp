@@ -6,8 +6,9 @@ Foresight CDSS is a browser-based clinical decision support system prototype. Th
 
 The system currently features:
 *   **Tool A (Advisor):** An AI-powered chatbot for general medical questions.
+*   **Tool B (Clinical Engine):** A functional AI diagnostic pipeline that processes patient data, generates diagnoses with differentials, creates SOAP notes, and produces referral/prior authorization documents.
 
-The vision includes several advanced aspirational AI tools (B, C, D, F).
+The vision includes additional advanced AI tools (C, D, F) that are planned for future development.
 
 **Note:** This is a prototype. For detailed architecture, AI tool status, frontend and development guidelines, please refer to the comprehensive documentation in the `/docs` directory:
 *   **[System Architecture](./docs/architecture.md):** The primary source of truth for system design, AI tools, data layer, application flow, and tech stack.
@@ -21,7 +22,15 @@ The vision includes several advanced aspirational AI tools (B, C, D, F).
 *   **Supabase Integration:** Patient and admission data managed in Supabase (PostgreSQL).
 *   **Tool A - Foresight Advisor:** AI medical advisor chat (OpenAI powered via `/api/advisor`).
     *   Features citations, follow-up questions, voice input/playback, streamed responses.
-*   **Placeholder UI for Future AI Tools (B, D, F):** UI elements exist with mock data or empty.
+*   **Tool B - Clinical Engine:** Functional AI diagnostic pipeline with:
+    *   Symptom extraction from transcripts
+    *   Diagnostic plan generation and execution
+    *   Primary diagnosis with confidence scoring
+    *   Differential diagnoses with likelihood assessment
+    *   SOAP note generation
+    *   Treatment recommendations
+    *   Referral and prior authorization document generation
+*   **Placeholder UI for Future AI Tools (C, D, F):** UI elements exist with mock data or empty.
 *   **Live Voice Transcription:** In consultation workspace.
 *   **Modular UI Components & Glassmorphism UI.**
 *   **Client-Side Routing (Next.js).**

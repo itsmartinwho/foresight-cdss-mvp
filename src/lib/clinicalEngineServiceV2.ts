@@ -532,7 +532,35 @@ export class ClinicalEngineServiceV2 {
         }
       }
       
-      // 2. Update encounter with SOAP note and treatments
+      // 2. Save differential diagnoses
+      if (diagnosis.differentialDiagnoses.length > 0) {
+        // Delete existing differential diagnoses for this encounter
+        await this.supabase
+          .from('differential_diagnoses')
+          .delete()
+          .eq('patient_id', patientUuid)
+          .eq('encounter_id', actualEncounterUuid);
+
+        // Insert new differential diagnoses
+        const diffRecords = diagnosis.differentialDiagnoses.map((diff, index) => ({
+          patient_id: patientUuid,
+          encounter_id: actualEncounterUuid,
+          diagnosis_name: diff.name,
+          likelihood: diff.likelihood,
+          key_factors: diff.keyFactors,
+          rank_order: index + 1
+        }));
+
+        const { error: diffError } = await this.supabase
+          .from('differential_diagnoses')
+          .insert(diffRecords);
+
+        if (diffError) {
+          console.error('Error inserting differential diagnoses:', diffError);
+        }
+      }
+
+      // 3. Update encounter with SOAP note and treatments
       if (actualEncounterUuid) {
         const { error: encounterError } = await this.supabase
           .from('encounters')
@@ -548,7 +576,7 @@ export class ClinicalEngineServiceV2 {
         }
       }
       
-      // 3. Optionally store referral/prior auth documents in extra_data
+      // 4. Optionally store referral/prior auth documents in extra_data
       if (referralDoc || priorAuthDoc) {
         const documents: any = {};
         if (referralDoc) documents.referral = referralDoc;
