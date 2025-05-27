@@ -4,7 +4,7 @@ import { ClinicalOutputPackage } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { patientId, encounterId } = await request.json();
+    const { patientId, encounterId, transcript } = await request.json();
 
     if (!patientId || !encounterId) {
       return NextResponse.json(
@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
     const engine = new ClinicalEngineServiceV2();
     const result: ClinicalOutputPackage = await engine.runDiagnosticPipeline(
       patientId,
-      encounterId
+      encounterId,
+      transcript
     );
 
     return NextResponse.json(result);

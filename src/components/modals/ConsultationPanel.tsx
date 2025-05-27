@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { X } from '@phosphor-icons/react';
-import { Mic } from 'lucide-react';
+import { X, Microphone as Mic, Brain, CircleNotch } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import type { Patient, Encounter } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
@@ -113,37 +112,59 @@ export default function ConsultationPanel({
     console.log('handleClinicalPlan started, isGeneratingPlan: true');
 
     try {
-      console.log('Simulating AI/engine call...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Shortened for testing
+      console.log('Calling clinical engine API...');
+      
+      // Call the clinical engine API
+      const response = await fetch('/api/clinical-engine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          patientId: patient.id, 
+          encounterId: encounter?.id,
+          transcript: transcriptText
+        }),
+      });
 
-      // Simulate an error condition
-      if (Math.random() < 0.5) { // Adjust probability as needed for testing
-        throw new Error("Simulated AI engine failure!");
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
 
-      const mockDiagnosis = "Based on the transcript, the preliminary diagnosis is Acute Bronchitis. Common cold symptoms present, with persistent cough.";
-      const mockTreatment = "Recommended treatment: Rest, increase fluid intake. Consider over-the-counter cough suppressant. If symptoms worsen or fever develops, schedule a follow-up.";
+      const result = await response.json();
       
-      setDiagnosisText(mockDiagnosis);
-      setTreatmentText(mockTreatment);
+      // Extract diagnosis and treatment from the result
+      const diagnosis = result.diagnosticResult?.diagnosisName || 
+                       result.diagnosticResult?.primaryDiagnosis || 
+                       "Based on the transcript, a preliminary diagnosis has been generated.";
+      
+      const treatment = result.diagnosticResult?.recommendedTreatments?.join('\n') || 
+                       result.diagnosticResult?.treatmentPlan || 
+                       "Recommended treatment plan has been generated based on the diagnosis.";
+      
+      setDiagnosisText(diagnosis);
+      setTreatmentText(treatment);
       setPlanGenerated(true);
       setActiveTab('diagnosis'); // Switch to diagnosis tab on success
-      console.log('AI/engine call simulation complete.', { diagnosis: mockDiagnosis, treatment: mockTreatment });
+      console.log('Clinical engine call complete.', { diagnosis, treatment });
 
     } catch (error) {
       console.error("Error during clinical plan generation:", error);
+      
+      // Graceful fallback - still transition to tabbed interface but leave fields blank
+      setPlanGenerated(true);
+      setDiagnosisText('');
+      setTreatmentText('');
+      setActiveTab('diagnosis');
+      
       toast({
-        title: "Error Generating Plan",
-        description: "An unexpected error occurred. Please try again or complete the plan manually.",
+        title: "Unable to Generate Plan",
+        description: "Unable to generate plan automatically. You can complete the plan manually.",
         variant: "destructive",
       });
-      // setPlanGenerated(false); // Not strictly needed if it's default false and only set true on success
-      // setActiveTab('transcript'); // Optionally revert, but default behavior is fine
     } finally {
       setIsGeneratingPlan(false);
       console.log('handleClinicalPlan finished (finally), isGeneratingPlan: false');
     }
-  }, [toast]);
+  }, [toast, patient.id, encounter?.id, transcriptText]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCreating) return;
@@ -181,10 +202,18 @@ export default function ConsultationPanel({
       setReason('');
       setScheduledDate(new Date());
       setDuration(30);
+      setStarted(false);
+      setTranscriptText('');
+      setDiagnosisText('');
+      setTreatmentText('');
+      setActiveTab('transcript');
+      setPlanGenerated(false);
+      setTabBarVisible(false);
+      setIsGeneratingPlan(false);
       // Automatically create encounter when panel opens
       createEncounter();
     }
-  }, [isOpen]);
+  }, [isOpen, createEncounter]);
 
   const handleClose = useCallback(async () => {
     if (!encounter?.id) {
@@ -259,68 +288,198 @@ export default function ConsultationPanel({
     setTranscriptText("Voice input received: (User's speech would go here)");
   }, []);
 
+  const handleStartConsultation = useCallback(() => {
+    setStarted(true);
+    // Focus the transcript textarea
+    setTimeout(() => {
+      if (transcriptTextareaRef.current) {
+        transcriptTextareaRef.current.focus();
+      }
+    }, 100);
+  }, []);
+
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
 
-  const handleStart = () => {
-    if (!encounter) {
-      createEncounter();
-    } else {
-      // TODO: Start recording/transcription functionality
-      console.log('Starting consultation with encounter:', encounter.id);
-    }
-  };
-
   const panelContent = (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-lg p-6 max-h-[90vh] overflow-hidden">
+      <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Close button */}
         <Button 
           variant="ghost" 
           size="icon"
-          className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20"
+          className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20 z-10"
           onClick={handleClose}
           disabled={isSaving}
         >
           <X className="h-4 w-4" />
         </Button>
 
+        {/* Header */}
+        <div className="pt-8 pb-4 border-b border-border/50">
+          <h2 className="text-xl font-semibold mb-2">New Consultation</h2>
+          <p className="text-sm text-muted-foreground">
+            Patient: {patient.firstName} {patient.lastName} • {encounter?.id ? `ID: ${encounter.id}` : 'Creating...'}
+          </p>
+        </div>
+
         {/* Main content area */}
-        <div className="pt-8">
+        <div className="flex-1 overflow-hidden flex flex-col">
           {isCreating ? (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center flex-1">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4"></div>
                 <p className="text-sm text-muted-foreground">Creating consultation...</p>
               </div>
             </div>
           ) : encounter ? (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">New Consultation</h2>
-                <p className="text-sm text-muted-foreground">
-                  Consultation ID: {encounter.id}
-                </p>
+            <>
+              {/* Tab Navigation */}
+              {planGenerated && (
+                <div className={cn(
+                  "border-b border-border/50 transition-all duration-300 ease-in-out",
+                  tabBarVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+                )}>
+                  <div className="flex space-x-4 px-1 py-2">
+                    <button
+                      onClick={() => setActiveTab('transcript')}
+                      className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                        activeTab === 'transcript'
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      Transcript
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('diagnosis')}
+                      className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                        activeTab === 'diagnosis'
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      Diagnosis
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('treatment')}
+                      className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                        activeTab === 'treatment'
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      Treatment
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Content Area */}
+              <div className="flex-1 overflow-hidden p-4">
+                {!started ? (
+                  // Initial state - show start button
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center space-y-4">
+                      <p className="text-muted-foreground">Ready to begin consultation</p>
+                      <Button 
+                        variant="default" 
+                        size="lg"
+                        onClick={handleStartConsultation}
+                        className="flex items-center gap-2"
+                      >
+                        <Mic className="h-5 w-5" />
+                        Start Consultation
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Content based on active tab
+                  <>
+                    {(!planGenerated || activeTab === 'transcript') && (
+                      <div className="h-full flex flex-col space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium">Consultation Transcript</h3>
+                          <Button
+                            variant={isGeneratingPlan ? "secondary" : "default"}
+                            onClick={handleClinicalPlan}
+                            disabled={isGeneratingPlan || transcriptText.length < 10}
+                            className="flex items-center gap-2"
+                          >
+                            {isGeneratingPlan ? (
+                              <>
+                                <CircleNotch className="h-4 w-4 animate-spin" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <Brain className="h-4 w-4" />
+                                Clinical Plan
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <Textarea
+                          ref={transcriptTextareaRef}
+                          value={transcriptText}
+                          onChange={(e) => setTranscriptText(e.target.value)}
+                          placeholder="Type or dictate the consultation notes here..."
+                          className="flex-1 resize-none text-base"
+                          style={{ minHeight: '300px' }}
+                        />
+                      </div>
+                    )}
+
+                    {planGenerated && activeTab === 'diagnosis' && (
+                      <div className="h-full flex flex-col space-y-4">
+                        <h3 className="text-lg font-medium">Diagnosis</h3>
+                        <Textarea
+                          value={diagnosisText}
+                          onChange={(e) => setDiagnosisText(e.target.value)}
+                          placeholder="Enter or edit the diagnosis..."
+                          className="flex-1 resize-none text-base"
+                          style={{ minHeight: '300px' }}
+                        />
+                      </div>
+                    )}
+
+                    {planGenerated && activeTab === 'treatment' && (
+                      <div className="h-full flex flex-col space-y-4">
+                        <h3 className="text-lg font-medium">Treatment Plan</h3>
+                        <Textarea
+                          value={treatmentText}
+                          onChange={(e) => setTreatmentText(e.target.value)}
+                          placeholder="Enter or edit the treatment plan..."
+                          className="flex-1 resize-none text-base"
+                          style={{ minHeight: '300px' }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-              
-              {/* TODO: This will be replaced with transcript/editor and tabs in future phases */}
-              <div className="border border-border rounded-lg p-4 min-h-[300px] bg-background/50">
-                <p className="text-sm text-muted-foreground">
-                  Consultation content will appear here...
-                </p>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={handleClose}>
-                  Close
-                </Button>
-                <Button variant="default">
-                  Start Recording
-                </Button>
-              </div>
-            </div>
+
+              {/* Footer Actions */}
+              {started && (
+                <div className="border-t border-border/50 pt-4 flex justify-end gap-2">
+                  <Button variant="secondary" onClick={handleClose} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Close"}
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={handleClose}
+                    disabled={isSaving}
+                  >
+                    Save & Close
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center flex-1">
               <p className="text-sm text-muted-foreground">Failed to create consultation</p>
             </div>
           )}
