@@ -82,6 +82,27 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   // Validation
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [shake, setShake] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      // Reset all form state
+      setTab('existing');
+      setSearchTerm('');
+      setSelectedPatient(null);
+      setFirstName('');
+      setLastName('');
+      setGender('');
+      setDob(null);
+      setReason('');
+      setScheduledDate(null);
+      setDuration(null);
+      setErrors({});
+      setShake(false);
+      setIsCreating(false);
+    }
+  }, [open]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -108,6 +129,9 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   });
 
   const handleCreate = async () => {
+    // Prevent double-clicking
+    if (isCreating) return;
+    
     // reset errors
     const newErrors: Record<string, boolean> = {};
     if (tab === 'existing') {
@@ -125,6 +149,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       return;
     }
     try {
+      setIsCreating(true);
       let createdPatient: Patient | null = null;
       let createdEncounter: Encounter | null = null;
 
@@ -137,7 +162,15 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         });
         createdPatient = selectedPatient;
         createdEncounter = enc;
+        
+        // Close the modal FIRST to reset its state
+        onOpenChange(false);
+        
+        // Navigate to the patient page with the new encounter
         router.push(`/patients/${selectedPatient.id}?encounterId=${enc.id}`);
+        
+        // Don't call onConsultationCreated after navigation to prevent double navigation
+        return;
       } else {
         const { patient, encounter } = await supabaseDataService.createNewPatientWithEncounter(
           { firstName, lastName, gender, dateOfBirth: dob ? format(dob, 'yyyy-MM-dd') : undefined },
@@ -145,16 +178,21 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         );
         createdPatient = patient;
         createdEncounter = encounter;
+        
+        // Close the modal FIRST to reset its state
+        onOpenChange(false);
+        
+        // Navigate to the patient page with the new encounter
         router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
+        
+        // Don't call onConsultationCreated after navigation to prevent double navigation
+        return;
       }
-
-      if (onConsultationCreated) {
-        onConsultationCreated(createdPatient, createdEncounter);
-      }
-      onOpenChange(false);
     } catch (e) {
       console.error('Failed to create consultation', e);
       alert('Could not start consultation. See console for details.');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -378,8 +416,13 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="default" iconLeft={<PlayCircle />} onClick={handleCreate}>
-            Start Consultation
+          <Button 
+            variant="default" 
+            iconLeft={<PlayCircle />} 
+            onClick={handleCreate}
+            disabled={isCreating}
+          >
+            {isCreating ? 'Creating...' : 'Start Consultation'}
           </Button>
         </div>
       </DialogContent>
