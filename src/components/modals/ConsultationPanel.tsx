@@ -65,6 +65,12 @@ export default function ConsultationPanel({
   const [tabBarVisible, setTabBarVisible] = useState(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Transcription state and refs
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   
   // Refs
   const transcriptTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -291,12 +297,82 @@ export default function ConsultationPanel({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleClose]);
 
-  const startVoiceInput = useCallback(() => {
-    // In a real app, this would initiate voice recognition.
-    console.log("Voice input started - full functionality to be implemented");
-    setStarted(true);
-    setTranscriptText("Voice input received: (User's speech would go here)");
-  }, []);
+  const startVoiceInput = useCallback(async () => {
+    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+    if (!apiKey) {
+      toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+      return;
+    }
+    if (isTranscribing && !isPaused) {
+      return; // Already transcribing
+    }
+    // Capture current cursor position in textarea
+    const textarea = transcriptTextareaRef.current;
+    const selStart = textarea ? textarea.selectionStart : transcriptText.length;
+    setCursorPosition(selStart);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      const ws = new WebSocket(
+        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=false',
+        ['token', apiKey]
+      );
+      socketRef.current = ws;
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.channel && data.is_final && data.channel.alternatives?.[0]?.transcript) {
+            const chunk = data.channel.alternatives[0].transcript;
+            if (chunk.trim()) {
+              setTranscriptText(prev => {
+                const current = prev || '';
+                const pos = cursorPosition !== null ? cursorPosition : current.length;
+                const prefix = current.slice(0, pos);
+                const suffix = current.slice(pos);
+                const needSpace = prefix && !prefix.endsWith(' ') && !chunk.startsWith(' ');
+                const newText = prefix + (needSpace ? ' ' : '') + chunk + suffix;
+                const newCursor = pos + (needSpace ? 1 : 0) + chunk.length;
+                setCursorPosition(newCursor);
+                return newText;
+              });
+            }
+          }
+        } catch {
+          // ignore
+        }
+      };
+      ws.onopen = () => {
+        mediaRecorder.addEventListener('dataavailable', (event) => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+            ws.send(event.data);
+          }
+        });
+        mediaRecorder.start(250);
+        setIsTranscribing(true);
+        setIsPaused(false);
+      };
+      ws.onclose = () => {
+        setIsTranscribing(false);
+        setIsPaused(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        stream.getTracks().forEach(t => t.stop());
+      };
+      ws.onerror = () => {
+        setIsTranscribing(false);
+        setIsPaused(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        stream.getTracks().forEach(t => t.stop());
+        toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
+      };
+    } catch (err) {
+      toast({ title: "Error", description: `Transcription error: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
+    }
+  }, [cursorPosition, isTranscribing, isPaused, transcriptText, toast]);
 
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
@@ -304,12 +380,12 @@ export default function ConsultationPanel({
   const panelContent = (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Close button */}
+        {/* Discard (X) button */}
         <Button 
           variant="ghost" 
           size="icon"
           className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20 z-10"
-          onClick={handleClose}
+          onClick={handleDiscard}
           disabled={isSaving}
         >
           <X className="h-4 w-4" />
@@ -325,14 +401,11 @@ export default function ConsultationPanel({
 
         {/* Main content area */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {isCreating ? (
+          {(!encounter && !isCreating) ? (
             <div className="flex items-center justify-center flex-1">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4"></div>
-                <p className="text-sm text-muted-foreground">Creating consultation...</p>
-              </div>
+              <p className="text-sm text-muted-foreground">Failed to create consultation</p>
             </div>
-          ) : encounter ? (
+          ) : (
             <>
               {/* Tab Navigation */}
               {planGenerated && (
@@ -490,10 +563,6 @@ export default function ConsultationPanel({
                 </div>
               )}
             </>
-          ) : (
-            <div className="flex items-center justify-center flex-1">
-              <p className="text-sm text-muted-foreground">Failed to create consultation</p>
-            </div>
           )}
         </div>
       </div>
