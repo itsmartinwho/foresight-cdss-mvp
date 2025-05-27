@@ -203,7 +203,7 @@ export default function ConsultationPanel({
       setReason('');
       setScheduledDate(new Date());
       setDuration(30);
-      setStarted(false);
+      setStarted(true);
       setTranscriptText('');
       setDiagnosisText('');
       setTreatmentText('');
@@ -268,6 +268,15 @@ export default function ConsultationPanel({
     }
   }, [encounter, isSaving, transcriptText, diagnosisText, treatmentText, onClose, toast]);
 
+  // Discard handler: close without saving and remove the created encounter
+  const handleDiscard = useCallback(() => {
+    if (encounter) {
+      const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
+      supabaseDataService.permanentlyDeleteEncounter(patient.id, compositeId);
+    }
+    onClose();
+  }, [encounter, patient.id, onClose]);
+
   // Handle escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -287,16 +296,6 @@ export default function ConsultationPanel({
     console.log("Voice input started - full functionality to be implemented");
     setStarted(true);
     setTranscriptText("Voice input received: (User's speech would go here)");
-  }, []);
-
-  const handleStartConsultation = useCallback(() => {
-    setStarted(true);
-    // Focus the transcript textarea
-    setTimeout(() => {
-      if (transcriptTextareaRef.current) {
-        transcriptTextareaRef.current.focus();
-      }
-    }, 100);
   }, []);
 
   // Don't render anything if not mounted (SSR safety) or not open
@@ -389,7 +388,7 @@ export default function ConsultationPanel({
                       <Button 
                         variant="default" 
                         size="lg"
-                        onClick={handleStartConsultation}
+                        onClick={startVoiceInput}
                         className="flex items-center gap-2"
                       >
                         <Mic className="h-5 w-5" />
@@ -404,24 +403,36 @@ export default function ConsultationPanel({
                       <div className="h-full flex flex-col space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
-                          <Button
-                            variant={isGeneratingPlan ? "secondary" : "default"}
-                            onClick={handleClinicalPlan}
-                            disabled={isGeneratingPlan || transcriptText.length < 10}
-                            className="flex items-center gap-2"
-                          >
-                            {isGeneratingPlan ? (
-                              <>
-                                <CircleNotch className="h-4 w-4 animate-spin" />
-                                Analyzing...
-                              </>
-                            ) : (
-                              <>
-                                <Brain className="h-4 w-4" />
-                                Clinical Plan
-                              </>
-                            )}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={startVoiceInput}
+                              disabled={isGeneratingPlan || isSaving}
+                              className="flex items-center gap-2"
+                            >
+                              <Mic className="h-4 w-4" />
+                              Transcribe
+                            </Button>
+                            <Button
+                              variant={isGeneratingPlan ? "secondary" : "default"}
+                              onClick={handleClinicalPlan}
+                              disabled={isGeneratingPlan || transcriptText.length < 10}
+                              className="flex items-center gap-2"
+                            >
+                              {isGeneratingPlan ? (
+                                <>
+                                  <CircleNotch className="h-4 w-4 animate-spin" />
+                                  Analyzing...
+                                </>
+                              ) : (
+                                <>
+                                  <Brain className="h-4 w-4" />
+                                  Clinical Plan
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                         <Textarea
                           ref={transcriptTextareaRef}
@@ -466,15 +477,15 @@ export default function ConsultationPanel({
               {/* Footer Actions */}
               {started && (
                 <div className="border-t border-border/50 pt-4 flex justify-end gap-2">
-                  <Button variant="secondary" onClick={handleClose} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Close"}
+                  <Button variant="secondary" onClick={handleDiscard} disabled={isSaving}>
+                    Close
                   </Button>
                   <Button 
                     variant="default" 
                     onClick={handleClose}
                     disabled={isSaving}
                   >
-                    Save & Close
+                    {isSaving ? "Saving..." : "Save & Close"}
                   </Button>
                 </div>
               )}

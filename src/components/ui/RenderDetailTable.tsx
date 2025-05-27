@@ -15,7 +15,8 @@ export default function RenderDetailTable({ title, dataArray, headers, columnAcc
   headers: string[];
   columnAccessors?: string[];
 }) {
-  if (!dataArray || dataArray.length === 0) {
+  const rows = Array.isArray(dataArray) ? dataArray : [];
+  if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground mt-1">No {title.toLowerCase()} data available.</p>;
   }
   const displayHeaders = headers;
@@ -31,7 +32,7 @@ export default function RenderDetailTable({ title, dataArray, headers, columnAcc
           </TableRow>
         </TableHeader>
         <TableBody className="mobile-card:block sm:table-row-group">
-          {dataArray.map((item, index) => (
+          {rows.map((item, index) => (
             <TableRow
               key={index}
               className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
