@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Microphone as Mic, Brain, CircleNotch } from '@phosphor-icons/react';
+import { X, Microphone as Mic, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import type { Patient, Encounter } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
@@ -84,12 +84,11 @@ export default function ConsultationPanel({
   useEffect(() => {
     if (started && transcriptTextareaRef.current) {
       transcriptTextareaRef.current.focus();
-      const textLength = transcriptText.length;
+      const textLength = transcriptTextareaRef.current.value.length;
       transcriptTextareaRef.current.setSelectionRange(textLength, textLength);
       transcriptTextareaRef.current.scrollTop = transcriptTextareaRef.current.scrollHeight;
-      console.log('Transcript textarea focused and cursor positioned.', { textLength: transcriptText.length });
     }
-  }, [started, transcriptText]);
+  }, [started]);
 
   // Log transcript length and Clinical Plan button enablement status
   useEffect(() => {
@@ -223,56 +222,25 @@ export default function ConsultationPanel({
   }, [isOpen]);
 
   const handleClose = useCallback(async () => {
-    if (!encounter?.id) {
-      console.log('No encounter to save, closing directly.');
+    if (!encounter) {
       onClose();
       return;
     }
     if (isSaving) return;
 
     setIsSaving(true);
-    console.log('Attempting to save consultation data...', { 
-      encounterId: encounter.id, 
-      transcript: transcriptText, 
-      diagnosis: diagnosisText, 
-      treatment: treatmentText 
-    });
-
+    const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate save
-
-      const saveSuccess = Math.random() > 0.3; // 70% chance of success
-      if (!saveSuccess) {
-        throw new Error("Simulated save failure");
-      }
-
-      // Placeholder for actual Supabase call:
-      console.log('Placeholder: supabaseDataService.updateEncounterDetails(encounter.id, { transcript, diagnosis, treatment }) would be called here.');
-      // await supabaseDataService.updateEncounterDetails(encounter.id, {
-      //   transcript: transcriptText,
-      //   diagnosis_text: diagnosisText, 
-      //   treatment_text: treatmentText,
-      // });
-      
-      console.log('Data saved successfully (simulated).');
-      toast({ title: "Consultation Saved", description: "Your changes have been saved." });
-      
-      // According to notes, don't reset state here, rely on parent unmount/re-init
-      onClose(); // Close panel on success
-
+      await supabaseDataService.updateEncounterTranscript(patient.id, compositeId, transcriptText);
+      toast({ title: "Consultation Saved", description: "Transcript saved successfully." });
+      onClose();
     } catch (error) {
       console.error('Failed to save data:', error);
-      toast({
-        title: "Save Failed",
-        description: "Could not save data. Please try again.",
-        variant: "destructive",
-      });
-      // Do NOT call onClose() here. User can retry or edit.
+      toast({ title: "Save Failed", description: "Could not save data. Please try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
-      console.log('Save attempt finished, isSaving set to false.');
     }
-  }, [encounter, isSaving, transcriptText, diagnosisText, treatmentText, onClose, toast]);
+  }, [patient.id, encounter, transcriptText, onClose, toast]);
 
   // Discard handler: close without saving and remove the created encounter
   const handleDiscard = useCallback(() => {
@@ -296,6 +264,21 @@ export default function ConsultationPanel({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleClose]);
+
+  // Pause/resume transcription controls
+  const pauseTranscription = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause();
+      setIsPaused(true);
+    }
+  }, []);
+
+  const resumeTranscription = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume();
+      setIsPaused(false);
+    }
+  }, []);
 
   const startVoiceInput = useCallback(async () => {
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
@@ -487,6 +470,17 @@ export default function ConsultationPanel({
                               <Mic className="h-4 w-4" />
                               Transcribe
                             </Button>
+                            {isTranscribing && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={isPaused ? resumeTranscription : pauseTranscription}
+                                className="flex items-center gap-2"
+                              >
+                                {isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                                {isPaused ? "Resume" : "Pause"}
+                              </Button>
+                            )}
                             <Button
                               variant={isGeneratingPlan ? "secondary" : "default"}
                               onClick={handleClinicalPlan}
