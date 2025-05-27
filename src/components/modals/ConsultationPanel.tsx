@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import type { Patient, Encounter } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -49,6 +50,25 @@ export default function ConsultationPanel({
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
+  // Form state
+  const [reason, setReason] = useState('');
+  const [scheduledDate, setScheduledDate] = useState<Date>(new Date());
+  const [duration, setDuration] = useState(30);
+  
+  // Consultation state
+  const [started, setStarted] = useState(false);
+  const [transcriptText, setTranscriptText] = useState('');
+  const [diagnosisText, setDiagnosisText] = useState('');
+  const [treatmentText, setTreatmentText] = useState('');
+  const [activeTab, setActiveTab] = useState('transcript');
+  const [planGenerated, setPlanGenerated] = useState(false);
+  const [tabBarVisible, setTabBarVisible] = useState(false);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Refs
+  const transcriptTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Ensure we only render on client side
   useEffect(() => {
@@ -123,7 +143,7 @@ export default function ConsultationPanel({
       setIsGeneratingPlan(false);
       console.log('handleClinicalPlan finished (finally), isGeneratingPlan: false');
     }
-  }, [setIsGeneratingPlan, setDiagnosisText, setTreatmentText, setPlanGenerated, setActiveTab, toast]);
+  }, [toast]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCreating) return;
@@ -214,10 +234,7 @@ export default function ConsultationPanel({
       setIsSaving(false);
       console.log('Save attempt finished, isSaving set to false.');
     }
-  }, [
-    encounter, isSaving, transcriptText, diagnosisText, treatmentText, 
-    onClose, toast, setIsSaving // Removed commented-out state setters as per instruction
-  ]);
+  }, [encounter, isSaving, transcriptText, diagnosisText, treatmentText, onClose, toast]);
 
   // Handle escape key
   useEffect(() => {

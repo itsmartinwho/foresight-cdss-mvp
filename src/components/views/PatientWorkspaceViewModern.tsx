@@ -99,7 +99,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     } finally {
       setLoading(false);
     }
-  }, [patient?.id]);
+  }, [patient?.id, selectedEncounterForConsultation]);
 
   useEffect(() => {
     loadPatientData();
