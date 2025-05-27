@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft, Trash as Trash2, PlusCircle, X } from '@phosphor-icons/react';
+import { Users, CaretLeft as ChevronLeft, Trash as Trash2, PlusCircle, X, CaretUp as ChevronUp } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import ContentSurface from "@/components/layout/ContentSurface";
 import Section from "@/components/ui/section";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -53,6 +54,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPatientOverviewOpen, setIsPatientOverviewOpen] = useState(true);
+  const [isTabContentOpen, setIsTabContentOpen] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -236,18 +239,18 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }
 
   return (
-    <ContentSurface className="relative space-y-8 overflow-y-auto">
+    <ContentSurface className="relative space-y-6 overflow-y-auto">
       {/* Close Button - Top Right */}
       <Button 
         variant="ghost" 
         onClick={onBack} 
-        className="absolute top-4 right-4 z-10 hover:text-destructive group p-2"
+        className="absolute top-2 right-4 z-10 hover:text-destructive group p-2"
       >
         <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
       </Button>
 
-      {/* Header Section */}
-      <div className="space-y-6 border-b border-border/20 pb-8">
+      {/* Patient Overview - Collapsible */}
+      <Collapsible open={isPatientOverviewOpen} onOpenChange={setIsPatientOverviewOpen} className="border-b border-border/20 pb-8">
         {/* Patient Header */}
         <div className="flex items-start gap-6">
           <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
@@ -258,8 +261,33 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           </Avatar>
           
           <div className="flex-1 space-y-4">
-            <div>
-              <h1 className="text-step-3 font-bold text-foreground mb-2">{patient.name}</h1>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="text-step-3 font-bold text-foreground">{patient.name}</h1>
+                {!isPatientOverviewOpen && (
+                  <span className="text-sm text-muted-foreground font-normal">
+                    - Patient Overview
+                  </span>
+                )}
+              </div>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="hover:text-neon transition-all duration-200 p-2 rounded-lg hover:bg-foreground/5"
+                >
+                  <ChevronUp 
+                    className={cn(
+                      "h-5 w-5 text-muted-foreground hover:text-neon transition-all duration-300 ease-in-out",
+                      isPatientOverviewOpen ? "rotate-0" : "rotate-180"
+                    )} 
+                  />
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+
+            <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
+              <div className="space-y-4 transition-all duration-300 ease-in-out">
               
               {/* Demographics Grid */}
               <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
@@ -293,11 +321,14 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                   </>
                 )}
               </div>
-            </div>
+              </div>
+            </CollapsibleContent>
           </div>
         </div>
 
-        {/* Action Controls */}
+        <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
+          <div className="pt-6 space-y-4 transition-all duration-300 ease-in-out">
+            {/* Action Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
@@ -371,27 +402,47 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             )}
           </div>
         </div>
-      </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
-      {/* Tab Navigation */}
-      <Section title="Patient Data" className="border-b border-border/20 pb-6">
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          {[
-            { key: "consultation", label: "Consultation" },
-            { key: "diagnosis", label: "Diagnosis" },
-            { key: "treatment", label: "Treatment" },
-            { key: "labs", label: "Labs" },
-            { key: "prior", label: "Prior Auth" },
-            { key: "trials", label: "Trials" },
-            { key: "history", label: "History" },
-            { key: "allData", label: "All Data" },
-          ].map((t) => (
-            <TabBtn key={t.key} k={t.key}>
-              {t.label}
-            </TabBtn>
-          ))}
+      {/* Tab Navigation & Content - Collapsible */}
+      <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-6">
+        <div className="flex items-center justify-between border-b border-border/20 pb-6">
+          <div className="flex gap-3 overflow-x-auto flex-1 mr-4">
+            {[
+              { key: "consultation", label: "Consultation" },
+              { key: "diagnosis", label: "Diagnosis" },
+              { key: "treatment", label: "Treatment" },
+              { key: "labs", label: "Labs" },
+              { key: "prior", label: "Prior Auth" },
+              { key: "trials", label: "Trials" },
+              { key: "history", label: "History" },
+              { key: "allData", label: "All Data" },
+            ].map((t) => (
+              <TabBtn key={t.key} k={t.key}>
+                {t.label}
+              </TabBtn>
+            ))}
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="hover:text-neon transition-all duration-200 p-2 rounded-lg hover:bg-foreground/5 flex-shrink-0"
+            >
+              <ChevronUp 
+                className={cn(
+                  "h-5 w-5 text-muted-foreground hover:text-neon transition-all duration-300 ease-in-out",
+                  isTabContentOpen ? "rotate-0" : "rotate-180"
+                )} 
+              />
+            </Button>
+          </CollapsibleTrigger>
         </div>
-      </Section>
+
+        <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
+          <div className="space-y-6 transition-all duration-300 ease-in-out">
 
       {/* Content Sections */}
       <div className="space-y-8">
@@ -454,6 +505,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           </div>
         )}
       </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirmation && encounterToDeleteId && (
