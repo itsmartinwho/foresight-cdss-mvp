@@ -43,7 +43,7 @@ export default function TreatmentTab({ patient, allEncounters }: TreatmentTabPro
   return (
     <div className="space-y-4">
       {encountersWithTreatments.map(({ encounter }) => (
-        <div key={encounter.id} className="bg-muted/20 rounded-lg p-4 space-y-3">
+        <div key={encounter.id} className="glass-dense rounded-lg p-4 space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">
               Encounter: {new Date(encounter.scheduledStart).toLocaleDateString()}

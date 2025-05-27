@@ -13,11 +13,24 @@ export default function TrialsTab({ patient }: { patient: Patient }) {
   const trialRows = MOCK_TRIALS_DATA[patient.id] || [];
 
   if (trialRows.length === 0) {
-    return <div className="p-6"><p className="text-muted-foreground">No clinical trial information available for this patient.</p></div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">No clinical trial information available for this patient.</p>
+          <p className="text-sm text-muted-foreground/60">Trial recommendations will appear here based on patient diagnosis and treatment history.</p>
+        </div>
+      </div>
+    );
   }
+  
   return (
-    <div className="p-6 space-y-4 max-w-3xl">
-      <RenderDetailTable title='Clinical Trials' dataArray={trialRows} headers={['ID', 'Title', 'Distance', 'Fit Score']} columnAccessors={['id', 'title', 'distance', 'fit']} />
+    <div className="space-y-4">
+      <RenderDetailTable 
+        title='Clinical Trials' 
+        dataArray={trialRows} 
+        headers={['ID', 'Title', 'Distance', 'Fit Score']} 
+        columnAccessors={['id', 'title', 'distance', 'fit']} 
+      />
     </div>
   );
 } 

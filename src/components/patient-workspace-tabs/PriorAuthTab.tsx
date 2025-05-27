@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import type { Patient, Encounter, Diagnosis, LabResult, Treatment, EncounterDetailsWrapper } from "@/lib/types";
 import { useSearchParams } from 'next/navigation';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText } from '@phosphor-icons/react';
 import LoadingAnimation from "@/components/LoadingAnimation";
 
@@ -34,7 +34,14 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allEncounter
   }
 
   if (!allEncounters || allEncounters.length === 0) {
-    return <div className="p-6 text-center text-muted-foreground">No encounters available for this patient.</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">No encounters available for this patient.</p>
+          <p className="text-sm text-muted-foreground/60">Prior authorization requests will appear here once encounters are recorded.</p>
+        </div>
+      </div>
+    );
   }
 
   const selectedEncounterDetails = allEncounters.find(ew => ew.encounter.id === selectedEncounterState?.id);
@@ -44,71 +51,82 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allEncounter
   const justificationForAuth = selectedEncounterDetails?.encounter.priorAuthJustification || "No specific justification provided for this encounter.";
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <label htmlFor="priorauth-encounter-select" className="block text-sm font-medium text-muted-foreground mb-1">Select Encounter for Prior Authorization:</label>
-        <select
-          id="priorauth-encounter-select"
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-border bg-background focus:outline-none focus:ring-neon focus:border-neon rounded-md shadow-sm"
+    <div className="space-y-4">
+      <div>
+        <label htmlFor="priorauth-encounter-select" className="block text-sm font-semibold text-muted-foreground mb-2">
+          Select Encounter for Prior Authorization:
+        </label>
+        <Select
           value={selectedEncounterState?.id || ""}
-          onChange={(e) => {
-            const encounterId = e.target.value;
+          onValueChange={(encounterId) => {
             const newSelected = allEncounters.find(ew => ew.encounter.id === encounterId)?.encounter || null;
             setSelectedEncounterState(newSelected);
           }}
         >
-          <option value="" disabled={!selectedEncounterState}>-- Select an encounter --</option>
-          {allEncounters.map(({ encounter }) => (
-            <option key={encounter.id} value={encounter.id}>
-              {new Date(encounter.scheduledStart).toLocaleString()} - {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full sm:w-96">
+            <SelectValue placeholder="Select an encounter..." />
+          </SelectTrigger>
+          <SelectContent>
+            {allEncounters.map(({ encounter }) => (
+              <SelectItem key={encounter.id} value={encounter.id}>
+                {new Date(encounter.scheduledStart).toLocaleDateString()} - {encounter.reasonDisplayText || encounter.reasonCode || 'Encounter'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {selectedEncounterState ? (
-        <Card className="bg-glass glass-dense backdrop-blur-lg">
-          <CardHeader>
-            <CardTitle className="text-step-0">Prior Authorization Draft</CardTitle>
-            <CardDescription className="text-xs text-muted-foreground/80">For encounter on: {new Date(selectedEncounterState.scheduledStart).toLocaleString()}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
+        <div className="glass-dense rounded-lg p-6 space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Prior Authorization Draft</h2>
+            <p className="text-sm text-muted-foreground/80">
+              For encounter on: {new Date(selectedEncounterState.scheduledStart).toLocaleDateString()}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="pa-patient-name" className="block text-xs font-medium text-muted-foreground">Patient Name</label>
-              <Input id="pa-patient-name" disabled value={`${currentPatientInfo.name || 'N/A'}`} className="mt-1 bg-muted/30" />
+              <label htmlFor="pa-patient-name" className="block text-sm font-medium text-muted-foreground mb-1">Patient Name</label>
+              <Input id="pa-patient-name" disabled value={`${currentPatientInfo.name || 'N/A'}`} className="bg-white/5" />
             </div>
             <div>
-              <label htmlFor="pa-dob" className="block text-xs font-medium text-muted-foreground">Date of Birth</label>
-              <Input id="pa-dob" disabled value={`${currentPatientInfo.dateOfBirth ? new Date(currentPatientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}`} className="mt-1 bg-muted/30" />
+              <label htmlFor="pa-dob" className="block text-sm font-medium text-muted-foreground mb-1">Date of Birth</label>
+              <Input id="pa-dob" disabled value={`${currentPatientInfo.dateOfBirth ? new Date(currentPatientInfo.dateOfBirth).toLocaleDateString() : 'N/A'}`} className="bg-white/5" />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="pa-medication" className="block text-sm font-medium text-muted-foreground mb-1">Medication / Treatment</label>
+              <Input id="pa-medication" disabled value={medicationForAuth} className="bg-white/5" />
             </div>
             <div>
-              <label htmlFor="pa-medication" className="block text-xs font-medium text-muted-foreground">Medication / Treatment</label>
-              <Input id="pa-medication" disabled value={medicationForAuth} className="mt-1 bg-muted/30" />
+              <label htmlFor="pa-diag-desc" className="block text-sm font-medium text-muted-foreground mb-1">Diagnosis (Description)</label>
+              <Input id="pa-diag-desc" disabled value={diagnosisForAuth} className="bg-white/5" />
             </div>
             <div>
-              <label htmlFor="pa-diag-desc" className="block text-xs font-medium text-muted-foreground">Diagnosis (Description)</label>
-              <Input id="pa-diag-desc" disabled value={diagnosisForAuth} className="mt-1 bg-muted/30" />
+              <label htmlFor="pa-diag-code" className="block text-sm font-medium text-muted-foreground mb-1">Diagnosis (ICD-10 Code)</label>
+              <Input id="pa-diag-code" disabled value={diagnosisCodeForAuth} className="bg-white/5" />
             </div>
-            <div>
-              <label htmlFor="pa-diag-code" className="block text-xs font-medium text-muted-foreground">Diagnosis (ICD-10 Code)</label>
-              <Input id="pa-diag-code" disabled value={diagnosisCodeForAuth} className="mt-1 bg-muted/30" />
-            </div>
-            <div>
-              <label htmlFor="pa-justification" className="block text-xs font-medium text-muted-foreground">Justification:</label>
-              <textarea
-                id="pa-justification"
-                disabled
-                value={justificationForAuth}
-                className="mt-1 block w-full shadow-sm sm:text-sm border-border rounded-md h-24 bg-muted/30 p-2"
-              />
-            </div>
-            <Button className="mt-3 text-step--1" size="sm">
-              <FileText className="mr-2 h-4 w-4" /> Generate PDF (Placeholder)
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+
+          <div>
+            <label htmlFor="pa-justification" className="block text-sm font-medium text-muted-foreground mb-1">Justification:</label>
+            <textarea
+              id="pa-justification"
+              disabled
+              value={justificationForAuth}
+              className="w-full h-24 p-3 text-sm border border-white/10 rounded-md bg-white/5 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-neon/50 focus:border-neon/50 resize-none"
+            />
+          </div>
+
+          <Button className="w-full sm:w-auto" size="default">
+            <FileText className="mr-2 h-4 w-4" /> 
+            Generate PDF (Placeholder)
+          </Button>
+        </div>
       ) : (
-        <p className="text-center text-muted-foreground">Please select an encounter to view prior authorization details.</p>
+        <div className="flex items-center justify-center py-12">
+          <p className="text-center text-muted-foreground">Please select an encounter to view prior authorization details.</p>
+        </div>
       )}
     </div>
   );

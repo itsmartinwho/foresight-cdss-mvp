@@ -239,7 +239,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }
 
   return (
-    <ContentSurface className="relative space-y-3 overflow-y-auto">
+    <ContentSurface className="relative space-y-3 overflow-y-auto max-h-[calc(100vh-2rem)]">
       {/* Close Button - Top Left Circle */}
       <Button 
         variant="ghost" 
@@ -290,7 +290,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               <div className="transition-all duration-300 ease-in-out">
               
               {/* Demographics Grid */}
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 max-w-2xl mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 max-w-2xl mb-4">
                 <div className="font-semibold text-muted-foreground">Date of Birth:</div>
                 <div className="font-medium text-foreground">{formatDate(patient.dateOfBirth)}</div>
                 
@@ -329,10 +329,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
           <div className="pt-4 transition-all duration-300 ease-in-out">
             {/* Action Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-6">
                 {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
-                  <div>
+                  <div className="w-full sm:w-auto">
                     <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground mb-2">
                       Select Consultation:
                     </label>
@@ -345,7 +345,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                   }}
                   disabled={showDeleteConfirmation || isStartingNewConsultation}
                 >
-                  <SelectTrigger className="w-72 h-11">
+                  <SelectTrigger className="w-full sm:w-72 h-11">
                     <SelectValue placeholder="Select an encounter..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -360,7 +360,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                 )}
               </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <Button
               variant="default"
               size="lg"
@@ -408,8 +408,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       {/* Tab Navigation & Content - Collapsible */}
       <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-4">
-        <div className="flex items-center justify-between border-b border-border/20 pb-4">
-          <div className="flex gap-3 overflow-x-auto flex-1 mr-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/20 pb-4">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto flex-1 sm:mr-4 scrollbar-hide">
             {[
               { key: "consultation", label: "Consultation" },
               { key: "diagnosis", label: "Diagnosis" },

@@ -38,6 +38,16 @@
   background: hsla(var(--surface-1) / .12);
 }
 
+/* Hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .glass,
   .glass-soft {
