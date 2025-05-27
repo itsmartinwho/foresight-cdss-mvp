@@ -174,15 +174,17 @@ export default function ConsultationPanel({
     }
   }, [patient?.id, isCreating, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
 
-  // Reset form when panel opens
+  // Reset form when panel opens and create encounter
   useEffect(() => {
     if (isOpen) {
       setEncounter(null);
       setReason('');
       setScheduledDate(new Date());
       setDuration(30);
+      // Automatically create encounter when panel opens
+      createEncounter();
     }
-  }, [isOpen]);
+  }, [isOpen, createEncounter]);
 
   const handleClose = useCallback(async () => {
     if (!encounter?.id) {

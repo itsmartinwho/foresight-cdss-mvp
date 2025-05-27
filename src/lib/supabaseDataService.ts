@@ -718,6 +718,15 @@ class SupabaseDataService {
       }
     }
 
+    // Find the Supabase UUID for this patient
+    const patientSupabaseUuid = Object.keys(this.patientUuidToOriginalId).find(
+      uuid => this.patientUuidToOriginalId[uuid] === patientId
+    );
+
+    if (!patientSupabaseUuid) {
+      throw new Error(`Patient Supabase UUID not found for patient ID ${patientId}; cannot create encounter.`);
+    }
+
     const newEncounterId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
 
@@ -731,7 +740,9 @@ class SupabaseDataService {
     const { error: insertErr } = await this.supabase.from('encounters').insert([
       {
         encounter_id: newEncounterId,
+        patient_supabase_id: patientSupabaseUuid, // Fix: Add the required foreign key
         reason_code: opts?.reason ?? null,
+        reason_display_text: opts?.reason ?? null, // Set the display text as well
         scheduled_start_datetime: startIso,
         scheduled_end_datetime: endIso,
         actual_start_datetime: null,
@@ -746,10 +757,24 @@ class SupabaseDataService {
       throw insertErr;
     }
 
+    // Get the actual Supabase UUID for the encounter we just created
+    const { data: createdEncounter, error: fetchErr } = await this.supabase
+      .from('encounters')
+      .select('id')
+      .eq('encounter_id', newEncounterId)
+      .single();
+
+    if (fetchErr || !createdEncounter) {
+      console.error('SupabaseDataService: Failed to fetch created encounter UUID', fetchErr);
+      throw new Error('Failed to retrieve created encounter UUID');
+    }
+
+    const encounterSupabaseUuid = createdEncounter.id;
+
     // Build local cache record
     const compositeId = `${patientId}_${newEncounterId}`;
     const encounter: Encounter = {
-      id: compositeId,
+      id: encounterSupabaseUuid, // Use the actual Supabase UUID
       encounterIdentifier: newEncounterId,
       patientId,
       scheduledStart: startIso,
