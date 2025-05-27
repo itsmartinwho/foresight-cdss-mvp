@@ -37,41 +37,66 @@ export default function ConsultationPanel({
   }, []);
 
   const createEncounter = useCallback(async () => {
-    if (!patient?.id || isCreating) return;
+    console.log('ConsultationPanel: createEncounter called', { 
+      patientId: patient?.id, 
+      isCreating,
+      patient: patient 
+    });
+    
+    if (!patient?.id || isCreating) {
+      console.log('ConsultationPanel: Skipping encounter creation', { 
+        hasPatientId: !!patient?.id, 
+        isCreating 
+      });
+      return;
+    }
     
     setIsCreating(true);
+    console.log('ConsultationPanel: Starting encounter creation...');
+    
     try {
       const newEncounter = await supabaseDataService.createNewEncounter(patient.id, {
         reason: '', // Will be filled from transcript later
         scheduledStart: new Date().toISOString(),
       });
       
+      console.log('ConsultationPanel: Encounter created successfully', newEncounter);
       setEncounter(newEncounter);
       
       if (onConsultationCreated) {
+        console.log('ConsultationPanel: Calling onConsultationCreated callback');
         onConsultationCreated(newEncounter);
       }
     } catch (error) {
-      console.error('Failed to create encounter:', error);
+      console.error('ConsultationPanel: Failed to create encounter:', error);
       toast({
         title: "Error",
-        description: "Failed to create consultation encounter.",
+        description: `Failed to create consultation encounter: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
       onClose();
     } finally {
       setIsCreating(false);
+      console.log('ConsultationPanel: Encounter creation process completed');
     }
   }, [patient?.id, isCreating, onConsultationCreated, onClose, toast]);
 
   // Create encounter immediately when panel opens
   useEffect(() => {
+    console.log('ConsultationPanel: useEffect triggered', { 
+      isOpen, 
+      hasEncounter: !!encounter, 
+      isCreating 
+    });
+    
     if (isOpen && !encounter && !isCreating) {
+      console.log('ConsultationPanel: Triggering encounter creation from useEffect');
       createEncounter();
     }
   }, [isOpen, encounter, isCreating, createEncounter]);
 
   const handleClose = useCallback(() => {
+    console.log('ConsultationPanel: handleClose called');
     // TODO: In Phase 5, this will save data before closing
     setEncounter(null);
     onClose();

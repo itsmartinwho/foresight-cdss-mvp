@@ -177,7 +177,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
     setSelectedEncounterForConsultation(encounter);
     setActiveTab('consultation');
-    setShowConsultationPanel(false);
+    // NOTE: Don't close the panel automatically - let user manually close when done
+    // The panel should remain open for consultation content entry
     router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
   };
 
