@@ -98,7 +98,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     } finally {
       setLoading(false);
     }
-  }, [patient?.id, selectedEncounterForConsultation]);
+  }, [patient?.id]);
 
   useEffect(() => {
     loadPatientData();
@@ -108,7 +108,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     <Button
       variant={activeTab === k ? "default" : "ghost"}
       size="default"
-      onClick={() => setActiveTab(k)}
+      onClick={() => {
+        console.log(`Tab clicked: ${k}, current activeTab: ${activeTab}`);
+        setActiveTab(k);
+      }}
       className={cn(
         "whitespace-nowrap transition-all duration-200 font-semibold px-6 py-3 h-auto",
         activeTab === k 
@@ -392,6 +395,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       {/* Content Sections */}
       <div className="space-y-8">
+        {console.log(`Rendering content sections with activeTab: ${activeTab}`)}
         {activeTab === "consultation" && patient && (
           <Section title="Consultation" collapsible defaultOpen contentClassName="space-y-4">
             <ConsultationTab
