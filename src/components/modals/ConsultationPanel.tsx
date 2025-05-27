@@ -21,9 +21,21 @@ interface ConsultationPanelProps {
   /** Callback when panel should close */
   onClose: () => void;
   /** Patient to create consultation for */
-  patient: Patient;
+  patient: Patient; // Remains required as per instructions, even if DB ops are skipped in demo
   /** Callback when consultation is successfully created */
   onConsultationCreated?: (encounter: Encounter) => void;
+  /** If true, panel operates in demo mode, driven by external state */
+  isDemoMode?: boolean;
+  /** Initial transcript content for demo mode */
+  initialDemoTranscript?: string;
+  /** Initial diagnosis content for demo mode */
+  demoDiagnosis?: string;
+  /** Initial treatment content for demo mode */
+  demoTreatment?: string;
+  /** Callback for when "Clinical Plan" is clicked in demo mode */
+  onDemoClinicalPlanClick?: () => void;
+  /** Controls loading state of Clinical Plan button externally for demo */
+  isDemoGeneratingPlan?: boolean;
 }
 
 // Styled DatePicker component to match the design
@@ -43,7 +55,13 @@ export default function ConsultationPanel({
   isOpen,
   onClose,
   patient,
-  onConsultationCreated
+  onConsultationCreated,
+  isDemoMode = false, // Default to false
+  initialDemoTranscript,
+  demoDiagnosis,
+  demoTreatment,
+  onDemoClinicalPlanClick,
+  isDemoGeneratingPlan = false, // Default to false
 }: ConsultationPanelProps) {
   const { toast } = useToast();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
@@ -204,24 +222,50 @@ export default function ConsultationPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isOpen) {
-      setEncounter(null);
+      // Common resets for both modes
+      setEncounter(null); // Encounter object is not used directly in demo for DB ops
       setReason('');
       setScheduledDate(new Date());
       setDuration(30);
-      setStarted(true);
-      setTranscriptText('');
-      setDiagnosisText('');
-      setTreatmentText('');
-      setActiveTab('transcript');
-      setPlanGenerated(false);
+      setActiveTab('transcript'); // Default tab
       setTabBarVisible(false);
-      setIsGeneratingPlan(false);
-      // Automatically create encounter when panel opens
-      createEncounter();
+      setIsGeneratingPlan(false); // Internal loading state
+      
+      if (isDemoMode) {
+        setTranscriptText(initialDemoTranscript || '');
+        setDiagnosisText(demoDiagnosis || '');
+        setTreatmentText(demoTreatment || '');
+        setStarted(true); // Show transcript area immediately
+
+        // If demo provides diagnosis or treatment, assume plan is "generated"
+        if (demoDiagnosis || demoTreatment) {
+          setPlanGenerated(true);
+          // Set active tab to diagnosis if available, else treatment, else transcript
+          if (demoDiagnosis) setActiveTab('diagnosis');
+          else if (demoTreatment) setActiveTab('treatment');
+          else setActiveTab('transcript');
+        } else {
+          setPlanGenerated(false);
+          setActiveTab('transcript');
+        }
+        // DO NOT call createEncounter in demo mode
+      } else {
+        // Existing logic for non-demo mode
+        setStarted(true); // Or false if you want the "Start Consultation" button first
+        setTranscriptText('');
+        setDiagnosisText('');
+        setTreatmentText('');
+        setPlanGenerated(false);
+        createEncounter(); // Create real encounter for non-demo
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, createEncounter]); // createEncounter is memoized
 
   const handleClose = useCallback(async () => {
+    if (isDemoMode) {
+      onClose();
+      return;
+    }
     if (!encounter) {
       onClose();
       return;
@@ -240,16 +284,20 @@ export default function ConsultationPanel({
     } finally {
       setIsSaving(false);
     }
-  }, [patient.id, encounter, transcriptText, onClose, toast]);
+  }, [isDemoMode, patient.id, encounter, transcriptText, onClose, toast, isSaving]);
 
   // Discard handler: close without saving and remove the created encounter
   const handleDiscard = useCallback(() => {
+    if (isDemoMode) {
+      onClose();
+      return;
+    }
     if (encounter) {
       const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
       supabaseDataService.permanentlyDeleteEncounter(patient.id, compositeId);
     }
     onClose();
-  }, [encounter, patient.id, onClose]);
+  }, [isDemoMode, encounter, patient.id, onClose]);
 
   // Handle escape key
   useEffect(() => {
@@ -267,20 +315,24 @@ export default function ConsultationPanel({
 
   // Pause/resume transcription controls
   const pauseTranscription = useCallback(() => {
+    if (isDemoMode) return; // Disable in demo mode
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
     }
-  }, []);
+  }, [isDemoMode]);
 
   const resumeTranscription = useCallback(() => {
+    if (isDemoMode) return; // Disable in demo mode
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
     }
-  }, []);
+  }, [isDemoMode]);
 
   const startVoiceInput = useCallback(async () => {
+    if (isDemoMode) return; // Disable in demo mode
+
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
     if (!apiKey) {
       toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
@@ -464,13 +516,13 @@ export default function ConsultationPanel({
                               variant="outline"
                               size="sm"
                               onClick={startVoiceInput}
-                              disabled={isGeneratingPlan || isSaving}
+                              disabled={isDemoMode || isGeneratingPlan || isSaving || isTranscribing}
                               className="flex items-center gap-2"
                             >
                               <Mic className="h-4 w-4" />
                               Transcribe
                             </Button>
-                            {isTranscribing && (
+                            {isTranscribing && !isDemoMode && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -482,12 +534,18 @@ export default function ConsultationPanel({
                               </Button>
                             )}
                             <Button
-                              variant={isGeneratingPlan ? "secondary" : "default"}
-                              onClick={handleClinicalPlan}
-                              disabled={isGeneratingPlan || transcriptText.length < 10}
+                              variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
+                              onClick={() => {
+                                if (isDemoMode && onDemoClinicalPlanClick) {
+                                  onDemoClinicalPlanClick();
+                                } else if (!isDemoMode) {
+                                  handleClinicalPlan();
+                                }
+                              }}
+                              disabled={isDemoMode ? isDemoGeneratingPlan : (isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan)}
                               className="flex items-center gap-2"
                             >
-                              {isGeneratingPlan ? (
+                              {(isGeneratingPlan || isDemoGeneratingPlan) ? (
                                 <>
                                   <CircleNotch className="h-4 w-4 animate-spin" />
                                   Analyzing...
@@ -504,10 +562,11 @@ export default function ConsultationPanel({
                         <Textarea
                           ref={transcriptTextareaRef}
                           value={transcriptText}
-                          onChange={(e) => setTranscriptText(e.target.value)}
-                          placeholder="Type or dictate the consultation notes here..."
+                          onChange={(e) => setTranscriptText(e.target.value)} // Keep local edits possible
+                          placeholder={isDemoMode ? "Demo transcript loaded." : "Type or dictate the consultation notes here..."}
                           className="flex-1 resize-none text-base"
                           style={{ minHeight: '300px' }}
+                          readOnly={isDemoMode && !initialDemoTranscript} // Example: make readOnly if no initial transcript in demo
                         />
                       </div>
                     )}
@@ -518,7 +577,7 @@ export default function ConsultationPanel({
                         <Textarea
                           value={diagnosisText}
                           onChange={(e) => setDiagnosisText(e.target.value)}
-                          placeholder="Enter or edit the diagnosis..."
+                          placeholder={isDemoMode ? "Demo diagnosis loaded." : "Enter or edit the diagnosis..."}
                           className="flex-1 resize-none text-base"
                           style={{ minHeight: '300px' }}
                         />
@@ -531,7 +590,7 @@ export default function ConsultationPanel({
                         <Textarea
                           value={treatmentText}
                           onChange={(e) => setTreatmentText(e.target.value)}
-                          placeholder="Enter or edit the treatment plan..."
+                          placeholder={isDemoMode ? "Demo treatment plan loaded." : "Enter or edit the treatment plan..."}
                           className="flex-1 resize-none text-base"
                           style={{ minHeight: '300px' }}
                         />
@@ -544,15 +603,15 @@ export default function ConsultationPanel({
               {/* Footer Actions */}
               {started && (
                 <div className="border-t border-border/50 pt-4 flex justify-end gap-2">
-                  <Button variant="secondary" onClick={handleDiscard} disabled={isSaving}>
+                  <Button variant="secondary" onClick={handleDiscard} disabled={isSaving && !isDemoMode}>
                     Close
                   </Button>
                   <Button 
                     variant="default" 
                     onClick={handleClose}
-                    disabled={isSaving}
+                    disabled={isSaving && !isDemoMode}
                   >
-                    {isSaving ? "Saving..." : "Save & Close"}
+                    {(isSaving && !isDemoMode) ? "Saving..." : "Save & Close"}
                   </Button>
                 </div>
               )}
@@ -564,4 +623,4 @@ export default function ConsultationPanel({
   );
 
   return createPortal(panelContent, document.body);
-} 
+}
