@@ -17,6 +17,7 @@ import AlertsScreenView from "@/components/views/AlertsScreenView";
 import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
 import SettingsScreenView from "@/components/views/SettingsScreenView";
 import LoadingAnimation from '@/components/LoadingAnimation';
+import { DemoProvider } from "@/hooks/useDemoContext";
 
 function ForesightApp() {
   const pathname = usePathname();
@@ -126,10 +127,10 @@ function ForesightApp() {
   }
 
   return (
-    <>
+    <DemoProvider>
       {currentView}
-    </>
+    </DemoProvider>
   );
 }
 
-export default ForesightApp; 
+export default ForesightApp;

@@ -32,6 +32,7 @@ import ContentSurface from "@/components/layout/ContentSurface";
 import Section from "@/components/ui/section";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ConsultationPanel from '@/components/modals/ConsultationPanel';
+import { useDemo } from '@/hooks/useDemoContext'; // Added for demo
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -56,7 +57,50 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const [isTabContentOpen, setIsTabContentOpen] = useState(true);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // Already here
+
+  // Demo states and hooks
+  const {
+    isDemoActive,
+    demoStage,
+    dorothyRobinsonPatient,
+    exitDemo,
+    advanceDemoStage,
+    animatedTranscript,
+    diagnosisForDemo,
+    treatmentPlanForDemo,
+  } = useDemo();
+
+  const isDemoRouteActive = searchParams.get('demo') === 'true';
+  const shouldRunDemoUi = isDemoActive && isDemoRouteActive && dorothyRobinsonPatient?.id === initialPatientStub.id;
+  const [isDemoPanelOpen, setIsDemoPanelOpen] = useState(false);
+
+  // Effect to handle demo lifecycle and panel visibility
+  useEffect(() => {
+    if (shouldRunDemoUi) {
+      if (demoStage === 'consultationPanelReady') {
+        setIsDemoPanelOpen(true);
+        advanceDemoStage('animatingTranscript');
+      } else if (demoStage === 'finished' || !isDemoActive) {
+        setIsDemoPanelOpen(false);
+      }
+    } else if (isDemoPanelOpen) {
+      // If demo conditions are no longer met (e.g., navigated away, demo exited), close panel
+      setIsDemoPanelOpen(false);
+    }
+  }, [demoStage, shouldRunDemoUi, isDemoActive, advanceDemoStage, isDemoPanelOpen]);
+  
+  // Effect to exit demo if patient ID mismatches or demo is no longer active on this route
+  useEffect(() => {
+    if (isDemoActive && isDemoRouteActive && dorothyRobinsonPatient?.id !== initialPatientStub.id) {
+      exitDemo();
+    }
+    if (isDemoActive && !isDemoRouteActive && initialPatientStub.id === dorothyRobinsonPatient?.id) {
+      // If demo was active for this patient, but demo param is gone, exit
+      exitDemo();
+    }
+  }, [isDemoActive, isDemoRouteActive, dorothyRobinsonPatient?.id, initialPatientStub.id, exitDemo]);
+
 
   useEffect(() => {
     if (initialTab) {
@@ -477,9 +521,30 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       <ConsultationPanel
         isOpen={showConsultationPanel}
         onClose={() => setShowConsultationPanel(false)}
-        patient={patient}
+        patient={patient} // This is the regular patient for the non-demo panel
         onConsultationCreated={handleConsultationCreated}
       />
+      )}
+
+      {/* Demo Consultation Panel */}
+      {shouldRunDemoUi && dorothyRobinsonPatient && (
+        <ConsultationPanel
+          isOpen={isDemoPanelOpen}
+          onClose={() => {
+            exitDemo(); // This will set demoStage to 'finished'
+            setIsDemoPanelOpen(false); // Explicitly close panel if not already handled by demoStage effect
+          }}
+          patient={dorothyRobinsonPatient} // Use demo patient data
+          isDemoMode={true}
+          initialDemoTranscript={animatedTranscript}
+          demoDiagnosis={diagnosisForDemo}
+          demoTreatment={treatmentPlanForDemo}
+          onDemoClinicalPlanClick={() => {
+            advanceDemoStage('simulatingPlanGeneration');
+          }}
+          isDemoGeneratingPlan={demoStage === 'simulatingPlanGeneration'}
+        />
+      )}
     </ContentSurface>
   );
-} 
+}
