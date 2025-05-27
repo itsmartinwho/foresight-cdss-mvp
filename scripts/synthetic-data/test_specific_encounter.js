@@ -65,7 +65,7 @@ async function testSpecificEncounter() {
     console.log('Testing data service for this patient...');
     
     // Simulate what the data service does
-    const { supabaseDataService } = require('../src/lib/supabaseDataService.ts');
+    const { supabaseDataService } = require('../../src/lib/supabaseDataService.ts');
     
     // Load all data first
     await supabaseDataService.loadPatientData();
