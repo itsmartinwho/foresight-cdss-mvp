@@ -9,14 +9,26 @@ import type { Patient, Encounter, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import ContentSurface from '@/components/layout/ContentSurface';
-import { Progress } from "@/components/ui/progress";
+// No Progress import needed for this change
 import Image from 'next/image';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// No BarChart imports needed for this change
 
 // Import shared UI components
-import LikelihoodBadge from "@/components/ui/LikelihoodBadge";
+// No LikelihoodBadge import needed for this change
 import NotificationBell from "@/components/ui/NotificationBell";
 import AlertSidePanel from "@/components/ui/AlertSidePanel";
+
+// Demo Context and UI
+import { useDemo } from "@/hooks/useDemoContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
 
 // Type for upcoming appointments, specific to this view
 type UpcomingEntry = { patient: Patient; encounter: Encounter };
@@ -32,6 +44,16 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
+
+  const {
+    hasDemoRun,
+    isDemoModalOpen,
+    demoStage,
+    startDemo,
+    skipDemo,
+    setDemoModalOpen,
+    isDemoActive,
+  } = useDemo();
 
   useEffect(() => {
     const loadUpcomingAppointments = async () => {
@@ -141,6 +163,50 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         />
       )}
       <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
+
+      {/* Demo Modal */}
+      {demoStage === 'introModal' && (
+        <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>See Foresight in Action</DialogTitle>
+              <DialogDescription>
+                Take a quick guided tour using a sample patient to see how Foresight can help you.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  skipDemo();
+                }}
+              >
+                Skip
+              </Button>
+              <Button
+                onClick={() => {
+                  startDemo();
+                }}
+              >
+                Start Demo
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Demo FAB (Persistent Teaser Bubble) */}
+      {demoStage === 'fabVisible' && !hasDemoRun && !isDemoActive && (
+        <div
+          onClick={() => {
+            startDemo();
+          }}
+          className="fixed right-8 bottom-24 w-16 h-16 rounded-full bg-gradient-to-tr from-teal-300 to-yellow-300 animate-pulse shadow-lg cursor-pointer flex items-center justify-center z-50"
+          // Placed bottom-24 to avoid overlap with NotificationBell, can be adjusted
+        >
+          <PlayCircle className="text-white w-8 h-8" />
+        </div>
+      )}
     </ContentSurface>
   );
-} 
+}
