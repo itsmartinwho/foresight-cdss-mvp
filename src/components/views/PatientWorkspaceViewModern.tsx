@@ -239,29 +239,29 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }
 
   return (
-    <ContentSurface className="relative space-y-6 overflow-y-auto">
-      {/* Close Button - Top Right */}
+    <ContentSurface className="relative space-y-3 overflow-y-auto">
+      {/* Close Button - Top Left Circle */}
       <Button 
         variant="ghost" 
         onClick={onBack} 
-        className="absolute top-2 right-4 z-10 hover:text-destructive group p-2"
+        className="absolute top-3 left-3 z-10 hover:bg-destructive/20 group w-8 h-8 p-0 rounded-full bg-background/80 border border-border/50 shadow-sm"
       >
-        <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
+        <X className="h-4 w-4 text-muted-foreground group-hover:text-destructive transition-colors" />
       </Button>
 
       {/* Patient Overview - Collapsible */}
-      <Collapsible open={isPatientOverviewOpen} onOpenChange={setIsPatientOverviewOpen} className="border-b border-border/20 pb-8">
+      <Collapsible open={isPatientOverviewOpen} onOpenChange={setIsPatientOverviewOpen} className="border-b border-border/20 pb-6 pl-12">
         {/* Patient Header */}
         <div className="flex items-start gap-6">
-          <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
+          <Avatar className="h-16 w-16 border-2 border-neon/30 shadow-lg">
             <AvatarImage src={patient.photo} alt={patient.name} />
-            <AvatarFallback className="text-3xl bg-neon/20 text-neon font-bold">
+            <AvatarFallback className="text-2xl bg-neon/20 text-neon font-bold">
               {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
             </AvatarFallback>
           </Avatar>
           
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <h1 className="text-step-3 font-bold text-foreground">{patient.name}</h1>
                 {!isPatientOverviewOpen && (
@@ -287,10 +287,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             </div>
 
             <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-              <div className="space-y-4 transition-all duration-300 ease-in-out">
+              <div className="transition-all duration-300 ease-in-out">
               
               {/* Demographics Grid */}
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 max-w-2xl mb-4">
                 <div className="font-semibold text-muted-foreground">Date of Birth:</div>
                 <div className="font-medium text-foreground">{formatDate(patient.dateOfBirth)}</div>
                 
@@ -327,15 +327,15 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         </div>
 
         <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-          <div className="pt-6 space-y-4 transition-all duration-300 ease-in-out">
+          <div className="pt-4 transition-all duration-300 ease-in-out">
             {/* Action Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
-              <div className="space-y-2">
-                <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground">
-                  Select Consultation:
-                </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
+                  <div>
+                    <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground mb-2">
+                      Select Consultation:
+                    </label>
                 <Select
                   value={selectedEncounterForConsultation?.id || ""}
                   onValueChange={(value) => {
@@ -356,9 +356,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                     ))}
                   </SelectContent>
                 </Select>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
           
           <div className="flex items-center gap-4">
             <Button
@@ -407,8 +407,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       </Collapsible>
 
       {/* Tab Navigation & Content - Collapsible */}
-      <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-6">
-        <div className="flex items-center justify-between border-b border-border/20 pb-6">
+      <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/20 pb-4">
           <div className="flex gap-3 overflow-x-auto flex-1 mr-4">
             {[
               { key: "consultation", label: "Consultation" },
@@ -442,69 +442,50 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         </div>
 
         <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-          <div className="space-y-6 transition-all duration-300 ease-in-out">
-
-      {/* Content Sections */}
-      <div className="space-y-8">
-        {activeTab === "consultation" && patient && (
-          <div className="space-y-4">
-            <ConsultationTab
-              patient={patient}
-              selectedEncounter={selectedEncounterForConsultation}
-              isStartingNewConsultation={isStartingNewConsultation}
-              newConsultationReason={newConsultationReason}
-              onNewConsultationReasonChange={setNewConsultationReason}
-              newConsultationDate={newConsultationDate}
-              onNewConsultationDateChange={setNewConsultationDate}
-              newConsultationDuration={newConsultationDuration}
-              onNewConsultationDurationChange={setNewConsultationDuration}
-              onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
-            />
-          </div>
-        )}
-        
-        {activeTab === "diagnosis" && (
-          <div className="space-y-4">
-            <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
-          </div>
-        )}
-        
-        {activeTab === "treatment" && (
-          <div className="space-y-4">
-            <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />
-          </div>
-        )}
-        
-        {activeTab === "labs" && (
-          <div className="space-y-4">
-            <LabsTab patient={patient} allEncounters={activeEncounterDetails} />
-          </div>
-        )}
-        
-        {activeTab === "prior" && (
-          <div className="space-y-4">
-            <PriorAuthTab patient={patient} allEncounters={activeEncounterDetails} />
-          </div>
-        )}
-        
-        {activeTab === "trials" && (
-          <div className="space-y-4">
-            <TrialsTab patient={patient} />
-          </div>
-        )}
-        
-        {activeTab === "history" && (
-          <div className="space-y-4">
-            <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />
-          </div>
-        )}
-        
-        {activeTab === "allData" && (
-          <div className="space-y-4">
-            <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />
-          </div>
-        )}
-      </div>
+          <div className="pt-4 transition-all duration-300 ease-in-out">
+            {/* Content Sections */}
+            {activeTab === "consultation" && patient && (
+              <ConsultationTab
+                patient={patient}
+                selectedEncounter={selectedEncounterForConsultation}
+                isStartingNewConsultation={isStartingNewConsultation}
+                newConsultationReason={newConsultationReason}
+                onNewConsultationReasonChange={setNewConsultationReason}
+                newConsultationDate={newConsultationDate}
+                onNewConsultationDateChange={setNewConsultationDate}
+                newConsultationDuration={newConsultationDuration}
+                onNewConsultationDurationChange={setNewConsultationDuration}
+                onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
+              />
+            )}
+            
+            {activeTab === "diagnosis" && (
+              <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
+            )}
+            
+            {activeTab === "treatment" && (
+              <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />
+            )}
+            
+            {activeTab === "labs" && (
+              <LabsTab patient={patient} allEncounters={activeEncounterDetails} />
+            )}
+            
+            {activeTab === "prior" && (
+              <PriorAuthTab patient={patient} allEncounters={activeEncounterDetails} />
+            )}
+            
+            {activeTab === "trials" && (
+              <TrialsTab patient={patient} />
+            )}
+            
+            {activeTab === "history" && (
+              <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />
+            )}
+            
+            {activeTab === "allData" && (
+              <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
