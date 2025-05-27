@@ -41,11 +41,11 @@ export default function TreatmentTab({ patient, allEncounters }: TreatmentTabPro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {encountersWithTreatments.map(({ encounter }) => (
-        <div key={encounter.id} className="bg-muted/30 rounded-lg p-6 space-y-4">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">
+        <div key={encounter.id} className="bg-muted/20 rounded-lg p-4 space-y-3">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">
               Encounter: {new Date(encounter.scheduledStart).toLocaleDateString()}
             </h3>
             <p className="text-sm text-muted-foreground font-medium">
@@ -54,14 +54,12 @@ export default function TreatmentTab({ patient, allEncounters }: TreatmentTabPro
           </div>
           
           {encounter.treatments && encounter.treatments.length > 0 ? (
-            <div className="bg-background/50 rounded-md p-4">
-              <RenderDetailTable 
-                title='Treatments' 
-                dataArray={encounter.treatments} 
-                headers={['Drug', 'Status', 'Rationale']} 
-                columnAccessors={['drug', 'status', 'rationale']} 
-              />
-            </div>
+            <RenderDetailTable 
+              title='Treatments' 
+              dataArray={encounter.treatments} 
+              headers={['Drug', 'Status', 'Rationale']} 
+              columnAccessors={['drug', 'status', 'rationale']} 
+            />
           ) : (
             <p className="text-muted-foreground italic">No treatments recorded for this encounter.</p>
           )}

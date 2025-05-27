@@ -22,8 +22,8 @@ export default function RenderDetailTable({ title, dataArray, headers, columnAcc
   const accessors = columnAccessors || headers.map(h => h.toLowerCase().replace(/\s+/g, ''));
 
   return (
-    <div className="mt-3 p-4 rounded-xl bg-glass glass-dense backdrop-blur-lg">
-      <h4 className="font-semibold text-sm text-muted-foreground/80 mb-1">{title}</h4>
+    <div className="mt-2">
+      <h4 className="font-semibold text-sm text-muted-foreground/80 mb-2">{title}</h4>
       <Table className="text-xs mobile-card:block sm:table">
         <TableHeader className="mobile-card:hidden sm:table-header-group">
           <TableRow>

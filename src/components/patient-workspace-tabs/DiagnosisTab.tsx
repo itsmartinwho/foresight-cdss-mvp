@@ -38,11 +38,11 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {encountersWithDiagnoses.map(({ encounter, diagnoses }) => (
-        <div key={encounter.id} className="bg-muted/30 rounded-lg p-6 space-y-4">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">
+        <div key={encounter.id} className="bg-muted/20 rounded-lg p-4 space-y-3">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">
               Encounter: {new Date(encounter.scheduledStart).toLocaleDateString()}
             </h3>
             <p className="text-sm text-muted-foreground font-medium">
@@ -51,9 +51,9 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
           </div>
           
           {diagnoses.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {diagnoses.map((dx, index) => (
-                <div key={`${encounter.id}-dx-${index}-${dx.code || 'unknown'}`} className="bg-background/50 rounded-md p-4 space-y-2">
+                <div key={`${encounter.id}-dx-${index}-${dx.code || 'unknown'}`} className="bg-background/30 rounded-md p-3 space-y-1">
                   <p className="font-semibold text-foreground">{dx.description || "No description"}</p>
                   {dx.code && (
                     <p className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded w-fit">
