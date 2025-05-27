@@ -184,7 +184,7 @@ export default function ConsultationPanel({
       // Automatically create encounter when panel opens
       createEncounter();
     }
-  }, [isOpen, createEncounter]);
+  }, [isOpen]);
 
   const handleClose = useCallback(async () => {
     if (!encounter?.id) {
