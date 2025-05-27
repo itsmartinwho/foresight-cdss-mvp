@@ -293,79 +293,78 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             </div>
           </div>
 
-            {/* Action Controls */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
-                  <div className="space-y-2">
-                    <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground">
-                      Select Consultation:
-                    </label>
-                    <Select
-                      value={selectedEncounterForConsultation?.id || ""}
-                      onValueChange={(value) => {
-                        const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
-                        setSelectedEncounterForConsultation(foundEncounter);
-                        if(foundEncounter) setActiveTab('consultation');
-                      }}
-                      disabled={showDeleteConfirmation || isStartingNewConsultation}
-                    >
-                      <SelectTrigger className="w-72 h-11">
-                        <SelectValue placeholder="Select an encounter..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeEncounterDetails.map((ew) => (
-                          <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
-                            {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={async () => {
-                    if (isStartingNewConsultation) {
-                      setIsStartingNewConsultation(false);
-                      if (activeEncounterDetails && activeEncounterDetails.length > 0) {
-                        const previouslySelectedId = selectedEncounterForConsultation?.id;
-                        setSelectedEncounterForConsultation(null); 
-                        const reselectEncounter = previouslySelectedId 
-                          ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
-                          : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
-                        setSelectedEncounterForConsultation(reselectEncounter || null);
-                      } else {
-                        setSelectedEncounterForConsultation(null);
-                      }
-                    } else {
+          {/* Action Controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
+                <div className="space-y-2">
+                  <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground">
+                    Select Consultation:
+                  </label>
+                  <Select
+                    value={selectedEncounterForConsultation?.id || ""}
+                    onValueChange={(value) => {
+                      const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
+                      setSelectedEncounterForConsultation(foundEncounter);
+                      if(foundEncounter) setActiveTab('consultation');
+                    }}
+                    disabled={showDeleteConfirmation || isStartingNewConsultation}
+                  >
+                    <SelectTrigger className="w-72 h-11">
+                      <SelectValue placeholder="Select an encounter..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeEncounterDetails.map((ew) => (
+                        <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
+                          {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <Button
+                variant="default"
+                size="lg"
+                onClick={async () => {
+                  if (isStartingNewConsultation) {
+                    setIsStartingNewConsultation(false);
+                    if (activeEncounterDetails && activeEncounterDetails.length > 0) {
+                      const previouslySelectedId = selectedEncounterForConsultation?.id;
                       setSelectedEncounterForConsultation(null); 
-                      setIsStartingNewConsultation(true);
-                      setActiveTab('consultation');
+                      const reselectEncounter = previouslySelectedId 
+                        ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
+                        : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
+                      setSelectedEncounterForConsultation(reselectEncounter || null);
+                    } else {
+                      setSelectedEncounterForConsultation(null);
                     }
-                  }}
+                  } else {
+                    setSelectedEncounterForConsultation(null); 
+                    setIsStartingNewConsultation(true);
+                    setActiveTab('consultation');
+                  }
+                }}
+                className="font-semibold"
+              >
+                {isStartingNewConsultation ? <X className="mr-2 h-5 w-5"/> : <PlusCircle className="mr-2 h-5 w-5"/>}
+                {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
+              </Button>
+              
+              {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
+                  size="default"
                   className="font-semibold"
                 >
-                  {isStartingNewConsultation ? <X className="mr-2 h-5 w-5"/> : <PlusCircle className="mr-2 h-5 w-5"/>}
-                  {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
                 </Button>
-                
-                {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
-                    size="default"
-                    className="font-semibold"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
