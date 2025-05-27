@@ -13,6 +13,7 @@ interface SectionProps {
   defaultOpen?: boolean;
   headerClassName?: string;
   contentClassName?: string;
+  collapsedSummary?: string;
 }
 
 export default function Section({
@@ -23,6 +24,7 @@ export default function Section({
   defaultOpen = true,
   headerClassName,
   contentClassName,
+  collapsedSummary,
 }: SectionProps) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
@@ -45,9 +47,16 @@ export default function Section({
         "flex items-center justify-between w-full text-left group hover:text-neon transition-all duration-200 p-3 rounded-lg hover:bg-foreground/5 cursor-pointer",
         headerClassName
       )}>
-        <h2 className="text-step-1 font-bold text-foreground group-hover:text-neon transition-colors">
-          {title}
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-step-1 font-bold text-foreground group-hover:text-neon transition-colors">
+            {title}
+          </h2>
+          {!isOpen && collapsedSummary && (
+            <span className="text-sm text-muted-foreground font-normal">
+              - {collapsedSummary}
+            </span>
+          )}
+        </div>
         <ChevronUp 
           className={cn(
             "h-5 w-5 text-muted-foreground group-hover:text-neon transition-all duration-300 ease-in-out",

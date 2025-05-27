@@ -234,17 +234,22 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
   return (
     <ContentSurface className="relative space-y-8 overflow-y-auto">
-      {/* Close Button - Top Right */}
-      <Button 
-        variant="ghost" 
-        onClick={onBack} 
-        className="absolute top-4 right-4 z-10 hover:text-destructive group p-2"
-      >
-        <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
-      </Button>
-
       {/* Patient Overview */}
-      <Section title="Patient Overview" collapsible defaultOpen className="border-b border-border/20 pb-8">
+      <Section 
+        title="Patient Overview" 
+        collapsible 
+        defaultOpen 
+        className="border-b border-border/20 pb-8 pt-2"
+        collapsedSummary={patient.name}
+      >
+        {/* Close Button - Top Right */}
+        <Button 
+          variant="ghost" 
+          onClick={onBack} 
+          className="absolute top-4 right-16 z-10 hover:text-destructive group p-2"
+        >
+          <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
+        </Button>
         {/* Patient Header */}
         <div className="flex items-start gap-6">
           <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
@@ -393,7 +398,13 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       {/* Content Sections */}
       <div className="space-y-8">
         {activeTab === "consultation" && patient && (
-          <Section title="Consultation" collapsible defaultOpen contentClassName="space-y-4">
+          <Section 
+            title="Consultation" 
+            collapsible 
+            defaultOpen 
+            contentClassName="space-y-4"
+            collapsedSummary={selectedEncounterForConsultation?.reasonDisplayText || selectedEncounterForConsultation?.reasonCode || 'No reason specified'}
+          >
             <ConsultationTab
               patient={patient}
               selectedEncounter={selectedEncounterForConsultation}
@@ -410,19 +421,37 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         )}
         
         {activeTab === "diagnosis" && (
-          <Section title="Diagnoses & Conditions" collapsible defaultOpen contentClassName="space-y-4">
+          <Section 
+            title="Diagnoses & Conditions" 
+            collapsible 
+            defaultOpen 
+            contentClassName="space-y-4"
+            collapsedSummary={`${activeEncounterDetails.reduce((count, ew) => count + (ew.diagnoses?.length || 0), 0)} diagnoses across ${activeEncounterDetails.length} encounter${activeEncounterDetails.length !== 1 ? 's' : ''}`}
+          >
             <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "treatment" && (
-          <Section title="Treatments & Medications" collapsible defaultOpen contentClassName="space-y-4">
+          <Section 
+            title="Treatments & Medications" 
+            collapsible 
+            defaultOpen 
+            contentClassName="space-y-4"
+            collapsedSummary={`${activeEncounterDetails.reduce((count, ew) => count + (ew.encounter.treatments?.length || 0), 0)} treatments`}
+          >
             <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "labs" && (
-          <Section title="Laboratory Results" collapsible defaultOpen contentClassName="space-y-4">
+          <Section 
+            title="Laboratory Results" 
+            collapsible 
+            defaultOpen 
+            contentClassName="space-y-4"
+            collapsedSummary={`${activeEncounterDetails.reduce((count, ew) => count + (ew.labResults?.length || 0), 0)} lab results`}
+          >
             <LabsTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
@@ -440,7 +469,13 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         )}
         
         {activeTab === "history" && (
-          <Section title="Encounter History" collapsible defaultOpen contentClassName="space-y-4">
+          <Section 
+            title="Encounter History" 
+            collapsible 
+            defaultOpen 
+            contentClassName="space-y-4"
+            collapsedSummary={`${activeEncounterDetails.length} encounter${activeEncounterDetails.length !== 1 ? 's' : ''}`}
+          >
             <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
