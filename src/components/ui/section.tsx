@@ -28,11 +28,11 @@ export default function Section({
 
   if (!collapsible) {
     return (
-      <section className={cn("mb-6 last:mb-0", className)}>
-        <h2 className={cn("text-xl font-semibold mb-4 text-foreground", headerClassName)}>
+      <section className={cn("mb-8 last:mb-0", className)}>
+        <h2 className={cn("text-step-1 font-bold mb-6 text-foreground", headerClassName)}>
           {title}
         </h2>
-        <div className={cn(contentClassName)}>
+        <div className={cn("space-y-4", contentClassName)}>
           {children}
         </div>
       </section>
@@ -40,12 +40,12 @@ export default function Section({
   }
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn("mb-6 last:mb-0", className)}>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={cn("mb-8 last:mb-0", className)}>
       <CollapsibleTrigger className={cn(
-        "flex items-center justify-between w-full text-left group hover:text-neon transition-colors",
+        "flex items-center justify-between w-full text-left group hover:text-neon transition-colors p-2 rounded-lg hover:bg-foreground/5",
         headerClassName
       )}>
-        <h2 className="text-xl font-semibold text-foreground group-hover:text-neon transition-colors">
+        <h2 className="text-step-1 font-bold text-foreground group-hover:text-neon transition-colors">
           {title}
         </h2>
         <ChevronDown 
@@ -56,7 +56,7 @@ export default function Section({
         />
       </CollapsibleTrigger>
       <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-        <div className={cn("pt-4", contentClassName)}>
+        <div className={cn("pt-6 space-y-4", contentClassName)}>
           {children}
         </div>
       </CollapsibleContent>

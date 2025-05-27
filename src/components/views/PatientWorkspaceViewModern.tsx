@@ -107,13 +107,13 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
       variant={activeTab === k ? "default" : "ghost"}
-      size="sm"
+      size="default"
       onClick={() => setActiveTab(k)}
       className={cn(
-        "whitespace-nowrap transition-all duration-200",
+        "whitespace-nowrap transition-all duration-200 font-semibold px-6 py-3 h-auto",
         activeTab === k 
-          ? "bg-neon/20 text-neon border-neon/30" 
-          : "hover:bg-foreground/5 hover:text-neon"
+          ? "bg-neon/20 text-neon border-neon/30 shadow-sm" 
+          : "hover:bg-foreground/5 hover:text-neon text-muted-foreground"
       )}
     >
       {children}
@@ -233,107 +233,147 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }
 
   return (
-    <ContentSurface className="relative">
+    <ContentSurface className="relative space-y-8">
       {/* Header Section */}
-      <Section title="Patient Information" className="border-b border-border/20 pb-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onBack} className="hover:text-neon group">
-              <ChevronLeft className="h-5 w-5 mr-1 group-hover:text-neon" />
-              <Users className="h-5 w-5 mr-1 group-hover:text-neon" />
-              Back to Patients
-            </Button>
-            
-            <Avatar className="h-16 w-16 border-2 border-neon/30">
+      <Section title="Patient Information" className="border-b border-border/20 pb-8">
+        <div className="space-y-6">
+          {/* Back Button */}
+          <Button variant="ghost" onClick={onBack} className="hover:text-neon group self-start">
+            <ChevronLeft className="h-5 w-5 mr-2 group-hover:text-neon transition-colors" />
+            <Users className="h-5 w-5 mr-2 group-hover:text-neon transition-colors" />
+            <span className="font-medium">Back to Patients</span>
+          </Button>
+
+          {/* Patient Header */}
+          <div className="flex items-start gap-6">
+            <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
               <AvatarImage src={patient.photo} alt={patient.name} />
-              <AvatarFallback className="text-2xl bg-neon/20 text-neon font-medium">
+              <AvatarFallback className="text-3xl bg-neon/20 text-neon font-bold">
                 {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
               </AvatarFallback>
             </Avatar>
             
-            <div>
-              <h1 className="text-step-2 font-bold text-foreground">{patient.name}</h1>
-              <div className="text-step-0 text-muted-foreground space-x-4">
-                <span>DOB: {formatDate(patient.dateOfBirth)} (Age: {calculateAge(patient.dateOfBirth)})</span>
-                <span>Gender: {patient.gender || 'N/A'}</span>
-                {patient.ethnicity && <span>Ethnicity: {patient.ethnicity}</span>}
-                {patient.race && <span>Race: {patient.race}</span>}
+            <div className="flex-1 space-y-4">
+              <div>
+                <h1 className="text-step-3 font-bold text-foreground mb-2">{patient.name}</h1>
+                
+                {/* Demographics Grid */}
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
+                  <div className="font-semibold text-muted-foreground">Date of Birth:</div>
+                  <div className="font-medium text-foreground">{formatDate(patient.dateOfBirth)}</div>
+                  
+                  <div className="font-semibold text-muted-foreground">Age:</div>
+                  <div className="font-medium text-foreground">{calculateAge(patient.dateOfBirth)} years</div>
+                  
+                  <div className="font-semibold text-muted-foreground">Gender:</div>
+                  <div className="font-medium text-foreground">{patient.gender || 'N/A'}</div>
+                  
+                  {patient.ethnicity && (
+                    <>
+                      <div className="font-semibold text-muted-foreground">Ethnicity:</div>
+                      <div className="font-medium text-foreground">{patient.ethnicity}</div>
+                    </>
+                  )}
+                  
+                  {patient.race && (
+                    <>
+                      <div className="font-semibold text-muted-foreground">Race:</div>
+                      <div className="font-medium text-foreground">{patient.race}</div>
+                    </>
+                  )}
+                  
+                  {patient.id && (
+                    <>
+                      <div className="font-semibold text-muted-foreground">Patient ID:</div>
+                      <div className="font-mono text-sm text-foreground bg-muted/50 px-2 py-1 rounded">{patient.id}</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
-              <div>
-                <label htmlFor="consultation-select" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Select Consultation:
-                </label>
-                <Select
-                  value={selectedEncounterForConsultation?.id || ""}
-                  onValueChange={(value) => {
-                    const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
-                    setSelectedEncounterForConsultation(foundEncounter);
-                    if(foundEncounter) setActiveTab('consultation');
-                  }}
-                  disabled={showDeleteConfirmation || isStartingNewConsultation}
-                >
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder="Select an encounter..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeEncounterDetails.map((ew) => (
-                      <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
-                        {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+            {/* Action Controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
+                  <div className="space-y-2">
+                    <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground">
+                      Select Consultation:
+                    </label>
+                    <Select
+                      value={selectedEncounterForConsultation?.id || ""}
+                      onValueChange={(value) => {
+                        const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
+                        setSelectedEncounterForConsultation(foundEncounter);
+                        if(foundEncounter) setActiveTab('consultation');
+                      }}
+                      disabled={showDeleteConfirmation || isStartingNewConsultation}
+                    >
+                      <SelectTrigger className="w-72 h-11">
+                        <SelectValue placeholder="Select an encounter..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeEncounterDetails.map((ew) => (
+                          <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
+                            {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
-            )}
-            
-            <Button
-              variant="default"
-              onClick={async () => {
-                if (isStartingNewConsultation) {
-                  setIsStartingNewConsultation(false);
-                  if (activeEncounterDetails && activeEncounterDetails.length > 0) {
-                    const previouslySelectedId = selectedEncounterForConsultation?.id;
-                    setSelectedEncounterForConsultation(null); 
-                    const reselectEncounter = previouslySelectedId 
-                      ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
-                      : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
-                    setSelectedEncounterForConsultation(reselectEncounter || null);
-                  } else {
-                    setSelectedEncounterForConsultation(null);
-                  }
-                } else {
-                  setSelectedEncounterForConsultation(null); 
-                  setIsStartingNewConsultation(true);
-                  setActiveTab('consultation');
-                }
-              }}
-            >
-              {isStartingNewConsultation ? <X className="mr-2 h-4 w-4"/> : <PlusCircle className="mr-2 h-4 w-4"/>}
-              {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
-            </Button>
-            
-            {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
-              <Button 
-                variant="destructive" 
-                onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
-                size="sm"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            )}
+              
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="default"
+                  size="lg"
+                  onClick={async () => {
+                    if (isStartingNewConsultation) {
+                      setIsStartingNewConsultation(false);
+                      if (activeEncounterDetails && activeEncounterDetails.length > 0) {
+                        const previouslySelectedId = selectedEncounterForConsultation?.id;
+                        setSelectedEncounterForConsultation(null); 
+                        const reselectEncounter = previouslySelectedId 
+                          ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
+                          : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
+                        setSelectedEncounterForConsultation(reselectEncounter || null);
+                      } else {
+                        setSelectedEncounterForConsultation(null);
+                      }
+                    } else {
+                      setSelectedEncounterForConsultation(null); 
+                      setIsStartingNewConsultation(true);
+                      setActiveTab('consultation');
+                    }
+                  }}
+                  className="font-semibold"
+                >
+                  {isStartingNewConsultation ? <X className="mr-2 h-5 w-5"/> : <PlusCircle className="mr-2 h-5 w-5"/>}
+                  {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
+                </Button>
+                
+                {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
+                    size="default"
+                    className="font-semibold"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </Section>
 
       {/* Tab Navigation */}
-      <Section title="Patient Data" className="border-b border-border/20 pb-4">
-        <div className="flex gap-2 overflow-x-auto">
+      <Section title="Patient Data" className="border-b border-border/20 pb-6">
+        <div className="flex gap-3 overflow-x-auto pb-2">
           {[
             { key: "consultation", label: "Consultation" },
             { key: "diagnosis", label: "Diagnosis" },
@@ -352,9 +392,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       </Section>
 
       {/* Content Sections */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {activeTab === "consultation" && patient && (
-          <Section title="Consultation" collapsible defaultOpen>
+          <Section title="Consultation" collapsible defaultOpen contentClassName="space-y-4">
             <ConsultationTab
               patient={patient}
               selectedEncounter={selectedEncounterForConsultation}
@@ -371,43 +411,43 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         )}
         
         {activeTab === "diagnosis" && (
-          <Section title="Diagnoses & Conditions" collapsible defaultOpen>
+          <Section title="Diagnoses & Conditions" collapsible defaultOpen contentClassName="space-y-4">
             <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "treatment" && (
-          <Section title="Treatments & Medications" collapsible defaultOpen>
+          <Section title="Treatments & Medications" collapsible defaultOpen contentClassName="space-y-4">
             <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "labs" && (
-          <Section title="Laboratory Results" collapsible defaultOpen>
+          <Section title="Laboratory Results" collapsible defaultOpen contentClassName="space-y-4">
             <LabsTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "prior" && (
-          <Section title="Prior Authorization" collapsible defaultOpen>
+          <Section title="Prior Authorization" collapsible defaultOpen contentClassName="space-y-4">
             <PriorAuthTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "trials" && (
-          <Section title="Clinical Trials" collapsible defaultOpen>
+          <Section title="Clinical Trials" collapsible defaultOpen contentClassName="space-y-4">
             <TrialsTab patient={patient} />
           </Section>
         )}
         
         {activeTab === "history" && (
-          <Section title="Encounter History" collapsible defaultOpen>
+          <Section title="Encounter History" collapsible defaultOpen contentClassName="space-y-4">
             <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />
           </Section>
         )}
         
         {activeTab === "allData" && (
-          <Section title="All Patient Data" collapsible defaultOpen>
+          <Section title="All Patient Data" collapsible defaultOpen contentClassName="space-y-4">
             <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />
           </Section>
         )}

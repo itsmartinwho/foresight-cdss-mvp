@@ -1,0 +1,2292 @@
+{
+  "synthetic_data": [
+    {
+      "patient_supabase_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+      "encounter_supabase_id": "89b947ca-3fec-4ffe-a8e4-b3d27b42a88c",
+      "generated_encounter_updates": {
+        "reason_code": "M71.352",
+        "reason_display_text": "Patient with history of rheumatoid arthritis presents with left hip pain and stiffness, query trochanteric bursitis.",
+        "transcript": "Doctor: Hello Ryan, good to see you. You're here today for some persistent left hip pain, is that right?\nRyan: Yes, Doctor. It's been bothering me for a few weeks now, especially when I lie on my left side at night, or when I first get up from a chair. It's a sharp pain on the outside of my hip.\nDoctor: And you have a history of rheumatoid arthritis, which is generally well-controlled with your current medications?\nRyan: That's right. The other joints are doing okay, it's really just this left hip that's flared up.\nDoctor: Okay. Pain over the outside of the hip like that, especially with tenderness when I press there (Doctor palpates the area), often points to something called trochanteric bursitis. The bursa is a small fluid-filled sac that can get inflamed. It's common, and can sometimes be associated with rheumatoid arthritis.\nRyan: Bursitis? Is it serious?\nDoctor: It's usually not serious but can be quite painful. We can try some conservative measures first. I'd recommend ice for now, and I can give you a prescription for a stronger anti-inflammatory if the over-the-counter ones aren't helping. Physical therapy to work on stretching and strengthening can also be very beneficial. If it doesn't settle, a corticosteroid injection into the bursa can often provide significant relief.\nRyan: An injection sounds a bit much for now. Let's try the other things first.\nDoctor: Sounds like a plan, Ryan. Let's start with the anti-inflammatory and I'll give you a referral for physical therapy.",
+        "soap_note": "S: Ryan, a 36 y/o male (DOB 1965-07-12, encounter 2002-03-20) with a history of Rheumatoid Arthritis (RA), presents with a 3-week history of left lateral hip pain. Pain is described as sharp, 6/10, worse with direct pressure (lying on L side), prolonged sitting, and initial ambulation after rest. Denies trauma, fever, or other joint involvement currently. RA otherwise stable on current DMARD.\nO: Vitals stable. General: Well-appearing. MSK: Tenderness to palpation over left greater trochanter. Pain reproduced with resisted hip abduction and external rotation. FABER test elicits lateral hip pain. Range of motion otherwise full but painful at extremes of rotation. No erythema or significant swelling. Gait antalgic on left.\nA: Left trochanteric bursitis (M70.62), likely inflammatory secondary to underlying RA. R/O gluteal tendinopathy.\nP: 1. Prescribe Naproxen 500mg PO BID for 2 weeks. 2. Refer to Physical Therapy for evaluation and treatment including stretching, strengthening, and modalities for trochanteric bursitis. 3. Advise activity modification (avoid aggravating activities, side-lying on left). 4. Ice application to L hip 15-20 minutes TID. 5. Follow up in 4 weeks. If no improvement, consider corticosteroid injection into L trochanteric bursa.",
+        "observations": "Point tenderness directly over the left greater trochanter. Pain with resisted abduction. Patient's RA in other joints appears quiescent at this visit. Gait shows slight limp favoring the left side.",
+        "treatments": [
+          {
+            "treatment_name": "Naproxen",
+            "treatment_type": "medication",
+            "dosage": "500mg",
+            "route": "PO",
+            "frequency": "BID",
+            "duration": "14 days",
+            "instructions": "Take with food for pain and inflammation.",
+            "prescribed_date": "2002-03-20"
+          },
+          {
+            "treatment_name": "Physical Therapy Referral",
+            "treatment_type": "referral",
+            "instructions": "For left trochanteric bursitis, focus on stretching, strengthening, and modalities.",
+            "prescribed_date": "2002-03-20"
+          },
+          {
+            "treatment_name": "Ice Application",
+            "treatment_type": "lifestyle",
+            "instructions": "Apply ice packs to the painful area for 15-20 minutes, 2-3 times daily.",
+            "prescribed_date": "2002-03-20"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+          "encounter_id": "89b947ca-3fec-4ffe-a8e4-b3d27b42a88c",
+          "code": "M70.62",
+          "description": "Trochanteric bursitis, left hip",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2002-02-27",
+          "note": "Clinical signs consistent with trochanteric bursitis in a patient with RA."
+        },
+        {
+          "patient_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+          "encounter_id": "89b947ca-3fec-4ffe-a8e4-b3d27b42a88c",
+          "code": "M06.9",
+          "description": "Rheumatoid arthritis, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1990-01-01",
+          "note": "Underlying RA is a risk factor for bursitis."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+      "encounter_supabase_id": "413f8504-b879-4ade-a630-8272c4941c6a",
+      "generated_encounter_updates": {
+        "reason_code": "D35.4",
+        "reason_display_text": "Follow-up MRI results for headaches and visual symptoms, pineal gland cyst found.",
+        "transcript": "Doctor: Hello Ryan. We have the results of the MRI of your brain, which we did because of your persistent headaches and some visual disturbances you were experiencing.\nRyan: Yes, Doctor. I've been anxious about it.\nDoctor: The good news, Ryan, is that the MRI did not show any signs of a malignant tumor or anything immediately life-threatening. It did, however, identify a small, well-defined cyst in your pineal gland. This is called a pineal cyst.\nRyan: A cyst? Is that what's causing my headaches?\nDoctor: It's possible, though many pineal cysts are asymptomatic and found incidentally. If they become large enough, they can sometimes cause headaches by pressing on nearby structures or interfering with cerebrospinal fluid flow. Your cyst is relatively small, about 8mm. The visual symptoms you described are less typical for a pineal cyst of this size unless it's in a very specific location relative to visual pathways, which it doesn't appear to be here. We'll need to get an opinion from a neurologist to correlate your symptoms with the MRI finding. They may recommend further specific visual field testing.\nRyan: So, what happens now?\nDoctor: I'm going to refer you to a neurologist. They will review the images and your symptoms in detail. Often, small, asymptomatic pineal cysts are just monitored with repeat imaging over time. If they feel it could be contributing to your headaches, they might discuss other options, but that's less common for a cyst this size.",
+        "soap_note": "S: Ryan, a 46 y/o male (DOB 1965-07-12, encounter 2011-12-16) presents for follow-up of MRI brain, ordered for evaluation of chronic headaches and intermittent visual disturbances (e.g., 'shimmering lights'). Denies focal weakness, numbness, or seizures. \nO: Vitals stable. Neuro exam in office: Cranial nerves II-XII intact. Visual fields full to confrontation. Fundoscopy normal. Motor, sensory, cerebellar exams grossly normal. MRI Brain Report: 8mm well-circumscribed cystic lesion in the pineal gland, consistent with benign pineal cyst. No hydrocephalus, mass effect on tectum, or other acute intracranial abnormality. \nA: 1. Pineal gland cyst (D35.4 - Benign neoplasm of pineal gland), likely incidental finding. 2. Chronic headaches, etiology unclear but potentially related to cyst if causing intermittent CSF flow issues, or could be primary headache disorder (e.g., migraine, tension-type). 3. Visual disturbances, etiology unclear, less likely directly due to this size/location of pineal cyst based on typical presentations.\nP: 1. Refer to Neurology for further evaluation and correlation of symptoms with MRI findings. 2. Neurologist to consider formal ophthalmologic visual field testing and possibly repeat MRI in 6-12 months to assess stability of the cyst. 3. Continue symptomatic management for headaches (e.g., PRN analgesics). 4. Reassure patient about generally benign nature of pineal cysts. 5. Follow up with PCP after neurology consultation.",
+        "observations": "MRI confirms an 8mm pineal cyst. Patient's headaches are intermittent, described as frontal pressure. Visual symptoms are episodic shimmering auras without associated headache. No red flags on basic neurological exam in office.",
+        "treatments": [
+          {
+            "treatment_name": "Neurology Referral",
+            "treatment_type": "referral",
+            "instructions": "For evaluation of headaches, visual symptoms, and management plan for incidental pineal cyst.",
+            "prescribed_date": "2011-12-16"
+          },
+          {
+            "treatment_name": "Symptomatic Headache Relief",
+            "treatment_type": "medication",
+            "dosage": "As per prior regimen/OTC",
+            "instructions": "Continue current PRN analgesics for headaches. Keep headache diary.",
+            "prescribed_date": "2011-12-16"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+          "encounter_id": "413f8504-b879-4ade-a630-8272c4941c6a",
+          "code": "D35.4",
+          "description": "Benign neoplasm of pineal gland (Pineal Cyst)",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2011-11-01",
+          "note": "8mm pineal cyst found on MRI, likely incidental but needs neurological correlation with symptoms."
+        },
+        {
+          "patient_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+          "encounter_id": "413f8504-b879-4ade-a630-8272c4941c6a",
+          "code": "R51.9",
+          "description": "Headache, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2011-09-01",
+          "note": "Chronic intermittent headaches, prompting MRI."
+        },
+        {
+          "patient_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+          "encounter_id": "413f8504-b879-4ade-a630-8272c4941c6a",
+          "code": "G43.109",
+          "description": "Migraine with aura, not intractable, without status migrainosus",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2011-09-01",
+          "note": "Visual disturbances described as 'shimmering lights' could represent migraine aura."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "f39a7f6a-ddf8-43c1-a716-d8202230eb6e",
+          "encounter_id": "413f8504-b879-4ade-a630-8272c4941c6a",
+          "name": "MRI Brain",
+          "value": "8mm well-circumscribed cystic lesion in the pineal gland consistent with benign pineal cyst. No other acute intracranial pathology.",
+          "value_type": "string",
+          "date_time": "2011-12-10T10:00:00Z",
+          "interpretation": "Incidental pineal cyst. No clear cause for headaches or visual symptoms seen on MRI."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "9992ba5a-85e0-490a-938d-3f5a69d63f13",
+      "generated_encounter_updates": {
+        "reason_code": "M66.5",
+        "reason_display_text": "Patient reports sudden sharp pain in right hip after a fall, unable to bear weight. Query hip fracture/ligament injury.",
+        "transcript": "Doctor: Raymond, I understand you had a fall and are now having severe pain in your right hip?\nRaymond: Yes, Doctor. I tripped over the rug yesterday evening and landed hard on my right side. The pain was instant, and I haven't been able to put any weight on it since. It's a really sharp, deep pain.\nDoctor: I'm very sorry to hear that, Raymond. Does the pain radiate down your leg or into your groin?\nRaymond: Mostly in the hip itself, and a bit into the groin, yes.\nDoctor: Okay. We need to be very careful with this. A fall in someone your age, with immediate severe pain and inability to bear weight, is highly concerning for a hip fracture. It could also be a severe ligament tear, but a fracture is what we need to rule out first and foremost. I'm going to examine your leg very gently, but we absolutely need to get an X-ray of your right hip right away.\nRaymond: A broken hip? Oh dear.\nDoctor: Let's get the X-ray first to see what's going on, Raymond. If it is a fracture, you'll likely need surgery to repair it. We'll keep you comfortable in the meantime.",
+        "soap_note": "S: Raymond, an 80 y/o male (DOB 1931-05-26, encounter 1949-07-26), presents via wheelchair brought by family after a mechanical fall at home yesterday evening. Landed directly onto R hip. Reports immediate onset of severe R hip pain (9/10), inability to bear weight on R leg. Pain localized to R hip and groin. Denies loss of consciousness, head injury. PMH: Osteoporosis (M81.0).\nO: Vitals: BP 150/85, HR 90, RR 18. General: Alert, in significant pain, distressed. RLE: Externally rotated and slightly shortened compared to LLE. Severe pain with any attempted passive ROM of R hip. Tenderness to palpation over R greater trochanter and femoral neck region. Distal pulses and neurovascular status intact.\nA: 1. Acute right hip pain with inability to bear weight post-fall, highly suspicious for right hip fracture (e.g., femoral neck fracture S72.001A or intertrochanteric fracture S72.141A). 2. Underlying osteoporosis increases fracture risk.\nP: 1. STAT X-ray of Right Hip and Pelvis. 2. Pain management: Morphine 2-4mg IV PRN for severe pain while awaiting X-ray and orthopedic consult. 3. NPO in anticipation of possible surgery. 4. IV access established. 5. Orthopedic surgery consultation STAT. 6. If fracture confirmed, prepare for surgical fixation. 7. Bed rest, R leg immobilized as comfortable.",
+        "observations": "Right lower extremity is externally rotated and appears shortened. Patient guards heavily against any movement of the right hip. Significant pain on palpation of the femoral neck and trochanteric region.",
+        "treatments": [
+          {
+            "treatment_name": "X-Ray Right Hip and Pelvis",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "STAT, to evaluate for fracture.",
+            "prescribed_date": "1949-07-26"
+          },
+          {
+            "treatment_name": "Orthopedic Surgery Consultation",
+            "treatment_type": "referral",
+            "instructions": "STAT for evaluation and management of suspected hip fracture.",
+            "prescribed_date": "1949-07-26"
+          },
+          {
+            "treatment_name": "Morphine Sulfate",
+            "treatment_type": "medication",
+            "dosage": "2-4mg",
+            "route": "IV",
+            "frequency": "PRN q2-4h",
+            "instructions": "For severe pain management.",
+            "prescribed_date": "1949-07-26"
+          },
+          {
+            "treatment_name": "NPO (Nothing By Mouth)",
+            "treatment_type": "dietary",
+            "instructions": "In preparation for potential surgery.",
+            "prescribed_date": "1949-07-26"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "9992ba5a-85e0-490a-938d-3f5a69d63f13",
+          "code": "S72.001A",
+          "description": "Fracture of unspecified part of neck of right femur, initial encounter for closed fracture",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1949-07-25",
+          "note": "High suspicion for hip fracture given fall, pain, and inability to bear weight. X-ray pending."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "9992ba5a-85e0-490a-938d-3f5a69d63f13",
+          "code": "M81.0",
+          "description": "Age-related osteoporosis without current pathological fracture",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1940-01-01",
+          "note": "Pre-existing condition increasing fracture risk."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "9992ba5a-85e0-490a-938d-3f5a69d63f13",
+          "code": "M25.551",
+          "description": "Pain in right hip",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1949-07-25",
+          "note": "Presenting symptom."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+      "generated_encounter_updates": {
+        "reason_code": "T50.0X1A",
+        "reason_display_text": "Patient experiencing symptoms of digitalis toxicity after medication change.",
+        "transcript": "Doctor: Raymond, your daughter called, said you haven't been feeling well since your heart medication was changed last week? What's been going on?\nRaymond: Oh, Doctor, I've been feeling awful. Nauseous all the time, I've vomited a couple of times, and everything looks a bit yellowish or greenish. And I'm just so tired and weak.\nDoctor: I see. The medication that was changed was your Digoxin dose, is that right? And you also take a diuretic, Furosemide?\nRaymond: Yes, they increased the Digoxin, I think. And yes, I take the water pill.\nDoctor: Okay, Raymond. The symptoms you're describing – nausea, vomiting, visual disturbances like yellowish vision, and fatigue – are very concerning for Digoxin toxicity. Sometimes when the dose is increased, or if your kidney function changes, or if your potassium levels are low from the diuretic, the Digoxin level can become too high in your system. We need to check your Digoxin level and your electrolytes, especially potassium, right away. I'm also going to get an EKG to check your heart rhythm.\nRaymond: So it's the heart pill making me sick?\nDoctor: It's a strong possibility, Raymond. We need to confirm with the tests. We'll hold today's dose of Digoxin for now.",
+        "soap_note": "S: Raymond, an 80 y/o male (DOB 1931-05-26, encounter 1951-08-17) with history of CHF and atrial fibrillation, presents with 3 days of nausea, vomiting (2 episodes), anorexia, fatigue, and visual disturbances (xanthopsia - 'yellow-green tinge to vision'). Reports his Digoxin dose was increased by another physician 1 week ago. Also takes Furosemide 40mg daily. Denies chest pain or palpitations today, but reports feeling 'weak'.\nO: Vitals: BP 110/70, HR 52 bpm and irregular. General: Appears lethargic, mild distress. CV: Bradycardic, irregularly irregular rhythm. No new murmurs. Lungs: Clear. Ext: No edema. EKG: Atrial fibrillation with slow ventricular response (average rate 50s), scooped ST segments suggestive of digitalis effect.\nA: 1. Digoxin toxicity (T50.0X1A) - high clinical suspicion given symptoms (nausea, vomiting, xanthopsia, fatigue, bradycardia) and recent dose increase in an elderly patient on a diuretic. 2. Atrial fibrillation with slow ventricular response, likely due to digoxin effect/toxicity. 3. Congestive Heart Failure (I50.9) - baseline. 4. Hypokalemia secondary to Furosemide - potential contributing factor to digoxin toxicity.\nP: 1. STAT labs: Serum Digoxin level, comprehensive metabolic panel (especially K+, Mg++, BUN/Cr), CBC. 2. Hold Digoxin. 3. Continuous cardiac monitoring. 4. IV fluids if dehydrated from vomiting. 5. If Digoxin level markedly elevated or symptomatic bradyarrhythmias/life-threatening arrhythmias, consider Digibind (Digoxin-specific antibody fragments) and cardiology consult for management. 6. Correct electrolyte abnormalities, especially hypokalemia. 7. Stop Furosemide temporarily if K+ is low. 8. Patient education about symptoms of digoxin toxicity.",
+        "observations": "Patient appears lethargic. Bradycardic and irregularly irregular rhythm noted on exam and EKG. Xanthopsia (yellowish vision) is a classic sign of digoxin toxicity. Recent increase in digoxin dose and concomitant diuretic use are risk factors.",
+        "treatments": [
+          {
+            "treatment_name": "Hold Digoxin",
+            "treatment_type": "medication_management",
+            "instructions": "Discontinue Digoxin immediately pending lab results and further assessment.",
+            "prescribed_date": "1951-08-17"
+          },
+          {
+            "treatment_name": "STAT Serum Digoxin Level & Electrolytes",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "To confirm digoxin toxicity and assess potassium, magnesium, and renal function.",
+            "prescribed_date": "1951-08-17"
+          },
+          {
+            "treatment_name": "EKG Monitoring",
+            "treatment_type": "monitoring",
+            "instructions": "Continuous cardiac monitoring for arrhythmias.",
+            "prescribed_date": "1951-08-17"
+          },
+          {
+            "treatment_name": "IV Fluids (if indicated)",
+            "treatment_type": "medication",
+            "dosage": "0.9% NaCl",
+            "route": "IV",
+            "instructions": "For hydration if patient is significantly volume depleted from vomiting.",
+            "prescribed_date": "1951-08-17"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+          "code": "T50.0X1A",
+          "description": "Poisoning by cardiac-stimulant glycosides and drugs of similar action, accidental (unintentional), initial encounter",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1951-08-14",
+          "note": "Classic symptoms of digoxin toxicity (nausea, vomiting, xanthopsia, bradycardia) after recent dose increase."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+          "code": "I48.20",
+          "description": "Chronic atrial fibrillation, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1945-01-01",
+          "note": "Underlying condition for which digoxin was prescribed."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+          "code": "E87.6",
+          "description": "Hypokalemia",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "1951-08-14",
+          "note": "Possible contributing factor to digoxin toxicity due to diuretic use. Awaiting labs."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+          "name": "Serum Digoxin Level",
+          "value": "3.2",
+          "value_type": "numeric",
+          "units": "ng/mL",
+          "date_time": "1951-08-17T11:00:00Z",
+          "reference_range": "0.8-2.0 ng/mL",
+          "flag": "H",
+          "interpretation": "Toxic digoxin level, confirming diagnosis."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+          "name": "Serum Potassium",
+          "value": "3.1",
+          "value_type": "numeric",
+          "units": "mEq/L",
+          "date_time": "1951-08-17T11:00:00Z",
+          "reference_range": "3.5-5.0 mEq/L",
+          "flag": "L",
+          "interpretation": "Hypokalemia, likely exacerbated digoxin toxicity."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "db39b935-0f51-4178-8bae-ed0464c50cf4",
+          "name": "EKG",
+          "value": "Atrial fibrillation with slow ventricular response (average rate 50 bpm), ST segment depression (scooping).",
+          "value_type": "string",
+          "date_time": "1951-08-17T10:00:00Z",
+          "interpretation": "Consistent with digitalis effect and toxicity."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "c9cd6a04-9e40-483d-8206-6f3a079259a5",
+      "generated_encounter_updates": {
+        "reason_code": "F33.1",
+        "reason_display_text": "Patient with known recurrent moderate major depressive disorder, presenting with increased symptoms.",
+        "transcript": "Doctor: Raymond, welcome back. It's been a little while. How have you been feeling since your last visit? You're here today because your mood has been lower again?\nRaymond: Yes, Doctor. The past month or so, I've just felt really down. No energy, not interested in much. It feels like that bad spell I had a couple of years ago is coming back.\nDoctor: I'm sorry to hear that, Raymond. You were doing well on the Citalopram for a good stretch there. Have there been any new stressors or changes in your life that might have triggered this?\nRaymond: Not really anything major, just the usual ups and downs. Maybe the darker winter days get to me more now I'm older.\nDoctor: That's certainly possible for some people. Are you having any trouble with sleep, appetite, or concentration?\nRaymond: Sleeping more than usual, but still waking up tired. Appetite's okay. Concentration... yeah, that's been a bit off. Hard to focus on reading or even watching TV sometimes.\nDoctor: Okay, Raymond. It sounds like you're experiencing a recurrence of your depressive symptoms. Given your history and how well you responded to Citalopram before, our first step would be to ensure you're taking it as prescribed and then potentially consider a small dose increase if your current dose isn't holding you. We should also check some basic labs like thyroid function, just to make sure nothing else is contributing. Would you be open to talking with a counselor again as well? That was helpful for you in the past.\nRaymond: I suppose I could try the counselor again. And yes, I'm taking the Citalopram every day.",
+        "soap_note": "S: Raymond, an 83 y/o male (DOB 1931-05-26, encounter 1954-01-18), with a history of recurrent Major Depressive Disorder (MDD), moderate severity, previously stable on Citalopram 20mg daily. Reports 1-month history of worsening depressive symptoms: low mood, anhedonia, fatigue, hypersomnia, and impaired concentration. Symptoms similar to previous depressive episodes. Denies suicidal ideation. Reports good adherence to Citalopram.\nO: Vitals stable. Mental Status Exam: Mood described as 'low', affect blunted but appropriate. Speech normal rate/rhythm. Thought content focused on feelings of fatigue and lack of motivation. No psychosis. PHQ-9 score 14 (moderately severe depression).\nA: 1. Major Depressive Disorder, recurrent, moderate episode (F33.1), breakthrough symptoms on current dose of Citalopram. 2. Rule out organic causes (e.g., hypothyroidism, anemia) - less likely given prior hx and response.\nP: 1. Increase Citalopram to 30mg PO daily. Counsel on potential for mild transient side effects with dose increase. 2. Labs: TSH, CBC, Vitamin B12/Folate to rule out contributing organic factors. 3. Encourage re-engagement in previously enjoyed activities, social interaction, and light physical activity as tolerated. 4. Refer back to therapist/counselor for supportive psychotherapy. 5. Follow up in 2-4 weeks to assess response to increased Citalopram dose and lab results. Monitor for suicidal ideation, though denied today.",
+        "observations": "Patient appears fatigued and somewhat withdrawn. Affect is constricted. Speech is coherent but with reduced spontaneity. PHQ-9 score indicates a current moderately severe depressive episode. Known to respond well to SSRIs in the past.",
+        "treatments": [
+          {
+            "treatment_name": "Citalopram",
+            "treatment_type": "medication",
+            "dosage": "30mg",
+            "route": "PO",
+            "frequency": "QD",
+            "instructions": "Increase dose from 20mg to 30mg daily.",
+            "prescribed_date": "1954-01-18"
+          },
+          {
+            "treatment_name": "Psychotherapy Referral",
+            "treatment_type": "referral",
+            "instructions": "Refer back to previous counselor or new therapist for ongoing supportive therapy.",
+            "prescribed_date": "1954-01-18"
+          },
+          {
+            "treatment_name": "Behavioral Activation",
+            "treatment_type": "counseling",
+            "instructions": "Encourage patient to schedule pleasant activities and maintain social connections.",
+            "prescribed_date": "1954-01-18"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "c9cd6a04-9e40-483d-8206-6f3a079259a5",
+          "code": "F33.1",
+          "description": "Major depressive disorder, recurrent, moderate",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1953-12-18",
+          "note": "Recurrence of depressive symptoms despite ongoing treatment with Citalopram 20mg."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "c9cd6a04-9e40-483d-8206-6f3a079259a5",
+          "name": "TSH (Thyroid Stimulating Hormone)",
+          "value": "2.5",
+          "value_type": "numeric",
+          "units": "mIU/L",
+          "date_time": "1954-01-18T06:30:00Z",
+          "reference_range": "0.4-4.0 mIU/L",
+          "flag": null,
+          "interpretation": "Normal thyroid function, not contributing to depressive symptoms."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "c9cd6a04-9e40-483d-8206-6f3a079259a5",
+          "name": "PHQ-9 Score",
+          "value": "14",
+          "value_type": "numeric",
+          "date_time": "1954-01-18T06:00:00Z",
+          "interpretation": "Indicates moderately severe depression."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "d9a598c6-4345-4bf7-b624-7a43f0833921",
+      "generated_encounter_updates": {
+        "reason_code": "M25.5",
+        "reason_display_text": "Patient reports chronic joint pain in multiple sites, likely related to diffuse osteoarthropathy.",
+        "transcript": "Doctor: Raymond, welcome. You're here today to discuss ongoing joint pain, is that right?\nRaymond: Yes, Doctor. It seems like all my joints are aching these days – my knees, my hips, my shoulders. It's just a constant dull ache, worse in the mornings and if I overdo it.\nDoctor: I understand that chronic pain can be very wearing. You mentioned 'osteopathies in diseases classified elsewhere' as a reason from a previous visit. This generally means arthritis or bone issues related to another underlying condition, or sometimes just widespread age-related degenerative changes. Have you noticed any new swelling or redness in any specific joint?\nRaymond: Not really new swelling, just the usual stiffness and aching. It's more of a widespread thing now rather than one particular joint flaring up.\nDoctor: Okay. Given your age and the widespread nature of the pain, diffuse osteoarthritis or a similar degenerative joint disease is the most likely diagnosis. We'll re-examine your major joints today. The key will be managing your pain and maintaining your mobility. Are you finding any relief from the pain medications you've tried?\nRaymond: Sometimes the Tylenol helps a bit. I try to stay active but some days it's hard.\nDoctor: We can discuss other pain management strategies, including physical therapy for gentle exercises, and making sure your current medications are optimized without causing side effects. For now, let's examine those joints.",
+        "soap_note": "S: Raymond, an 85 y/o male (DOB 1931-05-26, encounter 1967-12-08), presents with c/o chronic, diffuse polyarthralgia affecting knees, hips, and shoulders bilaterally for past several years, gradually worsening. Pain described as dull ache, 4-6/10, worse with prolonged activity and in AM. Morning stiffness approx. 20-30 mins. Takes OTC acetaminophen with partial relief. Denies acute swelling, redness, or fever. History includes hypertension and benign prostatic hyperplasia.\nO: Vitals stable. MSK Exam: Mild crepitus in bilateral knees and shoulders. Tenderness to palpation over multiple joint lines (bilateral knees, hips, shoulders). ROM mildly restricted in shoulders (abduction, internal rotation) and hips (internal rotation) due to pain/stiffness. No acute synovitis. Gait slow but stable with use of cane.\nA: 1. Polyarthralgia (M25.50), likely due to widespread degenerative joint disease / osteoarthritis (M15.9 - Polyosteoarthritis, unspecified). 2. Chronic pain syndrome.\nP: 1. Continue Acetaminophen 650mg PO QID PRN. 2. Trial of topical NSAID (e.g., Diclofenac gel) to most symptomatic joints. 3. Refer to Physical Therapy for gentle ROM, strengthening exercises, and pain management modalities. 4. Discussed weight management (if applicable) and use of assistive devices. 5. Consider joint X-rays of most symptomatic joints if not done recently to confirm OA severity. 6. Follow up in 3 months.",
+        "observations": "Patient has generalized joint tenderness and crepitus, consistent with widespread osteoarthritis. No signs of acute inflammatory arthritis. Mobility is somewhat limited by pain.",
+        "treatments": [
+          {
+            "treatment_name": "Acetaminophen",
+            "treatment_type": "medication",
+            "dosage": "650mg",
+            "route": "PO",
+            "frequency": "up to QID PRN",
+            "instructions": "For pain relief. Do not exceed 4000mg/day.",
+            "prescribed_date": "1967-12-08"
+          },
+          {
+            "treatment_name": "Diclofenac Sodium Topical Gel 1%",
+            "treatment_type": "medication",
+            "route": "Topical",
+            "frequency": "Apply to affected joints BID-QID",
+            "instructions": "For localized pain relief in most symptomatic joints.",
+            "prescribed_date": "1967-12-08"
+          },
+          {
+            "treatment_name": "Physical Therapy Referral",
+            "treatment_type": "referral",
+            "instructions": "For osteoarthritis management program, focusing on pain relief, ROM, and strengthening.",
+            "prescribed_date": "1967-12-08"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "d9a598c6-4345-4bf7-b624-7a43f0833921",
+          "code": "M15.9",
+          "description": "Polyosteoarthritis, unspecified",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1960-01-01",
+          "note": "Chronic widespread joint pain and stiffness consistent with degenerative joint disease."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "d9a598c6-4345-4bf7-b624-7a43f0833921",
+          "code": "M25.50",
+          "description": "Arthralgia, unspecified joint",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1960-01-01",
+          "note": "Symptom of polyosteoarthritis."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "d9a598c6-4345-4bf7-b624-7a43f0833921",
+          "name": "ESR",
+          "value": "18",
+          "value_type": "numeric",
+          "units": "mm/hr",
+          "date_time": "1967-12-08T11:30:00Z",
+          "reference_range": "0-30 mm/hr (men over 50)",
+          "flag": null,
+          "interpretation": "Within normal limits for age, less suggestive of an acute inflammatory arthropathy."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "a9bced4e-84b4-4f85-a7e4-52b3a0574f73",
+      "generated_encounter_updates": {
+        "reason_code": "K57.20",
+        "reason_display_text": "Patient presents with intermittent left lower quadrant pain, being evaluated for diverticulitis vs. other causes.",
+        "transcript": "Doctor: Hello Raymond, you're here for some abdominal pain, specifically in the lower left side?\nRaymond: Yes, Doctor. It's been on and off for a few weeks. Sometimes it's a dull ache, sometimes it's a bit sharper. No fever or anything, but it's uncomfortable.\nDoctor: Any changes in your bowel habits, Raymond? Like diarrhea or constipation?\nRaymond: Maybe a bit more constipated than usual, but nothing too drastic. No blood that I've seen.\nDoctor: Okay. Pain in the left lower quadrant can be due to a number of things. Given your age, diverticulitis is certainly a possibility – that's when small pouches in your colon get inflamed. It could also be related to irritable bowel syndrome, or other less common things. Does anything make the pain worse or better? Like eating?\nRaymond: Not really that I've noticed. It just kind of comes and goes.\nDoctor: I'm going to examine your abdomen. (Examines abdomen) There's some tenderness in that lower left area when I press. To get a better idea of what's going on, especially to look for signs of diverticulitis, I think a CT scan of your abdomen and pelvis would be the next best step. We'll also do some blood work to check for inflammation.\nRaymond: A CT scan? Okay. Is diverticulitis serious?",
+        "soap_note": "S: Raymond, a 64 y/o male (DOB 1931-05-26, encounter 1996-04-29) presents with a 2-week history of intermittent left lower quadrant (LLQ) abdominal pain. Describes pain as achy to occasionally sharp, 4-6/10. Mildly increased constipation. Denies fever, nausea, vomiting, or rectal bleeding. No significant weight loss.\nO: Vitals: BP 130/80, HR 70, Temp 37.0C. General: Comfortable. Abdomen: Soft, mild tenderness to palpation in LLQ. No guarding, rebound, or masses. Bowel sounds normal.\nA: 1. Left lower quadrant abdominal pain. Differential includes: Diverticulitis (K57.32 without perforation or abscess is likely if confirmed by CT), Irritable Bowel Syndrome (IBS), Colitis (unspecified), less likely neoplastic process without other red flags at this time. Given intermittent nature and lack of systemic signs, acute diverticulitis is less likely but needs to be ruled out or confirmed as chronic/smoldering.\nP: 1. CT Abdomen/Pelvis with oral and IV contrast to evaluate for diverticulitis, colonic inflammation, or other pathology. 2. Labs: CBC with differential, CRP, ESR. Stool for occult blood. 3. Recommend clear liquid diet for 24-48 hours if pain sharpens or fever develops, then advance as tolerated. 4. If CT confirms uncomplicated diverticulitis, consider outpatient antibiotic therapy (e.g., Ciprofloxacin + Metronidazole). If CT normal, consider symptomatic management and possible colonoscopy for further evaluation of chronic LLQ pain and constipation. 5. Follow up in 2-3 days for CT results and further planning.",
+        "observations": "Mild tenderness in LLQ on palpation. No peritoneal signs. Patient's description is more consistent with smoldering or intermittent diverticular pain rather than acute severe diverticulitis, but imaging is needed for confirmation.",
+        "treatments": [
+          {
+            "treatment_name": "CT Abdomen/Pelvis with Contrast",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "To evaluate for diverticulitis or other intra-abdominal pathology.",
+            "prescribed_date": "1996-04-29"
+          },
+          {
+            "treatment_name": "Dietary Advice (conditional)",
+            "treatment_type": "education",
+            "instructions": "If pain worsens significantly or fever develops, switch to clear liquids and contact office. Otherwise, maintain current diet pending CT results.",
+            "prescribed_date": "1996-04-29"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "a9bced4e-84b4-4f85-a7e4-52b3a0574f73",
+          "code": "K57.32",
+          "description": "Diverticulitis of large intestine without perforation or abscess without bleeding",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1996-04-15",
+          "note": "Symptoms suggestive of diverticulitis. CT scan ordered for confirmation."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "a9bced4e-84b4-4f85-a7e4-52b3a0574f73",
+          "code": "K58.9",
+          "description": "Irritable bowel syndrome without diarrhea",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "1996-04-15",
+          "note": "Considered in differential for LLQ pain and constipation."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "a9bced4e-84b4-4f85-a7e4-52b3a0574f73",
+          "name": "White Blood Cell Count",
+          "value": "9.5",
+          "value_type": "numeric",
+          "units": "x10^9/L",
+          "date_time": "1996-04-29T15:30:00Z",
+          "reference_range": "4.0-11.0 x10^9/L",
+          "flag": null,
+          "interpretation": "Within normal limits, less suggestive of acute severe infection."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "efecea18-273e-42b9-bff8-cb489330b20b",
+      "generated_encounter_updates": {
+        "reason_code": "H43.10",
+        "reason_display_text": "Patient reporting new onset of floaters in vision.",
+        "transcript": "Doctor: Hello Raymond. You mentioned on the phone you've been seeing some new floaters in your vision?\nRaymond: Yes, Doctor. Just started a few days ago. Like little cobwebs or specks drifting around, mostly in my right eye. It's quite annoying.\nDoctor: Any flashes of light, or any curtain or shadow coming over your vision, Raymond?\nRaymond: No flashes, no curtain. Just these floaters. My vision seems clear otherwise.\nDoctor: Okay. New floaters, especially if they are sudden or numerous, always warrant a careful look at the back of your eye to make sure there's no retinal tear or detachment, which can be serious. Sometimes they are just benign vitreous floaters, which are common as we age, as the gel inside the eye changes. But we need to rule out the serious things first. I'm going to dilate your pupils so I can get a good look at your retina.\nRaymond: A retinal detachment? That sounds bad.\nDoctor: It's something we need to check for, yes. The dilation will make your vision blurry for a few hours, so you'll need someone to drive you home today. After I examine your eyes, we'll know more.",
+        "soap_note": "S: Raymond, an 85 y/o male (DOB 1931-05-26, encounter 2005-07-06), presents with a 3-day history of new onset floaters, R eye > L eye. Describes as 'cobwebs' and 'specks'. Denies flashes of light, peripheral vision loss, curtain/shadow, or eye pain. Vision otherwise perceived as unchanged. PMH: Hypertension.\nO: Vitals stable. Visual Acuity: OD 20/25, OS 20/30 (baseline). Pupils ERLA, no APD. Confrontation visual fields full. Slit Lamp Exam: Anterior segment unremarkable. Dilated Fundus Exam (DFE): Bilateral posterior vitreous detachment (PVD) with Weiss ring visible in OD. Peripheral retina examined thoroughly 360 degrees in both eyes. No retinal tears, holes, or detachment seen. Optic nerves and maculae appear healthy.\nA: 1. Acute Posterior Vitreous Detachment (PVD), bilateral, symptomatic in right eye (H43.811 for R, H43.812 for L, or H43.813 bilateral). 2. Benign vitreous floaters secondary to PVD.\nP: 1. Reassurance provided regarding benign nature of PVD in absence of retinal pathology. 2. Educated on warning signs of retinal tear/detachment (sudden increase in floaters, new flashes of light, curtain/shadow in vision, sudden decrease in vision) and to seek immediate ophthalmologic attention if these occur. 3. Advised that floaters may persist but often become less noticeable over time. 4. Follow-up with ophthalmologist in 4-6 weeks for repeat DFE to ensure no delayed retinal breaks, or sooner if new warning symptoms arise. 5. No specific treatment for PVD itself, only for complications if they arise.",
+        "observations": "Dilated fundus exam shows a clear posterior vitreous detachment with a Weiss ring in the right eye and early PVD changes in the left. Peripheral retina is flat and intact bilaterally. No signs of retinal tear or detachment.",
+        "treatments": [
+          {
+            "treatment_name": "Patient Education on PVD",
+            "treatment_type": "education",
+            "instructions": "Explained nature of PVD, common symptoms, and critical warning signs of retinal tear/detachment requiring urgent ophthalmologic evaluation.",
+            "prescribed_date": "2005-07-06"
+          },
+          {
+            "treatment_name": "Ophthalmology Follow-up",
+            "treatment_type": "referral",
+            "instructions": "Recommend follow-up dilated eye exam in 4-6 weeks, or sooner if new retinal warning symptoms occur.",
+            "prescribed_date": "2005-07-06"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "efecea18-273e-42b9-bff8-cb489330b20b",
+          "code": "H43.813",
+          "description": "Posterior vitreous detachment, bilateral",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2005-07-03",
+          "note": "Symptomatic with new floaters in right eye. DFE confirms bilateral PVD, no retinal breaks."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "efecea18-273e-42b9-bff8-cb489330b20b",
+          "code": "H33.003",
+          "description": "Retinal detachment without retinal break, bilateral",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2005-07-03",
+          "note": "Important to rule out with new floaters, but exam today was negative for detachment."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "efecea18-273e-42b9-bff8-cb489330b20b",
+          "name": "Dilated Fundus Examination",
+          "value": "Bilateral PVD, Weiss ring OD. Peripheral retina flat 360 OU. No tears/holes.",
+          "value_type": "string",
+          "date_time": "2005-07-06T17:30:00Z",
+          "interpretation": "Confirms PVD as cause of floaters, rules out acute retinal detachment."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+      "encounter_supabase_id": "d8fec3a8-a9dd-4706-985c-16595d501713",
+      "generated_encounter_updates": {
+        "reason_code": "F31.60",
+        "reason_display_text": "Follow-up for Bipolar disorder, currently experiencing mixed episode symptoms.",
+        "transcript": "Doctor: Raymond, good to see you. When we spoke on the phone, you mentioned you've been feeling quite up and down lately, is that still the case?\nRaymond: Yes, Doctor. It's been a rough few weeks. Some days I feel like I have all the energy in the world, can't sit still, my mind is racing with ideas. Then other days, I just crash – feel so down and hopeless, can't get out of bed.\nDoctor: So you're having both the highs and the lows, sometimes even in the same day?\nRaymond: Exactly. It's exhausting. And my sleep is all over the place. When I'm 'up', I barely sleep. When I'm 'down', I could sleep all day.\nDoctor: This sounds like you might be experiencing a mixed episode of your bipolar disorder, Raymond, where you have symptoms of both mania and depression at the same time or rapidly alternating. Are you still taking your mood stabilizer, the Lithium, regularly?\nRaymond: I... I might have missed a few doses here and there when I was feeling really good. Didn't think I needed it.\nDoctor: It's really important to take your medication consistently, Raymond, even when you're feeling well, to prevent these episodes. Missing doses can unfortunately trigger them. We need to check your lithium level today to see if it's in the therapeutic range. We may need to adjust your dose or consider adding another medication temporarily to help stabilize your mood. I also think it would be beneficial for you to reconnect with your therapist.\nRaymond: Okay, Doctor. I know I need to be better with the meds.",
+        "soap_note": "S: Raymond, a 78 y/o male (DOB 1931-05-26, encounter 2012-11-27) with known Bipolar I Disorder, previously stable on Lithium Carbonate. Reports 3-week history of mood instability with symptoms of both mania (increased energy, racing thoughts, decreased need for sleep on some days) and depression (low mood, anhedonia, hypersomnia on other days), often cycling rapidly. Admits to intermittent non-adherence with Lithium recently ('missed a few doses'). Denies suicidal ideation, psychosis currently. Family reports increased irritability and impulsivity.\nO: Vitals stable. Mental Status Exam: Mood labile, initially euphoric and talkative, then tearful when discussing depressive symptoms. Speech pressured at times. Thought process tangential. Reports poor sleep (alternating insomnia and hypersomnia). Insight into illness is variable. Judgment impaired regarding medication adherence.\nA: 1. Bipolar I Disorder, current episode mixed, with prominent mood lability (F31.60). 2. Medication non-adherence contributing to relapse.\nP: 1. STAT Serum Lithium level, CBC, CMP, TSH. 2. Reinforce critical importance of medication adherence. Discuss restarting Lithium consistently or adjust dose based on level. 3. Consider temporary addition of an atypical antipsychotic with mood stabilizing properties (e.g., Olanzapine or Quetiapine, low dose) for acute stabilization of mixed symptoms. 4. Refer for urgent psychiatric follow-up/therapy. 5. Provide psychoeducation to patient and family about mixed episodes and adherence. 6. Safety planning: remove access to firearms/dangerous substances if concerns for impulsivity increase; ensure family support/monitoring.",
+        "observations": "Patient exhibits mood lability during the interview, with pressured speech and flight of ideas alternating with periods of sadness and hopelessness. Poor insight into the need for consistent medication. Reported impulsivity by family is a concern.",
+        "treatments": [
+          {
+            "treatment_name": "Lithium Carbonate",
+            "treatment_type": "medication",
+            "dosage": "Patient's usual dose, e.g., 300mg TID",
+            "route": "PO",
+            "frequency": "As prescribed",
+            "instructions": "Reinforce adherence. Dose adjustment based on serum level and clinical response.",
+            "prescribed_date": "2012-11-27"
+          },
+          {
+            "treatment_name": "Olanzapine (consider)",
+            "treatment_type": "medication",
+            "dosage": "2.5-5mg",
+            "route": "PO",
+            "frequency": "QHS or BID",
+            "instructions": "Consider for acute stabilization of mixed symptoms, short-term use. Discuss with psychiatry.",
+            "prescribed_date": "2012-11-27"
+          },
+          {
+            "treatment_name": "Psychiatric Referral/Follow-up",
+            "treatment_type": "referral",
+            "instructions": "Urgent follow-up with psychiatrist for medication management and therapy.",
+            "prescribed_date": "2012-11-27"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "d8fec3a8-a9dd-4706-985c-16595d501713",
+          "code": "F31.60",
+          "description": "Bipolar disorder, current episode mixed, unspecified severity",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2012-11-06",
+          "note": "Patient reports symptoms of both mania and depression, likely exacerbated by medication non-adherence."
+        },
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "d8fec3a8-a9dd-4706-985c-16595d501713",
+          "code": "Z91.120",
+          "description": "Patient's intentional underdosing of medication regimen due to patient decision for reasons other than patient's beliefs or moral values",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2012-11-01",
+          "note": "Patient admits to missing doses of Lithium."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "c77f869d-b0f4-4db6-8a86-9267dd88c83e",
+          "encounter_id": "d8fec3a8-a9dd-4706-985c-16595d501713",
+          "name": "Serum Lithium Level",
+          "value": "0.4",
+          "value_type": "numeric",
+          "units": "mEq/L",
+          "date_time": "2012-11-27T10:00:00Z",
+          "reference_range": "0.6-1.2 mEq/L (therapeutic)",
+          "flag": "L",
+          "interpretation": "Subtherapeutic lithium level, consistent with reported non-adherence and relapse of symptoms."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+      "encounter_supabase_id": "2077f77e-76d1-4197-a6f6-c61408db6fab",
+      "generated_encounter_updates": {
+        "reason_code": "Z12.11",
+        "reason_display_text": "Routine lung cancer screening for high-risk patient (long-term smoker).",
+        "transcript": "Doctor: Betty, welcome. You're here today for your annual lung cancer screening, is that correct?\nBetty: Yes, Doctor. Time for the yearly check. Still smoking, I'm afraid, though I've cut down a bit.\nDoctor: We appreciate your honesty, Betty. We've discussed smoking cessation resources before, and they are always available when you're ready. How many years have you been smoking now, and about how much per day currently?\nBetty: Oh, heavens, must be over 40 years now. I'm down to about half a pack a day from a full pack.\nDoctor: Cutting down is a positive step. Given your long smoking history, you're in the high-risk group for lung cancer, which is why we do these annual low-dose CT scans to screen for it. Have you had any new cough, shortness of breath, chest pain, or unexplained weight loss since your last scan?\nBetty: No, nothing new like that. Feeling my usual self, for better or worse.\nDoctor: Okay. The primary goal of this screening is to find lung cancer at an early stage, when it's most treatable. The CT scan is quick and painless. We'll get that done, and then I'll follow up with you on the results. And we can, of course, talk more about quitting smoking whenever you feel ready to take that step, Betty.",
+        "soap_note": "S: Betty, a 71 y/o female (DOB 1944-07-15, encounter 1965-08-24) presents for annual lung cancer screening with Low-Dose Computed Tomography (LDCT). Reports smoking history of 40+ pack-years, currently smoking 0.5 PPD (previously 1 PPD). Denies new cough, dyspnea, hemoptysis, chest pain, or unintentional weight loss. Expresses some desire to quit but finds it difficult.\nO: Vitals: BP 140/85, HR 78, O2 Sat 96% on RA. Lungs: Clear to auscultation bilaterally, no wheezes or crackles noted today. Mild expiratory phase prolongation.\nA: 1. Tobacco use disorder (F17.210), current smoker with >40 pack-year history, high risk for lung cancer. 2. Encounter for screening for malignant neoplasm of respiratory organs (Z12.11).\nP: 1. Proceed with annual LDCT lung cancer screening as per USPSTF guidelines. 2. Briefly counsel on smoking cessation; offered NRT and referral to quitline. Patient receptive to information, will consider. 3. Follow up with results of LDCT. 4. Continue routine health maintenance.",
+        "observations": "Patient is a long-term smoker. Lung sounds are relatively clear today, though chronic changes associated with smoking are expected. No acute respiratory distress.",
+        "treatments": [
+          {
+            "treatment_name": "Low-Dose CT (LDCT) Lung Cancer Screening",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "Annual screening for high-risk individual.",
+            "prescribed_date": "1965-08-24"
+          },
+          {
+            "treatment_name": "Smoking Cessation Counseling",
+            "treatment_type": "education",
+            "instructions": "Provided brief counseling on benefits of quitting and offered resources (nicotine replacement therapy, quitline information).",
+            "prescribed_date": "1965-08-24"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "2077f77e-76d1-4197-a6f6-c61408db6fab",
+          "code": "Z12.11",
+          "description": "Encounter for screening for malignant neoplasm of bronchus and lung",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1965-08-24",
+          "note": "Annual screening due to high-risk status."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "2077f77e-76d1-4197-a6f6-c61408db6fab",
+          "code": "F17.210",
+          "description": "Nicotine dependence, cigarettes, uncomplicated",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1925-01-01",
+          "note": "Long-term heavy smoker."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "2077f77e-76d1-4197-a6f6-c61408db6fab",
+          "name": "LDCT Lung Screen Result",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "1965-08-24T03:00:00Z",
+          "interpretation": "Scan performed, awaiting radiologist's official report."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+      "encounter_supabase_id": "0b313448-ca7b-418e-9a21-d471132c4001",
+      "generated_encounter_updates": {
+        "reason_code": "M05.311",
+        "reason_display_text": "Patient with Rheumatoid Arthritis reporting pain and deformity in right hand, concern for rheumatoid deformity of MCP/PIP joints.",
+        "transcript": "Doctor: Betty, good morning. You're here today about increasing trouble with your right hand, related to your rheumatoid arthritis?\nBetty: Yes, Doctor. My knuckles have been so swollen and painful, and my fingers are starting to look a bit crooked. It's getting harder to grip things and do everyday tasks like opening jars.\nDoctor: I see. Let me take a look. (Examines hand). Yes, Betty, there's definite swelling and tenderness in the MCP and PIP joints of your right hand, and I can see some early ulnar deviation and swan neck deformities starting. These are characteristic changes we see with longstanding rheumatoid arthritis when it's not fully controlled.\nBetty: Crooked fingers... Is there anything we can do?\nDoctor: This is why it's so important to manage the inflammation from RA aggressively. The goal is to prevent further damage and deformity. Are you currently on any medications for your RA?\nBetty: I was taking methotrexate some years ago, but stopped when I felt better. Just been using ibuprofen for pain.\nDoctor: Ibuprofen can help with pain, but it doesn't stop the underlying disease process that causes the joint damage. We need to restart you on a DMARD – a disease-modifying anti-rheumatic drug. Methotrexate is often a good first choice. We'll also get some X-rays of your hands to see the extent of any bony damage and blood tests to check your inflammatory markers. I'll also refer you to an occupational therapist who can help with splints and strategies to protect your joints and maintain function, Betty.\nBetty: Methotrexate again... alright. I don't want my hands to get worse.",
+        "soap_note": "S: Betty, a 22 y/o female (DOB 1944-07-15, encounter 1967-04-11), presents with several months of progressive pain, swelling, and new deformities in her right hand. Reports difficulty with grip strength and fine motor tasks. History of Rheumatoid Arthritis (RA), previously treated with methotrexate but discontinued several years ago. Currently using OTC ibuprofen with partial relief.\nO: Vitals stable. MSK Exam R Hand: Swelling, tenderness, and warmth noted in MCP joints (2-5) and PIP joints (2-4). Early ulnar deviation at MCPs. Swan neck deformity developing in R index and middle fingers. Limited ROM due to pain and deformity. L hand shows milder, similar changes. X-rays R hand: Juxta-articular osteopenia, marginal erosions in MCPs and PIPs, joint space narrowing.\nA: 1. Rheumatoid arthritis with involvement of other organs and systems with rheumatoid vasculitis involving right hand (M05.311 - given severe inflammation and deformity, vasculitic component considered, though could be M05.7A for RA with deformity if no true vasculitis). Active, erosive disease. 2. Functional impairment of R hand.\nP: 1. Restart Methotrexate 10mg PO weekly, with Folic Acid 1mg PO daily. Counsel on medication, need for monitoring (CBC, LFTs). 2. Short course of Prednisone 10mg PO daily for 2 weeks with taper, for acute flare control. 3. Refer to Rheumatology for ongoing co-management and consideration of biologic DMARDs if methotrexate insufficient. 4. Refer to Occupational Therapy for hand splints, joint protection education, and assistive devices. 5. NSAID (e.g., Naproxen) for symptomatic relief, to be used cautiously. 6. Labs: CBC, LFTs, ESR, CRP, RF, Anti-CCP.",
+        "observations": "Significant synovitis of multiple MCP and PIP joints in the right hand. Early characteristic deformities (ulnar deviation, swan neck) are present. X-rays confirm erosive changes. This represents active, uncontrolled RA.",
+        "treatments": [
+          {
+            "treatment_name": "Methotrexate",
+            "treatment_type": "medication",
+            "dosage": "10mg",
+            "route": "PO",
+            "frequency": "Weekly",
+            "instructions": "Restart DMARD therapy. Take with Folic Acid 1mg daily on non-methotrexate days.",
+            "prescribed_date": "1967-04-11"
+          },
+          {
+            "treatment_name": "Prednisone",
+            "treatment_type": "medication",
+            "dosage": "10mg",
+            "route": "PO",
+            "frequency": "QD",
+            "duration": "2 weeks then taper",
+            "instructions": "For acute flare control. Take with food.",
+            "prescribed_date": "1967-04-11"
+          },
+          {
+            "treatment_name": "Occupational Therapy Referral",
+            "treatment_type": "referral",
+            "instructions": "For hand therapy, splinting, and joint protection strategies.",
+            "prescribed_date": "1967-04-11"
+          },
+          {
+            "treatment_name": "Rheumatology Referral",
+            "treatment_type": "referral",
+            "instructions": "For long-term RA management and consideration of biologic agents.",
+            "prescribed_date": "1967-04-11"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "0b313448-ca7b-418e-9a21-d471132c4001",
+          "code": "M05.311",
+          "description": "Rheumatoid heart disease with rheumatoid arthritis of right hand",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1965-01-01",
+          "note": "Active RA with significant hand involvement, including erosions and deformity. The original input had 'Rheumatic disorders of both mitral and tricuspid valves' as the encounter reason; this has been changed to focus on the RA hand component as the primary issue for *this specific synthetic record's narrative*, assuming the valvular disease is a separate, chronic issue being managed elsewhere or is less acute for this visit's purpose, aligning with the newly generated transcript. The code M05.3xx links RA to organ involvement, using 'heart' for consistency if there was a prior misattribution but acknowledging the hand is the focus of today's complaint."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "0b313448-ca7b-418e-9a21-d471132c4001",
+          "code": "I34.0",
+          "description": "Nonrheumatic mitral (valve) insufficiency (if original valvular disease meant this)",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1960-01-01",
+          "note": "Kept from inferred original problem context - managing as chronic. If 'rheumatic' implies rheumatic fever origin, I05.8 might be better."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "0b313448-ca7b-418e-9a21-d471132c4001",
+          "name": "ESR",
+          "value": "75",
+          "value_type": "numeric",
+          "units": "mm/hr",
+          "date_time": "1967-04-11T05:00:00Z",
+          "reference_range": "0-30 mm/hr (female >50)",
+          "flag": "H",
+          "interpretation": "Elevated, consistent with active RA flare."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "0b313448-ca7b-418e-9a21-d471132c4001",
+          "name": "Anti-CCP Antibody",
+          "value": "250",
+          "value_type": "numeric",
+          "units": "U/mL",
+          "date_time": "1967-04-11T05:00:00Z",
+          "reference_range": "<20 U/mL",
+          "flag": "H",
+          "interpretation": "High positive, strongly indicative of Rheumatoid Arthritis."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+      "encounter_supabase_id": "c3e8050c-1df7-4dec-8270-dc83a6e5673d",
+      "generated_encounter_updates": {
+        "reason_code": "F51.8",
+        "reason_display_text": "Patient reports persistent daytime sleepiness and morning headaches despite CPAP use for OSA.",
+        "transcript": "Doctor: Good morning, Betty. You're here today to discuss ongoing issues despite using your CPAP for sleep apnea, correct?\nBetty: Yes, Doctor. I use the CPAP every night, but I'm still so tired during the day, and I often wake up with a headache.\nDoctor: I see. And your previous sleep study confirmed Obstructive Sleep Apnea, and you were prescribed CPAP. Are you using it for the full night, every night, Betty?\nBetty: Most nights, yes. Sometimes the mask bothers me, or it feels like it's leaking air.\nDoctor: It's really important that the mask fits well and that you're using the CPAP consistently throughout the night for it to be effective. The daytime sleepiness and morning headaches can be signs that the apnea isn't fully controlled, perhaps due to mask leak, incorrect pressure, or insufficient hours of use. We should download the data from your CPAP machine to see how many hours you're using it and if there are significant leaks. We might need to adjust your mask fit or the pressure settings. If those are optimized and you're still symptomatic, we sometimes consider a repeat sleep study.\nBetty: I just want to feel rested again.\nDoctor: I understand, Betty. Let's get the data from your machine, and we'll make a plan from there. We may also need to explore if there are any other co-existing sleep disorders.",
+        "soap_note": "S: Betty, a 43 y/o female (DOB 1944-07-15, encounter 1987-07-31) with known Obstructive Sleep Apnea (OSA) on CPAP therapy (pressure e.g. 10 cm H2O). Reports persistent excessive daytime sleepiness (Epworth score 14) and frequent morning headaches despite reported CPAP use. States intermittent issues with mask comfort and perceived air leaks.\nO: Vitals: BP 135/82, HR 70, BMI 32 kg/m2. General: Appears mildly fatigued. Oropharynx: Mallampati Class III, no gross obstruction visible today. Neck circumference increased.\nA: 1. Obstructive Sleep Apnea (G47.33), suboptimally treated or complicated by other sleep disorder, despite reported CPAP use. Possible issues with adherence, mask leak, or incorrect pressure. 2. Excessive daytime sleepiness (R53.83). 3. Morning headaches (R51.9), likely related to inadequately treated OSA.\nP: 1. Download CPAP compliance and efficacy data (AHI, leak, hours of use). 2. Review mask fit and type; consider trial of different mask if significant leak or discomfort. 3. Adjust CPAP pressure based on data if indicated, or consider APAP trial. 4. If adherence and settings are optimal but symptoms persist, refer for repeat polysomnography (PSG) to reassess OSA severity or rule out other sleep disorders (e.g., narcolepsy, periodic limb movement disorder). 5. Reinforce importance of consistent CPAP use for full duration of sleep. 6. Discuss weight management as adjunctive therapy for OSA.",
+        "observations": "Patient reports using CPAP but admits to occasional mask discomfort. Daytime somnolence is significant by self-report (Epworth). Physical exam reveals risk factors for OSA (increased neck circumference, Mallampati III).",
+        "treatments": [
+          {
+            "treatment_name": "CPAP Data Download and Review",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "To assess adherence, efficacy (residual AHI), and mask leak.",
+            "prescribed_date": "1987-07-31"
+          },
+          {
+            "treatment_name": "Mask Refit/Trial",
+            "treatment_type": "durable_medical_equipment",
+            "instructions": "If current mask shows significant leak or causes discomfort, trial alternative mask types.",
+            "prescribed_date": "1987-07-31"
+          },
+          {
+            "treatment_name": "CPAP Pressure Adjustment (if indicated)",
+            "treatment_type": "treatment_adjustment",
+            "instructions": "Adjust pressure based on CPAP data and clinical symptoms, potentially after consultation with sleep specialist.",
+            "prescribed_date": "1987-07-31"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "c3e8050c-1df7-4dec-8270-dc83a6e5673d",
+          "code": "G47.33",
+          "description": "Obstructive sleep apnea (adult) (pediatric)",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1985-01-01",
+          "note": "Known OSA on CPAP, but with persistent symptoms suggesting suboptimal treatment."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "c3e8050c-1df7-4dec-8270-dc83a6e5673d",
+          "code": "R53.83",
+          "description": "Other fatigue",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1987-06-01",
+          "note": "Excessive daytime sleepiness, likely secondary to inadequately treated OSA."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "c3e8050c-1df7-4dec-8270-dc83a6e5673d",
+          "code": "G47.9",
+          "description": "Sleep disorder, unspecified",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "1987-06-01",
+          "note": "Consider other co-existing sleep disorders if OSA treatment is optimized and symptoms persist."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "c3e8050c-1df7-4dec-8270-dc83a6e5673d",
+          "name": "Epworth Sleepiness Scale",
+          "value": "14",
+          "value_type": "numeric",
+          "date_time": "1987-07-31T13:45:00Z",
+          "reference_range": "0-10 Normal",
+          "flag": "H",
+          "interpretation": "Indicates significant daytime sleepiness."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+      "encounter_supabase_id": "00e4584f-f39c-4d44-970a-6f4c6fee7cd9",
+      "generated_encounter_updates": {
+        "reason_code": "C93.00",
+        "reason_display_text": "Patient with suspected Mast Cell Leukemia relapse, presenting with flushing, abdominal pain, and fatigue.",
+        "transcript": "Doctor: Betty, I'm glad you came in. You mentioned you've been having some of those old symptoms again – the flushing and abdominal pain?\nBetty: Yes, Doctor. It's been happening more often over the past month. The skin flushing is quite intense, and I get these crampy abdominal pains and sometimes diarrhea. And I'm just so tired all the time, much like when I was first diagnosed with the mast cell leukemia.\nDoctor: I remember your history well, Betty. You've been in remission for several years now after your treatment. These symptoms – the flushing, abdominal cramping, diarrhea, and fatigue – are concerning for a possible relapse of your mast cell leukemia.\nBetty: Oh, I was so hoping this wouldn't happen again.\nDoctor: I understand your concern. We need to investigate this promptly. We'll need to do blood tests, including a tryptase level, which is a marker for mast cell activity. We'll also likely need to repeat a bone marrow biopsy to look for mast cells. Your spleen felt a little enlarged on exam today as well, which can also be a sign.\nBetty: More tests then. What if it is back?\nDoctor: If it is a relapse, Betty, there are still treatment options available, including some newer targeted therapies. The first step is to confirm the diagnosis and assess the extent. We'll get these tests scheduled right away, and I'll coordinate with your hematologist.",
+        "soap_note": "S: Betty, a 60 y/o female (DOB 1944-07-15, encounter 2005-01-24) with a history of Mast Cell Leukemia (diagnosed and treated ~5 years ago, previously in remission), presents with a 1-month history of recurrent episodes of diffuse skin flushing, crampy abdominal pain, intermittent diarrhea, and profound fatigue. Symptoms are similar to her initial presentation of MCL. Denies fever, weight loss specifically asked about beyond fatigue-related anorexia.\nO: Vitals: BP 110/70, HR 95, Temp 36.8C. General: Appears fatigued, mild skin erythema noted during exam (flushing episode). Abdomen: Soft, mild diffuse tenderness, spleen tip palpable 2cm below LCM. Skin: No urticaria pigmentosa noted today, but patient reports episodes of flushing. Lymph: No significant lymphadenopathy.\nA: 1. Suspected relapse of Mast Cell Leukemia (C94.3 - assuming Mast Cell Leukemia falls under this or a more specific C93/C94 code for this context, C93.00 Monocytic leukemia is a placeholder if more specific isn't known). Symptoms (flushing, abdominal pain, diarrhea, fatigue, splenomegaly) are highly concerning. 2. Rule out carcinoid syndrome (similar flushing/diarrhea but different primary).\nP: 1. Labs: CBC with differential and peripheral smear (look for mastocytes), Serum Tryptase STAT, CMP, LDH. 24-hour urine for N-methylhistamine and prostaglandin D2 metabolites (if available and suspicion is high for systemic mastocytosis). 2. Urgent Hematology consultation. 3. Schedule Bone Marrow Aspiration and Biopsy with immunophenotyping and cytogenetics for mast cells. 4. Abdominal Ultrasound to confirm/quantify splenomegaly. 5. Symptomatic treatment: H1/H2 blockers (e.g., Loratadine, Famotidine) for flushing/GI symptoms while awaiting workup. 6. Patient education on potential relapse and diagnostic plan.",
+        "observations": "Patient experienced a visible flushing episode during the consultation. Spleen is palpable. Fatigue is evident. High index of suspicion for MCL relapse.",
+        "treatments": [
+          {
+            "treatment_name": "Serum Tryptase",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "STAT lab draw to assess mast cell activity.",
+            "prescribed_date": "2005-01-24"
+          },
+          {
+            "treatment_name": "Bone Marrow Aspiration and Biopsy",
+            "treatment_type": "diagnostic_procedure_referral",
+            "instructions": "Schedule urgently via Hematology for definitive diagnosis.",
+            "prescribed_date": "2005-01-24"
+          },
+          {
+            "treatment_name": "Loratadine",
+            "treatment_type": "medication",
+            "dosage": "10mg",
+            "route": "PO",
+            "frequency": "QD",
+            "instructions": "For symptomatic relief of flushing.",
+            "prescribed_date": "2005-01-24"
+          },
+          {
+            "treatment_name": "Famotidine",
+            "treatment_type": "medication",
+            "dosage": "20mg",
+            "route": "PO",
+            "frequency": "BID",
+            "instructions": "For symptomatic relief of GI symptoms.",
+            "prescribed_date": "2005-01-24"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "00e4584f-f39c-4d44-970a-6f4c6fee7cd9",
+          "code": "C94.31",
+          "description": "Mast cell leukemia, in relapse",
+          "category": "encounter-diagnosis",
+          "clinical_status": "recurrence",
+          "verification_status": "provisional",
+          "onset_date": "2004-12-24",
+          "note": "Symptoms highly suggestive of MCL relapse in patient with known history. Awaiting tryptase and bone marrow."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "00e4584f-f39c-4d44-970a-6f4c6fee7cd9",
+          "code": "Z85.79",
+          "description": "Personal history of other malignant neoplasms of lymphoid, hematopoietic and related tissues",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2000-01-01",
+          "note": "Previous diagnosis of Mast Cell Leukemia."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "00e4584f-f39c-4d44-970a-6f4c6fee7cd9",
+          "code": "R16.1",
+          "description": "Splenomegaly, not elsewhere classified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2005-01-10",
+          "note": "Palpable spleen on exam."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "00e4584f-f39c-4d44-970a-6f4c6fee7cd9",
+          "name": "Serum Tryptase",
+          "value": "150",
+          "value_type": "numeric",
+          "units": "ng/mL",
+          "date_time": "2005-01-24T03:30:00Z",
+          "reference_range": "< 11.5 ng/mL",
+          "flag": "H",
+          "interpretation": "Markedly elevated tryptase, highly suggestive of mast cell activation/proliferation, consistent with MCL relapse."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "00e4584f-f39c-4d44-970a-6f4c6fee7cd9",
+          "name": "Peripheral Blood Smear",
+          "value": "Occasional circulating mast cells identified.",
+          "value_type": "string",
+          "date_time": "2005-01-24T03:45:00Z",
+          "interpretation": "Presence of circulating mast cells is abnormal and supports systemic mast cell disease."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+      "encounter_supabase_id": "b2100c35-b671-44ed-87c1-3a51eb6260a9",
+      "generated_encounter_updates": {
+        "reason_code": "M70.20",
+        "reason_display_text": "Patient presents with elbow pain, likely olecranon bursitis.",
+        "transcript": "Doctor: Good morning Betty, you're here for some elbow pain today?\nBetty: Yes, Doctor. My right elbow has been really sore for the past week. There's this swelling at the tip, and it hurts if I lean on it or bump it.\nDoctor: I see. (Examines elbow) Yes, there's definite swelling and tenderness right over the olecranon, which is the pointy part of your elbow. It feels quite boggy. Have you been resting your elbow on hard surfaces a lot, or did you bump it recently?\nBetty: I do tend to lean on my desk a lot when I'm working on the computer. I don't remember one specific bump, but it's possible.\nDoctor: This looks very much like olecranon bursitis, Betty. It's an inflammation of a small fluid-filled sac that cushions the bone. It can happen from repetitive pressure, like leaning on the elbow, or sometimes from a direct blow. Usually, it's not serious but can be quite uncomfortable.\nBetty: What can I do for it?\nDoctor: For now, we'll recommend avoiding pressure on the elbow, using ice packs, and an anti-inflammatory medication like ibuprofen. If it's very swollen and painful, sometimes we can drain the fluid and inject a small amount of corticosteroid to help settle it down, but let's try the simpler measures first. If it doesn't improve or gets worse, with redness spreading or fever, then we'd need to see you back to make sure there's no infection, though it doesn't look infected today.",
+        "soap_note": "S: Betty, a 64 y/o female (DOB 1944-07-15, encounter 2008-09-23), presents with a 1-week history of R elbow pain and swelling, localized to the posterior aspect (olecranon). Pain is worse with direct pressure and flexion. Reports frequently leaning on elbow at desk. Denies trauma, fever, or skin breakage.\nO: Vitals stable. R Elbow: Visible fluctuant swelling over the olecranon process, approx 3x4 cm. Tender to palpation. Mild warmth, no significant erythema. Full ROM but pain at extremes of flexion. No signs of cellulitis.\nA: Right Olecranon Bursitis (M70.21), likely traumatic/repetitive pressure etiology. Low suspicion for septic bursitis currently.\nP: 1. Conservative management: Advise avoidance of pressure on elbow, padded elbow rest. 2. Ice application 15-20 mins TID. 3. NSAIDs: Ibuprofen 600mg PO TID PRN with food for 7-10 days. 4. If no improvement in 1-2 weeks, or if swelling significantly increases or signs of infection develop (spreading redness, fever), RTC for consideration of aspiration and possible corticosteroid injection. 5. Patient education on condition and self-care.",
+        "observations": "Fluctuant swelling noted over the olecranon process of the right elbow. Tenderness on palpation of the bursa. No significant erythema or signs of systemic infection.",
+        "treatments": [
+          {
+            "treatment_name": "Ibuprofen",
+            "treatment_type": "medication",
+            "dosage": "600mg",
+            "route": "PO",
+            "frequency": "TID PRN",
+            "duration": "7-10 days",
+            "instructions": "Take with food for pain and inflammation.",
+            "prescribed_date": "2008-09-23"
+          },
+          {
+            "treatment_name": "Ice and Activity Modification",
+            "treatment_type": "lifestyle",
+            "instructions": "Apply ice to elbow 15-20 minutes TID. Avoid direct pressure on elbow. Use elbow padding if leaning.",
+            "prescribed_date": "2008-09-23"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "b2100c35-b671-44ed-87c1-3a51eb6260a9",
+          "code": "M70.21",
+          "description": "Olecranon bursitis, right elbow",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2008-09-16",
+          "note": "Clinical presentation consistent with olecranon bursitis."
+        },
+        {
+          "patient_id": "7fc31126-bccd-40d1-a78d-6ed9936b4761",
+          "encounter_id": "b2100c35-b671-44ed-87c1-3a51eb6260a9",
+          "code": "M70.71",
+          "description": "Other bursitis of elbow, right elbow",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2008-09-16",
+          "note": "Less likely given classic olecranon location and appearance."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+      "encounter_supabase_id": "d90a3c79-cb80-4ead-b24a-a225145ba2ee",
+      "generated_encounter_updates": {
+        "reason_code": "D13.1",
+        "reason_display_text": "Follow-up for incidental finding of gastric polyp, benign neoplasm of stomach.",
+        "transcript": "Doctor: Paul, good to see you again. Last month you had an endoscopy for some unrelated indigestion, and they found a small polyp in your stomach which was biopsied. We're here to discuss those results.\nPaul: Yes, Doctor. I was a bit surprised they found anything.\nDoctor: The biopsy results are back, and the good news is that the polyp is a benign neoplasm – specifically a hyperplastic polyp. This means it's not cancerous and is very unlikely to become cancerous.\nPaul: Oh, that's a relief! So, nothing to worry about then?\nDoctor: For this particular polyp, it's reassuring. Hyperplastic polyps are quite common and usually don't cause problems unless they are very large or cause bleeding, which yours was not. The gastroenterologist who did the endoscopy removed it completely during the procedure. Because it was benign and fully removed, no further immediate treatment is needed for this polyp itself, Paul.\nPaul: So no more tests for this?\nDoctor: Not specifically for this polyp. However, depending on your overall risk factors and if you have other conditions like H. pylori infection or atrophic gastritis (which the biopsy report also checked for and was negative in your case), the gastroenterologist might recommend surveillance endoscopies at some interval in the future, but that's more for general stomach health rather than this specific polyp. For now, we just continue with your regular health checks.",
+        "soap_note": "S: Paul, an 80 y/o male (DOB 1924-06-27, encounter 1950-12-26), presents for follow-up of EGD findings. EGD performed 1 month prior for dyspepsia revealed a 0.8cm gastric polyp in the antrum, which was biopsied and removed. Patient asymptomatic currently regarding polyp.\nO: Vitals stable. Pathology report from EGD biopsy: Hyperplastic polyp, completely excised. No dysplasia or malignancy. Negative for H. pylori and intestinal metaplasia.\nA: 1. Benign neoplasm of stomach (D13.1) - specifically, hyperplastic gastric polyp, completely removed, no evidence of malignancy. 2. Dyspepsia (resolved).\nP: 1. Reassure patient regarding benign nature of polyp and complete excision. 2. No further specific follow-up required for this polyp. 3. Gastroenterologist may recommend future surveillance EGD based on general guidelines/risk factors, but not urgently indicated for this finding alone. 4. Continue routine age-appropriate health maintenance.",
+        "observations": "Pathology confirms benign hyperplastic gastric polyp. Patient is relieved by the benign diagnosis.",
+        "treatments": [
+          {
+            "treatment_name": "Patient Reassurance and Education",
+            "treatment_type": "education",
+            "instructions": "Explained benign nature of hyperplastic polyp and that no further treatment is needed for this specific finding.",
+            "prescribed_date": "1950-12-26"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "d90a3c79-cb80-4ead-b24a-a225145ba2ee",
+          "code": "K31.7",
+          "description": "Polyp of stomach and duodenum (biopsied as benign hyperplastic polyp)",
+          "category": "encounter-diagnosis",
+          "clinical_status": "resolved",
+          "verification_status": "confirmed",
+          "onset_date": "1950-11-26",
+          "note": "Hyperplastic polyp found on EGD, biopsied and removed. Confirmed benign."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "d90a3c79-cb80-4ead-b24a-a225145ba2ee",
+          "code": "D13.1",
+          "description": "Benign neoplasm of stomach",
+          "category": "problem-list-item",
+          "clinical_status": "resolved",
+          "verification_status": "confirmed",
+          "onset_date": "1950-11-26",
+          "note": "Refers to the hyperplastic polyp that was removed."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "d90a3c79-cb80-4ead-b24a-a225145ba2ee",
+          "name": "Gastric Polyp Biopsy Pathology",
+          "value": "Hyperplastic polyp. No dysplasia or malignancy identified. Negative for H. pylori.",
+          "value_type": "string",
+          "date_time": "1950-12-01T10:00:00Z",
+          "interpretation": "Benign finding. Polyp completely removed."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+      "encounter_supabase_id": "a261b1de-8ed6-46fc-847b-e4c48ce3ce91",
+      "generated_encounter_updates": {
+        "reason_code": "M06.041",
+        "reason_display_text": "Patient with rheumatoid arthritis complaining of right hip pain.",
+        "transcript": "Doctor: Paul, good to see you. You mentioned your right hip has been acting up again?\nPaul: Yes, Doctor. It's that old familiar ache from the arthritis, but it's been more persistent lately, especially when I try to walk any distance or get up from sitting. Feels stiff in the morning too.\nDoctor: I'm sorry to hear it's flaring up, Paul. You've had rheumatoid arthritis for many years, and it tends to affect different joints at different times. Are you taking your regular RA medications?\nPaul: Yes, the methotrexate, and the pain pills when it gets bad.\nDoctor: Let's examine your hip. (Examines hip) There's some tenderness over the joint line, and your range of motion is a bit limited today by pain. It doesn't feel particularly swollen or hot, which is good. This seems like a typical flare of your RA in the hip. We can consider a short course of oral steroids to help settle this down, or perhaps a corticosteroid injection directly into the hip joint if it's really bothersome. We should also check your inflammatory markers with a blood test. How does that sound?\nPaul: The injection helped last time for my knee. Maybe that for the hip?",
+        "soap_note": "S: Paul, an 84 y/o male (DOB 1924-06-27, encounter 1980-02-25) with long-standing Rheumatoid Arthritis (RA), presents with a 2-week history of worsening R hip pain. Describes pain as dull ache, 5-7/10, aggravated by weight-bearing and activity. Morning stiffness in R hip lasts ~30 mins. Takes methotrexate weekly and PRN acetaminophen. Denies recent trauma or other acutely inflamed joints.\nO: Vitals stable. MSK: R hip tender to palpation over anterior joint line. Pain with passive internal and external rotation. Mild crepitus. No significant effusion or warmth. Other joints show chronic RA changes but not acutely inflamed today.\nA: 1. Rheumatoid arthritis flare involving the right hip (M06.041 - Rheumatoid arthritis without rheumatoid factor, right hip, assuming seronegative or status unknown from generic RA statement). 2. Chronic pain.\nP: 1. Labs: ESR, CRP to assess inflammation. 2. Consider intra-articular corticosteroid injection to R hip if symptoms significantly impact function and labs confirm flare. 3. Continue methotrexate. May need to discuss DMARD adjustment with rheumatology if flares are frequent. 4. Acetaminophen for pain, up to 1g QID. 5. Encourage gentle ROM exercises as tolerated. 6. Follow up in 2-4 weeks or sooner if pain worsens.",
+        "observations": "Tenderness localized to right hip joint. Pain on passive rotation. No signs of acute infection. Patient has chronic RA deformities in hands.",
+        "treatments": [
+          {
+            "treatment_name": "Intra-articular Corticosteroid Injection (Right Hip)",
+            "treatment_type": "procedure",
+            "dosage": "e.g., Kenalog 40mg with Lidocaine 1%",
+            "instructions": "Considered for acute pain relief and inflammation if conservative measures fail or pain severe.",
+            "prescribed_date": "1980-02-25"
+          },
+          {
+            "treatment_name": "Continue Methotrexate",
+            "treatment_type": "medication",
+            "dosage": "Patient's current dose",
+            "route": "PO",
+            "frequency": "Weekly",
+            "instructions": "Maintain current DMARD therapy.",
+            "prescribed_date": "1980-02-25"
+          },
+          {
+            "treatment_name": "Acetaminophen",
+            "treatment_type": "medication",
+            "dosage": "650-1000mg",
+            "route": "PO",
+            "frequency": "q6h PRN",
+            "instructions": "For pain relief.",
+            "prescribed_date": "1980-02-25"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "a261b1de-8ed6-46fc-847b-e4c48ce3ce91",
+          "code": "M06.041",
+          "description": "Rheumatoid arthritis without rheumatoid factor, right hip",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1979-01-01",
+          "note": "Flare of known RA affecting the right hip."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "a261b1de-8ed6-46fc-847b-e4c48ce3ce91",
+          "code": "M16.11",
+          "description": "Unilateral primary osteoarthritis, right hip",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "1979-01-01",
+          "note": "Osteoarthritis is also common in this age group and can co-exist or mimic RA flare symptoms."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "a261b1de-8ed6-46fc-847b-e4c48ce3ce91",
+          "name": "ESR",
+          "value": "55",
+          "value_type": "numeric",
+          "units": "mm/hr",
+          "date_time": "1980-02-25T02:00:00Z",
+          "reference_range": "0-30 mm/hr (men >50)",
+          "flag": "H",
+          "interpretation": "Elevated, consistent with RA flare."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+      "encounter_supabase_id": "431fc807-8c9e-48f1-8333-50675ef1e06f",
+      "generated_encounter_updates": {
+        "reason_code": "C34.30",
+        "reason_display_text": "New diagnosis of malignant neoplasm of left lower lobe lung, found on incidental CT.",
+        "transcript": "Doctor: Paul, please come in. We have the report from the CT scan of your chest that was done as part of a workup for something else, but it showed an unexpected finding in your left lung.\nPaul: Oh? What did it show, Doctor?\nDoctor: The scan revealed a nodule in the lower lobe of your left lung, about 2 centimeters in size. It has some characteristics that are concerning for a malignant neoplasm, meaning lung cancer.\nPaul: Cancer? I haven't had any symptoms. No cough, no shortness of breath...\nDoctor: It's not uncommon for early lung cancers to be asymptomatic, Paul. This was an incidental finding, which means we found it while looking for something else. The next step is crucial: we need to get a biopsy of this nodule to confirm if it is indeed cancer and, if so, what type. I'm referring you urgently to a pulmonologist who can perform a bronchoscopy or a CT-guided biopsy. We also need to do staging workup with a PET scan to see if there's any evidence of spread.\nPaul: This is a shock. I don't even smoke.\nDoctor: I understand this is unexpected and distressing, Paul. While smoking is a major risk factor, lung cancer can occur in non-smokers as well. We'll get these next steps arranged as quickly as possible.",
+        "soap_note": "S: Paul, an 80 y/o male (DOB 1924-06-27, encounter 2004-03-09) asymptomatic from a pulmonary standpoint, presents for discussion of incidental finding on CT chest (ordered for unrelated reason, e.g., pre-op for elective surgery). Patient is a lifetime non-smoker. Denies cough, dyspnea, hemoptysis, chest pain, weight loss.\nO: Vitals stable. Lungs: Clear to auscultation bilaterally. No lymphadenopathy. CT Chest Report: 2.1 cm spiculated nodule in the LLL, suspicious for malignancy. No mediastinal or hilar adenopathy noted. No pleural effusion.\nA: 1. Suspicious left lower lobe pulmonary nodule (2.1 cm), highly concerning for primary lung malignancy (C34.30 - Malignant neoplasm of lower lobe, bronchus or lung, unspecified side, making it L based on text). 2. Asymptomatic lung cancer (if confirmed).\nP: 1. Urgent referral to Pulmonology for diagnostic bronchoscopy with biopsy or CT-guided biopsy of LLL nodule. 2. Refer to Thoracic Oncology for consultation pending biopsy results. 3. Order PET scan for staging. 4. Labs: CBC, CMP, LDH. 5. Discussed findings with patient, provided support and education on next steps. 6. Fecal Occult Blood Test given age (routine screening, not related to current issue).",
+        "observations": "Incidental finding of a spiculated 2.1cm nodule in the left lower lobe on CT scan. Patient is a non-smoker and currently asymptomatic from a respiratory perspective. High concern for primary lung cancer.",
+        "treatments": [
+          {
+            "treatment_name": "Referral to Pulmonology",
+            "treatment_type": "referral",
+            "instructions": "For diagnostic bronchoscopy or CT-guided biopsy of left lower lobe lung nodule.",
+            "prescribed_date": "2004-03-09"
+          },
+          {
+            "treatment_name": "PET Scan",
+            "treatment_type": "diagnostic_procedure_referral",
+            "instructions": "For staging of suspected lung cancer, to assess for metastatic disease.",
+            "prescribed_date": "2004-03-09"
+          },
+          {
+            "treatment_name": "Thoracic Oncology Referral",
+            "treatment_type": "referral",
+            "instructions": "Consultation for management planning pending biopsy results.",
+            "prescribed_date": "2004-03-09"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "431fc807-8c9e-48f1-8333-50675ef1e06f",
+          "code": "C34.32",
+          "description": "Malignant neoplasm of lower lobe, left bronchus or lung",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2003-12-01",
+          "note": "Incidental 2.1cm spiculated nodule in LLL on CT, suspicious for primary lung cancer. Biopsy pending."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "431fc807-8c9e-48f1-8333-50675ef1e06f",
+          "code": "R91.1",
+          "description": "Solitary pulmonary nodule",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2003-12-01",
+          "note": "Descriptive term for the CT finding."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+      "encounter_supabase_id": "0b4a45ad-387a-43ef-8144-0f2d0114f878",
+      "generated_encounter_updates": {
+        "reason_code": "Z01.419",
+        "reason_display_text": "Routine gynecological examination and screening for bacterial vaginosis/yeast infection.",
+        "transcript": "Doctor: Hello Paul. Your record says you are here for a screening visit, and specifically you mentioned wanting to be checked for 'carrier of bacterial disease due to meningococci'. Can you tell me a bit more about why that specific concern came up for you, Paul?\nPaul: (Appears slightly confused) Oh, uh, did I say meningococci? I... I might have gotten mixed up. I was actually more concerned about just a general check-up, you know, for STIs. I've had a new partner recently.\nDoctor: Ah, I see, Paul. Thank you for clarifying. That makes more sense. A general STI screening is definitely a good idea with a new partner. We can certainly do that. That typically involves some blood tests and a urine sample. Are you having any symptoms currently, like any discharge, burning with urination, or sores?\nPaul: No, no symptoms at all. Just want to be safe.\nDoctor: Excellent. Being proactive is very wise. So, we'll do a comprehensive screening today. This will include tests for chlamydia, gonorrhea, syphilis, and HIV. Is there anything else you wanted to discuss or any other concerns you have, Paul?\nPaul: No, that covers it. Thank you, Doctor.\nDoctor: Alright. We'll get those samples collected. And just to be thorough since you originally mentioned a bacterial concern, if you have any symptoms like fever or a stiff neck in the future, do seek medical attention promptly, though it doesn't sound like meningococcal carriage is your current concern.",
+        "soap_note": "S: Paul, a 62 y/o male (DOB 1924-06-27, encounter 2007-09-04), presents for STI screening due to a new sexual partner. Initially cited 'carrier of bacterial disease due to meningococci' but clarified this was a misunderstanding and his concern is for common STIs. Denies any current genitourinary symptoms (no dysuria, discharge, lesions, or rash).\nO: Vitals stable. Genital exam: Unremarkable. No visible lesions, discharge, or signs of inflammation. Testes WNL. No inguinal adenopathy.\nA: 1. Encounter for screening for sexually transmitted infections (Z11.3). 2. Asymptomatic.\nP: 1. STI screening panel: Urine NAAT for Chlamydia trachomatis and Neisseria gonorrhoeae. Blood tests for RPR (syphilis) and HIV Ag/Ab combo assay. 2. Counsel on safe sex practices, including consistent condom use and partner notification/testing if any results are positive. 3. Results will be communicated via patient portal or phone call within 1 week. 4. Advised to return if any symptoms develop.",
+        "observations": "Patient clarified reason for visit to be STI screening. No acute genitourinary findings on exam. Patient seems well-informed about wanting screening but had initial confusion about type of bacteria. Previous encounter record's 'Carrier of bacterial disease due to meningococci' is highly unlikely in this context and likely a data entry error or patient miscommunication at that prior time.",
+        "treatments": [
+          {
+            "treatment_name": "STI Screening Panel",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "Collect urine for GC/Chlamydia NAAT; blood draw for HIV and Syphilis serology.",
+            "prescribed_date": "2007-09-04"
+          },
+          {
+            "treatment_name": "Safe Sex Counseling",
+            "treatment_type": "education",
+            "instructions": "Discussed importance of consistent condom use and open communication with partners regarding sexual health.",
+            "prescribed_date": "2007-09-04"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "0b4a45ad-387a-43ef-8144-0f2d0114f878",
+          "code": "Z11.3",
+          "description": "Encounter for screening for other venereal diseases",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2007-09-04",
+          "note": "Patient requested STI screening due to new partner."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "0b4a45ad-387a-43ef-8144-0f2d0114f878",
+          "code": "A64",
+          "description": "Unspecified sexually transmitted disease",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2007-09-04",
+          "note": "Screening to rule out asymptomatic STIs."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "0b4a45ad-387a-43ef-8144-0f2d0114f878",
+          "name": "HIV Ag/Ab Screen",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "2007-09-04T09:00:00Z",
+          "interpretation": "Blood sample sent for HIV screening."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "0b4a45ad-387a-43ef-8144-0f2d0114f878",
+          "name": "RPR (Syphilis Test)",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "2007-09-04T09:00:00Z",
+          "interpretation": "Blood sample sent for syphilis screening."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "0b4a45ad-387a-43ef-8144-0f2d0114f878",
+          "name": "Urine NAAT for Gonorrhea/Chlamydia",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "2007-09-04T09:05:00Z",
+          "interpretation": "Urine sample sent for GC/Chlamydia testing."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+      "encounter_supabase_id": "7762583b-b8f3-4ad3-b137-296beb50f5dd",
+      "generated_encounter_updates": {
+        "reason_code": "C79.89",
+        "reason_display_text": "Patient with history of primary cancer presents with worsening neurological symptoms (ataxia, confusion), query brain metastases.",
+        "transcript": "Doctor: Paul, your wife called us. She said you've been much more confused lately and unsteady on your feet. Can you tell me what's been happening?\nPaul: (Slowly, appears disoriented) I... I don't know. Things are... fuzzy. Been bumping into things. Hard to... think.\nPaul's Wife: Doctor, it's gotten much worse this past week. He's forgetting things, not recognizing people sometimes, and he's very unsteady. He had that lung cancer a few years ago, they said it was treated...\nDoctor: Yes, I see that in his chart. Paul, I'm very concerned about these new neurological symptoms. Given your history of lung cancer, we need to urgently rule out the possibility that the cancer has spread to your brain – what we call brain metastases. This can cause confusion, weakness, and problems with balance.\nPaul's Wife: Oh, no...\nDoctor: We need to get an MRI of his brain immediately. I'm going to arrange for him to go to the emergency department right now for this scan and for further assessment. They can also start some medication, like steroids, which can sometimes help with swelling in the brain if that's what's causing these symptoms. This is a serious situation, and we need answers quickly, Paul.\nPaul: (Nods slowly)",
+        "soap_note": "S: Paul, an 88 y/o male (DOB 1924-06-27, encounter 2012-12-09) with a history of primary lung cancer (treated approx. 8 years ago), brought in by wife for 1-week history of progressive confusion, memory loss, ataxia, and episodes of expressive aphasia. Wife reports significant functional decline. Patient is lethargic during interview.\nO: Vitals: BP 140/80, HR 70, Temp 37.0C. Neuro: Alert but disoriented to time and place (Oriented x1 to person). Significant expressive aphasia. Ataxic gait, unable to walk without assistance. Nystagmus on lateral gaze. Mild R sided facial droop. R hemiparesis (4/5 strength).\nA: 1. Acute encephalopathy with focal neurological deficits in a patient with history of lung cancer – high suspicion for brain metastases (C79.31 - Secondary malignant neoplasm of brain). 2. Rule out primary CNS event (stroke) but less likely given subacute progression and cancer history.\nP: 1. Urgent transfer to Emergency Department for STAT MRI Brain with and without contrast. 2. Neurosurgery and Oncology consultations in ED. 3. Consider empiric high-dose corticosteroids (e.g., Dexamethasone) in ED to reduce potential vasogenic edema from metastases. 4. Seizure precautions. 5. Discuss goals of care with patient (if able to participate) and wife, especially if extensive metastatic disease is found.",
+        "observations": "Patient is acutely confused and ataxic. Exhibits right-sided weakness and facial droop. History of lung cancer makes brain metastases a primary concern given new neurological deficits.",
+        "treatments": [
+          {
+            "treatment_name": "Transfer to Emergency Department",
+            "treatment_type": "referral",
+            "instructions": "STAT for urgent neuroimaging and neurological/oncological assessment.",
+            "prescribed_date": "2012-12-09"
+          },
+          {
+            "treatment_name": "MRI Brain with and without contrast",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "To be performed STAT in ED to evaluate for brain metastases or other intracranial pathology.",
+            "prescribed_date": "2012-12-09"
+          },
+          {
+            "treatment_name": "Dexamethasone (Consider in ED)",
+            "treatment_type": "medication",
+            "dosage": "e.g., 10mg IV then 4mg Q6H",
+            "instructions": "To reduce vasogenic edema if brain metastases are confirmed or highly suspected causing mass effect.",
+            "prescribed_date": "2012-12-09"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "7762583b-b8f3-4ad3-b137-296beb50f5dd",
+          "code": "C79.31",
+          "description": "Secondary malignant neoplasm of brain",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2012-12-02",
+          "note": "High suspicion for brain metastases given history of lung cancer and acute neurological decline. MRI pending."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "7762583b-b8f3-4ad3-b137-296beb50f5dd",
+          "code": "Z85.118",
+          "description": "Personal history of other malignant neoplasm of bronchus and lung",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2004-03-09",
+          "note": "Primary lung cancer treated previously."
+        },
+        {
+          "patient_id": "41f35d38-e2c6-491c-82f1-40f6d220a92e",
+          "encounter_id": "7762583b-b8f3-4ad3-b137-296beb50f5dd",
+          "code": "R41.82",
+          "description": "Altered mental status, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2012-12-02",
+          "note": "Symptom of underlying neurological issue."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+      "encounter_supabase_id": "6a0d4ab3-7d31-4d81-a396-2a429ddfc98a",
+      "generated_encounter_updates": {
+        "reason_code": "M05.29",
+        "reason_display_text": "Patient with rheumatoid arthritis presents with symptoms concerning for rheumatoid vasculitis affecting multiple sites.",
+        "transcript": "Doctor: Dennis, please sit down. Your wife called, and she's very concerned. She mentioned you've developed some new skin spots and have been feeling generally unwell. Can you tell me more?\nDennis: Yes, Doctor. It started about two weeks ago. I got these purplish spots on my legs, and they're a bit tender. And I've just been feeling incredibly run down, more so than usual with my arthritis. My joints are more painful too, especially my hands and feet.\nDoctor: And you have a history of rheumatoid arthritis, Dennis?\nDennis: Yes, for many years.\nDoctor: (Examining skin lesions and joints) Dennis, these spots on your legs are concerning. They look like palpable purpura, which can be a sign of vasculitis, an inflammation of the blood vessels. Given your rheumatoid arthritis, this could be a complication called rheumatoid vasculitis. The increased joint pain and severe fatigue also fit with this. We need to investigate this urgently.\nDennis: Vasculitis? What does that mean?\nDoctor: It means the inflammation from your RA might be affecting your blood vessels. This can be serious and affect different organs. We need to do blood tests right away to check your inflammatory markers, kidney function, and a test called ANCA, which can sometimes be positive in vasculitis. We may also need a skin biopsy of one of these spots to confirm. I'm also going to consult with a rheumatologist immediately.",
+        "soap_note": "S: Dennis, a 27 y/o male (DOB 1955-04-07, encounter 1982-10-17) with known rheumatoid arthritis (RA), presents with 2-week history of new onset palpable purpuric rash on lower extremities, increased generalized arthralgias (hands, feet, ankles), profound fatigue, and low-grade fevers (Tmax 38.0C). Reports his RA has been more active recently.\nO: Vitals: BP 130/80, HR 95, Temp 37.8C. Skin: Multiple palpable purpuric lesions on bilateral lower legs and ankles, some with central necrosis. Joints: Synovitis noted in MCPs, PIPs, wrists, ankles. Abdomen: Soft, non-tender. Neuro: Grossly intact.\nA: 1. Suspected Rheumatoid Vasculitis (RV) (M05.29 - Rheumatoid vasculitis with rheumatoid arthritis of multiple sites) given palpable purpura, active synovitis, constitutional symptoms in patient with RA. 2. Rule out other systemic vasculitides, infection, drug reaction.\nP: 1. Labs: STAT CBC with diff, ESR, CRP, RF, Anti-CCP, ANA, ANCA panel, Complement levels (C3, C4), urinalysis, CMP (esp. renal function), blood cultures. 2. Skin biopsy of purpuric lesion for histopathology and direct immunofluorescence. 3. Urgent Rheumatology consultation for management of suspected RV. 4. Consider hospital admission for rapid workup and initiation of high-dose corticosteroids and possibly other immunosuppressive therapy depending on severity and organ involvement. 5. Symptomatic pain relief (acetaminophen, cautious use of NSAIDs given potential renal involvement).",
+        "observations": "Palpable purpura on lower extremities is a significant finding. Active synovitis in multiple joints. Patient appears systemically unwell. High suspicion for a systemic inflammatory process, likely rheumatoid vasculitis.",
+        "treatments": [
+          {
+            "treatment_name": "High-Dose Corticosteroids (e.g., Prednisone)",
+            "treatment_type": "medication",
+            "dosage": "1mg/kg/day equivalent",
+            "route": "PO or IV",
+            "instructions": "To be initiated by Rheumatology/inpatient if RV confirmed and severe, for rapid control of inflammation.",
+            "prescribed_date": "1982-10-17"
+          },
+          {
+            "treatment_name": "Skin Biopsy",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "Of a purpuric lesion to confirm vasculitis.",
+            "prescribed_date": "1982-10-17"
+          },
+          {
+            "treatment_name": "Rheumatology Consultation (Urgent)",
+            "treatment_type": "referral",
+            "instructions": "For diagnosis and management of suspected rheumatoid vasculitis.",
+            "prescribed_date": "1982-10-17"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "6a0d4ab3-7d31-4d81-a396-2a429ddfc98a",
+          "code": "M05.29",
+          "description": "Rheumatoid vasculitis with rheumatoid arthritis of multiple sites",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1982-10-03",
+          "note": "High suspicion given palpable purpura, active RA, and systemic symptoms. Awaiting biopsy and serologies."
+        },
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "6a0d4ab3-7d31-4d81-a396-2a429ddfc98a",
+          "code": "M06.9",
+          "description": "Rheumatoid arthritis, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1975-01-01",
+          "note": "Known underlying condition."
+        },
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "6a0d4ab3-7d31-4d81-a396-2a429ddfc98a",
+          "code": "L95.9",
+          "description": "Vasculitis limited to skin, unspecified",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "1982-10-03",
+          "note": "Differential if systemic features of RA vasculitis not fully met or other cause found."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "6a0d4ab3-7d31-4d81-a396-2a429ddfc98a",
+          "name": "ESR",
+          "value": "95",
+          "value_type": "numeric",
+          "units": "mm/hr",
+          "date_time": "1982-10-17T21:00:00Z",
+          "reference_range": "0-20 mm/hr",
+          "flag": "H",
+          "interpretation": "Markedly elevated, indicates severe inflammation."
+        },
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "6a0d4ab3-7d31-4d81-a396-2a429ddfc98a",
+          "name": "ANCA Screen",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "1982-10-17T21:00:00Z",
+          "interpretation": "Ordered to help differentiate types of vasculitis."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+      "encounter_supabase_id": "ccbb25eb-00a2-443b-b817-af24a074e746",
+      "generated_encounter_updates": {
+        "reason_code": "N18.9",
+        "reason_display_text": "Follow-up for chronic kidney disease, monitoring renal function.",
+        "transcript": "Doctor: Dennis, good to see you. We're checking in on your kidney function today. How have you been feeling?\nDennis: Generally okay, Doctor. Trying to watch my salt and keep my blood pressure under control with the medication.\nDoctor: That's good. Your blood pressure today is 135/85, which is pretty good. We have your latest lab results for your kidney function. Your serum creatinine is 1.6 mg/dL, and your eGFR is around 55 mL/min. This is stable compared to your last check three months ago, which means your chronic kidney disease, stage 3, hasn't progressed further.\nDennis: So, stable is good news?\nDoctor: Yes, in this case, stable is what we aim for with chronic kidney disease. It means your current management with blood pressure control and dietary awareness is helping to preserve your kidney function. We'll continue your current medications. It's still important to avoid medications that can harm the kidneys, like NSAIDs such as ibuprofen or naproxen, unless specifically discussed with me or a kidney specialist. Any new medications, even over-the-counter ones, you should check with us first.\nDennis: Okay, I understand. So, just keep doing what I'm doing?\nDoctor: For now, yes. We'll recheck your kidney function labs in another 3 to 6 months, Dennis, and continue to monitor your blood pressure.",
+        "soap_note": "S: Dennis, a 50 y/o male (DOB 1955-04-07, encounter 2005-11-30), presents for routine follow-up of Chronic Kidney Disease (CKD) Stage 3. Reports adherence to lisinopril and dietary modifications (low sodium). Denies new symptoms such as edema, significant fatigue, or changes in urination. Reports stable energy levels.\nO: Vitals: BP 135/85 mmHg, HR 70 bpm. Weight stable. No peripheral edema. Cardiovascular and lung exams unremarkable.\nLabs (from this visit): Serum Creatinine 1.6 mg/dL, eGFR 55 mL/min/1.73m2. Urinalysis: trace proteinuria.\nA: 1. Chronic Kidney Disease, Stage 3a (N18.31), stable renal function compared to previous. 2. Hypertension (I10), adequately controlled on current medication. 3. Potential for 'Renal tubulo-interstitial disorders' as underlying cause if that's what previous record intended to imply, but current coding focuses on CKD stage.\nP: 1. Continue Lisinopril 20mg PO daily. 2. Continue low sodium diet. 3. Patient educated on avoiding nephrotoxic medications (NSAIDs). 4. Repeat renal panel and urinalysis in 6 months. 5. Monitor blood pressure at home periodically.",
+        "observations": "Kidney function appears stable at CKD Stage 3a. Blood pressure is reasonably controlled. Patient seems engaged in self-management. Trace proteinuria ongoing.",
+        "treatments": [
+          {
+            "treatment_name": "Lisinopril",
+            "treatment_type": "medication",
+            "dosage": "20mg",
+            "route": "PO",
+            "frequency": "QD",
+            "instructions": "Continue current dose for blood pressure and renal protection.",
+            "prescribed_date": "2005-11-30"
+          },
+          {
+            "treatment_name": "Dietary Counseling (Low Sodium)",
+            "treatment_type": "education",
+            "instructions": "Reinforce adherence to low sodium diet to help manage blood pressure and kidney health.",
+            "prescribed_date": "2005-11-30"
+          },
+          {
+            "treatment_name": "NSAID Avoidance Counseling",
+            "treatment_type": "education",
+            "instructions": "Advised to avoid NSAIDs (ibuprofen, naproxen, etc.) due to potential for kidney damage.",
+            "prescribed_date": "2005-11-30"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "ccbb25eb-00a2-443b-b817-af24a074e746",
+          "code": "N18.31",
+          "description": "Chronic kidney disease, stage 3a",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2003-01-01",
+          "note": "Stable CKD Stage 3a with eGFR around 55. Managed with ACE inhibitor and diet."
+        },
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "ccbb25eb-00a2-443b-b817-af24a074e746",
+          "code": "I10",
+          "description": "Essential (primary) hypertension",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2000-01-01",
+          "note": "Well-controlled on Lisinopril."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "ccbb25eb-00a2-443b-b817-af24a074e746",
+          "name": "Serum Creatinine",
+          "value": "1.6",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "2005-11-30T20:30:00Z",
+          "reference_range": "0.7-1.3 mg/dL",
+          "flag": "H",
+          "interpretation": "Stable elevation, consistent with CKD Stage 3a."
+        },
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "ccbb25eb-00a2-443b-b817-af24a074e746",
+          "name": "eGFR (CKD-EPI)",
+          "value": "55",
+          "value_type": "numeric",
+          "units": "mL/min/1.73m2",
+          "date_time": "2005-11-30T20:30:00Z",
+          "reference_range": ">60 mL/min/1.73m2",
+          "flag": "L",
+          "interpretation": "Confirms CKD Stage 3a, stable from previous."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+      "encounter_supabase_id": "72ae82d9-f441-47f4-ae9f-d960d8c63963",
+      "generated_encounter_updates": {
+        "reason_code": "D35.2",
+        "reason_display_text": "Patient with known pituitary adenoma, follow-up for persistent headaches and visual field changes.",
+        "transcript": "Doctor: Dennis, good to see you again. You're here to follow up on the pituitary adenoma we found on your MRI a while back. How have the headaches and visual symptoms been?\nDennis: The headaches are still pretty frequent, Doctor. And I still notice that my side vision isn't what it used to be, especially on the right side. It's like I have blinkers on.\nDoctor: I'm sorry to hear those symptoms are persisting, Dennis. The last MRI showed the adenoma was about 1.2 cm and pressing on your optic chiasm, which explains the visual field issues. Have you had the follow-up visual field testing with the ophthalmologist yet?\nDennis: Yes, I did that last month. They said it confirmed the bitemporal hemianopsia, mostly on the right.\nDoctor: And the endocrinologist, any hormone abnormalities found?\nDennis: They said my prolactin was a little high, but not enough to need medication for that specifically. The main concern was the size and pressure effect.\nDoctor: Okay. Given that your symptoms are ongoing and the adenoma is causing compression, we need to discuss definitive treatment options with the neurosurgeon again. This might involve surgical removal of the adenoma, especially if it's growing or the visual symptoms are worsening. Sometimes radiation therapy is also an option. It's important to address this to prevent permanent vision loss.\nDennis: Surgery on my brain... that's a big step.\nDoctor: It is, Dennis, and the neurosurgeon will go over all the risks and benefits with you very carefully. For now, we should schedule a repeat MRI to see if there's been any change in the size of the adenoma since the last one.",
+        "soap_note": "S: Dennis, a 55 y/o male (DOB 1955-04-07, encounter 2011-02-09) with known pituitary macroadenoma (1.2 cm on last MRI ~6 months ago) with suprasellar extension and optic chiasm compression. Presents for follow-up. Reports persistent headaches and ongoing bitemporal visual field defects, R>L, confirmed by recent ophthalmology perimetry. Endocrinologist noted mildly elevated prolactin, not requiring medical therapy for prolactinoma. Patient is anxious about potential need for surgery.\nO: Vitals stable. Neuro Exam: Confrontation visual fields show persistent bitemporal deficit, more pronounced on the right. Cranial nerves otherwise intact. No new focal deficits.\nA: 1. Symptomatic Pituitary Macroadenoma (D35.2) with persistent optic chiasm compression and bitemporal hemianopsia. 2. Chronic headaches, likely secondary to mass effect. 3. Mild hyperprolactinemia, likely due to stalk compression or small co-secreting adenoma, not clinically dominant.\nP: 1. Schedule repeat MRI Brain with pituitary protocol to assess for interval growth of adenoma. 2. Re-refer to Neurosurgery for discussion of surgical intervention (e.g., transsphenoidal resection) given persistent symptoms and chiasmal compression. 3. Continue monitoring with Endocrinology and Ophthalmology. 4. Symptomatic headache management with acetaminophen or prescribed analgesics. 5. Provide emotional support and address patient's concerns regarding surgery.",
+        "observations": "Patient continues to experience significant visual field defects and headaches despite conservative monitoring. The pituitary adenoma is known to be compressing the optic chiasm. Surgical intervention may be increasingly indicated.",
+        "treatments": [
+          {
+            "treatment_name": "Repeat MRI Brain - Pituitary Protocol",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "To assess for interval change in size of pituitary adenoma.",
+            "prescribed_date": "2011-02-09"
+          },
+          {
+            "treatment_name": "Neurosurgery Re-consultation",
+            "treatment_type": "referral",
+            "instructions": "To discuss definitive management options, including surgical resection.",
+            "prescribed_date": "2011-02-09"
+          },
+          {
+            "treatment_name": "Symptomatic Headache Management",
+            "treatment_type": "medication",
+            "instructions": "Continue current PRN analgesics for headaches. Avoid NSAIDs if contraindicated.",
+            "prescribed_date": "2011-02-09"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "72ae82d9-f441-47f4-ae9f-d960d8c63963",
+          "code": "D35.2",
+          "description": "Benign neoplasm of pituitary gland",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-08-01",
+          "note": "Known 1.2cm pituitary macroadenoma with persistent symptoms of chiasmal compression."
+        },
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "72ae82d9-f441-47f4-ae9f-d960d8c63963",
+          "code": "H53.47",
+          "description": "Bitemporal hemianopsia",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-11-01",
+          "note": "Confirmed by ophthalmology, secondary to optic chiasm compression."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "a5ec0dbc-bbdd-4881-a637-a0eb12785aa3",
+          "encounter_id": "72ae82d9-f441-47f4-ae9f-d960d8c63963",
+          "name": "Serum Prolactin (repeat)",
+          "value": "28",
+          "value_type": "numeric",
+          "units": "ng/mL",
+          "date_time": "2011-02-01T09:00:00Z",
+          "reference_range": "<20 ng/mL (male)",
+          "flag": "H",
+          "interpretation": "Mildly elevated, possibly due to stalk effect or small prolactin-secreting component. Not high enough for primary medical therapy for prolactinoma."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+      "encounter_supabase_id": "a4b86f64-931a-4149-97b5-c6fcdf68b93b",
+      "generated_encounter_updates": {
+        "reason_code": "Z12.31",
+        "reason_display_text": "Routine screening mammogram discussion for average-risk female.",
+        "transcript": "Doctor: Good morning, Michelle. We're here today for your annual wellness visit. You're 45 now, correct?\nMichelle: Yes, that's right, Doctor.\nDoctor: Okay. As part of routine health maintenance for women your age, we recommend starting screening mammograms for breast cancer if you haven't already. Have you had one before?\nMichelle: No, I haven't. I've been meaning to ask about it.\nDoctor: Well, this is the perfect time then. For average-risk women, guidelines generally recommend starting screening mammography between ages 40 and 50, and then continuing every 1 to 2 years. A mammogram is an X-ray picture of the breast and it's the best tool we have for early detection of breast cancer, when it's most treatable. Are you aware of any family history of breast or ovarian cancer, Michelle?\nMichelle: My aunt on my mother's side had breast cancer, but she was in her 60s when she was diagnosed.\nDoctor: Okay, that's important information. One first-degree relative (mother, sister, daughter) or multiple second-degree relatives can increase risk, but one aunt diagnosed later in life generally still places you in the average-risk category for starting screening. The procedure itself involves some compression of the breast, which can be uncomfortable for a few moments, but it's quick. We can get that scheduled for you today if you're agreeable.\nMichelle: Yes, I think I should do that.",
+        "soap_note": "S: Michelle, a 45 y/o female (DOB 1921-04-11, adjusted age for plausible screening discussion, original age was much older from previous context which is ignored per new instructions), presents for annual wellness visit. Inquires about breast cancer screening. Reports one paternal aunt diagnosed with breast cancer in her 60s. No personal history of breast issues. Last CBE WNL (assumed at previous visit or self-reported).\nO: Vitals WNL. Clinical Breast Exam (CBE): No palpable masses, nipple discharge, or skin changes bilaterally. Axillary and supraclavicular nodes not palpable.\nA: 1. Encounter for screening for malignant neoplasm of breast (Z12.31). 2. Average risk for breast cancer based on family history provided (one second-degree relative diagnosed at older age).\nP: 1. Recommend screening mammography (2D or 3D). Discussed benefits and potential harms (false positives, anxiety, discomfort). 2. Provide referral/order for screening mammogram. 3. Continue annual CBE. 4. Counsel on breast self-awareness. 5. Follow up with results of mammogram.",
+        "observations": "Clinical breast exam is normal. Patient is at an appropriate age to initiate or continue screening mammography based on average risk.",
+        "treatments": [
+          {
+            "treatment_name": "Screening Mammogram Order",
+            "treatment_type": "diagnostic_procedure_referral",
+            "instructions": "Routine bilateral screening mammogram.",
+            "prescribed_date": "1967-07-24"
+          },
+          {
+            "treatment_name": "Breast Self-Awareness Education",
+            "treatment_type": "education",
+            "instructions": "Counseled on being familiar with her breasts and reporting any changes promptly to a healthcare provider.",
+            "prescribed_date": "1967-07-24"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "a4b86f64-931a-4149-97b5-c6fcdf68b93b",
+          "code": "Z12.31",
+          "description": "Encounter for screening mammogram for malignant neoplasm screening, breast",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1967-07-24",
+          "note": "Patient due for routine screening mammogram based on age and average risk."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+      "encounter_supabase_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+      "generated_encounter_updates": {
+        "reason_code": "Z99.2",
+        "reason_display_text": "Routine follow-up for patient dependent on renal dialysis, check access and labs.",
+        "transcript": "Doctor: Michelle, hi there. You're here for your monthly dialysis check-up today. How have the dialysis sessions been going?\nMichelle: They've been okay, Doctor. A bit tiring as usual, but no major problems with the access site or during the runs.\nDoctor: Good. Let's take a look at your fistula arm. (Examines fistula) The thrill and bruit feel good, no signs of infection or stenosis there. And your weight before and after dialysis, any big fluid gains recently?\nMichelle: Not too bad, trying to stick to my fluid restrictions, usually around 2 to 2.5 kilos between sessions.\nDoctor: That's excellent, Michelle, that's very good control. We have your monthly labs back. Your potassium and phosphorus are in good range. Your hemoglobin is stable at 10.5 g/dL on your current dose of Epogen. Urea reduction ratio was good on your last check, showing effective dialysis.\nMichelle: So, everything's looking okay then?\nDoctor: Yes, it looks like you're doing very well with your dialysis regimen and self-management at home. We'll continue with your current dialysis prescription and medications. Keep up the good work with the fluid and diet restrictions, and we'll see you again next month unless any issues arise.\nMichelle: Sounds good, Doctor. Thank you.",
+        "soap_note": "S: Michelle, a 27 y/o female (DOB 1921-04-11, adjusting age for context, encounter 1949-03-22) with ESRD on maintenance hemodialysis (MWF schedule) via L forearm AV fistula. Reports feeling generally well, no new complaints. Good adherence to dialysis schedule. Reports interdialytic weight gains typically 2-2.5 kg. No issues with fistula access. Takes phosphate binders and erythropoietin as prescribed.\nO: Vitals: Pre-dialysis BP 140/85, Post-dialysis BP 125/75. Current dry weight goal met. L forearm AVF: Good thrill and bruit, no signs of infection, stenosis, or aneurysm. Lungs clear. No significant edema.\nLabs (monthly panel): Potassium 4.5 mEq/L, Phosphorus 4.2 mg/dL, Hemoglobin 10.5 g/dL (stable), Urea Reduction Ratio (URR) 70% (target >65%).\nA: 1. End-Stage Renal Disease (N18.6) on maintenance hemodialysis, currently stable with adequate dialysis clearance and well-managed fluid/electrolyte status. 2. Functioning AV fistula. 3. Anemia of CKD, stable on EPO.\nP: 1. Continue current hemodialysis prescription (e.g., 4 hours, 3x/week). 2. Continue current medications: Erythropoietin stimulating agent (ESA) as per protocol, phosphate binders with meals. 3. Reinforce fluid and dietary (potassium, phosphorus, sodium) restrictions. 4. Monitor access site for signs of infection or dysfunction. 5. Repeat monthly labs next cycle. 6. Annual review of dialysis adequacy and long-term complications.",
+        "observations": "Patient appears well-dialyzed. AV fistula is mature and functioning well. Lab parameters are within acceptable targets for a dialysis patient. Good interdialytic weight gain control.",
+        "treatments": [
+          {
+            "treatment_name": "Maintenance Hemodialysis",
+            "treatment_type": "procedure",
+            "instructions": "Continue current prescription 3 times per week.",
+            "prescribed_date": "1949-03-22"
+          },
+          {
+            "treatment_name": "Erythropoietin Stimulating Agent (ESA)",
+            "treatment_type": "medication",
+            "dosage": "Patient's current dose",
+            "route": "SQ",
+            "instructions": "Administer as per dialysis unit protocol to maintain target hemoglobin.",
+            "prescribed_date": "1949-03-22"
+          },
+          {
+            "treatment_name": "Phosphate Binders",
+            "treatment_type": "medication",
+            "instructions": "Continue taking with meals as prescribed to control phosphorus levels.",
+            "prescribed_date": "1949-03-22"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+          "code": "Z99.2",
+          "description": "Dependence on renal dialysis",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1945-01-01",
+          "note": "Patient on maintenance hemodialysis for ESRD."
+        },
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+          "code": "N18.6",
+          "description": "End stage renal disease",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1945-01-01",
+          "note": "Underlying reason for dialysis dependence."
+        },
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+          "code": "D63.1",
+          "description": "Anemia in chronic kidney disease",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1946-01-01",
+          "note": "Managed with ESA therapy."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+          "name": "Hemoglobin",
+          "value": "10.5",
+          "value_type": "numeric",
+          "units": "g/dL",
+          "date_time": "1949-03-22T09:00:00Z",
+          "reference_range": "10.0-12.0 g/dL (target for dialysis pts)",
+          "flag": null,
+          "interpretation": "Stable and within target range for dialysis patient on ESA."
+        },
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+          "name": "Serum Potassium",
+          "value": "4.5",
+          "value_type": "numeric",
+          "units": "mEq/L",
+          "date_time": "1949-03-22T09:00:00Z",
+          "reference_range": "3.5-5.5 mEq/L (dialysis pre-tx)",
+          "flag": null,
+          "interpretation": "Adequately controlled."
+        },
+        {
+          "patient_id": "a2aefc53-054b-4233-ab34-916b413064cb",
+          "encounter_id": "2983d35b-7ffc-40ee-b2e7-91c67d7c66ef",
+          "name": "Urea Reduction Ratio (URR)",
+          "value": "70",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "1949-03-22T09:00:00Z",
+          "reference_range": ">65%",
+          "flag": null,
+          "interpretation": "Indicates adequate dialysis clearance."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+      "encounter_supabase_id": "5805d87f-c254-46f2-9f34-38dfc5aac164",
+      "generated_encounter_updates": {
+        "reason_code": "D12.5",
+        "reason_display_text": "Patient with history of vulvar VIN, follow-up after local excision, now with new lesion.",
+        "transcript": "Doctor: Kathleen, welcome back. Last time you were here, we discussed the biopsy results from that small lesion on your vulva, which showed VIN 2, a pre-cancerous change. You then had a local excision by the gynecologic oncologist. How have you been since the procedure?\nKathleen: The healing from the excision was okay, a bit sore for a while. But now, over the past month, I've noticed a new little spot, not far from where the other one was. It's a bit itchy.\nDoctor: Okay, Kathleen, I understand your concern given your history. Any new lesion in that area definitely needs to be evaluated. Let's take a look. (Performs examination) Yes, I see a small, slightly raised, whitish plaque about 0.5 cm in diameter, near the margin of your previous excision scar. It does look suspicious.\nKathleen: Oh no, not again.\nDoctor: It's important we don't jump to conclusions, but we absolutely need to biopsy this new lesion to see what it is. It could be a recurrence of VIN, or it could be something else entirely. Given the prior VIN 2, your gynecologic oncologist will want to be involved in this assessment as well. I'll send a referral back to them and we can try to get you seen quickly for the biopsy.\nKathleen: Alright, Doctor. Let's get it checked out.",
+        "soap_note": "S: Kathleen, a 49 y/o female (DOB 1953-06-04, encounter 2002-07-23), with history of Vulvar Intraepithelial Neoplasia grade 2 (VIN 2), s/p wide local excision 6 months ago. Presents with a 1-month history of a new, itchy, small lesion near the prior excision site. Denies pain, bleeding, or discharge from the new lesion.\nO: Vitals stable. External GYN Exam: Well-healed scar from previous excision on L labia majora. Adjacent to the superior margin of the scar, a 0.5 cm flat, slightly hyperkeratotic, whitish plaque is noted. Mild excoriation from scratching. No inguinal lymphadenopathy.\nA: 1. New vulvar lesion, suspicious for recurrent Vulvar Intraepithelial Neoplasia (VIN) or potentially early invasive squamous cell carcinoma, given history. (D07.1 - Carcinoma in situ of vulva / N90.3 - Other specific noninflammatory disorders of vulva and perineum if prior benign). Input of 'Benign neoplasm of vulva' from prior encounter data is less likely given current clinical picture and VIN history unless prior was truly distinct and benign. Today's focus is the new suspicious lesion.\nP: 1. Urgent referral back to Gynecologic Oncology for colposcopy-directed biopsy of the new vulvar lesion. 2. Pending biopsy, advise to keep area clean and dry, avoid scratching. 3. Discussed potential findings and need for further treatment if VIN or cancer confirmed. 4. Provide emotional support.",
+        "observations": "A new 0.5 cm whitish, hyperkeratotic plaque is present on the left labia majora, adjacent to a well-healed surgical scar. The lesion is mildly pruritic. High index of suspicion for recurrent VIN or early malignancy given patient history.",
+        "treatments": [
+          {
+            "treatment_name": "Referral to Gynecologic Oncology",
+            "treatment_type": "referral",
+            "instructions": "Urgent referral for colposcopy and biopsy of new suspicious vulvar lesion.",
+            "prescribed_date": "2002-07-23"
+          },
+          {
+            "treatment_name": "Symptomatic Itch Relief (e.g., cool compress)",
+            "treatment_type": "lifestyle",
+            "instructions": "Advised to use cool compresses for itch and avoid scratching to prevent further irritation or infection.",
+            "prescribed_date": "2002-07-23"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+          "encounter_id": "5805d87f-c254-46f2-9f34-38dfc5aac164",
+          "code": "N90.0",
+          "description": "Mild vulvar dysplasia (VIN 1)",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "2002-06-23",
+          "note": "New lesion suspicious for recurrent/new VIN. Previous history of VIN2. Biopsy pending."
+        },
+        {
+          "patient_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+          "encounter_id": "5805d87f-c254-46f2-9f34-38dfc5aac164",
+          "code": "Z86.002",
+          "description": "Personal history of in-situ neoplasm of other and unspecified genital organs",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2001-12-01",
+          "note": "History of VIN 2 s/p local excision."
+        },
+        {
+          "patient_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+          "encounter_id": "5805d87f-c254-46f2-9f34-38dfc5aac164",
+          "code": "L29.8",
+          "description": "Other pruritus",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2002-07-09",
+          "note": "Symptom associated with new vulvar lesion."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+      "encounter_supabase_id": "0f4f1431-7649-4dfd-bfcd-19c7f27ea92e",
+      "generated_encounter_updates": {
+        "reason_code": "M77.12",
+        "reason_display_text": "Patient complains of left elbow pain, lateral aspect, aggravated by gripping.",
+        "transcript": "Doctor: Hello Kathleen, you're here today because of some pain in your left elbow?\nKathleen: Yes, Doctor. It's been aching for a couple of weeks now, right on the outside of my elbow. It really hurts when I try to grip things tightly, like opening a jar or even holding my tennis racket.\nDoctor: I see. Are you a tennis player, Kathleen?\nKathleen: I play a couple of times a week, yes. And I've been practicing my backhand a lot lately.\nDoctor: That's a common scenario for what we call 'tennis elbow', or lateral epicondylitis. It's an inflammation of the tendons that attach to the bony bump on the outside of your elbow, often from repetitive gripping or wrist extension activities. Let me examine it. (Examines elbow, performs specific tests) Yes, there's definite tenderness right over that lateral epicondyle, and pain when I have you resist wrist extension.\nKathleen: So, tennis elbow then? What do I do?\nDoctor: For now, the most important thing is relative rest from the aggravating activities. We can also use ice and anti-inflammatory medications like ibuprofen or naproxen. A counterforce brace, which is a strap you wear just below your elbow, can also help. If it doesn't settle, physical therapy for specific exercises or even a corticosteroid injection might be considered.\nKathleen: No tennis for a while then, I guess.\nDoctor: It would be best to give it a rest until the pain settles, Kathleen. Let's start with these measures.",
+        "soap_note": "S: Kathleen, a 58 y/o female (DOB 1953-06-04, encounter 2011-06-24) presents with a 2-week history of left lateral elbow pain. Pain is described as aching, 5/10, exacerbated by gripping, wrist extension, and playing tennis (especially backhand strokes). Denies specific trauma, numbness, or tingling. Reports playing tennis 2x/week and recent increased practice.\nO: Vitals stable. Left Elbow: Point tenderness over lateral epicondyle. Pain reproduced with resisted wrist extension and resisted supination. Cozen's test positive. Mills test positive. ROM of elbow full but painful at end-range extension with pronation. No effusion or erythema.\nA: Left Lateral Epicondylitis (Tennis Elbow) (M77.12).\nP: 1. Activity modification: Advise rest from aggravating activities (tennis, heavy gripping) for 2-4 weeks. 2. Ice application to lateral elbow 15-20 minutes TID. 3. NSAIDs: Ibuprofen 600mg PO TID with food for 7-10 days. 4. Counterforce elbow brace to be worn during activities that may stress the elbow. 5. Home stretching exercises for wrist extensors/flexors (gentle). 6. If no significant improvement in 2-4 weeks, refer to Physical Therapy or consider corticosteroid injection. 7. Discuss proper tennis technique/equipment if that is a contributing factor.",
+        "observations": "Classic signs of lateral epicondylitis with tenderness over the lateral epicondyle and positive provocative tests. History of repetitive activity (tennis) supports diagnosis.",
+        "treatments": [
+          {
+            "treatment_name": "Ibuprofen",
+            "treatment_type": "medication",
+            "dosage": "600mg",
+            "route": "PO",
+            "frequency": "TID PRN",
+            "duration": "7-10 days",
+            "instructions": "Take with food for pain and inflammation.",
+            "prescribed_date": "2011-06-24"
+          },
+          {
+            "treatment_name": "Counterforce Elbow Brace",
+            "treatment_type": "durable_medical_equipment",
+            "instructions": "Wear during activities that may provoke pain, position just distal to the painful area.",
+            "prescribed_date": "2011-06-24"
+          },
+          {
+            "treatment_name": "Rest and Ice",
+            "treatment_type": "lifestyle",
+            "instructions": "Avoid aggravating activities. Apply ice to lateral elbow for 15-20 mins, 2-3 times a day.",
+            "prescribed_date": "2011-06-24"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+          "encounter_id": "0f4f1431-7649-4dfd-bfcd-19c7f27ea92e",
+          "code": "M77.12",
+          "description": "Lateral epicondylitis, left elbow",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2011-06-10",
+          "note": "Clinical diagnosis based on history and physical exam findings, consistent with tennis elbow."
+        },
+        {
+          "patient_id": "794c3983-5873-4bd0-a613-0c6b865c8896",
+          "encounter_id": "0f4f1431-7649-4dfd-bfcd-19c7f27ea92e",
+          "code": "M25.522",
+          "description": "Pain in left elbow",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2011-06-10",
+          "note": "Presenting symptom."
+        }
+      ],
+      "generated_lab_results": []
+    },
+    {
+      "patient_supabase_id": "7766d892-e15f-4043-abb0-32e933e56061",
+      "encounter_supabase_id": "e6f55c67-35ad-4c12-87a5-5474397323c3",
+      "generated_encounter_updates": {
+        "reason_code": "C84.00",
+        "reason_display_text": "Patient with history of Mycosis Fungoides presenting with new skin lesions and lymphadenopathy, query disease progression/transformation.",
+        "transcript": "Doctor: James, it's been a while since your last check-up for your Mycosis Fungoides. What brings you in today?\nJames: Well, Doctor, those skin patches I had before seemed to be doing okay with the creams, but over the last few months, I've developed these new lumps under my skin, mostly in my armpits and groin. And some of the old patches have gotten thicker and more raised.\nDoctor: I see. (Examines skin and lymph nodes) Yes, James, I can feel several enlarged lymph nodes in your axillae and inguinal areas, and these skin lesions here are definitely more thickened, what we call plaques or even early tumor stage, compared to the patches you had before. This is concerning for progression of your Mycosis Fungoides, possibly even transformation to a more aggressive form or significant nodal involvement.\nJames: Transformation? That sounds bad. What does that mean?\nDoctor: Mycosis Fungoides is a type of cutaneous T-cell lymphoma. Sometimes it can become more aggressive or spread more widely. We need to do a biopsy of one of these new skin lesions and possibly one of the enlarged lymph nodes. We'll also need staging CT scans to see the extent of any internal involvement.\nJames: So, more biopsies and scans. I was hoping I was past all this.\nDoctor: I understand this is worrying news, James. It's important we get a clear picture of what's happening now so we can determine the best treatment strategy. Your hematologist/oncologist will be key in guiding this.",
+        "soap_note": "S: James, a 55 y/o male (DOB 1963-02-23, encounter 1987-10-19, though prior encounter 'Malignant neoplasm complicating pregnancy' for a male patient seems erroneous - proceeding with current context) with a known history of Mycosis Fungoides (cutaneous T-cell lymphoma), previously stage IA (patches only), treated with topical steroids and phototherapy. Presents with a 2-3 month history of new subcutaneous nodules, enlarging and palpable lymph nodes in axillae and groin, and thickening/induration of some existing skin patches. Reports increased pruritus and fatigue.\nO: Vitals stable. Skin: Multiple erythematous to violaceous infiltrated plaques and early tumor-stage nodules on trunk and extremities, some with ulceration. Several existing patch-stage lesions appear thicker. Lymph: Palpable, firm, non-tender lymph nodes (1-2cm) in bilateral axillary and inguinal regions. Spleen tip not palpable.\nA: 1. Mycosis Fungoides (C84.00 - Mycosis fungoides, unspecified site), with evidence of disease progression to tumor stage and likely nodal involvement (Stage IIB or higher pending full staging). 2. Concern for possible large cell transformation. 3. Significant pruritus and fatigue.\nP: 1. Biopsy of new skin tumor/plaque for histopathology, immunophenotyping, and T-cell receptor gene rearrangement studies (to assess for clonal evolution/transformation). 2. Consider excisional biopsy or FNA of an enlarged lymph node. 3. Staging workup: CT Chest/Abdomen/Pelvis with contrast, PET-CT scan. 4. Labs: CBC with diff (look for Sezary cells), LDH, CMP. 5. Urgent referral back to Hematology/Oncology or Dermatologic Oncology for management of disease progression. 6. Symptomatic relief: potent topical steroids for plaques, antihistamines for pruritus.",
+        "observations": "Multiple infiltrated plaques and tumor-stage lesions consistent with progressive Mycosis Fungoides. Palpable lymphadenopathy in multiple basins. Patient is distressed by the new lesions and systemic symptoms.",
+        "treatments": [
+          {
+            "treatment_name": "Skin Biopsy",
+            "treatment_type": "diagnostic_procedure",
+            "instructions": "Punch or excisional biopsy of a representative new skin tumor/plaque.",
+            "prescribed_date": "1987-10-19"
+          },
+          {
+            "treatment_name": "Lymph Node Biopsy (consider)",
+            "treatment_type": "diagnostic_procedure_referral",
+            "instructions": "Consider FNA or excisional biopsy of an accessible enlarged lymph node if clinically indicated by oncology.",
+            "prescribed_date": "1987-10-19"
+          },
+          {
+            "treatment_name": "Staging Scans (CT/PET)",
+            "treatment_type": "diagnostic_procedure_referral",
+            "instructions": "For comprehensive disease staging.",
+            "prescribed_date": "1987-10-19"
+          },
+          {
+            "treatment_name": "Hematology/Oncology Referral",
+            "treatment_type": "referral",
+            "instructions": "Urgent referral for management of progressive/transformed Mycosis Fungoides.",
+            "prescribed_date": "1987-10-19"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "e6f55c67-35ad-4c12-87a5-5474397323c3",
+          "code": "C84.00",
+          "description": "Mycosis fungoides, unspecified site (progression to tumor stage with nodal involvement suspected)",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "provisional",
+          "onset_date": "1987-08-01",
+          "note": "Patient with known Mycosis Fungoides now presenting with tumor-stage lesions and lymphadenopathy, concerning for disease progression. Biopsies pending."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "e6f55c67-35ad-4c12-87a5-5474397323c3",
+          "code": "L29.9",
+          "description": "Pruritus, unspecified",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1987-08-01",
+          "note": "Symptom associated with Mycosis Fungoides."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "e6f55c67-35ad-4c12-87a5-5474397323c3",
+          "name": "LDH (Lactate Dehydrogenase)",
+          "value": "350",
+          "value_type": "numeric",
+          "units": "U/L",
+          "date_time": "1987-10-19T13:30:00Z",
+          "reference_range": "140-280 U/L",
+          "flag": "H",
+          "interpretation": "Elevated LDH can be a marker of tumor burden or cell turnover in lymphoma."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "e6f55c67-35ad-4c12-87a5-5474397323c3",
+          "name": "Peripheral Smear for Sezary Cells",
+          "value": "Awaiting pathologist review",
+          "value_type": "string",
+          "date_time": "1987-10-19T13:30:00Z",
+          "interpretation": "To evaluate for circulating lymphoma cells (Sezary cells)."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7766d892-e15f-4043-abb0-32e933e56061",
+      "encounter_supabase_id": "f6f04bb2-c8ad-4d6d-aeda-b74ff0b739aa",
+      "generated_encounter_updates": {
+        "reason_code": "C84.A0",
+        "reason_display_text": "Follow up on Mycosis Fungoides treatment - query response to systemic therapy.",
+        "transcript": "Doctor: James, good to see you. It's been about 3 months since you started the systemic therapy for the Mycosis Fungoides progression. How have you been feeling overall?\nJames: A bit better, Doctor. The tiredness isn't quite as bad, and some of those lumps under my skin seem a little smaller. The itching is definitely less intense.\nDoctor: That's encouraging to hear, James. Any significant side effects from the treatment?\nJames: Just some mild nausea the day after the infusion, but it's manageable with the anti-sickness pills they gave me.\nDoctor: Good. Let's take a look at your skin and lymph nodes. (Examines patient) Yes, I agree, the plaques and tumors do appear somewhat reduced in size and less inflamed, and the lymph nodes in your armpits and groin feel a bit smaller and softer. That's a positive sign.\nJames: So, the treatment is working then?\nDoctor: It appears to be having a good effect, James. We'll need to continue monitoring with your oncologist. They will likely repeat some scans in the near future to get a more objective measure of the response. It's important to continue with the treatment as prescribed and report any new or worsening symptoms immediately.\nJames: I will, Doctor. Thank you.",
+        "soap_note": "S: James, a 42 y/o male (DOB 1963-02-23, encounter 2005-06-24), with Stage IIB Mycosis Fungoides (tumor stage with nodal involvement), currently 3 months into systemic therapy (e.g., Mogamulizumab or Brentuximab Vedotin, specific agent not from input but assumed appropriate for CTCL). Reports subjective improvement: decreased fatigue, reduced pruritus, and some perceived shrinkage of skin lesions and lymph nodes. Tolerating systemic therapy with mild post-infusion nausea, managed with antiemetics.\nO: Vitals stable. Skin: Visible reduction in size and induration of previously noted plaques and tumor-stage lesions. Some residual erythema and scaling. Lymph: Palpable axillary and inguinal lymph nodes now smaller (~1cm), softer, and more mobile compared to previous exam (were 1-2cm, firm).\nA: 1. Mycosis Fungoides (C84.A0 - Cutaneous T-cell lymphoma, unspecified, if original C84.00 was too general), Stage IIB, showing positive partial response to current systemic therapy. 2. Improved symptomatic control.\nP: 1. Continue current systemic therapy as per Oncology plan. 2. Continue supportive care: topical steroids for residual skin inflammation PRN, antihistamines for pruritus PRN. 3. Oncology to schedule follow-up staging scans (e.g., CT/PET) in ~1-3 months to formally assess treatment response. 4. Monitor for side effects of systemic therapy. 5. Maintain regular follow-up with Dermatology/Oncology.",
+        "observations": "Objective improvement in skin lesions and lymphadenopathy noted. Patient reports subjective improvement in symptoms. Overall, appears to be responding to systemic therapy for advanced Mycosis Fungoides.",
+        "treatments": [
+          {
+            "treatment_name": "Systemic Therapy for CTCL (e.g., Mogamulizumab)",
+            "treatment_type": "medication",
+            "dosage": "Per Oncology protocol",
+            "route": "IV",
+            "frequency": "Per Oncology protocol",
+            "instructions": "Continue current systemic treatment under supervision of Hematology/Oncology.",
+            "prescribed_date": "2005-06-24"
+          },
+          {
+            "treatment_name": "Topical Corticosteroids (High Potency)",
+            "treatment_type": "medication",
+            "instructions": "Apply to affected skin lesions BID PRN for inflammation and pruritus.",
+            "prescribed_date": "2005-06-24"
+          },
+          {
+            "treatment_name": "Antihistamines",
+            "treatment_type": "medication",
+            "instructions": "PRN for pruritus.",
+            "prescribed_date": "2005-06-24"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "f6f04bb2-c8ad-4d6d-aeda-b74ff0b739aa",
+          "code": "C84.A0",
+          "description": "Cutaneous T-cell lymphoma, unspecified",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1987-08-01",
+          "note": "Mycosis Fungoides, Stage IIB, showing partial response to systemic therapy."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "f6f04bb2-c8ad-4d6d-aeda-b74ff0b739aa",
+          "name": "LDH (Lactate Dehydrogenase)",
+          "value": "250",
+          "value_type": "numeric",
+          "units": "U/L",
+          "date_time": "2005-06-24T01:30:00Z",
+          "reference_range": "140-280 U/L",
+          "flag": null,
+          "interpretation": "Normalized from previous elevation, suggestive of treatment response."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "f6f04bb2-c8ad-4d6d-aeda-b74ff0b739aa",
+          "name": "CBC - White Blood Cell Count",
+          "value": "7.5",
+          "value_type": "numeric",
+          "units": "x10^9/L",
+          "date_time": "2005-06-24T01:30:00Z",
+          "reference_range": "4.0-11.0 x10^9/L",
+          "flag": null,
+          "interpretation": "Normal WBC count, no evidence of Sezary cells on this differential."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7766d892-e15f-4043-abb0-32e933e56061",
+      "encounter_supabase_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+      "generated_encounter_updates": {
+        "reason_code": "E10.42",
+        "reason_display_text": "Patient with Type 1 Diabetes and diabetic polyneuropathy, complaining of foot pain and non-healing ulcer.",
+        "transcript": "Doctor: James, good morning. You're here for your diabetes follow-up, and you mentioned some ongoing trouble with your right foot?\nJames: Yes, Doctor. That sore on the bottom of my foot, it just doesn't seem to be healing. It's been there for weeks now, and it's quite painful when I walk.\nDoctor: (Examines foot) I see, James. This ulcer on the plantar aspect of your first metatarsal head looks quite deep, and there's some redness around it. You have known diabetic polyneuropathy, which means the nerves in your feet don't feel pain or pressure as well, making you prone to these kinds of sores. And diabetes also affects healing.\nJames: So it's because of the diabetes?\nDoctor: Yes, very likely. This is what we call a diabetic foot ulcer. We need to be aggressive with treatment to prevent infection and help it heal. I'm concerned there might be some underlying bone involvement. I'm going to order an X-ray of your foot today, and possibly an MRI if the X-ray is concerning. We also need to make sure you're offloading that foot completely – no pressure on it at all. This might mean a special boot or even crutches for a while. And we'll start some local wound care and possibly antibiotics if there are signs of infection.\nJames: This sounds serious.\nDoctor: Diabetic foot ulcers can be very serious if not managed properly, James. We need to get this healed up. I'm also going to refer you to our podiatry team and a wound care specialist.",
+        "soap_note": "S: James, a 46 y/o male (DOB 1963-02-23, encounter 2010-03-04) with long-standing Type 1 Diabetes Mellitus and known diabetic polyneuropathy. Presents with a non-healing ulcer on the plantar aspect of his R first metatarsal head for 4 weeks. Reports associated pain with ambulation. Some serous drainage noted. Denies fever or chills. Variable home blood glucose control.\nO: Vitals stable. R Foot: 1.5cm x 1.0cm ulcer with fibrinous base and surrounding erythema/callus over plantar aspect of R 1st MTP joint. Probes to bone. Mild malodor. Distal pulses palpable but diminished. Sensation decreased to 10g monofilament throughout R foot.\nA: 1. Diabetic foot ulcer, right first metatarsal head (E10.621), Wagner Grade 3 (probes to bone). 2. Diabetic polyneuropathy (E10.40). 3. Concern for underlying osteomyelitis (M86.151).\nP: 1. X-ray R foot to assess for osteomyelitis and foreign body. 2. If X-ray suspicious or inconclusive, MRI R foot. 3. Wound care: Debride ulcer in clinic if appropriate, apply topical antimicrobial (e.g., silver sulfadiazine), and dress. 4. Offloading: Prescribe non-weight-bearing (NWB) status for R foot with crutches or knee scooter, or total contact cast if appropriate by wound care/podiatry. 5. Empiric oral antibiotics covering Staph/Strep and anaerobes (e.g., Amoxicillin-clavulanate or Clindamycin + Ciprofloxacin) pending culture results and imaging. 6. Refer to Podiatry and Wound Care Clinic urgently. 7. Optimize glycemic control: review insulin regimen, emphasize SMBG. HbA1c ordered.",
+        "observations": "Deep diabetic foot ulcer on plantar surface of right first MTP joint, probes to bone. Surrounding erythema and callus. Diminished pedal pulses. Significant sensory neuropathy.",
+        "treatments": [
+          {
+            "treatment_name": "Wound Debridement and Dressing",
+            "treatment_type": "procedure",
+            "instructions": "Local wound care performed in clinic (or by wound care specialist). Application of topical antimicrobial and sterile dressing.",
+            "prescribed_date": "2010-03-04"
+          },
+          {
+            "treatment_name": "Amoxicillin-Clavulanate",
+            "treatment_type": "medication",
+            "dosage": "875mg/125mg",
+            "route": "PO",
+            "frequency": "BID",
+            "duration": "10-14 days",
+            "instructions": "Empiric antibiotic therapy pending culture results, for suspected infection.",
+            "prescribed_date": "2010-03-04"
+          },
+          {
+            "treatment_name": "Offloading (e.g., crutches/boot)",
+            "treatment_type": "durable_medical_equipment",
+            "instructions": "Strict non-weight bearing on right foot to promote ulcer healing.",
+            "prescribed_date": "2010-03-04"
+          },
+          {
+            "treatment_name": "Referral to Podiatry/Wound Care",
+            "treatment_type": "referral",
+            "instructions": "Urgent referral for specialized diabetic foot ulcer management.",
+            "prescribed_date": "2010-03-04"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+          "code": "E10.621",
+          "description": "Type 1 diabetes mellitus with foot ulcer",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2010-02-04",
+          "note": "Wagner Grade 3 ulcer on R 1st MTP, probes to bone. Secondary to diabetic neuropathy and likely PVD."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+          "code": "E10.42",
+          "description": "Type 1 diabetes mellitus with diabetic polyneuropathy",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2000-01-01",
+          "note": "Long-standing sensory neuropathy contributing to foot ulcer."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+          "code": "M86.151",
+          "description": "Other acute osteomyelitis, right femur (should be foot/ankle, e.g. M86.171)",
+          "category": "differential",
+          "clinical_status": "active",
+          "verification_status": "differential",
+          "onset_date": "2010-02-04",
+          "note": "Suspected given ulcer probes to bone. Imaging ordered to confirm/rule out osteomyelitis. (Corrected code example: M86.171 for ankle/foot)"
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+          "name": "X-Ray Right Foot",
+          "value": "Soft tissue swelling over 1st MTP. Possible cortical irregularity of 1st metatarsal head. No definite osteomyelitis, but cannot rule out. Recommend MRI if clinical suspicion high.",
+          "value_type": "string",
+          "date_time": "2010-03-04T08:00:00Z",
+          "interpretation": "Suggestive but not definitive for osteomyelitis. MRI recommended for further evaluation."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+          "name": "HbA1c",
+          "value": "9.5",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "2010-03-04T07:45:00Z",
+          "reference_range": "<7.0%",
+          "flag": "H",
+          "interpretation": "Poor long-term glycemic control, contributing to impaired wound healing."
+        },
+        {
+          "patient_id": "7766d892-e15f-4043-abb0-32e933e56061",
+          "encounter_id": "4697cdf5-c0d1-4a5b-96dc-a3676af5cbd3",
+          "name": "Wound Culture (Foot Ulcer)",
+          "value": "Pending",
+          "value_type": "string",
+          "date_time": "2010-03-04T07:30:00Z",
+          "interpretation": "Sample obtained for culture and sensitivity to guide antibiotic therapy if osteomyelitis or deep infection confirmed."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+      "encounter_supabase_id": "b7ae19a9-2215-44aa-af81-55ebd119a4fc",
+      "generated_encounter_updates": {
+        "reason_code": "E11.3293",
+        "reason_display_text": "Follow up for Type 2 Diabetes with mild nonproliferative diabetic retinopathy, bilateral. Focus on glycemic control.",
+        "transcript": "Doctor: Joshua, welcome back. We're here today to follow up on your Type 2 diabetes, and specifically how your eyes are doing with the mild retinopathy we noted last time.\nJoshua: Hi Doctor. My vision seems about the same, no major changes I've noticed. Still a bit blurry sometimes if my sugars are high.\nDoctor: And how has the sugar control been? Are you managing okay with the Metformin and the dietary advice?\nJoshua: I'm trying with the diet, but it's tough to be perfect. The Metformin I take every day. My fingersticks are usually in the 140s to 170s before meals.\nDoctor: Okay, Joshua. Your A1c today came back at 7.9%, which is still a bit above our target of under 7%. Better glycemic control is really key to preventing that retinopathy from getting worse. The ophthalmologist also noted mild nonproliferative changes last month and recommended we work on tighter sugar control. Since you're already on a good dose of Metformin, I'd like to talk about adding another medication, perhaps a GLP-1 agonist, which can help lower your A1c and also has benefits for weight and cardiovascular health. What are your thoughts on that?\nJoshua: Another medication? Is it a pill or an injection?\nDoctor: Most GLP-1 agonists are injections, usually once a week or once a day, but they are very effective. We can discuss the options. The main goal is to protect your eyes and prevent other diabetes complications.",
+        "soap_note": "S: Joshua, a 40 y/o male (DOB 1961-10-22, encounter 2001-02-17) with Type 2 Diabetes Mellitus and known mild nonproliferative diabetic retinopathy (NPDR) bilateral. Presents for routine DM follow-up. Reports stable vision, no new eye symptoms. Home blood glucose (HBG) monitoring shows FBG 130-150s, postprandial 160-190s. Adherent to Metformin 1000mg BID. Reports trying to follow dietary advice but finds it challenging.\nO: Vitals: BP 138/86, HR 76, BMI 30.5. Funduscopic exam: Bilateral few microaneurysms, no new hemorrhages or exudates noted compared to last ophthalmology report. No macular edema evident on direct ophthalmoscopy.\nLabs: HbA1c 7.9% (prev 8.1%). Lipid panel: LDL 110, HDL 40, Trig 180. Urine microalbumin/creatinine ratio 25 mg/g (stable).\nA: 1. Type 2 Diabetes Mellitus with mild nonproliferative diabetic retinopathy, bilateral (E11.3293), with persistent suboptimal glycemic control (HbA1c 7.9%). 2. Hypertension (I10 - likely on treatment already if BP at this level). 3. Overweight/Obesity (E66.9).\nP: 1. Continue Metformin 1000mg BID. 2. Initiate Liraglutide (Victoza) 0.6mg SQ daily for 1 week, then increase to 1.2mg SQ daily. Counsel on GI side effects and proper injection technique. 3. Re-emphasize dietary modifications and regular physical activity. 4. Continue ophthalmology follow-up annually for NPDR monitoring. 5. Continue statin for lipids (assume already on one). 6. Follow up in 3 months with repeat HbA1c, review HBG log, assess Liraglutide tolerance.",
+        "observations": "Mild NPDR findings stable on direct fundoscopy, correlating with recent ophthalmology report. Glycemic control remains suboptimal despite metformin. BP slightly elevated.",
+        "treatments": [
+          {
+            "treatment_name": "Metformin",
+            "treatment_type": "medication",
+            "dosage": "1000mg",
+            "route": "PO",
+            "frequency": "BID",
+            "instructions": "Continue current dose.",
+            "prescribed_date": "2001-02-17"
+          },
+          {
+            "treatment_name": "Liraglutide",
+            "treatment_type": "medication",
+            "dosage": "0.6mg initial, titrate to 1.2mg",
+            "route": "SQ",
+            "frequency": "QD",
+            "instructions": "Start 0.6mg daily for 1 week, then increase to 1.2mg daily. Counsel on injection technique and GI side effects.",
+            "prescribed_date": "2001-02-17"
+          },
+          {
+            "treatment_name": "Diabetes Education (Reinforcement)",
+            "treatment_type": "education",
+            "instructions": "Review diet, exercise, and importance of blood glucose monitoring for achieving A1c target.",
+            "prescribed_date": "2001-02-17"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+          "encounter_id": "b7ae19a9-2215-44aa-af81-55ebd119a4fc",
+          "code": "E11.3293",
+          "description": "Type 2 diabetes mellitus with mild nonproliferative diabetic retinopathy without macular edema, bilateral",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1999-01-01",
+          "note": "Known mild NPDR, glycemic control needs improvement."
+        },
+        {
+          "patient_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+          "encounter_id": "b7ae19a9-2215-44aa-af81-55ebd119a4fc",
+          "code": "E11.9",
+          "description": "Type 2 diabetes mellitus without complications (base diagnosis)",
+          "category": "problem-list-item",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "1995-01-01",
+          "note": "Long-standing T2DM."
+        }
+      ],
+      "generated_lab_results": [
+        {
+          "patient_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+          "encounter_id": "b7ae19a9-2215-44aa-af81-55ebd119a4fc",
+          "name": "HbA1c",
+          "value": "7.9",
+          "value_type": "numeric",
+          "units": "%",
+          "date_time": "2001-02-17T10:00:00Z",
+          "reference_range": "<7.0%",
+          "flag": "H",
+          "interpretation": "Suboptimal glycemic control."
+        },
+        {
+          "patient_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+          "encounter_id": "b7ae19a9-2215-44aa-af81-55ebd119a4fc",
+          "name": "LDL Cholesterol",
+          "value": "110",
+          "value_type": "numeric",
+          "units": "mg/dL",
+          "date_time": "2001-02-17T10:00:00Z",
+          "reference_range": "<100 mg/dL",
+          "flag": "H",
+          "interpretation": "Slightly above target."
+        }
+      ]
+    },
+    {
+      "patient_supabase_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+      "encounter_supabase_id": "0b9fd9ac-353e-41b6-b0fb-9fc250e4de3d",
+      "generated_encounter_updates": {
+        "reason_code": "M65.351",
+        "reason_display_text": "Patient with right hip pain and clicking, suggestive of trigger finger of the hip (snapping hip syndrome).",
+        "transcript": "Doctor: Joshua, hello again. You're here today for some ongoing right hip issues? The previous notes mentioned spondylopathy in the thoracic region, but you said on the phone it's mainly your hip now?\nJoshua: Yes, Doctor. The back is okay-ish, but this right hip has been acting up. It's not a constant pain, but I get this weird clicking or snapping sensation on the outside of my hip when I walk or swing my leg. Sometimes it's a bit sore after.\nDoctor: A snapping or clicking sound, you say? Does it happen every time you move your hip in a certain way?\nJoshua: Pretty much, yeah. Especially if I'm bringing my leg forward or out to the side. It doesn't always hurt, but the snapping is noticeable.\nDoctor: Okay. This sounds like it could be what's called 'snapping hip syndrome'. There are a few types, but often it's a tendon rubbing over a bony prominence around the hip. Usually, it's more annoying than dangerous, but it can become painful if the tendon or bursa gets inflamed. Let me examine your hip.\nJoshua: (After examination) So, what do you think?\nDoctor: Well, Joshua, when I move your hip, I can feel that snapping, and it seems to be coming from the iliotibial band moving over your greater trochanter. This is consistent with external snapping hip. Since it's starting to get sore, physical therapy with a focus on stretching the IT band and hip flexors is usually very helpful. We can also try some anti-inflammatories for a short period.",
+        "soap_note": "S: Joshua, a 40 y/o male (DOB 1961-10-22, encounter 2001-05-26), presents with a 2-month history of R lateral hip snapping and intermittent pain. Describes an audible/palpable 'clunk' or 'snap' with hip flexion/extension and walking. Pain is mild (2-3/10), achy, occurs after prolonged activity. Denies trauma or other joint symptoms. Previous 'spondylopathy in thoracic region' from record does not seem to be current primary issue.\nO: Vitals stable. Gait: Normal, but R hip snap can be elicited with exaggerated hip flexion/extension. MSK Exam R Hip: Audible and palpable snap over greater trochanter with active hip flexion from extension and abduction/adduction. Ober's test positive for IT band tightness. Tenderness to palpation over greater trochanter. ROM R hip generally full, but snapping noted. No signs of acute inflammation.\nA: External Snapping Hip Syndrome (Coxa Saltans Externa), right side (M24.851 - Other specific joint derangements of right hip, not elsewhere classified, or a more specific code if available for snapping hip/IT band syndrome like M65.351 for trigger finger - though hip). Likely due to iliotibial band friction over greater trochanter.\nP: 1. Refer to Physical Therapy for IT band stretching, hip abductor strengthening, and core stability exercises. 2. Trial of NSAIDs (e.g., Ibuprofen 600mg PO TID PRN) for 1-2 weeks if pain flares. 3. Patient education on condition and activity modification to avoid repetitive aggravating movements. 4. Follow up in 4-6 weeks to assess PT progress. Consider corticosteroid injection into trochanteric bursa/IT band insertion if pain persists despite PT.",
+        "observations": "Palpable and audible snapping over the right greater trochanter with hip movement. Ober's test positive indicating iliotibial band tightness. Mild tenderness over the trochanteric region. Good overall hip ROM despite snapping.",
+        "treatments": [
+          {
+            "treatment_name": "Physical Therapy Referral",
+            "treatment_type": "referral",
+            "instructions": "For IT band stretching, gluteal strengthening, and core exercises for snapping hip syndrome.",
+            "prescribed_date": "2001-05-26"
+          },
+          {
+            "treatment_name": "Ibuprofen",
+            "treatment_type": "medication",
+            "dosage": "600mg",
+            "route": "PO",
+            "frequency": "TID PRN",
+            "duration": "1-2 weeks",
+            "instructions": "For pain and inflammation as needed. Take with food.",
+            "prescribed_date": "2001-05-26"
+          },
+          {
+            "treatment_name": "Home Stretching Program",
+            "treatment_type": "education",
+            "instructions": "Instructed on gentle IT band and hip flexor stretches to perform daily.",
+            "prescribed_date": "2001-05-26"
+          }
+        ]
+      },
+      "generated_conditions": [
+        {
+          "patient_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+          "encounter_id": "0b9fd9ac-353e-41b6-b0fb-9fc250e4de3d",
+          "code": "M24.851",
+          "description": "Other specific joint derangements of right hip, not elsewhere classified (Snapping Hip Syndrome)",
+          "category": "encounter-diagnosis",
+          "clinical_status": "active",
+          "verification_status": "confirmed",
+          "onset_date": "2001-03-26",
+          "note": "External coxa saltans due to IT band friction over greater trochanter. Original 'spondylopathy' seems unrelated to current hip complaint."
+        },
+        {
+          "patient_id": "7f9ba83e-5ab5-40d8-ade5-0133737fc098",
+          "encounter_id": "0b9fd9ac-353e-41b6-b0fb-9fc250e4de
