@@ -109,6 +109,10 @@ _Refer to [./architecture.md#ui-patterns-conventions-and-styling](./architecture
 *   `--step--1: clamp(.75rem, .72rem + 0.15vw, .84rem);` (Standard smaller font size)
 *   `.text-step--1`: Utility class applying `font-size: var(--step--1); line-height: 1.5; font-weight: 300;`.
 
+**Core Accent Colors (as of recent UI update):**
+*   **Primary Accent:** `--custom-blue-teal` (HSL `209 70% 46%` / Hex `#256D9C`). This is aliased via `--neon-val` and used for global `--accent` and `--ring` variables.
+*   **Secondary Accent:** White (`#FFFFFF` / HSL `0 0% 100%`). Used in combination with the primary accent, especially in gradients.
+
 ### Styling by Component Type
 
 #### 1. Standard Text Inputs (Shadcn/ui `<Input>`)

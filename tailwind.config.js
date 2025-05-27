@@ -64,6 +64,7 @@ module.exports = {
         glass: "rgba(255, 255, 255, 0.15)",
         glassHover: "rgba(255, 255, 255, 0.18)",
         neon: "#256D9C",
+        "custom-blue-teal": "#256D9C",
         ink: "#0a0d12",
         lavenderBg: "#f4f6ff",
         sidebar: "rgba(255,255,255,0.08)",

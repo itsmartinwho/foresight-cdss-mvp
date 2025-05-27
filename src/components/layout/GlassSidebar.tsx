@@ -115,7 +115,7 @@ export default function GlassSidebar() {
                   'truncate filter drop-shadow-md',
                   isAdvisorActive
                     ? 'text-black font-semibold'
-                    : 'bg-gradient-to-br from-black to-teal-300 bg-clip-text text-transparent sheen'
+                    : 'bg-gradient-to-br from-custom-blue-teal to-white bg-clip-text text-transparent sheen'
                 )}
               >
                 Advisor
