@@ -58,10 +58,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (initialTab && initialTab !== activeTab) {
+    if (initialTab) {
       setActiveTab(initialTab);
     }
-  }, [initialTab, activeTab]);
+  }, [initialTab]);
 
   useEffect(() => {
     const encounterId = searchParams.get('encounterId');
@@ -395,7 +395,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       {/* Content Sections */}
       <div className="space-y-8">
-        {console.log(`Rendering content sections with activeTab: ${activeTab}`)}
+        {(() => {
+          console.log(`Rendering content sections with activeTab: ${activeTab}`);
+          return null;
+        })()}
         {activeTab === "consultation" && patient && (
           <Section title="Consultation" collapsible defaultOpen contentClassName="space-y-4">
             <ConsultationTab
