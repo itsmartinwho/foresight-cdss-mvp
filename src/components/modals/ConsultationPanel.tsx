@@ -196,6 +196,7 @@ export default function ConsultationPanel({
   }, [patient?.id, isCreating, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
 
   // Reset form when panel opens and create encounter
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isOpen) {
       setEncounter(null);
@@ -213,7 +214,7 @@ export default function ConsultationPanel({
       // Automatically create encounter when panel opens
       createEncounter();
     }
-  }, [isOpen, createEncounter]);
+  }, [isOpen]);
 
   const handleClose = useCallback(async () => {
     if (!encounter?.id) {
