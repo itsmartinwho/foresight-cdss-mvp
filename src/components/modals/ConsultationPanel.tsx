@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { X } from '@phosphor-icons/react';
+import { Mic } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import type { Patient, Encounter } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
@@ -49,16 +49,81 @@ export default function ConsultationPanel({
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
-  // Form state
-  const [reason, setReason] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(new Date());
-  const [duration, setDuration] = useState<number | null>(30);
 
   // Ensure we only render on client side
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-focus and cursor positioning for transcript textarea
+  useEffect(() => {
+    if (started && transcriptTextareaRef.current) {
+      transcriptTextareaRef.current.focus();
+      const textLength = transcriptText.length;
+      transcriptTextareaRef.current.setSelectionRange(textLength, textLength);
+      transcriptTextareaRef.current.scrollTop = transcriptTextareaRef.current.scrollHeight;
+      console.log('Transcript textarea focused and cursor positioned.', { textLength: transcriptText.length });
+    }
+  }, [started, transcriptText]);
+
+  // Log transcript length and Clinical Plan button enablement status
+  useEffect(() => {
+    console.log(`Transcript length: ${transcriptText.length}, Clinical Plan button enabled: ${transcriptText.length >= 10}`);
+  }, [transcriptText]);
+
+  // Log active tab changes
+  useEffect(() => {
+    console.log('Active tab is now:', activeTab);
+  }, [activeTab]);
+
+  // Effect to make tab bar visible with a delay for transition
+  useEffect(() => {
+    if (planGenerated) {
+      const timer = setTimeout(() => {
+        setTabBarVisible(true);
+      }, 50); // Small delay to ensure element is in DOM for transition
+      return () => clearTimeout(timer);
+    } else {
+      setTabBarVisible(false); // Reset if plan is no longer generated (e.g. panel reset)
+    }
+  }, [planGenerated]);
+
+  const handleClinicalPlan = useCallback(async () => {
+    setIsGeneratingPlan(true);
+    console.log('handleClinicalPlan started, isGeneratingPlan: true');
+
+    try {
+      console.log('Simulating AI/engine call...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Shortened for testing
+
+      // Simulate an error condition
+      if (Math.random() < 0.5) { // Adjust probability as needed for testing
+        throw new Error("Simulated AI engine failure!");
+      }
+
+      const mockDiagnosis = "Based on the transcript, the preliminary diagnosis is Acute Bronchitis. Common cold symptoms present, with persistent cough.";
+      const mockTreatment = "Recommended treatment: Rest, increase fluid intake. Consider over-the-counter cough suppressant. If symptoms worsen or fever develops, schedule a follow-up.";
+      
+      setDiagnosisText(mockDiagnosis);
+      setTreatmentText(mockTreatment);
+      setPlanGenerated(true);
+      setActiveTab('diagnosis'); // Switch to diagnosis tab on success
+      console.log('AI/engine call simulation complete.', { diagnosis: mockDiagnosis, treatment: mockTreatment });
+
+    } catch (error) {
+      console.error("Error during clinical plan generation:", error);
+      toast({
+        title: "Error Generating Plan",
+        description: "An unexpected error occurred. Please try again or complete the plan manually.",
+        variant: "destructive",
+      });
+      // setPlanGenerated(false); // Not strictly needed if it's default false and only set true on success
+      // setActiveTab('transcript'); // Optionally revert, but default behavior is fine
+    } finally {
+      setIsGeneratingPlan(false);
+      console.log('handleClinicalPlan finished (finally), isGeneratingPlan: false');
+    }
+  }, [setIsGeneratingPlan, setDiagnosisText, setTreatmentText, setPlanGenerated, setActiveTab, toast]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCreating) return;
@@ -99,11 +164,60 @@ export default function ConsultationPanel({
     }
   }, [isOpen]);
 
-  const handleClose = useCallback(() => {
-    // TODO: In Phase 5, this will save data before closing
-    setEncounter(null);
-    onClose();
-  }, [onClose]);
+  const handleClose = useCallback(async () => {
+    if (!encounter?.id) {
+      console.log('No encounter to save, closing directly.');
+      onClose();
+      return;
+    }
+    if (isSaving) return;
+
+    setIsSaving(true);
+    console.log('Attempting to save consultation data...', { 
+      encounterId: encounter.id, 
+      transcript: transcriptText, 
+      diagnosis: diagnosisText, 
+      treatment: treatmentText 
+    });
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate save
+
+      const saveSuccess = Math.random() > 0.3; // 70% chance of success
+      if (!saveSuccess) {
+        throw new Error("Simulated save failure");
+      }
+
+      // Placeholder for actual Supabase call:
+      console.log('Placeholder: supabaseDataService.updateEncounterDetails(encounter.id, { transcript, diagnosis, treatment }) would be called here.');
+      // await supabaseDataService.updateEncounterDetails(encounter.id, {
+      //   transcript: transcriptText,
+      //   diagnosis_text: diagnosisText, 
+      //   treatment_text: treatmentText,
+      // });
+      
+      console.log('Data saved successfully (simulated).');
+      toast({ title: "Consultation Saved", description: "Your changes have been saved." });
+      
+      // According to notes, don't reset state here, rely on parent unmount/re-init
+      onClose(); // Close panel on success
+
+    } catch (error) {
+      console.error('Failed to save data:', error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save data. Please try again.",
+        variant: "destructive",
+      });
+      // Do NOT call onClose() here. User can retry or edit.
+    } finally {
+      setIsSaving(false);
+      console.log('Save attempt finished, isSaving set to false.');
+    }
+  }, [
+    encounter, isSaving, transcriptText, diagnosisText, treatmentText, 
+    onClose, toast, setIsSaving // Removed commented-out state setters as per instruction
+  ]);
 
   // Handle escape key
   useEffect(() => {
@@ -118,6 +232,13 @@ export default function ConsultationPanel({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleClose]);
+
+  const startVoiceInput = useCallback(() => {
+    // In a real app, this would initiate voice recognition.
+    console.log("Voice input started - full functionality to be implemented");
+    setStarted(true);
+    setTranscriptText("Voice input received: (User's speech would go here)");
+  }, []);
 
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
@@ -140,124 +261,51 @@ export default function ConsultationPanel({
           size="icon"
           className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20"
           onClick={handleClose}
+          disabled={isSaving}
         >
           <X className="h-4 w-4" />
         </Button>
 
-        {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Start New Consultation</h2>
-          <p className="text-sm text-muted-foreground">
-            {patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || patient.id}
-          </p>
-        </div>
-
-        {isCreating ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-sm text-muted-foreground">Creating consultation...</p>
-            </div>
-          </div>
-        ) : encounter ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-800 dark:text-green-200 font-medium">
-                ✓ Consultation created successfully
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                ID: {encounter.id.split('_').pop()}
-              </p>
-            </div>
-            
-            <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button variant="default" onClick={handleStart}>
-                Start
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Patient Info - Read Only */}
-            <div>
-              <Label className="text-sm font-semibold">Patient</Label>
-              <div className="mt-1 p-3 bg-muted/50 rounded-md border">
-                <p className="text-sm font-medium">
-                  {patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || patient.id}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {patient.dateOfBirth && `DOB: ${format(new Date(patient.dateOfBirth), 'MMM dd, yyyy')}`}
-                  {patient.gender && ` • ${patient.gender}`}
-                </p>
+        {/* Main content area */}
+        <div className="pt-8">
+          {isCreating ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4"></div>
+                <p className="text-sm text-muted-foreground">Creating consultation...</p>
               </div>
             </div>
-
-            {/* Reason for encounter */}
-            <div>
-              <Label htmlFor="reason" className="text-sm font-semibold">
-                Reason for encounter
-              </Label>
-              <Textarea 
-                id="reason"
-                placeholder="E.g., joint pain, generalized inflammation, follow-up visit..."
-                className="mt-1 text-sm"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={3}
-              />
+          ) : encounter ? (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">New Consultation</h2>
+                <p className="text-sm text-muted-foreground">
+                  Consultation ID: {encounter.id}
+                </p>
+              </div>
+              
+              {/* TODO: This will be replaced with transcript/editor and tabs in future phases */}
+              <div className="border border-border rounded-lg p-4 min-h-[300px] bg-background/50">
+                <p className="text-sm text-muted-foreground">
+                  Consultation content will appear here...
+                </p>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={handleClose}>
+                  Close
+                </Button>
+                <Button variant="default">
+                  Start Recording
+                </Button>
+              </div>
             </div>
-
-            {/* Date and time */}
-            <div>
-              <Label className="text-sm font-semibold">Date and time</Label>
-              <StyledDatePicker
-                placeholderText={format(new Date(), 'MMM dd, yyyy h:mm aa')}
-                selected={scheduledDate}
-                onChange={(date: Date | null) => setScheduledDate(date)}
-                showTimeSelect
-                timeInputLabel="Time:"
-                dateFormat="MMM dd, yyyy h:mm aa"
-                className="mt-1"
-                timeIntervals={15}
-                popperClassName="z-[60]"
-                showMonthDropdown
-                showYearDropdown
-                dropdownMode="select"
-              />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <p className="text-sm text-muted-foreground">Failed to create consultation</p>
             </div>
-
-            {/* Duration */}
-            <div>
-              <Label className="text-sm font-semibold">Duration</Label>
-              <select
-                value={duration || ''}
-                onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
-                className={cn(
-                  "w-full mt-1 px-3 py-2 border rounded-md bg-background text-sm",
-                  !duration ? "text-muted-foreground" : "text-foreground"
-                )}
-              >
-                <option value="" disabled>Select duration</option>
-                {Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map(minutes => (
-                  <option key={minutes} value={minutes}>{minutes} min</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="ghost" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button variant="default" onClick={handleStart}>
-                Start
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
