@@ -34,7 +34,7 @@ class SupabaseDataService {
       return this.singlePatientLoadPromises.get(patientId);
     }
 
-    console.log(`SupabaseDataService (Prod Debug): Initiating new data load for single patient ${patientId}.`);
+    console.log(`SupabaseDataService: Loading data for patient ${patientId}`);
     const promise = (async () => {
       try {
         // Fetch patient details
@@ -115,19 +115,19 @@ class SupabaseDataService {
             const patientSupabaseUUIDFromEncounter = row.patient_supabase_id;
 
             if (!encounterBusinessKey) {
-              console.warn(`SupabaseDataService (SingleLoad Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}) due to missing encounter_id (human-readable identifier). Full row:`, JSON.stringify(row));
+              console.warn(`SupabaseDataService: Skipping encounter ${encounterSupabaseUUID} - missing encounter_id`);
               return;
             }
 
             if (!patientSupabaseUUIDFromEncounter) {
-              console.warn(`SupabaseDataService (SingleLoad Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}) due to missing patient_supabase_id (foreign key to patient). Full row:`, JSON.stringify(row));
+              console.warn(`SupabaseDataService: Skipping encounter ${encounterBusinessKey} - missing patient_supabase_id`);
               return;
             }
             
             const patientPublicId = this.patientUuidToOriginalId[patientSupabaseUUIDFromEncounter];
 
             if (!patientPublicId) {
-              console.warn(`SupabaseDataService (SingleLoad Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}). Patient with Supabase UUID '${patientSupabaseUUIDFromEncounter}' (from encounter's patient_supabase_id) not found in loaded patients map. Full row:`, JSON.stringify(row));
+              console.warn(`SupabaseDataService: Skipping encounter ${encounterBusinessKey} - patient ${patientSupabaseUUIDFromEncounter} not found`);
               return;
             }
             
@@ -177,7 +177,7 @@ class SupabaseDataService {
             code: dx.code,
             description: dx.description,
           }));
-          console.log(`Fetched ${dxRows.length} diagnoses for patient ${patientId}`);
+  
         }
         
         // Store lab results
@@ -192,7 +192,7 @@ class SupabaseDataService {
             referenceRange: lab.reference_range,
             flag: lab.flag,
           }));
-          console.log(`Fetched ${labRows.length} lab results for patient ${patientId}`);
+
         }
 
         this.emitChange(); // Notify subscribers
@@ -216,7 +216,7 @@ class SupabaseDataService {
       return this.loadPromise;
     }
 
-    console.log("SupabaseDataService (Prod Debug): Initiating new data load sequence.");
+    console.log("SupabaseDataService: Loading patient data...");
     this.loadPromise = (async () => {
       // this.isLoading = true; // loadPromise presence indicates loading
 
@@ -226,7 +226,7 @@ class SupabaseDataService {
 
       let patientRows = null;
       try {
-        console.log('SupabaseDataService (Prod Debug): Fetching patients from Supabase...');
+        console.log('SupabaseDataService: Fetching patients...');
         const { data, error: pErr } = await this.supabase.from('patients').select('*');
         if (pErr) {
           console.error('SupabaseDataService (Prod Debug): Error fetching patients:', pErr);
@@ -321,7 +321,7 @@ class SupabaseDataService {
       let encounterRows = null;
       let totalEncountersAvailable = 0;
       try {
-          console.log('SupabaseDataService (Prod Debug): Attempting to fetch ALL encounters with count...');
+          console.log('SupabaseDataService: Fetching encounters...');
           const { data, error: vErr, count } = await this.supabase
               .from('encounters')
               .select('*', { count: 'exact' }); 
@@ -353,19 +353,19 @@ class SupabaseDataService {
         const patientSupabaseUUIDFromEncounter = row.patient_supabase_id;
 
         if (!encounterBusinessKey) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}) due to missing encounter_id (human-readable identifier). Full row:`, JSON.stringify(row));
+          console.warn(`SupabaseDataService: Skipping encounter ${encounterSupabaseUUID} - missing encounter_id`);
           return;
         }
 
         if (!patientSupabaseUUIDFromEncounter) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}) due to missing patient_supabase_id (foreign key to patient). Full row:`, JSON.stringify(row));
+          console.warn(`SupabaseDataService: Skipping encounter ${encounterBusinessKey} - missing patient_supabase_id`);
           return;
         }
 
         const patientPublicId = this.patientUuidToOriginalId[patientSupabaseUUIDFromEncounter];
 
         if (!patientPublicId) {
-          console.warn(`SupabaseDataService (Prod Debug): Skipping encounter (DB ID: ${encounterSupabaseUUID || 'DB_ID_MISSING'}, Encounter Identifier: ${encounterBusinessKey}). Patient with Supabase UUID '${patientSupabaseUUIDFromEncounter}' (from encounter's patient_supabase_id) not found in loaded patients map. Full row:`, JSON.stringify(row));
+          console.warn(`SupabaseDataService: Skipping encounter ${encounterBusinessKey} - patient ${patientSupabaseUUIDFromEncounter} not found`);
           return;
         }
         
@@ -552,9 +552,6 @@ class SupabaseDataService {
     }
 
     const patientEncounters = this.getPatientEncounters(patientId);
-    console.log(`SupabaseDataService Debug: getPatientData for ${patientId}`);
-    console.log(`  - Found ${patientEncounters.length} encounters`);
-    console.log(`  - Encounter IDs:`, patientEncounters.map(enc => `${enc.id} (${enc.encounterIdentifier})`));
     const encounterDetails = patientEncounters.map(encounter => ({
       encounter: encounter,
       diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
@@ -965,25 +962,17 @@ class SupabaseDataService {
 
   getDiagnosesForEncounter(patientId: string, encounterId: string): Diagnosis[] {
     const patientDiagnoses = this.diagnoses[patientId] || [];
-    console.log(`SupabaseDataService Debug: getDiagnosesForEncounter(${patientId}, ${encounterId})`);
-    console.log(`  - Patient has ${patientDiagnoses.length} total diagnoses`);
-    console.log(`  - Diagnoses encounter IDs:`, patientDiagnoses.map(dx => dx.encounterId));
     
     // Filter by Supabase UUID (encounter_id in database is a UUID foreign key)
     const filtered = patientDiagnoses.filter(dx => dx.encounterId === encounterId);
-    console.log(`  - Filtered to ${filtered.length} diagnoses for encounter UUID ${encounterId}`);
     return filtered;
   }
 
   getLabResultsForEncounter(patientId: string, encounterId: string): LabResult[] {
     const patientLabs = this.labResults[patientId] || [];
-    console.log(`SupabaseDataService Debug: getLabResultsForEncounter(${patientId}, ${encounterId})`);
-    console.log(`  - Patient has ${patientLabs.length} total lab results`);
-    console.log(`  - Lab results encounter IDs:`, patientLabs.map(lab => lab.encounterId));
     
     // Filter by Supabase UUID (encounter_id in database is a UUID foreign key)
     const filtered = patientLabs.filter(lab => lab.encounterId === encounterId);
-    console.log(`  - Filtered to ${filtered.length} lab results for encounter UUID ${encounterId}`);
     return filtered;
   }
 
