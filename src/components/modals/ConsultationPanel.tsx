@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { X } from '@phosphor-icons/react';
@@ -34,11 +34,89 @@ export default function ConsultationPanel({
   const [mounted, setMounted] = useState(false);
   const [started, setStarted] = useState(false);
   const [transcriptText, setTranscriptText] = useState("");
+  const transcriptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [diagnosisText, setDiagnosisText] = useState('');
+  const [treatmentText, setTreatmentText] = useState('');
+  const [activeTab, setActiveTab] = useState('transcript');
+  const [planGenerated, setPlanGenerated] = useState(false);
+  const [tabBarVisible, setTabBarVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Ensure we only render on client side
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-focus and cursor positioning for transcript textarea
+  useEffect(() => {
+    if (started && transcriptTextareaRef.current) {
+      transcriptTextareaRef.current.focus();
+      const textLength = transcriptText.length;
+      transcriptTextareaRef.current.setSelectionRange(textLength, textLength);
+      transcriptTextareaRef.current.scrollTop = transcriptTextareaRef.current.scrollHeight;
+      console.log('Transcript textarea focused and cursor positioned.', { textLength: transcriptText.length });
+    }
+  }, [started, transcriptText]);
+
+  // Log transcript length and Clinical Plan button enablement status
+  useEffect(() => {
+    console.log(`Transcript length: ${transcriptText.length}, Clinical Plan button enabled: ${transcriptText.length >= 10}`);
+  }, [transcriptText]);
+
+  // Log active tab changes
+  useEffect(() => {
+    console.log('Active tab is now:', activeTab);
+  }, [activeTab]);
+
+  // Effect to make tab bar visible with a delay for transition
+  useEffect(() => {
+    if (planGenerated) {
+      const timer = setTimeout(() => {
+        setTabBarVisible(true);
+      }, 50); // Small delay to ensure element is in DOM for transition
+      return () => clearTimeout(timer);
+    } else {
+      setTabBarVisible(false); // Reset if plan is no longer generated (e.g. panel reset)
+    }
+  }, [planGenerated]);
+
+  const handleClinicalPlan = useCallback(async () => {
+    setIsGeneratingPlan(true);
+    console.log('handleClinicalPlan started, isGeneratingPlan: true');
+
+    try {
+      console.log('Simulating AI/engine call...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Shortened for testing
+
+      // Simulate an error condition
+      if (Math.random() < 0.5) { // Adjust probability as needed for testing
+        throw new Error("Simulated AI engine failure!");
+      }
+
+      const mockDiagnosis = "Based on the transcript, the preliminary diagnosis is Acute Bronchitis. Common cold symptoms present, with persistent cough.";
+      const mockTreatment = "Recommended treatment: Rest, increase fluid intake. Consider over-the-counter cough suppressant. If symptoms worsen or fever develops, schedule a follow-up.";
+      
+      setDiagnosisText(mockDiagnosis);
+      setTreatmentText(mockTreatment);
+      setPlanGenerated(true);
+      setActiveTab('diagnosis'); // Switch to diagnosis tab on success
+      console.log('AI/engine call simulation complete.', { diagnosis: mockDiagnosis, treatment: mockTreatment });
+
+    } catch (error) {
+      console.error("Error during clinical plan generation:", error);
+      toast({
+        title: "Error Generating Plan",
+        description: "An unexpected error occurred. Please try again or complete the plan manually.",
+        variant: "destructive",
+      });
+      // setPlanGenerated(false); // Not strictly needed if it's default false and only set true on success
+      // setActiveTab('transcript'); // Optionally revert, but default behavior is fine
+    } finally {
+      setIsGeneratingPlan(false);
+      console.log('handleClinicalPlan finished (finally), isGeneratingPlan: false');
+    }
+  }, [setIsGeneratingPlan, setDiagnosisText, setTreatmentText, setPlanGenerated, setActiveTab, toast]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCreating) return;
@@ -75,11 +153,60 @@ export default function ConsultationPanel({
     }
   }, [isOpen, encounter, isCreating, createEncounter]);
 
-  const handleClose = useCallback(() => {
-    // TODO: In Phase 5, this will save data before closing
-    setEncounter(null);
-    onClose();
-  }, [onClose]);
+  const handleClose = useCallback(async () => {
+    if (!encounter?.id) {
+      console.log('No encounter to save, closing directly.');
+      onClose();
+      return;
+    }
+    if (isSaving) return;
+
+    setIsSaving(true);
+    console.log('Attempting to save consultation data...', { 
+      encounterId: encounter.id, 
+      transcript: transcriptText, 
+      diagnosis: diagnosisText, 
+      treatment: treatmentText 
+    });
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate save
+
+      const saveSuccess = Math.random() > 0.3; // 70% chance of success
+      if (!saveSuccess) {
+        throw new Error("Simulated save failure");
+      }
+
+      // Placeholder for actual Supabase call:
+      console.log('Placeholder: supabaseDataService.updateEncounterDetails(encounter.id, { transcript, diagnosis, treatment }) would be called here.');
+      // await supabaseDataService.updateEncounterDetails(encounter.id, {
+      //   transcript: transcriptText,
+      //   diagnosis_text: diagnosisText, 
+      //   treatment_text: treatmentText,
+      // });
+      
+      console.log('Data saved successfully (simulated).');
+      toast({ title: "Consultation Saved", description: "Your changes have been saved." });
+      
+      // According to notes, don't reset state here, rely on parent unmount/re-init
+      onClose(); // Close panel on success
+
+    } catch (error) {
+      console.error('Failed to save data:', error);
+      toast({
+        title: "Save Failed",
+        description: "Could not save data. Please try again.",
+        variant: "destructive",
+      });
+      // Do NOT call onClose() here. User can retry or edit.
+    } finally {
+      setIsSaving(false);
+      console.log('Save attempt finished, isSaving set to false.');
+    }
+  }, [
+    encounter, isSaving, transcriptText, diagnosisText, treatmentText, 
+    onClose, toast, setIsSaving // Removed commented-out state setters as per instruction
+  ]);
 
   // Handle escape key
   useEffect(() => {
@@ -118,6 +245,7 @@ export default function ConsultationPanel({
           size="icon"
           className="absolute top-3 right-3 h-8 w-8"
           onClick={handleClose}
+          disabled={isSaving}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -140,6 +268,32 @@ export default function ConsultationPanel({
                 </p>
               </div>
               
+              {/* Tab Buttons - Rendered if planGenerated is true, with fade-in animation */}
+              {planGenerated && (
+                <div className={`transition-opacity duration-500 ${tabBarVisible ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="flex space-x-2 border-b mb-4">
+                    <Button 
+                      variant={activeTab === 'transcript' ? 'default' : 'ghost'} 
+                      onClick={() => setActiveTab('transcript')}
+                    >
+                      Transcript
+                    </Button>
+                    <Button 
+                      variant={activeTab === 'diagnosis' ? 'default' : 'ghost'} 
+                      onClick={() => setActiveTab('diagnosis')}
+                    >
+                      Diagnosis
+                    </Button>
+                    <Button 
+                      variant={activeTab === 'treatment' ? 'default' : 'ghost'} 
+                      onClick={() => setActiveTab('treatment')}
+                    >
+                      Treatment
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Conditional rendering for prompt or existing content */}
               {!started && encounter && !isCreating && (
                 <div
@@ -158,26 +312,102 @@ export default function ConsultationPanel({
               )}
               
               {started && encounter && !isCreating && (
-                <div
-                  className={`transition-opacity duration-300 ease-in-out delay-150 ${
-                    !started ? 'opacity-0' : 'opacity-100'
-                  } bg-background/50 rounded-lg`} // Removed border, p-4, min-h from here
-                >
-                  <Textarea
-                    value={transcriptText}
-                    onChange={(e) => setTranscriptText(e.target.value)}
-                    placeholder="Document the conversation here..."
-                    className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
-                  />
-                </div>
+                <>
+                  {planGenerated ? (
+                    <div className="mt-0"> {/* Container for tabbed content */}
+                      <div key={activeTab} className="animate-fadeIn"> {/* Keyed div for fade-in animation */}
+                        {activeTab === 'transcript' && (
+                          <Textarea
+                            ref={transcriptTextareaRef}
+                            value={transcriptText}
+                            onChange={(e) => setTranscriptText(e.target.value)}
+                            placeholder="Document the conversation here..."
+                            className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                          />
+                        )}
+                        {activeTab === 'diagnosis' && (
+                          <Textarea
+                            value={diagnosisText}
+                            onChange={(e) => setDiagnosisText(e.target.value)}
+                            placeholder="Enter diagnosis details here..."
+                            className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                            autoFocus
+                          />
+                        )}
+                        {activeTab === 'treatment' && (
+                          <Textarea
+                            value={treatmentText}
+                            onChange={(e) => setTreatmentText(e.target.value)}
+                            placeholder="Enter treatment plan here..."
+                            className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                            autoFocus
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    // If plan NOT generated, show only the transcript editor (original behavior)
+                    <div
+                      className={`transition-opacity duration-300 ease-in-out delay-150 ${
+                        !started ? 'opacity-0' : 'opacity-100' // This handles initial fade-in of the editor
+                      } bg-background/50 rounded-lg`}
+                    >
+                      <Textarea
+                        ref={transcriptTextareaRef}
+                        value={transcriptText}
+                          onChange={(e) => setTranscriptText(e.target.value)}
+                          placeholder="Document the conversation here..."
+                          className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                        />
+                      )}
+                      {activeTab === 'diagnosis' && (
+                        <Textarea
+                          value={diagnosisText}
+                          onChange={(e) => setDiagnosisText(e.target.value)}
+                          placeholder="Enter diagnosis details here..."
+                          className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                          autoFocus
+                        />
+                      )}
+                      {activeTab === 'treatment' && (
+                        <Textarea
+                          value={treatmentText}
+                          onChange={(e) => setTreatmentText(e.target.value)}
+                          placeholder="Enter treatment plan here..."
+                          className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                          autoFocus
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    // If plan NOT generated, show only the transcript editor (original behavior)
+                    <div
+                      className={`transition-opacity duration-300 ease-in-out delay-150 ${
+                        !started ? 'opacity-0' : 'opacity-100' // This handles initial fade-in of the editor
+                      } bg-background/50 rounded-lg`}
+                    >
+                      <Textarea
+                        ref={transcriptTextareaRef}
+                        value={transcriptText}
+                        onChange={(e) => setTranscriptText(e.target.value)}
+                        placeholder="Document the conversation here..."
+                        className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                      />
+                    </div>
+                  )}
+                </>
               )}
               
               <div className="flex justify-end gap-2 mt-6">
-                <Button variant="secondary" onClick={handleClose}>
-                  Close
+                <Button variant="secondary" onClick={handleClose} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Close"}
                 </Button>
-                <Button variant="default" disabled={!started}>
-                  Save Consultation
+                <Button 
+                  variant="default" 
+                  onClick={handleClinicalPlan}
+                  disabled={transcriptText.length < 10 || isGeneratingPlan}
+                >
+                  {isGeneratingPlan ? "Generating..." : "Clinical Plan"}
                 </Button>
               </div>
             </div>
