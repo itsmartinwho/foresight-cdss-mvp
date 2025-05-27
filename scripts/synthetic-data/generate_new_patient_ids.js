@@ -90,17 +90,32 @@ async function generateNewPatientIds() {
         continue;
       }
 
-      // Update encounters
-      const { error: updateEncountersError } = await supabase
+      // Update encounters - get all encounters for this patient and update them individually
+      const { data: encountersToUpdate, error: fetchEncountersError } = await supabase
         .from('encounters')
-        .update({
-          extra_data: supabase.raw(`jsonb_set(extra_data, '{PatientID}', '"${update.newId}"')`)
-        })
+        .select('*')
         .eq('extra_data->>PatientID', update.oldId);
 
-      if (updateEncountersError) {
-        console.error(`❌ Failed to update encounters for patient ${update.oldId}:`, updateEncountersError);
+      if (fetchEncountersError) {
+        console.error(`❌ Failed to fetch encounters for patient ${update.oldId}:`, fetchEncountersError);
         continue;
+      }
+
+      // Update each encounter individually
+      for (const encounter of encountersToUpdate || []) {
+        const updatedExtraData = {
+          ...encounter.extra_data,
+          PatientID: update.newId
+        };
+
+        const { error: updateEncounterError } = await supabase
+          .from('encounters')
+          .update({ extra_data: updatedExtraData })
+          .eq('id', encounter.id);
+
+        if (updateEncounterError) {
+          console.error(`❌ Failed to update encounter ${encounter.id}:`, updateEncounterError);
+        }
       }
 
       console.log(`✅ Updated patient ${update.name} and related encounters`);
