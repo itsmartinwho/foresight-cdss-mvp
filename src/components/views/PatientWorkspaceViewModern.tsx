@@ -108,7 +108,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     <Button
       variant={activeTab === k ? "default" : "ghost"}
       size="default"
-      onClick={() => setActiveTab(k)}
+      onClick={() => {
+        console.log(`Tab clicked: ${k}, current activeTab: ${activeTab}`);
+        setActiveTab(k);
+      }}
       className={cn(
         "whitespace-nowrap transition-all duration-200 font-semibold px-6 py-3 h-auto",
         activeTab === k 
@@ -234,22 +237,17 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
   return (
     <ContentSurface className="relative space-y-8 overflow-y-auto">
-      {/* Patient Overview */}
-      <Section 
-        title="Patient Overview" 
-        collapsible 
-        defaultOpen 
-        className="border-b border-border/20 pb-8 pt-2"
-        collapsedSummary={patient.name}
+      {/* Close Button - Top Right */}
+      <Button 
+        variant="ghost" 
+        onClick={onBack} 
+        className="absolute top-4 right-4 z-10 hover:text-destructive group p-2"
       >
-        {/* Close Button - Top Right */}
-        <Button 
-          variant="ghost" 
-          onClick={onBack} 
-          className="absolute top-4 right-16 z-10 hover:text-destructive group p-2"
-        >
-          <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
-        </Button>
+        <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
+      </Button>
+
+      {/* Header Section */}
+      <div className="space-y-6 border-b border-border/20 pb-8">
         {/* Patient Header */}
         <div className="flex items-start gap-6">
           <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
@@ -373,7 +371,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             )}
           </div>
         </div>
-      </Section>
+      </div>
 
       {/* Tab Navigation */}
       <Section title="Patient Data" className="border-b border-border/20 pb-6">
@@ -398,13 +396,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       {/* Content Sections */}
       <div className="space-y-8">
         {activeTab === "consultation" && patient && (
-          <Section 
-            title="Consultation" 
-            collapsible 
-            defaultOpen 
-            contentClassName="space-y-4"
-            collapsedSummary={selectedEncounterForConsultation?.reasonDisplayText || selectedEncounterForConsultation?.reasonCode || 'No reason specified'}
-          >
+          <div className="space-y-4">
             <ConsultationTab
               patient={patient}
               selectedEncounter={selectedEncounterForConsultation}
@@ -417,73 +409,49 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               onNewConsultationDurationChange={setNewConsultationDuration}
               onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
             />
-          </Section>
+          </div>
         )}
         
         {activeTab === "diagnosis" && (
-          <Section 
-            title="Diagnoses & Conditions" 
-            collapsible 
-            defaultOpen 
-            contentClassName="space-y-4"
-            collapsedSummary={`${activeEncounterDetails.reduce((count, ew) => count + (ew.diagnoses?.length || 0), 0)} diagnoses across ${activeEncounterDetails.length} encounter${activeEncounterDetails.length !== 1 ? 's' : ''}`}
-          >
+          <div className="space-y-4">
             <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
-          </Section>
+          </div>
         )}
         
         {activeTab === "treatment" && (
-          <Section 
-            title="Treatments & Medications" 
-            collapsible 
-            defaultOpen 
-            contentClassName="space-y-4"
-            collapsedSummary={`${activeEncounterDetails.reduce((count, ew) => count + (ew.encounter.treatments?.length || 0), 0)} treatments`}
-          >
+          <div className="space-y-4">
             <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />
-          </Section>
+          </div>
         )}
         
         {activeTab === "labs" && (
-          <Section 
-            title="Laboratory Results" 
-            collapsible 
-            defaultOpen 
-            contentClassName="space-y-4"
-            collapsedSummary={`${activeEncounterDetails.reduce((count, ew) => count + (ew.labResults?.length || 0), 0)} lab results`}
-          >
+          <div className="space-y-4">
             <LabsTab patient={patient} allEncounters={activeEncounterDetails} />
-          </Section>
+          </div>
         )}
         
         {activeTab === "prior" && (
-          <Section title="Prior Authorization" collapsible defaultOpen contentClassName="space-y-4">
+          <div className="space-y-4">
             <PriorAuthTab patient={patient} allEncounters={activeEncounterDetails} />
-          </Section>
+          </div>
         )}
         
         {activeTab === "trials" && (
-          <Section title="Clinical Trials" collapsible defaultOpen contentClassName="space-y-4">
+          <div className="space-y-4">
             <TrialsTab patient={patient} />
-          </Section>
+          </div>
         )}
         
         {activeTab === "history" && (
-          <Section 
-            title="Encounter History" 
-            collapsible 
-            defaultOpen 
-            contentClassName="space-y-4"
-            collapsedSummary={`${activeEncounterDetails.length} encounter${activeEncounterDetails.length !== 1 ? 's' : ''}`}
-          >
+          <div className="space-y-4">
             <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />
-          </Section>
+          </div>
         )}
         
         {activeTab === "allData" && (
-          <Section title="All Patient Data" collapsible defaultOpen contentClassName="space-y-4">
+          <div className="space-y-4">
             <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />
-          </Section>
+          </div>
         )}
       </div>
 
