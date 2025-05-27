@@ -31,6 +31,7 @@ import { toast } from "@/hooks/use-toast";
 import ContentSurface from "@/components/layout/ContentSurface";
 import Section from "@/components/ui/section";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import ConsultationPanel from '@/components/modals/ConsultationPanel';
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -46,10 +47,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const [detailedPatientData, setDetailedPatientData] = useState<DetailedPatientDataType>(null);
   const [activeEncounterDetails, setActiveEncounterDetails] = useState<EncounterDetailsWrapper[]>([]);
   const [selectedEncounterForConsultation, setSelectedEncounterForConsultation] = useState<Encounter | null>(null);
-  const [isStartingNewConsultation, setIsStartingNewConsultation] = useState(false);
-  const [newConsultationReason, setNewConsultationReason] = useState("");
-  const [newConsultationDate, setNewConsultationDate] = useState<Date | null>(new Date());
-  const [newConsultationDuration, setNewConsultationDuration] = useState(30);
+  const [showConsultationPanel, setShowConsultationPanel] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,7 +99,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     } finally {
       setLoading(false);
     }
-  }, [patient?.id]);
+  }, [patient?.id, selectedEncounterForConsultation]);
 
   useEffect(() => {
     loadPatientData();
@@ -164,37 +162,23 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     setShowDeleteConfirmation(false);
   };
 
-  const handleFinalizeNewConsultation = async (): Promise<Encounter | null> => {
-    if (!patient?.id) return null;
-    try {
-      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, {
-        reason: newConsultationReason || undefined,
-        scheduledStart: newConsultationDate ? newConsultationDate.toISOString() : new Date().toISOString(),
-      });
-      
-      const newEncounterWrapper: EncounterDetailsWrapper = { 
-        encounter: newEncounter, 
-        diagnoses: [], 
-        labResults: [] 
-      };
+  const handleConsultationCreated = (encounter: Encounter) => {
+    const newEncounterWrapper: EncounterDetailsWrapper = { 
+      encounter: encounter, 
+      diagnoses: [], 
+      labResults: [] 
+    };
 
-      setDetailedPatientData((prev) => {
-        if (!prev || !prev.patient) return { patient: patient, encounters: [newEncounterWrapper] };
-        const newEncountersList = [newEncounterWrapper, ...(prev.encounters || [])];
-        return { ...prev, encounters: newEncountersList };
-      });
+    setDetailedPatientData((prev) => {
+      if (!prev || !prev.patient) return { patient: patient, encounters: [newEncounterWrapper] };
+      const newEncountersList = [newEncounterWrapper, ...(prev.encounters || [])];
+      return { ...prev, encounters: newEncountersList };
+    });
 
-      setSelectedEncounterForConsultation(newEncounter);
-      setIsStartingNewConsultation(false);
-      setActiveTab('consultation');
-      router.push(`/patients/${patient.id}?encounterId=${newEncounter.id}`);
-      return newEncounter;
-    } catch (err: unknown) {
-      console.error("Failed to finalize new consultation", err);
-      setError(err instanceof Error ? err.message : "Failed to create new consultation encounter.");
-      toast({ title: "Error", description: `Failed to create new encounter: ${err instanceof Error ? err.message : "Unknown error"}`, variant: "destructive" });
-      return null;
-    }
+    setSelectedEncounterForConsultation(encounter);
+    setActiveTab('consultation');
+    setShowConsultationPanel(false);
+    router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
   };
 
   const openDeleteConfirmation = (encounterId: string) => {
@@ -331,7 +315,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             {/* Action Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-6">
-                {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
+                {activeEncounterDetails.length > 0 && (
                   <div className="w-full sm:w-auto">
                     <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground mb-2">
                       Select Consultation:
@@ -343,7 +327,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                     setSelectedEncounterForConsultation(foundEncounter);
                     if(foundEncounter) setActiveTab('consultation');
                   }}
-                  disabled={showDeleteConfirmation || isStartingNewConsultation}
+                  disabled={showDeleteConfirmation}
                 >
                   <SelectTrigger className="w-full sm:w-72 h-11">
                     <SelectValue placeholder="Select an encounter..." />
@@ -364,32 +348,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             <Button
               variant="default"
               size="lg"
-              onClick={async () => {
-                if (isStartingNewConsultation) {
-                  setIsStartingNewConsultation(false);
-                  if (activeEncounterDetails && activeEncounterDetails.length > 0) {
-                    const previouslySelectedId = selectedEncounterForConsultation?.id;
-                    setSelectedEncounterForConsultation(null); 
-                    const reselectEncounter = previouslySelectedId 
-                      ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
-                      : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
-                    setSelectedEncounterForConsultation(reselectEncounter || null);
-                  } else {
-                    setSelectedEncounterForConsultation(null);
-                  }
-                } else {
-                  setSelectedEncounterForConsultation(null); 
-                  setIsStartingNewConsultation(true);
-                  setActiveTab('consultation');
-                }
+              onClick={() => {
+                setShowConsultationPanel(true);
               }}
               className="font-semibold"
             >
-              {isStartingNewConsultation ? <X className="mr-2 h-5 w-5"/> : <PlusCircle className="mr-2 h-5 w-5"/>}
-              {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
+              <PlusCircle className="mr-2 h-5 w-5"/>
+              New Consultation
             </Button>
             
-            {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
+            {selectedEncounterForConsultation && !showDeleteConfirmation && (
               <Button 
                 variant="ghost" 
                 onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
@@ -448,14 +416,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               <ConsultationTab
                 patient={patient}
                 selectedEncounter={selectedEncounterForConsultation}
-                isStartingNewConsultation={isStartingNewConsultation}
-                newConsultationReason={newConsultationReason}
-                onNewConsultationReasonChange={setNewConsultationReason}
-                newConsultationDate={newConsultationDate}
-                onNewConsultationDateChange={setNewConsultationDate}
-                newConsultationDuration={newConsultationDuration}
-                onNewConsultationDurationChange={setNewConsultationDuration}
-                onStartTranscriptionForNewConsult={handleFinalizeNewConsultation}
               />
             )}
             
@@ -511,6 +471,14 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Consultation Panel */}
+      <ConsultationPanel
+        isOpen={showConsultationPanel}
+        onClose={() => setShowConsultationPanel(false)}
+        patient={patient}
+        onConsultationCreated={handleConsultationCreated}
+      />
     </ContentSurface>
   );
 } 
