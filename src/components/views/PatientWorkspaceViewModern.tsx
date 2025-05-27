@@ -233,16 +233,18 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }
 
   return (
-    <ContentSurface className="relative space-y-8">
+    <ContentSurface className="relative space-y-8 overflow-y-auto">
+      {/* Close Button - Top Right */}
+      <Button 
+        variant="ghost" 
+        onClick={onBack} 
+        className="absolute top-4 right-4 z-10 hover:text-destructive group p-2"
+      >
+        <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
+      </Button>
+
       {/* Header Section */}
-      <Section title="Patient Information" className="border-b border-border/20 pb-8">
-        <div className="space-y-6">
-          {/* Back Button */}
-          <Button variant="ghost" onClick={onBack} className="hover:text-neon group self-start">
-            <ChevronLeft className="h-5 w-5 mr-2 group-hover:text-neon transition-colors" />
-            <Users className="h-5 w-5 mr-2 group-hover:text-neon transition-colors" />
-            <span className="font-medium">Back to Patients</span>
-          </Button>
+      <div className="space-y-6 border-b border-border/20 pb-8">
 
           {/* Patient Header */}
           <div className="flex items-start gap-6">
@@ -356,19 +358,18 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               
               {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
                 <Button 
-                  variant="destructive" 
+                  variant="ghost" 
                   onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
                   size="default"
-                  className="font-semibold"
+                  className="font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-2 h-4 w-4 group-hover:h-5 group-hover:w-5 transition-all duration-200" />
                   Delete
                 </Button>
               )}
             </div>
           </div>
         </div>
-      </Section>
 
       {/* Tab Navigation */}
       <Section title="Patient Data" className="border-b border-border/20 pb-6">
