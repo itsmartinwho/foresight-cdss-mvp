@@ -4,7 +4,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { X } from '@phosphor-icons/react';
+import { Mic } from 'lucide-react';
 import { format } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
 import type { Patient, Encounter } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +32,8 @@ export default function ConsultationPanel({
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [transcriptText, setTranscriptText] = useState("");
 
   // Ensure we only render on client side
   useEffect(() => {
@@ -91,6 +95,13 @@ export default function ConsultationPanel({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleClose]);
 
+  const startVoiceInput = useCallback(() => {
+    // In a real app, this would initiate voice recognition.
+    console.log("Voice input started - full functionality to be implemented");
+    setStarted(true);
+    setTranscriptText("Voice input received: (User's speech would go here)");
+  }, []);
+
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
 
@@ -129,25 +140,51 @@ export default function ConsultationPanel({
                 </p>
               </div>
               
-              {/* TODO: This will be replaced with transcript/editor and tabs in future phases */}
-              <div className="border border-border rounded-lg p-4 min-h-[300px] bg-background/50">
-                <p className="text-sm text-muted-foreground">
-                  Consultation content will appear here...
-                </p>
-              </div>
+              {/* Conditional rendering for prompt or existing content */}
+              {!started && encounter && !isCreating && (
+                <div
+                  className={`transition-opacity duration-300 ease-in-out ${
+                    started ? 'opacity-0' : 'opacity-100'
+                  } flex flex-col items-center justify-center p-8 min-h-[300px]`}
+                >
+                  <p className="text-center text-xl text-foreground/80">
+                    Start typing to begin the consultation...
+                  </p>
+                  <Button variant="secondary" size="lg" className="mt-4" onClick={startVoiceInput}>
+                    <Mic className="mr-2 h-5 w-5" />
+                    Transcribe Audio
+                  </Button>
+                </div>
+              )}
               
-              <div className="flex justify-end gap-2">
+              {started && encounter && !isCreating && (
+                <div
+                  className={`transition-opacity duration-300 ease-in-out delay-150 ${
+                    !started ? 'opacity-0' : 'opacity-100'
+                  } bg-background/50 rounded-lg`} // Removed border, p-4, min-h from here
+                >
+                  <Textarea
+                    value={transcriptText}
+                    onChange={(e) => setTranscriptText(e.target.value)}
+                    placeholder="Document the conversation here..."
+                    className="w-full min-h-[40vh] h-64 resize-none p-4 text-base bg-transparent outline-none border border-border/30 rounded-md focus:ring-1 focus:ring-ring"
+                  />
+                </div>
+              )}
+              
+              <div className="flex justify-end gap-2 mt-6">
                 <Button variant="secondary" onClick={handleClose}>
                   Close
                 </Button>
-                <Button variant="default">
-                  Start Recording
+                <Button variant="default" disabled={!started}>
+                  Save Consultation
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center p-8">
-              <p className="text-sm text-muted-foreground">Failed to create consultation</p>
+            // Fallback if encounter creation fails
+            <div className="flex items-center justify-center p-8 min-h-[300px]">
+              <p className="text-sm text-muted-foreground">Failed to create consultation. Please try again.</p>
             </div>
           )}
         </div>
