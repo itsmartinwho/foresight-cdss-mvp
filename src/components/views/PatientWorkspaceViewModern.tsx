@@ -108,10 +108,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     <Button
       variant={activeTab === k ? "default" : "ghost"}
       size="default"
-      onClick={() => {
-        console.log(`Tab clicked: ${k}, current activeTab: ${activeTab}`);
-        setActiveTab(k);
-      }}
+      onClick={() => setActiveTab(k)}
       className={cn(
         "whitespace-nowrap transition-all duration-200 font-semibold px-6 py-3 h-auto",
         activeTab === k 
@@ -246,8 +243,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         <X className="h-6 w-6 group-hover:text-destructive transition-colors" />
       </Button>
 
-      {/* Header Section */}
-      <div className="space-y-6 border-b border-border/20 pb-8">
+      {/* Patient Overview */}
+      <Section title="Patient Overview" collapsible defaultOpen className="border-b border-border/20 pb-8">
         {/* Patient Header */}
         <div className="flex items-start gap-6">
           <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
@@ -371,7 +368,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
             )}
           </div>
         </div>
-      </div>
+      </Section>
 
       {/* Tab Navigation */}
       <Section title="Patient Data" className="border-b border-border/20 pb-6">
@@ -395,10 +392,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       {/* Content Sections */}
       <div className="space-y-8">
-        {(() => {
-          console.log(`Rendering content sections with activeTab: ${activeTab}`);
-          return null;
-        })()}
         {activeTab === "consultation" && patient && (
           <Section title="Consultation" collapsible defaultOpen contentClassName="space-y-4">
             <ConsultationTab

@@ -2,8 +2,6 @@
 import React from 'react';
 import type { Patient, Encounter, Diagnosis, LabResult, Treatment, EncounterDetailsWrapper } from "@/lib/types";
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TreatmentTabProps {
   patient: Patient | null;
@@ -12,11 +10,19 @@ interface TreatmentTabProps {
 
 export default function TreatmentTab({ patient, allEncounters }: TreatmentTabProps) {
   if (!patient) {
-    return <div className="p-4 text-muted-foreground">No patient data available.</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground text-center">No patient data available.</p>
+      </div>
+    );
   }
 
   if (!allEncounters || allEncounters.length === 0) {
-    return <div className="p-4 text-muted-foreground">No encounter data to display treatments for.</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-muted-foreground text-center">No encounter data to display treatments for.</p>
+      </div>
+    );
   }
 
   const encountersWithTreatments = allEncounters.filter(
@@ -24,34 +30,43 @@ export default function TreatmentTab({ patient, allEncounters }: TreatmentTabPro
   );
 
   if (encountersWithTreatments.length === 0) {
-    return <div className="p-4 text-muted-foreground">No treatments found across all encounters for this patient.</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">No treatments found across all encounters for this patient.</p>
+          <p className="text-sm text-muted-foreground/60">Treatments will appear here once they are prescribed during encounters.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <ScrollArea className="h-full p-1">
-      <div className="space-y-4 p-3">
-        {encountersWithTreatments.map(({ encounter }) => (
-          <Card key={encounter.id} className="shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">
-                Encounter on: {new Date(encounter.scheduledStart).toLocaleString()}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Reason: {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <h4 className="text-sm font-medium mb-2">Treatments for this encounter:</h4>
+    <div className="space-y-6">
+      {encountersWithTreatments.map(({ encounter }) => (
+        <div key={encounter.id} className="bg-muted/30 rounded-lg p-6 space-y-4">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-foreground">
+              Encounter: {new Date(encounter.scheduledStart).toLocaleDateString()}
+            </h3>
+            <p className="text-sm text-muted-foreground font-medium">
+              Reason: {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
+            </p>
+          </div>
+          
+          {encounter.treatments && encounter.treatments.length > 0 ? (
+            <div className="bg-background/50 rounded-md p-4">
               <RenderDetailTable 
                 title='Treatments' 
-                dataArray={encounter.treatments || []} 
+                dataArray={encounter.treatments} 
                 headers={['Drug', 'Status', 'Rationale']} 
                 columnAccessors={['drug', 'status', 'rationale']} 
               />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </ScrollArea>
+            </div>
+          ) : (
+            <p className="text-muted-foreground italic">No treatments recorded for this encounter.</p>
+          )}
+        </div>
+      ))}
+    </div>
   );
 } 
