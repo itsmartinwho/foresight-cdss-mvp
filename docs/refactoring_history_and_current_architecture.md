@@ -244,7 +244,7 @@ The Foresight CDSS now operates on a FHIR-aligned database schema and a robust c
      - `известныеСимптомы` → `knownSymptoms`
      - `базовыеСимптомы` (undefined) → `basicSymptoms`
 
-### Post-Deployment Runtime Issues (December 2024):
+### Post-Deployment Runtime Issues (May 2024):
 
 10. **Consultation Tab Visibility Issue:**
     - **Problem:** Consultation tab was not visible on initial page load, only appeared after navigating to another tab and back

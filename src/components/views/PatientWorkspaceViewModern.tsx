@@ -245,131 +245,130 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       {/* Header Section */}
       <div className="space-y-6 border-b border-border/20 pb-8">
-
-          {/* Patient Header */}
-          <div className="flex items-start gap-6">
-            <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
-              <AvatarImage src={patient.photo} alt={patient.name} />
-              <AvatarFallback className="text-3xl bg-neon/20 text-neon font-bold">
-                {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 space-y-4">
-              <div>
-                <h1 className="text-step-3 font-bold text-foreground mb-2">{patient.name}</h1>
+        {/* Patient Header */}
+        <div className="flex items-start gap-6">
+          <Avatar className="h-20 w-20 border-2 border-neon/30 shadow-lg">
+            <AvatarImage src={patient.photo} alt={patient.name} />
+            <AvatarFallback className="text-3xl bg-neon/20 text-neon font-bold">
+              {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 space-y-4">
+            <div>
+              <h1 className="text-step-3 font-bold text-foreground mb-2">{patient.name}</h1>
+              
+              {/* Demographics Grid */}
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
+                <div className="font-semibold text-muted-foreground">Date of Birth:</div>
+                <div className="font-medium text-foreground">{formatDate(patient.dateOfBirth)}</div>
                 
-                {/* Demographics Grid */}
-                <div className="grid grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
-                  <div className="font-semibold text-muted-foreground">Date of Birth:</div>
-                  <div className="font-medium text-foreground">{formatDate(patient.dateOfBirth)}</div>
-                  
-                  <div className="font-semibold text-muted-foreground">Age:</div>
-                  <div className="font-medium text-foreground">{calculateAge(patient.dateOfBirth)} years</div>
-                  
-                  <div className="font-semibold text-muted-foreground">Gender:</div>
-                  <div className="font-medium text-foreground">{patient.gender || 'N/A'}</div>
-                  
-                  {patient.ethnicity && (
-                    <>
-                      <div className="font-semibold text-muted-foreground">Ethnicity:</div>
-                      <div className="font-medium text-foreground">{patient.ethnicity}</div>
-                    </>
-                  )}
-                  
-                  {patient.race && (
-                    <>
-                      <div className="font-semibold text-muted-foreground">Race:</div>
-                      <div className="font-medium text-foreground">{patient.race}</div>
-                    </>
-                  )}
-                  
-                  {patient.id && (
-                    <>
-                      <div className="font-semibold text-muted-foreground">Patient ID:</div>
-                      <div className="font-mono text-sm text-foreground bg-muted/50 px-2 py-1 rounded">{patient.id}</div>
-                    </>
-                  )}
-                </div>
+                <div className="font-semibold text-muted-foreground">Age:</div>
+                <div className="font-medium text-foreground">{calculateAge(patient.dateOfBirth)} years</div>
+                
+                <div className="font-semibold text-muted-foreground">Gender:</div>
+                <div className="font-medium text-foreground">{patient.gender || 'N/A'}</div>
+                
+                {patient.ethnicity && (
+                  <>
+                    <div className="font-semibold text-muted-foreground">Ethnicity:</div>
+                    <div className="font-medium text-foreground">{patient.ethnicity}</div>
+                  </>
+                )}
+                
+                {patient.race && (
+                  <>
+                    <div className="font-semibold text-muted-foreground">Race:</div>
+                    <div className="font-medium text-foreground">{patient.race}</div>
+                  </>
+                )}
+                
+                {patient.id && (
+                  <>
+                    <div className="font-semibold text-muted-foreground">Patient ID:</div>
+                    <div className="font-mono text-sm text-foreground bg-muted/50 px-2 py-1 rounded">{patient.id}</div>
+                  </>
+                )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Action Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
-                <div className="space-y-2">
-                  <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground">
-                    Select Consultation:
-                  </label>
-                  <Select
-                    value={selectedEncounterForConsultation?.id || ""}
-                    onValueChange={(value) => {
-                      const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
-                      setSelectedEncounterForConsultation(foundEncounter);
-                      if(foundEncounter) setActiveTab('consultation');
-                    }}
-                    disabled={showDeleteConfirmation || isStartingNewConsultation}
-                  >
-                    <SelectTrigger className="w-72 h-11">
-                      <SelectValue placeholder="Select an encounter..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeEncounterDetails.map((ew) => (
-                        <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
-                          {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <Button
-                variant="default"
-                size="lg"
-                onClick={async () => {
-                  if (isStartingNewConsultation) {
-                    setIsStartingNewConsultation(false);
-                    if (activeEncounterDetails && activeEncounterDetails.length > 0) {
-                      const previouslySelectedId = selectedEncounterForConsultation?.id;
-                      setSelectedEncounterForConsultation(null); 
-                      const reselectEncounter = previouslySelectedId 
-                        ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
-                        : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
-                      setSelectedEncounterForConsultation(reselectEncounter || null);
-                    } else {
-                      setSelectedEncounterForConsultation(null);
-                    }
-                  } else {
-                    setSelectedEncounterForConsultation(null); 
-                    setIsStartingNewConsultation(true);
-                    setActiveTab('consultation');
-                  }
-                }}
-                className="font-semibold"
-              >
-                {isStartingNewConsultation ? <X className="mr-2 h-5 w-5"/> : <PlusCircle className="mr-2 h-5 w-5"/>}
-                {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
-              </Button>
-              
-              {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
-                  size="default"
-                  className="font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
+        {/* Action Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            {!isStartingNewConsultation && activeEncounterDetails.length > 0 && (
+              <div className="space-y-2">
+                <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground">
+                  Select Consultation:
+                </label>
+                <Select
+                  value={selectedEncounterForConsultation?.id || ""}
+                  onValueChange={(value) => {
+                    const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
+                    setSelectedEncounterForConsultation(foundEncounter);
+                    if(foundEncounter) setActiveTab('consultation');
+                  }}
+                  disabled={showDeleteConfirmation || isStartingNewConsultation}
                 >
-                  <Trash2 className="mr-2 h-4 w-4 group-hover:h-5 group-hover:w-5 transition-all duration-200" />
-                  Delete
-                </Button>
-              )}
-            </div>
+                  <SelectTrigger className="w-72 h-11">
+                    <SelectValue placeholder="Select an encounter..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeEncounterDetails.map((ew) => (
+                      <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
+                        {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={async () => {
+                if (isStartingNewConsultation) {
+                  setIsStartingNewConsultation(false);
+                  if (activeEncounterDetails && activeEncounterDetails.length > 0) {
+                    const previouslySelectedId = selectedEncounterForConsultation?.id;
+                    setSelectedEncounterForConsultation(null); 
+                    const reselectEncounter = previouslySelectedId 
+                      ? activeEncounterDetails.find(ew => ew.encounter.id === previouslySelectedId && !ew.encounter.isDeleted)?.encounter
+                      : activeEncounterDetails.find(ew => !ew.encounter.isDeleted)?.encounter;
+                    setSelectedEncounterForConsultation(reselectEncounter || null);
+                  } else {
+                    setSelectedEncounterForConsultation(null);
+                  }
+                } else {
+                  setSelectedEncounterForConsultation(null); 
+                  setIsStartingNewConsultation(true);
+                  setActiveTab('consultation');
+                }
+              }}
+              className="font-semibold"
+            >
+              {isStartingNewConsultation ? <X className="mr-2 h-5 w-5"/> : <PlusCircle className="mr-2 h-5 w-5"/>}
+              {isStartingNewConsultation ? "Cancel New Consultation" : "New Consultation"}
+            </Button>
+            
+            {selectedEncounterForConsultation && !showDeleteConfirmation && !isStartingNewConsultation && (
+              <Button 
+                variant="ghost" 
+                onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
+                size="default"
+                className="font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
+              >
+                <Trash2 className="mr-2 h-4 w-4 group-hover:h-5 group-hover:w-5 transition-all duration-200" />
+                Delete
+              </Button>
+            )}
           </div>
         </div>
+      </div>
 
       {/* Tab Navigation */}
       <Section title="Patient Data" className="border-b border-border/20 pb-6">

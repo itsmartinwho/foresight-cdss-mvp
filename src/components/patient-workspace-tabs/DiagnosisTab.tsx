@@ -53,7 +53,7 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
           {diagnoses.length > 0 ? (
             <div className="space-y-3">
               {diagnoses.map((dx, index) => (
-                <div key={`${encounter.id}-dx-${dx.code || index}`} className="bg-background/50 rounded-md p-4 space-y-2">
+                <div key={`${encounter.id}-dx-${index}-${dx.code || 'unknown'}`} className="bg-background/50 rounded-md p-4 space-y-2">
                   <p className="font-semibold text-foreground">{dx.description || "No description"}</p>
                   {dx.code && (
                     <p className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded w-fit">
