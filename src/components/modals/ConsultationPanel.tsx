@@ -295,25 +295,6 @@ export default function ConsultationPanel({
               )}
 
               {/* Conditional rendering for prompt or existing content */}
-                  >
-                    Transcript
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'diagnosis' ? 'default' : 'ghost'} 
-                    onClick={() => setActiveTab('diagnosis')}
-                  >
-                    Diagnosis
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'treatment' ? 'default' : 'ghost'} 
-                    onClick={() => setActiveTab('treatment')}
-                  >
-                    Treatment
-                  </Button>
-                </div>
-              )}
-
-              {/* Conditional rendering for prompt or existing content */}
               {!started && encounter && !isCreating && (
                 <div
                   className={`transition-opacity duration-300 ease-in-out ${
