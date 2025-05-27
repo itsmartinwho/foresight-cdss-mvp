@@ -68,7 +68,6 @@ export default function ConsultationPanel({
   
   // Refs
   const transcriptTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const encounterCreatedRef = useRef<boolean>(false);
 
   // Ensure we only render on client side
   useEffect(() => {
@@ -168,31 +167,23 @@ export default function ConsultationPanel({
   }, [toast, patient.id, encounter?.id, transcriptText]);
 
   const createEncounter = useCallback(async () => {
-    if (!patient?.id) return;
-    
-    // Prevent multiple concurrent creations
-    if (isCreating) {
-      console.log('Encounter creation already in progress, skipping...');
-      return;
-    }
+    if (!patient?.id || isCreating) return;
     
     setIsCreating(true);
     try {
       const newEncounter = await supabaseDataService.createNewEncounter(patient.id, {
-        reason: '', // Will be filled from transcript later
-        scheduledStart: new Date().toISOString(),
-        duration: 30, // Default duration
+        reason: reason || undefined,
+        scheduledStart: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
+        duration: duration || undefined,
       });
       
       setEncounter(newEncounter);
-      console.log('Encounter created successfully:', newEncounter.id);
       
       if (onConsultationCreated) {
         onConsultationCreated(newEncounter);
       }
     } catch (error) {
       console.error('Failed to create encounter:', error);
-      encounterCreatedRef.current = false; // Reset so user can try again
       toast({
         title: "Error",
         description: `Failed to create consultation encounter: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -202,7 +193,7 @@ export default function ConsultationPanel({
     } finally {
       setIsCreating(false);
     }
-  }, [patient?.id, onConsultationCreated, onClose, toast]);
+  }, [patient?.id, isCreating, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
 
   // Reset form when panel opens and create encounter
   useEffect(() => {
@@ -219,18 +210,10 @@ export default function ConsultationPanel({
       setPlanGenerated(false);
       setTabBarVisible(false);
       setIsGeneratingPlan(false);
-      encounterCreatedRef.current = false;
-      
-      // Automatically create encounter when panel opens (only once per session)
-      if (!encounterCreatedRef.current) {
-        encounterCreatedRef.current = true;
-        createEncounter();
-      }
-    } else {
-      // Reset the ref when panel closes
-      encounterCreatedRef.current = false;
+      // Automatically create encounter when panel opens
+      createEncounter();
     }
-  }, [isOpen]);
+  }, [isOpen, createEncounter]);
 
   const handleClose = useCallback(async () => {
     if (!encounter?.id) {
