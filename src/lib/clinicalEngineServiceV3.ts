@@ -151,19 +151,19 @@ Latest Encounter Transcript: ${transcript}
 Please generate differential diagnoses based on this information.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o", // Fixed: Using actual OpenAI model name
+        model: "gpt-4.1-mini", // Corrected: Using the actual model name you specified
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.3,
+        temperature: 1, // Set to 1 as requested
         max_tokens: 2000,
       });
 
       const response = completion.choices[0].message.content;
       
       if (!response) {
-        throw new Error('No response from GPT-4o for differential diagnoses');
+        throw new Error('No response from GPT-4.1-mini for differential diagnoses');
       }
 
       // Parse JSON response
@@ -216,19 +216,19 @@ Differential Diagnoses from Colleague: ${JSON.stringify(differentialDiagnoses, n
 Please provide your primary diagnosis and treatment plan.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini", // Fixed: Using actual OpenAI model name
+        model: "o4-mini", // Corrected: Using the actual model name you specified
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.2,
-        max_tokens: 2000,
+        temperature: 1, // Set to 1 as requested
+        max_completion_tokens: 2000, // Fixed: o4-mini uses max_completion_tokens instead of max_tokens
       });
 
       const response = completion.choices[0].message.content;
       
       if (!response) {
-        throw new Error('No response from gpt-4o-mini for diagnosis and treatment');
+        throw new Error('No response from o4-mini for diagnosis and treatment');
       }
 
       const result = JSON.parse(response);
@@ -321,7 +321,7 @@ Please provide your primary diagnosis and treatment plan.`;
   ): Promise<string> {
     try {
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini", // Fixed: Using actual OpenAI model name
+        model: "o4-mini", // Corrected: Using the actual model name you specified
         messages: [
           { 
             role: "system", 
@@ -336,8 +336,8 @@ Diagnosis: ${diagnosticResult.diagnosisName}
 Please extract the requested information.`
           }
         ],
-        temperature: 0.1,
-        max_tokens: 100,
+        temperature: 1, // Set to 1 as requested
+        max_completion_tokens: 100, // Fixed: o4-mini uses max_completion_tokens instead of max_tokens
       });
 
       return completion.choices[0].message.content?.trim() || '';

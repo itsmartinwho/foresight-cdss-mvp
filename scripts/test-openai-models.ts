@@ -7,11 +7,11 @@ async function testOpenAIModels() {
     apiKey: process.env.OPENAI_API_KEY || '',
   });
 
-  // Test GPT-4o (for differential diagnosis)
+  // Test GPT-4.1-mini (for differential diagnosis)
   try {
-    console.log('Testing gpt-4o model...');
-    const gpt4oResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
+    console.log('Testing gpt-4.1-mini model...');
+    const gpt41MiniResponse = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
       messages: [
         { role: "system", content: "You are a medical assistant. Return only valid JSON." },
         { 
@@ -20,22 +20,22 @@ async function testOpenAIModels() {
 [{"name": "Upper respiratory infection", "likelihood": "High", "keyFactors": "Common viral symptoms"}]` 
         }
       ],
-      temperature: 0.1,
+      temperature: 1,
       max_tokens: 200,
     });
-    console.log('✅ gpt-4o is working!');
-    console.log('Response:', gpt4oResponse.choices[0].message.content);
+    console.log('✅ gpt-4.1-mini is working!');
+    console.log('Response:', gpt41MiniResponse.choices[0].message.content);
     
   } catch (error) {
-    console.error('❌ gpt-4o failed:', error);
+    console.error('❌ gpt-4.1-mini failed:', error);
     return false;
   }
 
-  // Test GPT-4o-mini (for primary diagnosis)
+  // Test o4-mini (for primary diagnosis)
   try {
-    console.log('\nTesting gpt-4o-mini model...');
-    const gpt4oMiniResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    console.log('\nTesting o4-mini model...');
+    const o4MiniResponse = await openai.chat.completions.create({
+      model: "o4-mini",
       messages: [
         { role: "system", content: "You are a medical assistant. Return only valid JSON." },
         { 
@@ -44,14 +44,14 @@ async function testOpenAIModels() {
 {"diagnosisName": "Viral upper respiratory infection", "diagnosisCode": "J06.9", "confidence": 0.8, "supportingEvidence": ["Fever", "Cough"], "recommendedTests": [], "recommendedTreatments": ["Rest", "Fluids"], "clinicalTrialMatches": []}` 
         }
       ],
-      temperature: 0.1,
-      max_tokens: 300,
+      temperature: 1,
+      max_completion_tokens: 300,
     });
-    console.log('✅ gpt-4o-mini is working!');
-    console.log('Response:', gpt4oMiniResponse.choices[0].message.content);
+    console.log('✅ o4-mini is working!');
+    console.log('Response:', o4MiniResponse.choices[0].message.content);
     
   } catch (error) {
-    console.error('❌ gpt-4o-mini failed:', error);
+    console.error('❌ o4-mini failed:', error);
     return false;
   }
 
