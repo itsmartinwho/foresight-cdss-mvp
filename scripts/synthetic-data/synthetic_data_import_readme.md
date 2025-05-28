@@ -1,182 +1,97 @@
-# Synthetic Data Import Scripts and Instructions
+# Synthetic Data Management Scripts and Documentation
 
-This folder contains all the necessary scripts and documentation for importing synthetic clinical data into the Foresight CDSS MVP database.
+This folder contains consolidated, powerful scripts for managing synthetic clinical data in the Foresight CDSS MVP database. All functionality has been merged into two comprehensive tools that replace the previous collection of individual scripts.
+
+## 🛠️ Consolidated Scripts
+
+### `synthetic-data-manager.js` - Main Data Operations
+Comprehensive tool for importing, cleaning, and processing synthetic data:
+- **Data Import**: Full synthetic data processing with validation
+- **Transcript Updates**: Specialized transcript-only imports
+- **Data Cleaning**: Automatic JSON cleaning and patient name correction
+- **Validation**: Post-import verification and integrity checks
+- **Batch Processing**: Memory-efficient processing of large datasets
+
+### `data-utilities.js` - Analysis and Maintenance
+Powerful utilities for data analysis, investigation, and cleanup:
+- **Quality Analysis**: Comprehensive encounter data quality assessment
+- **Patient Investigation**: Deep-dive analysis of specific patients
+- **Encounter Investigation**: Detailed analysis of individual encounters
+- **Cleanup Operations**: Safe removal of fake/empty encounters
+- **Orphan Data Repair**: Fix broken relationships in data
+
+## 📁 Directory Structure
+
+```
+scripts/synthetic-data/
+├── synthetic-data-manager.js     # Main data operations
+├── data-utilities.js             # Analysis and maintenance tools
+├── extract_subset.py             # Data extraction utility
+├── data_export_query.sql         # Database query templates
+├── docs/                         # Documentation and guides
+│   ├── IMPORT_COMPLETION_SUMMARY.md
+│   ├── synthetic_data_generation_guide.md
+│   └── synthetic_data_import_process.md
+└── legacy/                       # Archived one-time migration scripts
+    ├── regenerate-lost-encounters.js
+    ├── fix_patient_ids_and_redistribute_encounters.js
+    └── generate_new_patient_ids.js
+```
 
 ## 📅 Import History
 
 - **May 26, 2025:** Initial successful import wave (11 records)
 - **May 27, 2025:** Final wave import (synthetic-data11: 28 encounters, synthetic-data12: 63 transcript updates)
+- **January 2025:** Script consolidation and optimization
 - **Total:** 100+ encounters enriched with comprehensive clinical data
-
-## 🛠️ Available Scripts
-
-### Core Import Scripts
-1. **`import_synthetic_data.js`** - Main import script for standard synthetic data
-2. **`import_transcript_data.js`** - Specialized script for transcript-only updates
-3. **`clean_synthetic_data.js`** - Data cleaning and validation
-4. **`clean_transcript_data.js`** - Transcript data cleaning
-5. **`correct_inconsistencies.js`** - Patient name correction and data consistency
-6. **`validate_import_results.js`** - Post-import validation and verification
-
-### Cleanup and Maintenance Scripts
-7. **`cleanup-fake-consultations.js`** - Comprehensive tool for cleaning up fake/empty encounters
-8. **`run_synthetic_data_import.js`** - Orchestration script for complete import process
 
 ## 🚀 Quick Start Guide
 
 ### Standard Synthetic Data Import
 ```bash
-# 1. Place your synthetic data file in public/data/
-cp your-file.json public/data/
+# 1. Clean and import data in one step
+node scripts/synthetic-data/synthetic-data-manager.js import your-file.json
 
-# 2. Clean the data
-node scripts/synthetic-data/clean_synthetic_data.js public/data/your-file.json public/data/your-file-cleaned.json
+# 2. Dry run first to see what would happen
+node scripts/synthetic-data/synthetic-data-manager.js import your-file.json --dry-run
 
-# 3. Correct inconsistencies (patient names, etc.)
-node scripts/synthetic-data/correct_inconsistencies.js public/data/your-file-cleaned.json public/data/your-file-corrected.json
+# 3. Import with detailed error logging
+node scripts/synthetic-data/synthetic-data-manager.js import your-file.json --error-log errors.json
 
-# 4. Import to database
-node scripts/synthetic-data/import_synthetic_data.js public/data/your-file-corrected.json
-
-# 5. Validate results
-node scripts/synthetic-data/validate_import_results.js
+# 4. Validate results
+node scripts/synthetic-data/synthetic-data-manager.js validate
 ```
 
-### Transcript-Only Import
+### Advanced Data Processing
 ```bash
-# 1. Clean transcript data
-node scripts/synthetic-data/clean_transcript_data.js public/data/transcript-file.json public/data/transcript-file-cleaned.json
+# Clean raw data manually
+node scripts/synthetic-data/synthetic-data-manager.js clean raw-data.json cleaned-data.json
 
-# 2. Import transcript updates
-node scripts/synthetic-data/import_transcript_data.js public/data/transcript-file-cleaned.json
+# Import with custom options
+node scripts/synthetic-data/synthetic-data-manager.js import cleaned-data.json --skip-validation --error-log import-log.json
+
+# Import transcript updates only
+node scripts/synthetic-data/synthetic-data-manager.js transcript transcript-updates.json
 ```
 
-### Cleanup Fake/Empty Encounters
+### Data Analysis and Maintenance
 ```bash
-# Analyze encounter quality
-node scripts/synthetic-data/cleanup-fake-consultations.js --analyze-only
+# Analyze data quality
+node scripts/synthetic-data/data-utilities.js analyze
 
-# Clean up recent duplicates (dry run)
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE
+# Investigate specific patients
+node scripts/synthetic-data/data-utilities.js investigate-patients "Bob Jones" "Alice Smith"
 
-# Execute cleanup
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE --execute
-```
+# Investigate specific encounter
+node scripts/synthetic-data/data-utilities.js investigate-encounter 12345678-1234-1234-1234-123456789012
 
-## 🧹 Comprehensive Fake Consultation Cleanup Tool
+# Clean up fake encounters (dry run first!)
+node scripts/synthetic-data/data-utilities.js cleanup --strategy CONSERVATIVE --dry-run
+node scripts/synthetic-data/data-utilities.js cleanup --strategy CONSERVATIVE --execute --delete-related
 
-The `cleanup-fake-consultations.js` script provides multiple strategies for identifying and removing fake encounters from the database. It combines functionality from several previous cleanup scripts into one comprehensive tool.
-
-### Cleanup Strategies
-
-#### VERY_RECENT
-- **Time Window**: Last 10 minutes
-- **Grouping Window**: Within 1 second
-- **Use Case**: Clean up duplicates from immediate testing/debugging
-
-#### RECENT
-- **Time Window**: Last 6 hours  
-- **Grouping Window**: Within 10 seconds
-- **Use Case**: Clean up artifacts from recent testing sessions
-
-#### CONSERVATIVE (Default)
-- **Time Window**: Last 24 hours
-- **Grouping Window**: Within 5 seconds  
-- **Use Case**: Safe cleanup of recent fake encounters
-
-#### TARGETED
-- **Time Window**: All time
-- **Grouping Window**: Within 5 seconds
-- **Use Case**: Clean up specific target patients defined in the script
-
-### Cleanup Tool Usage
-
-#### Basic Commands
-```bash
-# Show help
-node scripts/synthetic-data/cleanup-fake-consultations.js --help
-
-# Analyze encounter quality only (no cleanup)
-node scripts/synthetic-data/cleanup-fake-consultations.js --analyze-only
-
-# Dry run with default conservative strategy
-node scripts/synthetic-data/cleanup-fake-consultations.js
-
-# Dry run with specific strategy
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=VERY_RECENT
-
-# Execute cleanup (actually delete encounters)
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE --execute
-```
-
-#### Advanced Examples
-```bash
-# Quick cleanup of very recent duplicates
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=VERY_RECENT --execute
-
-# Target specific patients for cleanup
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=TARGETED --execute
-
-# Analyze quality of recent encounters
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=RECENT --analyze-only
-```
-
-### How the Cleanup Tool Works
-
-#### 1. Encounter Quality Assessment
-The tool analyzes encounters to determine if they're likely fake based on:
-- **Transcript Length**: Must be >100 characters to be considered meaningful
-- **SOAP Note Length**: Must be >50 characters to be considered meaningful  
-- **Reason Code/Display**: Presence of visit reason information
-- **Treatments**: Presence of treatment data
-- **Observations**: Presence of clinical observations
-- **Prior Auth**: Presence of prior authorization data
-
-An encounter is considered "fake" if it has ≤1 meaningful fields populated.
-
-#### 2. Grouping Strategy
-Fake encounters are grouped by:
-- **Patient**: Same patient
-- **Time Window**: Created within the strategy's grouping window (1-10 seconds)
-- **Succession**: Must be part of a group of 2+ fake encounters
-
-#### 3. Conservative Deletion
-The tool only deletes encounters that are:
-- ✅ Identified as fake (minimal meaningful data)
-- ✅ Part of a group (2+ fake encounters)  
-- ✅ Created within seconds of each other
-- ✅ Match the selected strategy criteria
-
-**Isolated fake encounters are NOT deleted** for safety.
-
-### Safety Features
-- **Dry Run Mode**: Default mode shows what would be deleted without making changes
-- **Conservative Grouping**: Only deletes encounters created in rapid succession
-- **Batch Processing**: Deletes in batches of 50 to avoid database overload
-- **Detailed Logging**: Shows exactly which encounters will be deleted
-
-### Configuration
-
-#### Target Patients
-The `TARGETED` strategy focuses on specific patients defined in the script:
-```javascript
-const TARGET_PATIENTS = [
-  'Bob Jones', 'James Lee', 'Dorothy Robinson',
-  'Alice Smith', 'Maria Gomez', 'Justin Rodriguez'
-];
-```
-
-#### Custom Strategies
-New cleanup strategies can be added to the `CLEANUP_STRATEGIES` object:
-```javascript
-const CLEANUP_STRATEGIES = {
-  CUSTOM: {
-    name: 'Custom Strategy',
-    timeWindow: 2 * 60 * 60 * 1000, // 2 hours
-    groupingWindow: 30 * 1000, // 30 seconds
-    description: 'Custom cleanup for specific needs'
-  }
-};
+# Fix orphaned data
+node scripts/synthetic-data/data-utilities.js fix-orphans --dry-run
+node scripts/synthetic-data/data-utilities.js fix-orphans --execute
 ```
 
 ## 📋 Data Format Requirements
@@ -221,89 +136,100 @@ const CLEANUP_STRATEGIES = {
 }
 ```
 
+## 🔧 Command Reference
+
+### Synthetic Data Manager Commands
+- `import <file>` - Import synthetic data with full processing
+- `transcript <file>` - Import transcript updates only
+- `clean <input> <output>` - Clean raw data manually
+- `validate` - Validate recent import results
+
+### Data Utilities Commands
+- `analyze` - Analyze encounter data quality
+- `investigate-patients [names...]` - Investigate specific patients
+- `investigate-encounter <id>` - Investigate specific encounter
+- `cleanup --strategy <name>` - Clean up fake encounters
+- `fix-orphans` - Fix orphaned data records
+
+### Common Options
+- `--dry-run` - Show what would be done without making changes
+- `--execute` - Actually perform destructive operations
+- `--skip-cleaning` - Skip data cleaning during import
+- `--skip-validation` - Skip UUID validation during import
+- `--error-log <file>` - Save detailed error log
+- `--strategy <name>` - Cleanup strategy (VERY_RECENT, RECENT, CONSERVATIVE, TARGETED)
+- `--delete-related` - Delete related conditions and lab results during cleanup
+
 ## 🔧 Common Issues and Solutions
 
 ### Interrupted JSON Files
-If your JSON file was interrupted during generation:
-1. The scripts automatically detect incomplete records
-2. Only complete, valid records are imported
-3. No manual intervention required
+The scripts automatically detect and handle incomplete JSON records. Only complete, valid records are imported.
 
 ### Patient-Encounter Mismatches
-- Validation errors for mismatched patient-encounter pairs are expected
-- These are logged but don't stop the import process
-- Check logs for details if needed
+Validation errors for mismatched patient-encounter pairs are logged but don't stop the import process.
 
 ### Database Connection Issues
 - Ensure your `.env.local` file has correct Supabase credentials
 - Verify network connectivity to Supabase
 
 ### Fake/Empty Encounters from Testing
-If you notice empty encounters created during testing or due to bugs:
-1. Use the comprehensive cleanup tool: `cleanup-fake-consultations.js`
-2. Start with analysis mode: `--analyze-only`
-3. Choose appropriate strategy based on timeframe
-4. Always run in dry-run mode first before executing cleanup
-
-### Cleanup Tool Troubleshooting
-
-#### No Encounters Found
-- Check if the time window includes the problematic encounters
-- Verify target patients exist in the database
-- Use `--analyze-only` to see overall encounter statistics
-
-#### Permission Errors
-- Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in `.env.local`
-- Verify the service role has delete permissions on the encounters table
-
-#### Unexpected Results
-- Always run in dry-run mode first to preview changes
-- Use the most conservative strategy initially
-- Check the encounter quality analysis before cleanup
+Use the comprehensive data utilities to identify and clean up empty encounters:
+1. First analyze: `node data-utilities.js analyze`
+2. Then cleanup: `node data-utilities.js cleanup --strategy CONSERVATIVE --dry-run`
+3. Execute if satisfied: `node data-utilities.js cleanup --strategy CONSERVATIVE --execute`
 
 ## 📊 Expected Success Rates
 - **Standard imports:** 90-100% success rate
 - **Transcript imports:** 100% success rate (if properly formatted)
 - **Validation errors:** 2-5% due to data mismatches (normal)
-- **Cleanup operations:** 95-100% success rate for identified fake encounters
 
 ## 🧹 Cleanup After Import
 
 After successful import, clean up temporary files:
 ```bash
-# Remove all synthetic data files from public/data/
+# Remove synthetic data files from public/data/
 rm public/data/synthetic-data*.json
 
 # Remove import log files
-rm scripts/import_errors*.log
+rm scripts/synthetic-data/*errors*.log scripts/synthetic-data/*-cleaned.json
 
 # Clean up any fake encounters from testing (if needed)
-node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=RECENT --execute
+node scripts/synthetic-data/data-utilities.js cleanup --strategy RECENT --execute
 ```
-
-## 📚 Related Documentation
-
-- **Complete Process Guide:** `/docs/synthetic_data_import_process.md`
-- **Generation Guide:** `/docs/synthetic_data_generation_guide.md`
-- **Import History:** `/docs/IMPORT_COMPLETION_SUMMARY.md`
-- **Database Schema:** `/scripts/schema.sql`
 
 ## 🎯 Best Practices
 
-### Import Best Practices
-1. **Always test with dry-run mode first** (if available in script)
+1. **Always test with dry-run mode first**
 2. **Backup database before large imports**
 3. **Run validation scripts after import**
 4. **Keep logs for troubleshooting**
 5. **Clean up data files after successful import**
+6. **Use appropriate cleanup strategies** (start conservative)
+7. **Investigate before cleaning** to understand what will be affected
 
-### Cleanup Best Practices
-1. **Always start with analysis**: Use `--analyze-only` first
-2. **Use dry run mode**: Preview changes before executing  
-3. **Start conservative**: Begin with shorter time windows and tighter grouping
-4. **Monitor results**: Check the deletion reports carefully
-5. **Run iteratively**: May need multiple runs to catch all issues
-6. **Backup first**: Consider database backups before major cleanups
+## 📚 Advanced Features
+
+### Automatic Data Cleaning
+The scripts automatically:
+- Fix malformed JSON syntax
+- Correct patient name inconsistencies in transcripts
+- Validate and clean data structures
+- Convert data types for database compatibility
+
+### Intelligent Encounter Analysis
+The data utilities can:
+- Identify fake vs. real encounters based on content analysis
+- Group encounters by creation time to find bulk testing artifacts
+- Analyze patient data patterns and relationships
+- Provide detailed investigations of individual records
+
+### Safe Cleanup Operations
+All cleanup operations:
+- Default to dry-run mode for safety
+- Provide detailed analysis before deletion
+- Use soft-delete for encounters (mark as deleted vs. permanent removal)
+- Allow related data cleanup (conditions, lab results)
+- Support multiple cleanup strategies based on timeframes
 
 ## 🔄 For Future Development
 
@@ -311,29 +237,77 @@ When adding new synthetic data:
 1. Follow the established JSON format patterns
 2. Ensure FHIR compliance for medical codes
 3. Include comprehensive patient narratives
-4. Test with small batches first
-5. Update this documentation with any new patterns or issues discovered
+4. Test with small batches first using dry-run mode
+5. Validate results after import
+6. Update this documentation with any new patterns discovered
 
-### Environment Variables
+## 📁 Legacy Script Migration
 
-Required environment variables in `.env.local`:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-# OR
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+The following individual scripts have been consolidated and archived:
+
+**Consolidated into `synthetic-data-manager.js`:**
+- `import_synthetic_data.js` ✅ Deleted (fully integrated)
+- `import_transcript_data.js` ✅ Deleted (fully integrated)
+- `clean_synthetic_data.js` ✅ Deleted (fully integrated)
+- `clean_transcript_data.js` ✅ Deleted (fully integrated)
+- `correct_inconsistencies.js` ✅ Deleted (fully integrated)
+- `validate_import_results.js` ✅ Deleted (fully integrated)
+- `run_synthetic_data_import.js` ✅ Deleted (fully integrated)
+
+**Consolidated into `data-utilities.js`:**
+- `cleanup-fake-consultations.js` ✅ Deleted (fully integrated)
+- `investigate_duplicate_encounters.js` ✅ Deleted (fully integrated)
+- `fix_orphaned_encounters.js` ✅ Deleted (fully integrated)
+- `fix_encounter_patient_links.js` ✅ Deleted (fully integrated)
+- `test_specific_encounter.js` ✅ Deleted (fully integrated)
+- `check_patient_name.js` ✅ Deleted (fully integrated)
+- `delete_specific_encounter.js` ✅ Deleted (functionality in data-utilities)
+
+**Archived in `legacy/` folder:**
+- `regenerate-lost-encounters.js` 📁 Archived (one-time migration)
+- `fix_patient_ids_and_redistribute_encounters.js` 📁 Archived (one-time migration)
+- `generate_new_patient_ids.js` 📁 Archived (one-time migration)
+
+**Organized in `docs/` folder:**
+- `IMPORT_COMPLETION_SUMMARY.md` 📁 Moved to docs/
+- `synthetic_data_generation_guide.md` 📁 Moved to docs/
+- `synthetic_data_import_process.md` 📁 Moved to docs/
+
+**Standalone utilities:**
+- `extract_subset.py` - Data extraction utility
+- `data_export_query.sql` - Database query templates
+
+## 🎯 Quick Migration Guide
+
+If you were using any of the old individual scripts, here are the new commands:
+
+### Old vs New Command Reference
+
+```bash
+# OLD: node import_synthetic_data.js data.json
+# NEW: 
+node synthetic-data-manager.js import data.json
+
+# OLD: node import_transcript_data.js transcripts.json  
+# NEW:
+node synthetic-data-manager.js transcript transcripts.json
+
+# OLD: node cleanup-fake-consultations.js
+# NEW:
+node data-utilities.js cleanup --strategy CONSERVATIVE --dry-run
+
+# OLD: node validate_import_results.js
+# NEW:
+node synthetic-data-manager.js validate
+
+# OLD: node investigate_duplicate_encounters.js
+# NEW: 
+node data-utilities.js analyze
+node data-utilities.js investigate-patients "Patient Name"
 ```
-
-## 📈 Script Evolution History
-
-This documentation consolidates several previous cleanup scripts:
-- `cleanup_duplicate_encounters.js` ✅ Merged into `cleanup-fake-consultations.js`
-- `cleanup-very-recent-duplicates.js` ✅ Merged into `cleanup-fake-consultations.js`
-- `conservative-cleanup.js` ✅ Merged into `cleanup-fake-consultations.js`
-- `analyze-encounter-quality.js` ✅ Merged into `cleanup-fake-consultations.js`
 
 ---
 
-**Last Updated:** May 27, 2025  
+**Last Updated:** January 2025  
 **Contact:** Development Team  
-**Status:** Production Ready ✅ 
+**Status:** Production Ready ✅ (Fully Consolidated & Organized) 
