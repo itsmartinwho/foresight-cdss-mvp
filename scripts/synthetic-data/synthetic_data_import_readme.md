@@ -63,6 +63,122 @@ node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIV
 node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE --execute
 ```
 
+## 🧹 Comprehensive Fake Consultation Cleanup Tool
+
+The `cleanup-fake-consultations.js` script provides multiple strategies for identifying and removing fake encounters from the database. It combines functionality from several previous cleanup scripts into one comprehensive tool.
+
+### Cleanup Strategies
+
+#### VERY_RECENT
+- **Time Window**: Last 10 minutes
+- **Grouping Window**: Within 1 second
+- **Use Case**: Clean up duplicates from immediate testing/debugging
+
+#### RECENT
+- **Time Window**: Last 6 hours  
+- **Grouping Window**: Within 10 seconds
+- **Use Case**: Clean up artifacts from recent testing sessions
+
+#### CONSERVATIVE (Default)
+- **Time Window**: Last 24 hours
+- **Grouping Window**: Within 5 seconds  
+- **Use Case**: Safe cleanup of recent fake encounters
+
+#### TARGETED
+- **Time Window**: All time
+- **Grouping Window**: Within 5 seconds
+- **Use Case**: Clean up specific target patients defined in the script
+
+### Cleanup Tool Usage
+
+#### Basic Commands
+```bash
+# Show help
+node scripts/synthetic-data/cleanup-fake-consultations.js --help
+
+# Analyze encounter quality only (no cleanup)
+node scripts/synthetic-data/cleanup-fake-consultations.js --analyze-only
+
+# Dry run with default conservative strategy
+node scripts/synthetic-data/cleanup-fake-consultations.js
+
+# Dry run with specific strategy
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=VERY_RECENT
+
+# Execute cleanup (actually delete encounters)
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE --execute
+```
+
+#### Advanced Examples
+```bash
+# Quick cleanup of very recent duplicates
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=VERY_RECENT --execute
+
+# Target specific patients for cleanup
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=TARGETED --execute
+
+# Analyze quality of recent encounters
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=RECENT --analyze-only
+```
+
+### How the Cleanup Tool Works
+
+#### 1. Encounter Quality Assessment
+The tool analyzes encounters to determine if they're likely fake based on:
+- **Transcript Length**: Must be >100 characters to be considered meaningful
+- **SOAP Note Length**: Must be >50 characters to be considered meaningful  
+- **Reason Code/Display**: Presence of visit reason information
+- **Treatments**: Presence of treatment data
+- **Observations**: Presence of clinical observations
+- **Prior Auth**: Presence of prior authorization data
+
+An encounter is considered "fake" if it has ≤1 meaningful fields populated.
+
+#### 2. Grouping Strategy
+Fake encounters are grouped by:
+- **Patient**: Same patient
+- **Time Window**: Created within the strategy's grouping window (1-10 seconds)
+- **Succession**: Must be part of a group of 2+ fake encounters
+
+#### 3. Conservative Deletion
+The tool only deletes encounters that are:
+- ✅ Identified as fake (minimal meaningful data)
+- ✅ Part of a group (2+ fake encounters)  
+- ✅ Created within seconds of each other
+- ✅ Match the selected strategy criteria
+
+**Isolated fake encounters are NOT deleted** for safety.
+
+### Safety Features
+- **Dry Run Mode**: Default mode shows what would be deleted without making changes
+- **Conservative Grouping**: Only deletes encounters created in rapid succession
+- **Batch Processing**: Deletes in batches of 50 to avoid database overload
+- **Detailed Logging**: Shows exactly which encounters will be deleted
+
+### Configuration
+
+#### Target Patients
+The `TARGETED` strategy focuses on specific patients defined in the script:
+```javascript
+const TARGET_PATIENTS = [
+  'Bob Jones', 'James Lee', 'Dorothy Robinson',
+  'Alice Smith', 'Maria Gomez', 'Justin Rodriguez'
+];
+```
+
+#### Custom Strategies
+New cleanup strategies can be added to the `CLEANUP_STRATEGIES` object:
+```javascript
+const CLEANUP_STRATEGIES = {
+  CUSTOM: {
+    name: 'Custom Strategy',
+    timeWindow: 2 * 60 * 60 * 1000, // 2 hours
+    groupingWindow: 30 * 1000, // 30 seconds
+    description: 'Custom cleanup for specific needs'
+  }
+};
+```
+
 ## 📋 Data Format Requirements
 
 ### Standard Synthetic Data Format
@@ -129,10 +245,27 @@ If you notice empty encounters created during testing or due to bugs:
 3. Choose appropriate strategy based on timeframe
 4. Always run in dry-run mode first before executing cleanup
 
+### Cleanup Tool Troubleshooting
+
+#### No Encounters Found
+- Check if the time window includes the problematic encounters
+- Verify target patients exist in the database
+- Use `--analyze-only` to see overall encounter statistics
+
+#### Permission Errors
+- Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in `.env.local`
+- Verify the service role has delete permissions on the encounters table
+
+#### Unexpected Results
+- Always run in dry-run mode first to preview changes
+- Use the most conservative strategy initially
+- Check the encounter quality analysis before cleanup
+
 ## 📊 Expected Success Rates
 - **Standard imports:** 90-100% success rate
 - **Transcript imports:** 100% success rate (if properly formatted)
 - **Validation errors:** 2-5% due to data mismatches (normal)
+- **Cleanup operations:** 95-100% success rate for identified fake encounters
 
 ## 🧹 Cleanup After Import
 
@@ -154,15 +287,23 @@ node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=RECENT --ex
 - **Generation Guide:** `/docs/synthetic_data_generation_guide.md`
 - **Import History:** `/docs/IMPORT_COMPLETION_SUMMARY.md`
 - **Database Schema:** `/scripts/schema.sql`
-- **Cleanup Tool Guide:** `/docs/scripts/cleanup-fake-consultations.md`
 
 ## 🎯 Best Practices
 
+### Import Best Practices
 1. **Always test with dry-run mode first** (if available in script)
 2. **Backup database before large imports**
 3. **Run validation scripts after import**
 4. **Keep logs for troubleshooting**
 5. **Clean up data files after successful import**
+
+### Cleanup Best Practices
+1. **Always start with analysis**: Use `--analyze-only` first
+2. **Use dry run mode**: Preview changes before executing  
+3. **Start conservative**: Begin with shorter time windows and tighter grouping
+4. **Monitor results**: Check the deletion reports carefully
+5. **Run iteratively**: May need multiple runs to catch all issues
+6. **Backup first**: Consider database backups before major cleanups
 
 ## 🔄 For Future Development
 
@@ -172,6 +313,24 @@ When adding new synthetic data:
 3. Include comprehensive patient narratives
 4. Test with small batches first
 5. Update this documentation with any new patterns or issues discovered
+
+### Environment Variables
+
+Required environment variables in `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+# OR
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+## 📈 Script Evolution History
+
+This documentation consolidates several previous cleanup scripts:
+- `cleanup_duplicate_encounters.js` ✅ Merged into `cleanup-fake-consultations.js`
+- `cleanup-very-recent-duplicates.js` ✅ Merged into `cleanup-fake-consultations.js`
+- `conservative-cleanup.js` ✅ Merged into `cleanup-fake-consultations.js`
+- `analyze-encounter-quality.js` ✅ Merged into `cleanup-fake-consultations.js`
 
 ---
 
