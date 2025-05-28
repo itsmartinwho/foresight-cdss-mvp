@@ -64,6 +64,16 @@ export default function ConsultationPanel({
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false, // Default to false
 }: ConsultationPanelProps) {
+  console.log('ConsultationPanel render:', {
+    isOpen,
+    isDemoMode,
+    hasPatient: !!patient,
+    patientName: patient?.name,
+    initialDemoTranscript: initialDemoTranscript?.substring(0, 50) + '...',
+    demoDiagnosis: !!demoDiagnosis,
+    demoTreatment: !!demoTreatment
+  });
+
   const { toast } = useToast();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
