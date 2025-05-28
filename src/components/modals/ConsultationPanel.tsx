@@ -505,7 +505,7 @@ export default function ConsultationPanel({
 
         {/* Main content area */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          {(!encounter && !isCreating) ? (
+          {(!encounter && !isCreating && !isDemoMode) ? (
             <div className="flex items-center justify-center flex-1">
               <p className="text-sm text-muted-foreground">Failed to create consultation</p>
             </div>
