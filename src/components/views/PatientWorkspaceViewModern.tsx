@@ -143,7 +143,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     } finally {
       setLoading(false);
     }
-  }, [patient?.id, selectedEncounterForConsultation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patient?.id]); // selectedEncounterForConsultation intentionally excluded to prevent infinite loop
 
   useEffect(() => {
     loadPatientData();
