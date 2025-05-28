@@ -80,11 +80,12 @@ The `ConsultationPanel` (`src/components/modals/ConsultationPanel.tsx`) is a key
 *   **Full-Screen Modal:** Uses a glassmorphic design with a backdrop blur, rendered via React Portal.
 *   **Immediate Encounter Creation:** Automatically creates a new encounter in Supabase when the panel is opened.
 *   **Patient Context:** Displays patient name and encounter ID.
+*   **Rich Text Editing:** Uses the `RichTextEditor` component for transcript, diagnosis, and treatment text areas with formatting capabilities.
 *   **Clinical Plan Workflow:**
-    1.  **Transcript Entry:** Large auto-focusing textarea for consultation notes.
+    1.  **Transcript Entry:** Large auto-focusing rich text editor for consultation notes.
     2.  **AI Trigger:** "Clinical Plan" button enabled after 10+ characters in transcript.
     3.  **AI Processing:** Calls `/api/clinical-engine` (mock or future real endpoint) with patient ID, encounter ID, and transcript.
-    4.  **Tabbed Results:** Displays AI-generated diagnosis and treatment plans in editable textareas within a tabbed interface (Transcript, Diagnosis, Treatment).
+    4.  **Tabbed Results:** Displays AI-generated diagnosis and treatment plans in editable rich text editors within a tabbed interface (Transcript, Diagnosis, Treatment).
     5.  **Error Handling:** Graceful fallback for API failures, allowing manual completion.
 *   **State Management:** Uses local React state (`useState`) for transcript, diagnosis, treatment text, active tab, and loading states.
 
@@ -123,6 +124,69 @@ function SomeParentComponent() {
   );
 }
 ```
+
+### `RichTextEditor` Component
+
+The `RichTextEditor` (`src/components/ui/rich-text-editor.tsx`) is a robust text editing component built with Tiptap that replaces problematic contentEditable implementations.
+
+**Key Features:**
+*   **Tiptap-Based:** Built on ProseMirror via Tiptap for reliable text editing without contentEditable issues.
+*   **Integrated Toolbar:** Built-in formatting toolbar with Bold, Italic, Lists, Undo/Redo functionality.
+*   **Seamless Integration:** Works with shadcn/ui design system and Tailwind CSS styling.
+*   **TypeScript Support:** Full TypeScript interfaces with proper ref handling.
+*   **Transcription Compatible:** Optimized for real-time transcription with `insertText` method.
+
+**Props Interface:**
+```tsx
+interface RichTextEditorProps {
+  content?: string;
+  onContentChange?: (content: string) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  showToolbar?: boolean;
+  minHeight?: string;
+}
+
+interface RichTextEditorRef {
+  editor: Editor | null;
+  focus: () => void;
+  getContent: () => string;
+  setContent: (content: string) => void;
+  insertText: (text: string) => void;
+}
+```
+
+**Usage Example:**
+```tsx
+import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
+
+function MyComponent() {
+  const [content, setContent] = useState('');
+  const editorRef = useRef<RichTextEditorRef>(null);
+
+  const handleInsertText = (text: string) => {
+    if (editorRef.current) {
+      editorRef.current.insertText(text);
+    }
+  };
+
+  return (
+    <RichTextEditor
+      ref={editorRef}
+      content={content}
+      onContentChange={setContent}
+      placeholder="Start typing..."
+      minHeight="300px"
+    />
+  );
+}
+```
+
+**Replaced Components:**
+*   Replaces contentEditable divs in `ConsultationTab.tsx` (patient workspace transcription)
+*   Replaces basic Textarea components in `ConsultationPanel.tsx` for all text areas
+*   Eliminates cursor positioning bugs and formatting inconsistencies
 
 ## State Management
 
