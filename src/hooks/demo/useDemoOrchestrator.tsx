@@ -34,6 +34,7 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
   const router = useRouter();
   const searchParams = useSearchParams();
   const demoStageRef = useRef<DemoStage>('introModal');
+  const [mounted, setMounted] = useState(false);
 
   // Core state
   const [hasDemoRun, setHasDemoRunState] = useState<boolean>(() => {
@@ -62,6 +63,11 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     demoStageRef.current = demoStage;
   }, [demoStage]);
 
+  // Set mounted to true on client side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Sync with localStorage changes (cross-tab)
   useEffect(() => {
     return DemoStateService.addStorageListener((hasRun) => {
@@ -81,12 +87,14 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
 
   // Detect demo route after navigation to restore active state
   useEffect(() => {
-    const isDemoRoute = searchParams.get('demo') === 'true';
-    if (isDemoRoute && !isDemoActive) {
-      console.log('Restoring demo active state from URL');
-      setIsDemoActive(true);
+    if (mounted) {
+      const isDemoRoute = searchParams.get('demo') === 'true';
+      if (isDemoRoute && !isDemoActive) {
+        console.log('Restoring demo active state from URL');
+        setIsDemoActive(true);
+      }
     }
-  }, [searchParams, isDemoActive]);
+  }, [searchParams, isDemoActive, mounted]);
 
   // Demo stage management
   const advanceDemoStage = useCallback((stage: DemoStage) => {
