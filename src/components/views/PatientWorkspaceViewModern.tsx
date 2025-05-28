@@ -206,14 +206,26 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
   // Advance demo stage when workspace is ready
   useEffect(() => {
-    if (demoWorkspace.shouldRunDemoUi && demoState.demoStage === 'navigatingToWorkspace') {
+    const isDemoRoute = searchParams.get('demo') === 'true';
+    
+    console.log('Demo advancement check:', {
+      isDemoRoute,
+      demoStage: demoState.demoStage,
+      isDemoActive: demoState.isDemoActive,
+      patientId: patient?.id,
+      demoPatientId: demoState.demoPatient?.id
+    });
+    
+    // If we're in navigatingToWorkspace stage and on demo route, advance
+    if (isDemoRoute && demoState.isDemoActive && demoState.demoStage === 'navigatingToWorkspace') {
       // Small delay to ensure component is fully loaded
       const timer = setTimeout(() => {
+        console.log('Advancing demo to consultationPanelReady');
         demoState.advanceDemoStage('consultationPanelReady');
-      }, 500);
+      }, 1000); // Increased delay to ensure data is loaded
       return () => clearTimeout(timer);
     }
-  }, [demoWorkspace.shouldRunDemoUi, demoState.demoStage, demoState.advanceDemoStage]);
+  }, [searchParams, demoState, patient?.id]);  // Use searchParams directly
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button

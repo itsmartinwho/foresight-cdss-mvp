@@ -38,10 +38,22 @@ export function useDemoWorkspace({
                          isDemoRouteActive && 
                          demoPatient?.id === patient.id;
 
+  // Debug logging
+  console.log('useDemoWorkspace debug:', {
+    isDemoActive,
+    isDemoRouteActive,
+    demoPatientId: demoPatient?.id,
+    patientId: patient.id,
+    shouldRunDemoUi,
+    demoStage
+  });
+
   // Handle demo lifecycle and panel visibility
   useEffect(() => {
-    if (shouldRunDemoUi) {
+    // Simplified logic: if we're on demo route and in the right stage, open panel
+    if (isDemoRouteActive && isDemoActive) {
       if (demoStage === 'consultationPanelReady') {
+        console.log('Opening demo consultation panel');
         setIsDemoPanelOpen(true);
         advanceDemoStage('animatingTranscript');
       } else if (demoStage === 'finished' || !isDemoActive) {
@@ -51,7 +63,7 @@ export function useDemoWorkspace({
       // If demo conditions are no longer met, close panel
       setIsDemoPanelOpen(false);
     }
-  }, [demoStage, shouldRunDemoUi, isDemoActive, advanceDemoStage, isDemoPanelOpen]);
+  }, [demoStage, isDemoRouteActive, isDemoActive, advanceDemoStage, isDemoPanelOpen]);
   
   // Exit demo if patient ID mismatches or demo is no longer active on this route
   useEffect(() => {
