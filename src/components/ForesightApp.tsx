@@ -136,35 +136,44 @@ function ForesightApp() {
 
 // Simple debug component to test demo context
 function DemoDebugComponent() {
-  const { hasDemoRun, isDemoModalOpen, demoStage, skipDemo } = useDemo();
+  const { hasDemoRun, isDemoModalOpen, demoStage } = useDemo();
   
   useEffect(() => {
     console.log('DemoDebugComponent - Demo state:', { hasDemoRun, isDemoModalOpen, demoStage });
     
     // Expose reset function globally for testing
     if (typeof window !== 'undefined') {
-      (window as any).resetDemo = () => {
-        console.log('Resetting demo state...');
-        localStorage.removeItem('hasDemoRun');
-        console.log('Demo state cleared. Reloading page...');
-        window.location.reload();
-      };
-      
-      // Also expose a function to force show the demo
-      (window as any).forceShowDemo = () => {
-        console.log('Forcing demo to show...');
-        localStorage.removeItem('hasDemoRun');
-        // Don't reload, just trigger the state change
-        skipDemo(); // This will reset the state
-        setTimeout(() => {
+      // Simple reset function
+      (window as any).resetDemo = function() {
+        try {
+          console.log('Resetting demo state...');
           localStorage.removeItem('hasDemoRun');
+          console.log('Demo state cleared. Reloading page...');
           window.location.reload();
-        }, 100);
+        } catch (error) {
+          console.error('Error resetting demo:', error);
+        }
       };
       
-      console.log('Demo functions available: resetDemo(), forceShowDemo()');
+      // Alternative reset function
+      (window as any).forceShowDemo = function() {
+        try {
+          console.log('Forcing demo to show...');
+          localStorage.clear();
+          console.log('All localStorage cleared. Reloading page...');
+          window.location.reload();
+        } catch (error) {
+          console.error('Error forcing demo:', error);
+        }
+      };
+      
+      // Simple manual reset instructions
+      console.log('=== DEMO RESET INSTRUCTIONS ===');
+      console.log('1. Type: resetDemo()');
+      console.log('2. Or type: forceShowDemo()');
+      console.log('3. Or manually: localStorage.removeItem("hasDemoRun"); location.reload();');
     }
-  }, [hasDemoRun, isDemoModalOpen, demoStage, skipDemo]);
+  }, [hasDemoRun, isDemoModalOpen, demoStage]);
   
   return null;
 }

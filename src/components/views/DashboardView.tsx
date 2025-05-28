@@ -88,6 +88,24 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
 
   return (
     <ContentSurface fullBleed className="p-6 flex flex-col relative">
+      {/* Temporary Demo Reset Button for Testing */}
+      {(hasDemoRun || demoStage === 'finished') && (
+        <div className="fixed top-20 right-4 z-50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              console.log('Demo reset button clicked');
+              localStorage.removeItem('hasDemoRun');
+              window.location.reload();
+            }}
+            className="bg-yellow-100 border-yellow-400 text-yellow-800 hover:bg-yellow-200"
+          >
+            🔄 Reset Demo
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div>
           <h1 className="text-step-1 font-semibold">Upcoming Consultations</h1>
