@@ -2,19 +2,12 @@
 
 import React from 'react';
 import './globals.css';
-import { Metadata } from 'next';
 
 import PlasmaBackground from '../components/PlasmaBackground';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
 import MotionWrapper from '../components/MotionWrapper';
 import { DemoProvider } from "@/contexts/DemoContext";
-
-export const metadata: Metadata = {
-  title: 'Foresight',
-  description: 'Clinical Decision Support System for healthcare providers',
-  // icons metadata is removed as Next.js will infer from files in src/app/
-};
 
 export default function RootLayout({
   children,
@@ -31,6 +24,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Foresight</title>
+        <meta name="description" content="Clinical Decision Support System for healthcare providers" />
       </head>
       <body>
         <DemoProvider>
