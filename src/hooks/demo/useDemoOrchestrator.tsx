@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { Patient } from '@/lib/types';
 import { DemoStateService, DemoStage } from '@/services/demo/DemoStateService';
@@ -31,6 +31,7 @@ export type UseDemoOrchestratorReturn = DemoOrchestratorState & DemoOrchestrator
 
 export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const demoStageRef = useRef<DemoStage>('introModal');
 
   // Core state
@@ -76,6 +77,15 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
       }
     });
   }, [hasDemoRun]);
+
+  // Detect demo route after navigation to restore active state
+  useEffect(() => {
+    const isDemoRoute = searchParams.get('demo') === 'true';
+    if (isDemoRoute && !isDemoActive) {
+      console.log('Restoring demo active state from URL');
+      setIsDemoActive(true);
+    }
+  }, [searchParams, isDemoActive]);
 
   // Demo stage management
   const advanceDemoStage = useCallback((stage: DemoStage) => {
