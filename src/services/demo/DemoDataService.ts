@@ -1,4 +1,6 @@
 // Demo Data Service - Contains all demo-specific data and logic
+import { Patient, ComplexCaseAlert } from '@/lib/types';
+
 export interface DemoTreatmentData {
   drug: string;
   status: string;
@@ -29,6 +31,54 @@ export interface DemoEncounterData {
 export const DEMO_PATIENT_ID = "0681FA35-A794-4684-97BD-00B88370DB41";
 export const DEMO_ENCOUNTER_ID = "097bf62e-9bd9-4972-a972-2714038ff55e";
 
+// Dorothy Robinson demo patient data
+const dorothyRobinsonPatientData: Patient = {
+  id: DEMO_PATIENT_ID,
+  name: "Dorothy Robinson",
+  firstName: "Dorothy",
+  lastName: "Robinson",
+  gender: "female",
+  dateOfBirth: "1978-04-15",
+  photo: "/images/demo-patient-dorothy.jpg",
+  race: "White",
+  ethnicity: "Not Hispanic or Latino",
+  maritalStatus: "Married",
+  language: "English",
+  povertyPercentage: 15,
+  alerts: [
+    {
+      id: "demo-alert-1",
+      patientId: DEMO_PATIENT_ID,
+      msg: "Patient has a history of chronic lower back pain with episodes of inflammation.",
+      date: "2024-01-15",
+      type: "inflammatory",
+      severity: "medium",
+      triggeringFactors: ["Previous gastroenteritis", "HLA-B27 positive"],
+      suggestedActions: ["Monitor inflammatory markers", "Consider rheumatology follow-up"],
+      createdAt: "2024-01-15T09:00:00Z",
+      confidence: 85,
+      likelihood: 3,
+      conditionType: "Reactive Arthritis"
+    },
+    {
+      id: "demo-alert-2", 
+      patientId: DEMO_PATIENT_ID,
+      msg: "Monitor for GI side effects with current NSAID therapy.",
+      date: "2024-01-20",
+      type: "inflammatory",
+      severity: "low",
+      triggeringFactors: ["Long-term NSAID use"],
+      suggestedActions: ["Monitor for GI symptoms", "Consider gastroprotection"],
+      createdAt: "2024-01-20T14:30:00Z",
+      confidence: 70,
+      likelihood: 2,
+      conditionType: "NSAID-related GI risk"
+    }
+  ] as ComplexCaseAlert[],
+  nextAppointment: "2024-03-01T10:00:00Z",
+  reason: "Follow-up for reactive arthritis management"
+};
+
 const dorothyRobinsonEncounterJSON: Omit<DemoEncounterData, 'diagnosis'> = {
   id: DEMO_ENCOUNTER_ID,
   patientId: DEMO_PATIENT_ID,
@@ -58,6 +108,10 @@ export const demoEncounterData: DemoEncounterData = {
 };
 
 export class DemoDataService {
+  static getPatientData(): Patient {
+    return dorothyRobinsonPatientData;
+  }
+
   static getEncounterData(): DemoEncounterData {
     return demoEncounterData;
   }

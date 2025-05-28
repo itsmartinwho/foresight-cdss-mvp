@@ -127,19 +127,15 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     setDemoStage('selectingPatient');
     
     try {
-      const patient = await supabaseDataService.getPatient(DEMO_PATIENT_ID);
-      if (patient) {
-        setDemoPatient(patient);
-        DemoStateService.setDemoRun(true);
-        setHasDemoRunState(true);
-        
-        const encounterData = DemoDataService.getEncounterData();
-        router.push(`/patients/${patient.id}?demo=true&encounterId=${encounterData.id}`);
-        advanceDemoStage('navigatingToWorkspace');
-      } else {
-        console.error("Demo patient Dorothy Robinson not found.");
-        exitDemo();
-      }
+      // Use mock demo patient data instead of fetching from database
+      const demoPatient = DemoDataService.getPatientData();
+      setDemoPatient(demoPatient);
+      DemoStateService.setDemoRun(true);
+      setHasDemoRunState(true);
+      
+      const encounterData = DemoDataService.getEncounterData();
+      router.push(`/patients/${demoPatient.id}?demo=true&encounterId=${encounterData.id}`);
+      advanceDemoStage('navigatingToWorkspace');
     } catch (error) {
       console.error("Error starting demo:", error);
       exitDemo();

@@ -35,6 +35,7 @@ import ConsultationPanel from '@/components/modals/ConsultationPanel';
 import { useDemo } from '@/contexts/DemoContext';
 import { useDemoWorkspace } from '@/hooks/demo/useDemoWorkspace';
 import { useDemoConsultation } from '@/hooks/demo/useDemoConsultation';
+import { DemoDataService } from "@/services/demo/DemoDataService";
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -114,18 +115,61 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     setError(null);
     
     try {
-      const detailedData = await supabaseDataService.getPatientData(patient.id);
-      if (detailedData) {
-        setDetailedPatientData(detailedData);
-        setPatient(detailedData.patient);
+      // Handle demo mode with mock data
+      if (demoState.isDemoActive && patient.id === demoState.demoPatient?.id) {
+        const demoPatient = DemoDataService.getPatientData();
+        const demoEncounter = DemoDataService.getEncounterData();
         
-        const nonDeletedEncounters = (detailedData.encounters || []).filter(ew => !ew.encounter.isDeleted);
-        setActiveEncounterDetails(nonDeletedEncounters);
-        
-        // Only set selected encounter if none is currently selected
-        const currentlySelected = selectedEncounterForConsultation;
-        if (nonDeletedEncounters.length > 0 && !currentlySelected) {
-          setSelectedEncounterForConsultation(nonDeletedEncounters[0].encounter);
+        const mockEncounterWrapper: EncounterDetailsWrapper = {
+          encounter: {
+            id: demoEncounter.id,
+            encounterIdentifier: demoEncounter.encounterIdentifier,
+            patientId: demoPatient.id,
+            scheduledStart: demoEncounter.actualStart,
+            scheduledEnd: demoEncounter.actualEnd,
+            actualStart: demoEncounter.actualStart,
+            actualEnd: demoEncounter.actualEnd,
+            reasonCode: demoEncounter.reasonCode,
+            reasonDisplayText: demoEncounter.reasonDisplayText,
+            transcript: demoEncounter.transcript,
+            soapNote: demoEncounter.soapNote,
+            treatments: demoEncounter.treatments.map(t => ({
+              drug: t.drug,
+              status: t.status,
+              rationale: t.rationale
+            }))
+          },
+          diagnoses: [{
+            patientId: demoEncounter.diagnosis.patientId,
+            encounterId: demoEncounter.diagnosis.encounterId,
+            code: demoEncounter.diagnosis.code,
+            description: demoEncounter.diagnosis.description
+          }],
+          labResults: []
+        };
+
+        setDetailedPatientData({
+          patient: demoPatient,
+          encounters: [mockEncounterWrapper]
+        });
+        setPatient(demoPatient);
+        setActiveEncounterDetails([mockEncounterWrapper]);
+        setSelectedEncounterForConsultation(mockEncounterWrapper.encounter);
+      } else {
+        // Normal database loading for non-demo mode
+        const detailedData = await supabaseDataService.getPatientData(patient.id);
+        if (detailedData) {
+          setDetailedPatientData(detailedData);
+          setPatient(detailedData.patient);
+          
+          const nonDeletedEncounters = (detailedData.encounters || []).filter(ew => !ew.encounter.isDeleted);
+          setActiveEncounterDetails(nonDeletedEncounters);
+          
+          // Only set selected encounter if none is currently selected
+          const currentlySelected = selectedEncounterForConsultation;
+          if (nonDeletedEncounters.length > 0 && !currentlySelected) {
+            setSelectedEncounterForConsultation(nonDeletedEncounters[0].encounter);
+          }
         }
       }
     } catch (err: unknown) {
@@ -135,7 +179,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       setLoading(false);
       isLoadingDataRef.current = false;
     }
-  }, [patient?.id]);
+  }, [patient?.id, demoState.isDemoActive, demoState.demoPatient]);
 
   useEffect(() => {
     loadPatientData();
