@@ -174,7 +174,7 @@ The Foresight CDSS now operates on a FHIR-aligned database schema and a robust (
 *   **`src/lib/clinicalEngineService.ts` (Mock Service):** Original mock service for frontend development of Tools B & F; its functionalities are conceptually part of the `ClinicalEngineServiceV2` vision. **Not connected to any live AI backend for Tool B/F.**
 
 ### Historical Refactoring Context
-Previous refactoring phases (detailed historically in `refactoring_history_and_current_architecture.md`) achieved the following, leading to the current schema:
+The system has undergone several refactoring phases that achieved the following, leading to the current schema:
 *   **Phase 1 (FHIR-Compatible Migration):** Standardized patient demographics, renamed `visits` to `encounters`, introduced `conditions` and `lab_results` tables. Migrated `patients.primary_diagnosis_description` to `conditions`. Deprecated patient-level diagnosis fields.
 *   **Phase 2 (Clinical Engine Refactoring):** Introduced concepts like `PatientContextLoader` (to assemble FHIR-like context from new tables) and `ClinicalEngineServiceV2` (to process this context and save structured outputs like primary diagnosis to `conditions`, SOAP notes to `encounters`).
 *   **Phase 3 (Frontend UI Updates):** Adapted UI to display data from new tables and integrate with the conceptual `ClinicalEngineServiceV2` outputs via the `/api/clinical-engine` endpoint.
