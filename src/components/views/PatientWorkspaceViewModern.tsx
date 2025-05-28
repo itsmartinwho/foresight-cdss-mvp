@@ -521,7 +521,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       <ConsultationPanel
         isOpen={showConsultationPanel}
         onClose={() => setShowConsultationPanel(false)}
-        patient={patient} // This is the regular patient for the non-demo panel
+        patient={patient}
         onConsultationCreated={handleConsultationCreated}
       />
 
@@ -530,10 +530,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         <ConsultationPanel
           isOpen={isDemoPanelOpen}
           onClose={() => {
-            exitDemo(); // This will set demoStage to 'finished'
-            setIsDemoPanelOpen(false); // Explicitly close panel if not already handled by demoStage effect
+            exitDemo();
+            setIsDemoPanelOpen(false);
           }}
-          patient={dorothyRobinsonPatient} // Use demo patient data
+          patient={dorothyRobinsonPatient}
           isDemoMode={true}
           initialDemoTranscript={animatedTranscript}
           demoDiagnosis={diagnosisForDemo}
@@ -541,7 +541,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           onDemoClinicalPlanClick={() => {
             advanceDemoStage('simulatingPlanGeneration');
           }}
-          isDemoGeneratingPlan={demoStage === 'simulatingPlanGeneration'}
+          isDemoGeneratingPlan={demoStage === 'simulatingPlanGeneration'} 
         />
       )}
     </ContentSurface>

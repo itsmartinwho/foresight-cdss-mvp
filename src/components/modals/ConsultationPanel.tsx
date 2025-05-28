@@ -407,7 +407,7 @@ export default function ConsultationPanel({
     } catch (err) {
       toast({ title: "Error", description: `Transcription error: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
     }
-  }, [cursorPosition, isTranscribing, isPaused, transcriptText, toast]);
+  }, [isDemoMode, cursorPosition, isTranscribing, isPaused, transcriptText, toast]);
 
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
