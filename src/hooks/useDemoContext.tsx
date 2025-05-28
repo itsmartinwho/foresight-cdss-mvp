@@ -171,7 +171,7 @@ export const DemoProvider = ({ children }: DemoProviderProps) => {
     return () => { 
       if (transcriptIntervalId) clearInterval(transcriptIntervalId);
     };
-  }, [isDemoActive, demoStage, transcriptLines, advanceDemoStage, transcriptIntervalId]);
+  }, [isDemoActive, demoStage, transcriptLines, advanceDemoStage]);
 
   useEffect(() => {
     if (isDemoActive && demoStage === 'simulatingPlanGeneration') {
@@ -187,7 +187,7 @@ export const DemoProvider = ({ children }: DemoProviderProps) => {
     return () => { 
       if (clinicalPlanTimeoutId) clearTimeout(clinicalPlanTimeoutId);
     };
-  }, [isDemoActive, demoStage, advanceDemoStage, clinicalPlanTimeoutId]);
+  }, [isDemoActive, demoStage, advanceDemoStage]);
 
   const resetDemoAnimationStates = useCallback(() => {
     if (transcriptIntervalId) clearInterval(transcriptIntervalId);
@@ -213,7 +213,7 @@ export const DemoProvider = ({ children }: DemoProviderProps) => {
         } else {
           router.push(`/patients/${patient.id}?demo=true`);
         }
-        advanceDemoStage('navigatingToWorkspace'); // Changed from consultationPanelReady
+        advanceDemoStage('navigatingToWorkspace');
       } else {
         console.error("Demo patient Dorothy Robinson not found.");
         exitDemo();
@@ -242,9 +242,7 @@ export const DemoProvider = ({ children }: DemoProviderProps) => {
   }, [resetDemoAnimationStates, router]);
 
   const setDemoModalOpen = (open: boolean) => {
-    setIsDemoModalOpen(open); // Control modal visibility
-
-    // If modal is being closed, demo not active, not already run, and current stage was introModal
+    setIsDemoModalOpen(open);
     if (!open && !isDemoActive && !hasDemoRun && demoStageRef.current === 'introModal') {
       advanceDemoStage('fabVisible');
     }
