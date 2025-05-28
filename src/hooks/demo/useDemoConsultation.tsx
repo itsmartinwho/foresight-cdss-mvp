@@ -30,21 +30,26 @@ export function useDemoConsultation({
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   
   // Check if this is the demo patient and demo is active
-  const isDemoMode = isDemoActive && patient?.id === DEMO_PATIENT_ID;
+  // Also check URL parameter for demo mode
+  const isDemoRoute = searchParams.get('demo') === 'true';
+  const isDemoMode = isDemoActive && (patient?.id === DEMO_PATIENT_ID || isDemoRoute);
+  
+  console.log('useDemoConsultation:', {
+    isDemoActive,
+    patientId: patient?.id,
+    DEMO_PATIENT_ID,
+    isDemoRoute,
+    isDemoMode,
+    demoStage
+  });
   
   // Demo transcript progression based on stage
   const getDemoTranscript = () => {
     if (!isDemoMode) return undefined;
     
-    switch (demoStage) {
-      case 'animatingTranscript':
-      case 'simulatingPlanGeneration':
-      case 'showingPlan':
-      case 'finished':
-        return "Patient presents with joint pain and stiffness, particularly in the morning. Reports fatigue and general malaise over the past few weeks. No recent trauma or injury. Family history of autoimmune conditions.";
-      default:
-        return "";
-    }
+    // Always return the full transcript when in demo mode
+    // The animation will handle showing it progressively
+    return "Patient presents with joint pain and stiffness, particularly in the morning. Reports fatigue and general malaise over the past few weeks. No recent trauma or injury. Family history of autoimmune conditions.";
   };
   
   // Demo diagnosis based on stage

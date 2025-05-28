@@ -81,6 +81,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     onAdvanceStage: demoState.advanceDemoStage,
   });
 
+  // Force demo panel open when on demo route
+  const isDemoRoute = searchParams.get('demo') === 'true';
+  const [demoPanelForceOpen, setDemoPanelForceOpen] = useState(false);
+
   // Add ref to prevent race conditions in data loading
   const isLoadingDataRef = useRef(false);
   const loadedPatientIdRef = useRef<string | null>(null);
@@ -206,26 +210,27 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
   // Advance demo stage when workspace is ready
   useEffect(() => {
-    const isDemoRoute = searchParams.get('demo') === 'true';
-    
-    console.log('Demo advancement check:', {
+    console.log('Demo panel check:', {
       isDemoRoute,
       demoStage: demoState.demoStage,
       isDemoActive: demoState.isDemoActive,
-      patientId: patient?.id,
-      demoPatientId: demoState.demoPatient?.id
+      loading,
+      hasPatientData: !!patient?.name,
+      demoPanelForceOpen
     });
     
-    // If we're in navigatingToWorkspace stage and on demo route, advance
-    if (isDemoRoute && demoState.isDemoActive && demoState.demoStage === 'navigatingToWorkspace') {
-      // Small delay to ensure component is fully loaded
-      const timer = setTimeout(() => {
-        console.log('Advancing demo to consultationPanelReady');
-        demoState.advanceDemoStage('consultationPanelReady');
-      }, 1000); // Increased delay to ensure data is loaded
-      return () => clearTimeout(timer);
+    // Force open demo panel when conditions are met
+    if (isDemoRoute && demoState.isDemoActive && !loading && patient?.name) {
+      if (!demoPanelForceOpen) {
+        console.log('Force opening demo consultation panel');
+        setDemoPanelForceOpen(true);
+        // Also advance the demo stage if needed
+        if (demoState.demoStage === 'navigatingToWorkspace') {
+          demoState.advanceDemoStage('consultationPanelReady');
+        }
+      }
     }
-  }, [searchParams, demoState, patient?.id]);  // Use searchParams directly
+  }, [isDemoRoute, demoState, loading, patient?.name, demoPanelForceOpen]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
@@ -609,13 +614,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       />
 
       {/* Demo Consultation Panel - separate instance for demo */}
-      {demoWorkspace.shouldRunDemoUi && (
+      {(demoWorkspace.shouldRunDemoUi || (isDemoRoute && demoPanelForceOpen)) && (
         <ConsultationPanel
-          isOpen={demoWorkspace.isDemoPanelOpen}
-          onClose={demoWorkspace.exitDemo}
+          isOpen={demoWorkspace.isDemoPanelOpen || demoPanelForceOpen}
+          onClose={() => {
+            setDemoPanelForceOpen(false);
+            demoWorkspace.exitDemo();
+          }}
           patient={patient}
           onConsultationCreated={handleConsultationCreated}
-          isDemoMode={demoConsultation.isDemoMode}
+          isDemoMode={true}  // Force demo mode when on demo route
           initialDemoTranscript={demoConsultation.initialDemoTranscript}
           demoDiagnosis={demoConsultation.demoDiagnosis}
           demoTreatment={demoConsultation.demoTreatment}
