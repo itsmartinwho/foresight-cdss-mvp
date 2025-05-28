@@ -100,11 +100,11 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     }
   }, [searchParams, activeEncounterDetails]);
 
-  const loadPatientData = useCallback(async () => {
+  const loadPatientData = useCallback(async (force = false) => {
     if (!patient?.id) return;
     
-    // Prevent multiple simultaneous loads of the same patient
-    if (isLoadingDataRef.current || loadedPatientIdRef.current === patient.id) {
+    // Prevent multiple simultaneous loads of the same patient, unless forcing refresh
+    if (isLoadingDataRef.current || (!force && loadedPatientIdRef.current === patient.id)) {
       return;
     }
     
@@ -144,9 +144,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   // Subscribe to data changes to refresh when consultation data is saved
   useEffect(() => {
     const handleDataChange = () => {
-      // Reload patient data when the data service signals changes
+      // Force reload patient data when the data service signals changes
       if (patient?.id) {
-        loadPatientData();
+        console.log('Data change detected, forcing patient data refresh');
+        loadPatientData(true); // Force refresh
       }
     };
 

@@ -329,6 +329,10 @@ export default function ConsultationPanel({
       }
 
       toast({ title: "Consultation Saved", description: "All consultation data saved successfully." });
+      
+      // Small delay to ensure data change notifications propagate to patient workspace
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       onClose();
     } catch (error) {
       console.error('Failed to save consultation data:', error);
