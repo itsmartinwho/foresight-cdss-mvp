@@ -148,6 +148,7 @@ class SupabaseDataService {
               treatments: row.treatments || undefined,
               priorAuthJustification: row.prior_auth_justification,
               isDeleted: !!row.is_deleted,
+              deletedAt: row.updated_at && row.is_deleted ? new Date(row.updated_at).toISOString() : undefined,
             };
             this.encounters[compositeKey] = encounter;
             if (!this.encountersByPatient[patientPublicId]) {
@@ -386,6 +387,7 @@ class SupabaseDataService {
           treatments: row.treatments || undefined, 
           priorAuthJustification: row.prior_auth_justification,
           isDeleted: !!row.is_deleted, 
+          deletedAt: row.updated_at && row.is_deleted ? new Date(row.updated_at).toISOString() : undefined,
         };
         this.encounters[compositeKey] = encounter;
         if (!this.encountersByPatient[patientPublicId]) {
@@ -514,11 +516,18 @@ class SupabaseDataService {
     return this.patients[patientId] ?? null;
   }
 
-  getPatientEncounters(patientId: string): Encounter[] {
+  getPatientEncounters(patientId: string, includeDeleted: boolean = false): Encounter[] {
     // If patient data isn't loaded at all, this might return empty
     // but getPatientData should ensure data is loaded before this is relied upon heavily.
     const encounterKeys = this.encountersByPatient[patientId] || [];
-    return encounterKeys.map(key => this.encounters[key]).filter(Boolean) as Encounter[];
+    const encounters = encounterKeys.map(key => this.encounters[key]).filter(Boolean) as Encounter[];
+    
+    // Filter out deleted encounters unless specifically requested
+    if (!includeDeleted) {
+      return encounters.filter(encounter => !encounter.isDeleted);
+    }
+    
+    return encounters;
   }
 
   async getPatientData(patientId: string): Promise<PatientDataPayload | null> {
@@ -551,7 +560,8 @@ class SupabaseDataService {
         return null;
     }
 
-    const patientEncounters = this.getPatientEncounters(patientId);
+    // Include all encounters (deleted and non-deleted) for comprehensive patient data
+    const patientEncounters = this.getPatientEncounters(patientId, true);
     const encounterDetails = patientEncounters.map(encounter => ({
       encounter: encounter,
       diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
@@ -856,95 +866,176 @@ class SupabaseDataService {
    * Mark an encounter as deleted (soft delete).
    * Returns true if encounter exists and was marked deleted.
    */
-  markEncounterAsDeleted(patientId: string, encounterId: string): boolean {
-    const enc = this.encounters[encounterId];
-    if (!enc || enc.patientId !== patientId) return false;
-    if (enc.isDeleted) return true; // already deleted
+  async markEncounterAsDeleted(patientId: string, encounterId: string): Promise<boolean> {
+    // Handle both composite keys and Supabase UUIDs
+    let compositeKey = encounterId;
+    let encounter = this.encounters[encounterId];
+    
+    if (!encounter) {
+      // Try to find by Supabase UUID
+      const foundEntry = Object.entries(this.encounters).find(([key, enc]) => enc.id === encounterId);
+      if (foundEntry) {
+        compositeKey = foundEntry[0];
+        encounter = foundEntry[1];
+      }
+    }
+    
+    if (!encounter || encounter.patientId !== patientId) {
+      console.error(`SupabaseDataService: Encounter ${encounterId} not found or doesn't belong to patient ${patientId}`);
+      return false;
+    }
+    
+    if (encounter.isDeleted) {
+      console.log(`SupabaseDataService: Encounter ${encounterId} already deleted`);
+      return true; // already deleted
+    }
 
     // Update in-memory cache first for immediate UI feedback
-    (enc as Encounter).isDeleted = true;
+    const deletedAt = new Date().toISOString();
+    encounter.isDeleted = true;
+    encounter.deletedAt = deletedAt;
 
-    // Persist to DB in background (try both candidate PK column names)
-    const originalEncounterId = encounterId.split('_').slice(-1)[0];
-    this.supabase.from('encounters')
-      .update({ is_deleted: true })
-      .eq('encounter_id', originalEncounterId)
-      .then(async ({ error, data }) => {
-        if (error) {
-          console.error('SupabaseDataService: update by encounter_id failed', JSON.stringify(error, null, 2));
-          // Attempt alternative column
-          const { error: err2 } = await this.supabase.from('encounters')
-            .update({ is_deleted: true })
-            .eq('id', originalEncounterId);
-          if (err2) {
-            console.error('SupabaseDataService: update by id failed', JSON.stringify(err2, null,2));
-          }
-        }
-      });
+    // Persist to DB using the Supabase UUID
+    try {
+      const { error } = await this.supabase.from('encounters')
+        .update({ 
+          is_deleted: true,
+          updated_at: deletedAt
+        })
+        .eq('id', encounter.id); // Use the Supabase UUID
 
-    this.emitChange();
-    return true;
+      if (error) {
+        console.error('SupabaseDataService: Failed to soft delete encounter in DB', error);
+        // Revert in-memory changes on DB failure
+        encounter.isDeleted = false;
+        delete encounter.deletedAt;
+        return false;
+      }
+
+      console.log(`SupabaseDataService: Successfully soft deleted encounter ${encounterId}`);
+      this.emitChange();
+      return true;
+    } catch (error) {
+      console.error('SupabaseDataService: Exception during soft delete', error);
+      // Revert in-memory changes on exception
+      encounter.isDeleted = false;
+      delete encounter.deletedAt;
+      return false;
+    }
   }
 
   /** Restore a previously soft-deleted encounter */
-  restoreEncounter(patientId: string, encounterId: string): boolean {
-    const enc = this.encounters[encounterId];
-    if (!enc || enc.patientId !== patientId) return false;
-    if (!enc.isDeleted) return true; // already active
-
-    delete (enc as any).isDeleted;
-
-    // Persist to DB in background (try both candidate PK column names)
-    const originalEncounterId = encounterId.split('_').slice(-1)[0];
-    this.supabase.from('encounters')
-      .update({ is_deleted: false })
-      .eq('encounter_id', originalEncounterId)
-      .then(async ({ error }) => {
-        if (error) {
-          console.error('SupabaseDataService: restore update encounter_id failed', JSON.stringify(error, null,2));
-          const { error: err2 } = await this.supabase.from('encounters')
-            .update({ is_deleted: false })
-            .eq('id', originalEncounterId);
-          if (err2) {
-            console.error('SupabaseDataService: restore update id failed', JSON.stringify(err2, null,2));
-          }
-        }
-      });
-
-    this.emitChange();
-    return true;
-  }
-
-  /** Permanently remove an encounter from cache (DB removal TBD) */
-  permanentlyDeleteEncounter(patientId: string, encounterId: string): boolean {
-    const enc = this.encounters[encounterId];
-    if (!enc || enc.patientId !== patientId) return false;
-
-    // Remove from in-memory maps first for immediate UI update
-    delete this.encounters[encounterId];
-    if (this.encountersByPatient[patientId]) {
-      this.encountersByPatient[patientId] = this.encountersByPatient[patientId].filter(key => key !== encounterId);
+  async restoreEncounter(patientId: string, encounterId: string): Promise<boolean> {
+    // Handle both composite keys and Supabase UUIDs
+    let compositeKey = encounterId;
+    let encounter = this.encounters[encounterId];
+    
+    if (!encounter) {
+      // Try to find by Supabase UUID
+      const foundEntry = Object.entries(this.encounters).find(([key, enc]) => enc.id === encounterId);
+      if (foundEntry) {
+        compositeKey = foundEntry[0];
+        encounter = foundEntry[1];
+      }
+    }
+    
+    if (!encounter || encounter.patientId !== patientId) {
+      console.error(`SupabaseDataService: Encounter ${encounterId} not found or doesn't belong to patient ${patientId}`);
+      return false;
+    }
+    
+    if (!encounter.isDeleted) {
+      console.log(`SupabaseDataService: Encounter ${encounterId} not deleted, nothing to restore`);
+      return true; // already active
     }
 
-    // Delete from DB in background (try both candidate PK column names)
-    const originalEncounterId = encounterId.split('_').slice(-1)[0];
-    this.supabase.from('encounters')
-      .delete()
-      .eq('encounter_id', originalEncounterId)
-      .then(async ({ error }) => {
-        if (error) {
-          console.error('SupabaseDataService: delete encounter_id failed', JSON.stringify(error, null,2));
-          const { error: err2 } = await this.supabase.from('encounters')
-            .delete()
-            .eq('id', originalEncounterId);
-          if (err2) {
-            console.error('SupabaseDataService: delete id failed', JSON.stringify(err2, null,2));
-          }
-        }
-      });
+    // Update in-memory cache first for immediate UI feedback
+    encounter.isDeleted = false;
+    delete encounter.deletedAt;
 
-    this.emitChange();
-    return true;
+    // Persist to DB using the Supabase UUID
+    try {
+      const { error } = await this.supabase.from('encounters')
+        .update({ 
+          is_deleted: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', encounter.id); // Use the Supabase UUID
+
+      if (error) {
+        console.error('SupabaseDataService: Failed to restore encounter in DB', error);
+        // Revert in-memory changes on DB failure
+        encounter.isDeleted = true;
+        encounter.deletedAt = new Date().toISOString();
+        return false;
+      }
+
+      console.log(`SupabaseDataService: Successfully restored encounter ${encounterId}`);
+      this.emitChange();
+      return true;
+    } catch (error) {
+      console.error('SupabaseDataService: Exception during restore', error);
+      // Revert in-memory changes on exception
+      encounter.isDeleted = true;
+      encounter.deletedAt = new Date().toISOString();
+      return false;
+    }
+  }
+
+  /** Permanently remove an encounter from cache and database */
+  async permanentlyDeleteEncounter(patientId: string, encounterId: string): Promise<boolean> {
+    // Handle both composite keys and Supabase UUIDs
+    let compositeKey = encounterId;
+    let encounter = this.encounters[encounterId];
+    
+    if (!encounter) {
+      // Try to find by Supabase UUID
+      const foundEntry = Object.entries(this.encounters).find(([key, enc]) => enc.id === encounterId);
+      if (foundEntry) {
+        compositeKey = foundEntry[0];
+        encounter = foundEntry[1];
+      }
+    }
+    
+    if (!encounter || encounter.patientId !== patientId) {
+      console.error(`SupabaseDataService: Encounter ${encounterId} not found or doesn't belong to patient ${patientId}`);
+      return false;
+    }
+
+    // Store references before deletion for potential rollback
+    const encounterData = { ...encounter };
+    const encountersByPatientRef = [...(this.encountersByPatient[patientId] || [])];
+
+    // Remove from in-memory maps first for immediate UI update
+    delete this.encounters[compositeKey];
+    if (this.encountersByPatient[patientId]) {
+      this.encountersByPatient[patientId] = this.encountersByPatient[patientId].filter(key => key !== compositeKey);
+    }
+
+    // Delete from DB using the Supabase UUID
+    try {
+      const { error } = await this.supabase.from('encounters')
+        .delete()
+        .eq('id', encounter.id); // Use the Supabase UUID
+
+      if (error) {
+        console.error('SupabaseDataService: Failed to permanently delete encounter from DB', error);
+        // Rollback in-memory changes on DB failure
+        this.encounters[compositeKey] = encounterData;
+        this.encountersByPatient[patientId] = encountersByPatientRef;
+        return false;
+      }
+
+      console.log(`SupabaseDataService: Successfully permanently deleted encounter ${encounterId}`);
+      this.emitChange();
+      return true;
+    } catch (error) {
+      console.error('SupabaseDataService: Exception during permanent delete', error);
+      // Rollback in-memory changes on exception
+      this.encounters[compositeKey] = encounterData;
+      this.encountersByPatient[patientId] = encountersByPatientRef;
+      return false;
+    }
   }
 
   unsubscribe(cb: () => void) {

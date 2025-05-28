@@ -173,26 +173,30 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     if (!encounterToDeleteId) return;
     
     try {
-      supabaseDataService.markEncounterAsDeleted(patient.id, encounterToDeleteId);
+      const success = await supabaseDataService.markEncounterAsDeleted(patient.id, encounterToDeleteId);
       
-      setDetailedPatientData((prev) => {
-        if (!prev) return prev;
-        const updatedEncounters = prev.encounters.map(ew => 
-          ew.encounter.id === encounterToDeleteId 
-            ? { ...ew, encounter: { ...ew.encounter, isDeleted: true } }
-            : ew
-        );
-        return { ...prev, encounters: updatedEncounters };
-      });
+      if (success) {
+        setDetailedPatientData((prev) => {
+          if (!prev) return prev;
+          const updatedEncounters = prev.encounters.map(ew => 
+            ew.encounter.id === encounterToDeleteId 
+              ? { ...ew, encounter: { ...ew.encounter, isDeleted: true, deletedAt: new Date().toISOString() } }
+              : ew
+          );
+          return { ...prev, encounters: updatedEncounters };
+        });
 
-      const nonDeletedEncounters = activeEncounterDetails.filter(ew => ew.encounter.id !== encounterToDeleteId);
-      setActiveEncounterDetails(nonDeletedEncounters);
-      
-      if (selectedEncounterForConsultation?.id === encounterToDeleteId) {
-        setSelectedEncounterForConsultation(nonDeletedEncounters.length > 0 ? nonDeletedEncounters[0].encounter : null);
+        const nonDeletedEncounters = activeEncounterDetails.filter(ew => ew.encounter.id !== encounterToDeleteId);
+        setActiveEncounterDetails(nonDeletedEncounters);
+        
+        if (selectedEncounterForConsultation?.id === encounterToDeleteId) {
+          setSelectedEncounterForConsultation(nonDeletedEncounters.length > 0 ? nonDeletedEncounters[0].encounter : null);
+        }
+        
+        toast({ title: "Success", description: "Encounter deleted successfully." });
+      } else {
+        toast({ title: "Error", description: "Failed to delete encounter. Please try again.", variant: "destructive" });
       }
-      
-      toast({ title: "Success", description: "Encounter deleted successfully." });
     } catch (err: unknown) {
       console.error("Failed to delete encounter", err);
       toast({ title: "Error", description: `Failed to delete encounter: ${err instanceof Error ? err.message : "Unknown error"}`, variant: "destructive" });

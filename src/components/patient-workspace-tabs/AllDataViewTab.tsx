@@ -1,10 +1,11 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import type { Patient, Encounter, Diagnosis, LabResult, EncounterDetailsWrapper } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ArrowCounterClockwise, Trash } from '@phosphor-icons/react';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { supabaseDataService } from "@/lib/supabaseDataService"; // For restore/delete
+import { toast } from "@/hooks/use-toast";
 
 interface AllDataViewTabProps {
   detailedPatientData: { patient: Patient; encounters: EncounterDetailsWrapper[] } | null;
@@ -12,6 +13,9 @@ interface AllDataViewTabProps {
 }
 
 export default function AllDataViewTab({ detailedPatientData, setDetailedPatientData }: AllDataViewTabProps) {
+  const [restoringIds, setRestoringIds] = useState<Set<string>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+
   if (!detailedPatientData || !detailedPatientData.patient) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -24,34 +28,76 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
 
   const deletedEncounters = (encounters || []).filter(ew => ew.encounter.isDeleted);
 
-  const handleRestore = (encounterToRestore: Encounter) => {
-    if (patient && supabaseDataService.restoreEncounter(patient.id, encounterToRestore.id)) {
-      setDetailedPatientData((prevData) => {
-        if (!prevData) return prevData;
-        const newEncounters = prevData.encounters.map(ew => {
-          if (ew.encounter.id === encounterToRestore.id) {
-            return {
-              ...ew,
-              encounter: {
-                ...ew.encounter,
-                isDeleted: false,
-                deletedAt: undefined,
-              },
-            };
-          }
-          return ew;
+  const handleRestore = async (encounterToRestore: Encounter) => {
+    if (!patient) return;
+    
+    setRestoringIds(prev => new Set([...prev, encounterToRestore.id]));
+    
+    try {
+      const success = await supabaseDataService.restoreEncounter(patient.id, encounterToRestore.id);
+      
+      if (success) {
+        setDetailedPatientData((prevData) => {
+          if (!prevData) return prevData;
+          const newEncounters = prevData.encounters.map(ew => {
+            if (ew.encounter.id === encounterToRestore.id) {
+              return {
+                ...ew,
+                encounter: {
+                  ...ew.encounter,
+                  isDeleted: false,
+                  deletedAt: undefined,
+                },
+              };
+            }
+            return ew;
+          });
+          return { ...prevData, encounters: newEncounters };
         });
-        return { ...prevData, encounters: newEncounters };
+        
+        toast({ title: "Success", description: "Encounter restored successfully." });
+      } else {
+        toast({ title: "Error", description: "Failed to restore encounter. Please try again.", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Failed to restore encounter", error);
+      toast({ title: "Error", description: `Failed to restore encounter: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive" });
+    } finally {
+      setRestoringIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(encounterToRestore.id);
+        return newSet;
       });
     }
   };
 
-  const handlePermanentDelete = (encounterToDelete: Encounter) => {
-    if (patient && supabaseDataService.permanentlyDeleteEncounter(patient.id, encounterToDelete.id)) {
-      setDetailedPatientData((prevData) => {
-        if (!prevData) return prevData;
-        const newEncounters = prevData.encounters.filter(ew => ew.encounter.id !== encounterToDelete.id);
-        return { ...prevData, encounters: newEncounters };
+  const handlePermanentDelete = async (encounterToDelete: Encounter) => {
+    if (!patient) return;
+    
+    setDeletingIds(prev => new Set([...prev, encounterToDelete.id]));
+    
+    try {
+      const success = await supabaseDataService.permanentlyDeleteEncounter(patient.id, encounterToDelete.id);
+      
+      if (success) {
+        setDetailedPatientData((prevData) => {
+          if (!prevData) return prevData;
+          const newEncounters = prevData.encounters.filter(ew => ew.encounter.id !== encounterToDelete.id);
+          return { ...prevData, encounters: newEncounters };
+        });
+        
+        toast({ title: "Success", description: "Encounter permanently deleted." });
+      } else {
+        toast({ title: "Error", description: "Failed to permanently delete encounter. Please try again.", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Failed to permanently delete encounter", error);
+      toast({ title: "Error", description: `Failed to permanently delete encounter: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive" });
+    } finally {
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(encounterToDelete.id);
+        return newSet;
       });
     }
   };
@@ -152,13 +198,23 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleRestore(encounter)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleRestore(encounter)}
+                      disabled={restoringIds.has(encounter.id) || deletingIds.has(encounter.id)}
+                    >
                       <ArrowCounterClockwise className="mr-2 h-4 w-4"/>
-                      Restore
+                      {restoringIds.has(encounter.id) ? "Restoring..." : "Restore"}
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handlePermanentDelete(encounter)}>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => handlePermanentDelete(encounter)}
+                      disabled={restoringIds.has(encounter.id) || deletingIds.has(encounter.id)}
+                    >
                       <Trash className="mr-2 h-4 w-4"/>
-                      Delete permanently
+                      {deletingIds.has(encounter.id) ? "Deleting..." : "Delete permanently"}
                     </Button>
                   </div>
                 </div>
