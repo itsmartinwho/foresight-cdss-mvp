@@ -1,4 +1,4 @@
-// Removed 'use client';
+'use client';
 
 import React from 'react';
 import './globals.css';
@@ -8,6 +8,7 @@ import PlasmaBackground from '../components/PlasmaBackground';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
 import MotionWrapper from '../components/MotionWrapper';
+import { DemoProvider } from "@/contexts/DemoContext";
 
 export const metadata: Metadata = {
   title: 'Foresight',
@@ -32,16 +33,18 @@ export default function RootLayout({
         <title>Foresight</title>
       </head>
       <body>
-        <PlasmaBackground />
-        <GlassHeader />
-        <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0">
-          <GlassSidebar />
-          <main className="flex flex-col flex-1 overflow-hidden relative bg-transparent">
-            <React.Suspense fallback={<div>Loading page...</div>}>
-              <MotionWrapper>{children}</MotionWrapper>
-            </React.Suspense>
-          </main>
-        </div>
+        <DemoProvider>
+          <PlasmaBackground />
+          <GlassHeader />
+          <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0">
+            <GlassSidebar />
+            <main className="flex flex-col flex-1 overflow-hidden relative bg-transparent">
+              <React.Suspense fallback={<div>Loading page...</div>}>
+                <MotionWrapper>{children}</MotionWrapper>
+              </React.Suspense>
+            </main>
+          </div>
+        </DemoProvider>
       </body>
     </html>
   );
