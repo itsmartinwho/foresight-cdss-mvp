@@ -14,7 +14,14 @@ Open the browser developer tools (F12) and look for these console messages:
 
 ### 2. Reset Demo State
 
-If the demo has already run (you'll see `hasDemoRun: true` in console), you can reset it using any of these methods:
+**🎯 Easiest Method - Use the UI:**
+1. Click on the user profile picture in the top-right corner of the header
+2. Click "Reset Demo" from the dropdown menu
+3. The page will automatically reload and the demo modal should appear
+
+**Alternative Methods:**
+
+If the demo has already run (you'll see `hasDemoRun: true` in console), you can also reset it using any of these methods:
 
 **Method 1 - Use the exposed function:**
 ```javascript
@@ -65,13 +72,16 @@ Patient details:
 - Check console for initialization logs
 - Verify localStorage doesn't have `hasDemoRun: true`
 - Ensure you're on the dashboard page
+- **Try the UI reset**: Click user profile → "Reset Demo"
 
 **Demo functions not available in console:**
+- **Recommended**: Use the UI reset option instead (user profile → "Reset Demo")
 - Wait for the page to fully load (check for "Demo functions available" message in console)
 - Try refreshing the page and waiting a few seconds
 - If still not available, use the manual reset method
 
 **"ReferenceError: javascript is not defined" error:**
+- **Recommended**: Use the UI reset option instead (user profile → "Reset Demo")
 - This happens when trying to run code that's not properly defined
 - Use one of the alternative reset methods listed above
 - Make sure you're typing the function name correctly (no extra characters)
@@ -79,7 +89,8 @@ Patient details:
 **Demo fails to start:**
 - Check for JavaScript errors in console
 - Verify DemoProvider is wrapping the app
-- Check that all demo services are properly imported
+- Check network tab for failed requests
+- **Try the UI reset**: Click user profile → "Reset Demo"
 
 **Demo gets stuck:**
 - Check demo stage in console logs
