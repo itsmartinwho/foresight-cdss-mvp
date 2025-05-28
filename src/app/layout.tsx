@@ -2,12 +2,17 @@
 
 import React from 'react';
 import './globals.css';
+import dynamic from 'next/dynamic';
 
 import PlasmaBackground from '../components/PlasmaBackground';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
 import MotionWrapper from '../components/MotionWrapper';
-import { DemoProvider } from "@/contexts/DemoContext";
+
+const DynamicDemoProvider = dynamic(() => 
+  import('@/contexts/DemoContext').then((mod) => mod.DemoProvider),
+  { ssr: false }
+);
 
 export default function RootLayout({
   children,
@@ -27,7 +32,7 @@ export default function RootLayout({
         <meta name="description" content="Clinical Decision Support System for healthcare providers" />
       </head>
       <body>
-        <DemoProvider>
+        <DynamicDemoProvider>
           <PlasmaBackground />
           <GlassHeader />
           <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0">
@@ -38,7 +43,7 @@ export default function RootLayout({
               </React.Suspense>
             </main>
           </div>
-        </DemoProvider>
+        </DynamicDemoProvider>
       </body>
     </html>
   );
