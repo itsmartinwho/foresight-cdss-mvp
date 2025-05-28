@@ -1,4 +1,19 @@
 /**
+ * @deprecated This symptom extractor is deprecated.
+ * 
+ * This implementation uses basic keyword matching which is insufficient for clinical use.
+ * ClinicalEngineServiceV3 now uses GPT-based transcript analysis for symptom extraction
+ * as part of its comprehensive clinical reasoning process.
+ * 
+ * The new approach provides:
+ * - Context-aware symptom understanding
+ * - Recognition of symptom negations and qualifiers
+ * - Integration with overall clinical reasoning
+ * 
+ * Migration: Use ClinicalEngineServiceV3 for all clinical reasoning including symptom analysis
+ */
+
+/**
  * SymptomExtractor - Extracts symptoms and clinical observations from consultation transcripts
  * This is a simple keyword-based implementation for MVP
  */

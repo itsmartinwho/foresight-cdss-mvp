@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ClinicalEngineServiceV2 } from '@/lib/clinicalEngineServiceV2';
+import { ClinicalEngineServiceV3 } from '@/lib/clinicalEngineServiceV3';
 import { ClinicalOutputPackage } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
@@ -13,18 +13,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const engine = new ClinicalEngineServiceV2();
+    console.log(`Clinical engine V3 request: patient ${patientId}, encounter ${encounterId}`);
+
+    const engine = new ClinicalEngineServiceV3();
     const result: ClinicalOutputPackage = await engine.runDiagnosticPipeline(
       patientId,
       encounterId,
       transcript
     );
 
+    console.log(`Clinical engine V3 completed successfully for patient ${patientId}`);
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Clinical engine error:', error);
+    console.error('Enhanced clinical engine error:', error);
     return NextResponse.json(
-      { error: 'Failed to run clinical analysis', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to run enhanced clinical analysis', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
       { status: 500 }
     );
   }

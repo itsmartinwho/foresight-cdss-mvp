@@ -1,3 +1,17 @@
+/**
+ * @deprecated This service is deprecated. Use ClinicalEngineServiceV3 instead.
+ * 
+ * This implementation uses mock data and basic keyword matching.
+ * ClinicalEngineServiceV3 provides GPT-based clinical reasoning with:
+ * - Real patient data integration
+ * - Differential diagnosis generation
+ * - Evidence-based treatment planning
+ * - Structured clinical outputs
+ * 
+ * Migration: Replace usage with ClinicalEngineServiceV3
+ */
+
+import { getSupabaseClient } from './supabaseClient';
 import { 
   DiagnosticPlan, 
   DiagnosticStep, 

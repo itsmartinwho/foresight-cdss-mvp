@@ -648,6 +648,7 @@ class SupabaseDataService {
     }
     if (this.encounters[encounterCompositeId]) {
       this.encounters[encounterCompositeId].transcript = transcript;
+      this.emitChange();
     } else {
       console.warn(`SupabaseDataService (Prod Debug): updateEncounterTranscript - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
     }

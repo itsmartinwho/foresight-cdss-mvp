@@ -1,3 +1,12 @@
+/**
+ * @deprecated This service is deprecated. Use ClinicalEngineServiceV3 instead.
+ * 
+ * This V2 implementation still uses basic pattern matching and mock diagnosis logic.
+ * ClinicalEngineServiceV3 provides enhanced GPT-based clinical reasoning.
+ * 
+ * Migration: Replace usage with ClinicalEngineServiceV3
+ */
+
 import { 
   DiagnosticPlan, 
   DiagnosticStep, 

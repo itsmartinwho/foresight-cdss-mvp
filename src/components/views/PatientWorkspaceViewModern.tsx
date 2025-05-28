@@ -141,6 +141,24 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     loadPatientData();
   }, [loadPatientData]);
 
+  // Subscribe to data changes to refresh when consultation data is saved
+  useEffect(() => {
+    const handleDataChange = () => {
+      // Reload patient data when the data service signals changes
+      if (patient?.id) {
+        loadPatientData();
+      }
+    };
+
+    // Subscribe to changes
+    supabaseDataService.subscribe(handleDataChange);
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabaseDataService.unsubscribe(handleDataChange);
+    };
+  }, [patient?.id, loadPatientData]);
+
   // Advance demo stage when workspace is ready
   useEffect(() => {
     if (demoWorkspace.shouldRunDemoUi && demoState.demoStage === 'navigatingToWorkspace') {
