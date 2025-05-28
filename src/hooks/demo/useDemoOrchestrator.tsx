@@ -34,10 +34,22 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
   const demoStageRef = useRef<DemoStage>('introModal');
 
   // Core state
-  const [hasDemoRun, setHasDemoRunState] = useState<boolean>(() => DemoStateService.hasDemoRun());
-  const [isDemoModalOpen, setIsDemoModalOpen] = useState<boolean>(() => DemoStateService.shouldShowDemoModal());
+  const [hasDemoRun, setHasDemoRunState] = useState<boolean>(() => {
+    const hasRun = DemoStateService.hasDemoRun();
+    console.log('Demo orchestrator initializing - hasDemoRun:', hasRun);
+    return hasRun;
+  });
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState<boolean>(() => {
+    const shouldShow = DemoStateService.shouldShowDemoModal();
+    console.log('Demo orchestrator initializing - shouldShowDemoModal:', shouldShow);
+    return shouldShow;
+  });
   const [isDemoActive, setIsDemoActive] = useState<boolean>(false);
-  const [demoStage, setDemoStage] = useState<DemoStage>(() => DemoStateService.getInitialDemoStage());
+  const [demoStage, setDemoStage] = useState<DemoStage>(() => {
+    const stage = DemoStateService.getInitialDemoStage();
+    console.log('Demo orchestrator initializing - initialDemoStage:', stage);
+    return stage;
+  });
   
   // Data state
   const [demoPatient, setDemoPatient] = useState<Patient | null>(null);

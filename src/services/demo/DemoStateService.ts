@@ -55,4 +55,15 @@ export class DemoStateService {
   static resetDemo(): void {
     this.setDemoRun(false);
   }
+
+  // Utility method for testing - can be called from browser console
+  static resetDemoForTesting(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(this.DEMO_STORAGE_KEY);
+      console.log('Demo state reset. Refresh the page to see the demo modal.');
+      
+      // Also expose globally for easy access
+      (window as any).resetDemo = () => this.resetDemoForTesting();
+    }
+  }
 } 

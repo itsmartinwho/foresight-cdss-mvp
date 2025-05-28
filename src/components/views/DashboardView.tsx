@@ -55,6 +55,16 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
     isDemoActive,
   } = useDemo();
 
+  // Debug demo state
+  useEffect(() => {
+    console.log('DashboardView demo state:', {
+      hasDemoRun,
+      isDemoModalOpen,
+      demoStage,
+      isDemoActive
+    });
+  }, [hasDemoRun, isDemoModalOpen, demoStage, isDemoActive]);
+
   useEffect(() => {
     const loadUpcomingAppointments = async () => {
       setIsLoadingAppointments(true);
