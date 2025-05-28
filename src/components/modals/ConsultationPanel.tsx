@@ -187,7 +187,8 @@ export default function ConsultationPanel({
       setIsGeneratingPlan(false);
       console.log('handleClinicalPlan finished (finally), isGeneratingPlan: false');
     }
-  }, [toast, patient.id, encounter?.id, transcriptText]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast, patient.id, encounter?.id]); // transcriptText captured in closure for API call
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCurrentlyCreatingEncounter.current) {
@@ -221,31 +222,40 @@ export default function ConsultationPanel({
       setIsCreating(false);
       isCurrentlyCreatingEncounter.current = false;
     }
-  }, [patient?.id, reason, scheduledDate, duration, onConsultationCreated, onClose, toast, setEncounter, setIsCreating]);
+  }, [patient?.id, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
+
+  // Track if we should create encounter on open to prevent infinite loops
+  const shouldCreateEncounterRef = useRef(false);
 
   // Reset form when panel opens and create encounter
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isOpen) {
       // Common resets for both modes
-      setEncounter(null); // Encounter object is not used directly in demo for DB ops
+      setEncounter(null);
       setReason('');
       setScheduledDate(new Date());
       setDuration(30);
-      setActiveTab('transcript'); // Default tab
+      setActiveTab('transcript');
       setTabBarVisible(false);
-      setIsGeneratingPlan(false); // Internal loading state
+      setIsGeneratingPlan(false);
+      setStarted(false);
+      setTranscriptText('');
+      setDiagnosisText('');
+      setTreatmentText('');
+      setPlanGenerated(false);
+      
+      // Reset the creation flag
+      shouldCreateEncounterRef.current = !isDemoMode;
       
       if (isDemoMode) {
         setTranscriptText(initialDemoTranscript || '');
         setDiagnosisText(demoDiagnosis || '');
         setTreatmentText(demoTreatment || '');
-        setStarted(true); // Show transcript area immediately
+        setStarted(true);
 
         // If demo provides diagnosis or treatment, assume plan is "generated"
         if (demoDiagnosis || demoTreatment) {
           setPlanGenerated(true);
-          // Set active tab to diagnosis if available, else treatment, else transcript
           if (demoDiagnosis) setActiveTab('diagnosis');
           else if (demoTreatment) setActiveTab('treatment');
           else setActiveTab('transcript');
@@ -255,16 +265,21 @@ export default function ConsultationPanel({
         }
         // DO NOT call createEncounter in demo mode
       } else {
-        // Existing logic for non-demo mode
-        setStarted(true); // Or false if you want the "Start Consultation" button first
-        setTranscriptText('');
-        setDiagnosisText('');
-        setTreatmentText('');
-        setPlanGenerated(false);
-        createEncounter(); // Create real encounter for non-demo
+        setStarted(true);
       }
+    } else {
+      // Reset creation flag when panel closes
+      shouldCreateEncounterRef.current = false;
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, createEncounter]); // createEncounter is memoized
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment]);
+
+  // Create encounter for non-demo mode in a separate effect
+  useEffect(() => {
+    if (shouldCreateEncounterRef.current && !encounter && !isCreating) {
+      shouldCreateEncounterRef.current = false; // Prevent multiple calls
+      createEncounter();
+    }
+  }, [encounter, isCreating, createEncounter]);
 
   const handleClose = useCallback(async () => {
     if (isDemoMode) {

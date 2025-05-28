@@ -232,9 +232,42 @@ The current architecture makes it easy to add:
 3. **State Persistence Issues**: Check localStorage permissions and cross-tab communication
 4. **Memory Leaks**: Ensure proper cleanup of timers and event listeners
 
+### Race Condition Prevention
+
+The demo system has been designed to prevent common race conditions that can occur when demo and production logic interact:
+
+#### 1. Encounter Creation Loops
+- **Issue**: `useEffect` dependencies on `createEncounter` callback causing infinite loops
+- **Solution**: Use refs to track creation state and separate dependency management
+- **Implementation**: `shouldCreateEncounterRef` in `ConsultationPanel.tsx`
+
+#### 2. Demo/Production Logic Conflicts
+- **Issue**: Mixed demo and production state in same component instances
+- **Solution**: Separate demo and production consultation panels entirely
+- **Implementation**: Conditional rendering of separate `ConsultationPanel` instances
+
+#### 3. Transcription Service Conflicts
+- **Issue**: Multiple transcription sessions or conflicts with manual editing
+- **Solution**: State guards and proper WebSocket cleanup
+- **Implementation**: `isSavingRef` and connection cleanup in `ConsultationTab.tsx`
+
+#### 4. Patient Data Loading Races
+- **Issue**: Multiple simultaneous data loads triggering state updates
+- **Solution**: Loading state refs and patient ID tracking
+- **Implementation**: `isLoadingDataRef` and `loadedPatientIdRef` in `PatientWorkspaceViewModern.tsx`
+
+### Best Practices for Robust Implementation
+
+1. **Use Refs for State Guards**: Prevent multiple simultaneous operations
+2. **Separate Demo from Production**: Never mix demo and production logic in the same component instance
+3. **Proper Cleanup**: Always clean up WebSockets, timers, and event listeners
+4. **Dependency Management**: Be careful with useEffect dependencies, especially callbacks
+5. **Service Layer Separation**: Keep demo logic in services, not components
+
 ### Debugging
 
 Enable demo debugging by checking console logs:
 - Demo stage transitions are logged in `useDemoOrchestrator`
 - Animation lifecycle events are logged in `DemoAnimationService`
-- State changes are logged in `DemoStateService` 
+- State changes are logged in `DemoStateService`
+- Race condition prevention logs in component files 

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Users, CaretLeft as ChevronLeft, Trash as Trash2, PlusCircle, X, CaretUp as ChevronUp } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,24 +47,24 @@ export type DetailedPatientDataType = { patient: Patient; encounters: EncounterD
 export default function PatientWorkspaceViewModern({ patient: initialPatientStub, initialTab, onBack }: PatientWorkspaceProps) {
   const [activeTab, setActiveTab] = useState("consultation");
   const [patient, setPatient] = useState<Patient>(initialPatientStub);
-  const [detailedPatientData, setDetailedPatientData] = useState<DetailedPatientDataType>(null);
+  const [detailedPatientData, setDetailedPatientData] = useState<{ patient: Patient; encounters: EncounterDetailsWrapper[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeEncounterDetails, setActiveEncounterDetails] = useState<EncounterDetailsWrapper[]>([]);
   const [selectedEncounterForConsultation, setSelectedEncounterForConsultation] = useState<Encounter | null>(null);
   const [showConsultationPanel, setShowConsultationPanel] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isPatientOverviewOpen, setIsPatientOverviewOpen] = useState(true);
   const [isTabContentOpen, setIsTabContentOpen] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Demo integration - now clean and separated
+  // Demo integration using proper service layer
   const demoState = useDemo();
   const demoWorkspace = useDemoWorkspace({
-    patient: initialPatientStub,
+    patient: patient,
     isDemoActive: demoState.isDemoActive,
     demoStage: demoState.demoStage,
     demoPatient: demoState.demoPatient,
@@ -72,16 +72,17 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     advanceDemoStage: demoState.advanceDemoStage,
   });
 
+  // Demo consultation behavior
   const demoConsultation = useDemoConsultation({
-    patient: initialPatientStub,
+    patient,
     isDemoActive: demoState.isDemoActive,
     demoStage: demoState.demoStage,
-    demoPatient: demoState.demoPatient,
-    animatedTranscript: demoState.animatedTranscript,
-    diagnosisText: demoState.diagnosisText,
-    treatmentPlanText: demoState.treatmentPlanText,
-    advanceDemoStage: demoState.advanceDemoStage,
+    onAdvanceStage: demoState.advanceDemoStage,
   });
+
+  // Add ref to prevent race conditions in data loading
+  const isLoadingDataRef = useRef(false);
+  const loadedPatientIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (initialTab) {
@@ -102,6 +103,13 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const loadPatientData = useCallback(async () => {
     if (!patient?.id) return;
     
+    // Prevent multiple simultaneous loads of the same patient
+    if (isLoadingDataRef.current || loadedPatientIdRef.current === patient.id) {
+      return;
+    }
+    
+    isLoadingDataRef.current = true;
+    loadedPatientIdRef.current = patient.id;
     setLoading(true);
     setError(null);
     
@@ -114,7 +122,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         const nonDeletedEncounters = (detailedData.encounters || []).filter(ew => !ew.encounter.isDeleted);
         setActiveEncounterDetails(nonDeletedEncounters);
         
-        if (nonDeletedEncounters.length > 0 && !selectedEncounterForConsultation) {
+        // Only set selected encounter if none is currently selected
+        const currentlySelected = selectedEncounterForConsultation;
+        if (nonDeletedEncounters.length > 0 && !currentlySelected) {
           setSelectedEncounterForConsultation(nonDeletedEncounters[0].encounter);
         }
       }
@@ -123,9 +133,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       setError(err instanceof Error ? err.message : "Failed to load patient data");
     } finally {
       setLoading(false);
+      isLoadingDataRef.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patient?.id]); // selectedEncounterForConsultation intentionally excluded to prevent infinite loop
+  }, [patient?.id]);
 
   useEffect(() => {
     loadPatientData();
@@ -514,28 +524,28 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         </AlertDialog>
       )}
 
-      {/* Consultation Panel */}
+      {/* Regular Consultation Panel - separated from demo */}
       <ConsultationPanel
-        isOpen={showConsultationPanel}
+        isOpen={showConsultationPanel && !demoWorkspace.shouldRunDemoUi}
         onClose={() => setShowConsultationPanel(false)}
         patient={patient}
         onConsultationCreated={handleConsultationCreated}
+        isDemoMode={false}
       />
 
-      {/* Demo Consultation Panel */}
-      {demoWorkspace.shouldRunDemoUi && demoState.demoPatient && (
+      {/* Demo Consultation Panel - separate instance for demo */}
+      {demoWorkspace.shouldRunDemoUi && (
         <ConsultationPanel
           isOpen={demoWorkspace.isDemoPanelOpen}
-          onClose={() => {
-            demoWorkspace.exitDemo();
-          }}
-          patient={demoState.demoPatient}
+          onClose={demoWorkspace.exitDemo}
+          patient={patient}
+          onConsultationCreated={handleConsultationCreated}
           isDemoMode={demoConsultation.isDemoMode}
           initialDemoTranscript={demoConsultation.initialDemoTranscript}
           demoDiagnosis={demoConsultation.demoDiagnosis}
           demoTreatment={demoConsultation.demoTreatment}
-          onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
+          onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
         />
       )}
     </ContentSurface>

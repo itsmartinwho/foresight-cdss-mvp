@@ -15,58 +15,90 @@ export interface DemoConsultationBehavior {
   onDemoClinicalPlanClick?: () => void;
 }
 
-interface UseDemoConsultationProps {
-  patient: Patient;
-  isDemoActive: boolean;
-  demoStage: DemoStage;
-  demoPatient: Patient | null;
-  animatedTranscript: string;
-  diagnosisText: string;
-  treatmentPlanText: string;
-  advanceDemoStage: (stage: DemoStage) => void;
-}
-
 export function useDemoConsultation({
   patient,
   isDemoActive,
   demoStage,
-  demoPatient,
-  animatedTranscript,
-  diagnosisText,
-  treatmentPlanText,
-  advanceDemoStage,
-}: UseDemoConsultationProps): DemoConsultationBehavior {
+  onAdvanceStage,
+}: {
+  patient?: Patient | null;
+  isDemoActive: boolean;
+  demoStage: DemoStage;
+  onAdvanceStage?: (stage: DemoStage) => void;
+}): DemoConsultationBehavior {
   const searchParams = useSearchParams();
-  const isDemoRouteActive = searchParams.get('demo') === 'true';
-  const [isDemoGeneratingPlan, setIsDemoGeneratingPlan] = useState(false);
-
-  // Determine if we're in demo mode for this consultation
-  const isDemoMode = isDemoActive && 
-                    isDemoRouteActive && 
-                    patient.id === DEMO_PATIENT_ID &&
-                    demoPatient?.id === patient.id;
-
-  // Handle clinical plan generation simulation
-  useEffect(() => {
-    if (isDemoMode && demoStage === 'simulatingPlanGeneration') {
-      setIsDemoGeneratingPlan(true);
-    } else if (isDemoMode && demoStage === 'showingPlan') {
-      setIsDemoGeneratingPlan(false);
-    }
-  }, [isDemoMode, demoStage]);
-
-  const handleDemoClinicalPlanClick = () => {
-    if (isDemoMode && demoStage === 'animatingTranscript') {
-      advanceDemoStage('simulatingPlanGeneration');
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  
+  // Check if this is the demo patient and demo is active
+  const isDemoMode = isDemoActive && patient?.id === DEMO_PATIENT_ID;
+  
+  // Demo transcript progression based on stage
+  const getDemoTranscript = () => {
+    if (!isDemoMode) return undefined;
+    
+    switch (demoStage) {
+      case 'animatingTranscript':
+      case 'simulatingPlanGeneration':
+      case 'showingPlan':
+      case 'finished':
+        return "Patient presents with joint pain and stiffness, particularly in the morning. Reports fatigue and general malaise over the past few weeks. No recent trauma or injury. Family history of autoimmune conditions.";
+      default:
+        return "";
     }
   };
-
+  
+  // Demo diagnosis based on stage
+  const getDemoDiagnosis = () => {
+    if (!isDemoMode) return undefined;
+    
+    switch (demoStage) {
+      case 'showingPlan':
+      case 'finished':
+        return "Based on the clinical presentation, patient history, and symptoms, the primary diagnosis is Rheumatoid Arthritis (RA). The morning stiffness, joint pain, and systemic symptoms are characteristic of early RA.";
+      default:
+        return undefined;
+    }
+  };
+  
+  // Demo treatment based on stage
+  const getDemoTreatment = () => {
+    if (!isDemoMode) return undefined;
+    
+    switch (demoStage) {
+      case 'showingPlan':
+      case 'finished':
+        return "Recommended treatment plan:\n• Start methotrexate 15mg weekly with folic acid supplementation\n• Short-term prednisone 10mg daily for 2 weeks, then taper\n• Regular monitoring with CBC, liver function tests\n• Rheumatology referral for ongoing management\n• Patient education on joint protection and exercise";
+      default:
+        return undefined;
+    }
+  };
+  
+  // Handle demo clinical plan generation
+  const handleDemoClinicalPlan = () => {
+    if (!isDemoMode || !onAdvanceStage) return;
+    
+    setIsGeneratingPlan(true);
+    
+    // Simulate clinical plan generation delay
+    setTimeout(() => {
+      setIsGeneratingPlan(false);
+      onAdvanceStage('showingPlan');
+    }, 1800); // Match the demo system timing
+  };
+  
+  // Reset generation state when stage changes
+  useEffect(() => {
+    if (demoStage !== 'simulatingPlanGeneration') {
+      setIsGeneratingPlan(false);
+    }
+  }, [demoStage]);
+  
   return {
     isDemoMode,
-    initialDemoTranscript: isDemoMode ? animatedTranscript : undefined,
-    demoDiagnosis: isDemoMode ? diagnosisText : undefined,
-    demoTreatment: isDemoMode ? treatmentPlanText : undefined,
-    isDemoGeneratingPlan,
-    onDemoClinicalPlanClick: isDemoMode ? handleDemoClinicalPlanClick : undefined,
+    initialDemoTranscript: getDemoTranscript(),
+    demoDiagnosis: getDemoDiagnosis(),
+    demoTreatment: getDemoTreatment(),
+    isDemoGeneratingPlan: isGeneratingPlan,
+    onDemoClinicalPlanClick: isDemoMode ? handleDemoClinicalPlan : undefined,
   };
 } 

@@ -82,6 +82,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const richTextEditorRef = useRef<RichTextEditorRef>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Added mediaRecorderRef
   const socketRef = useRef<WebSocket | null>(null); // Added socketRef for consistency with original file
+  const isSavingRef = useRef(false); // Track save state to prevent race conditions
 
   const encounterStateForAutoSaveRef = useRef<{
     patientBusinessId: string | undefined; // Business ID of the patient
@@ -109,10 +110,21 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       if (richTextEditorRef.current) {
         richTextEditorRef.current.setContent(currentTranscript);
       }
+      
+      // Clean up any existing connections
       if (ws) {
         ws.close();
         setWs(null);
       }
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current = null;
+      }
+      
       setAiOutput(null);
       encounterStateForAutoSaveRef.current = {
         patientBusinessId: selectedEncounter.patientId, 
@@ -128,13 +140,34 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       if (richTextEditorRef.current) {
         richTextEditorRef.current.setContent("");
       }
+      
+      // Clean up connections when no encounter
       if (ws) {
         ws.close();
         setWs(null);
       }
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current = null;
+      }
+      
       setAiOutput(null);
       encounterStateForAutoSaveRef.current = null;
     }
+    
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    };
   }, [selectedEncounter, patient, ws]);
 
   const getCursorPosition = (): number | null => {
@@ -148,8 +181,16 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
   const debouncedSaveTranscript = useDebouncedCallback(async () => {
     const currentSaveState = encounterStateForAutoSaveRef.current;
+    
+    // Prevent multiple simultaneous saves
+    if (isSavingRef.current) {
+      return;
+    }
+    
     if (currentSaveState && selectedEncounter && currentSaveState.patientBusinessId && selectedEncounter.encounterIdentifier && currentSaveState.transcriptToSave !== currentSaveState.lastSaved) {
       console.log("Auto-saving transcript for patient (business ID):", currentSaveState.patientBusinessId, "encounter (business ID):", selectedEncounter.encounterIdentifier);
+      
+      isSavingRef.current = true;
       try {
         const encounterIdVal = typeof selectedEncounter.encounterIdentifier === 'string' 
           ? selectedEncounter.encounterIdentifier
@@ -168,6 +209,8 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       } catch (error) {
         console.error("Error auto-saving transcript:", error);
         toast({ title: "Save Error", description: "Could not auto-save transcript.", variant: "destructive" });
+      } finally {
+        isSavingRef.current = false;
       }
     }
   }, 1000);
@@ -205,17 +248,26 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
     let encounterToUse = selectedEncounter;
 
+    // Only create new encounter if we're starting a new consultation AND no encounter exists
     if (!encounterToUse && isStartingNewConsultation && onStartTranscriptionForNewConsult) {
-        // Create new encounter first
+        // Add guard to prevent multiple creation attempts
+        if (isTranscribing) {
+          console.log("Already transcribing, skipping encounter creation");
+          return;
+        }
+        
         try {
+          setIsTranscribing(true); // Set early to prevent race conditions
           encounterToUse = await onStartTranscriptionForNewConsult();
           if (!encounterToUse) {
             alert("Failed to create new consultation. Cannot start transcription.");
+            setIsTranscribing(false);
             return;
           }
         } catch (error) {
           console.error("Error creating new consultation:", error);
           alert("Failed to create new consultation. Cannot start transcription.");
+          setIsTranscribing(false);
           return;
         }
     }
