@@ -79,6 +79,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   useEffect(() => {
     if (shouldRunDemoUi) {
       if (demoStage === 'consultationPanelReady') {
+        console.log(
+          "[Demo Debug] Stage: consultationPanelReady. shouldRunDemoUi:", shouldRunDemoUi,
+          "Attempting to open demo panel and advance to animatingTranscript."
+        );
         setIsDemoPanelOpen(true);
         advanceDemoStage('animatingTranscript');
       } else if (demoStage === 'finished' || !isDemoActive) {
@@ -100,6 +104,27 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       exitDemo();
     }
   }, [isDemoActive, isDemoRouteActive, dorothyRobinsonPatient?.id, initialPatientStub.id, exitDemo]);
+
+  // Effect to advance demo stage once workspace is ready after navigation
+  useEffect(() => {
+    console.log(`[Demo Debug] PatientWorkspace effect running. shouldRunDemoUi: ${shouldRunDemoUi}, demoStage: ${demoStage}`);
+    if (shouldRunDemoUi && demoStage === 'navigatingToWorkspace') {
+      console.log("[Demo Debug] PatientWorkspace detected navigatingToWorkspace stage, advancing to consultationPanelReady");
+      advanceDemoStage('consultationPanelReady');
+    }
+  }, [shouldRunDemoUi, demoStage, advanceDemoStage]);
+
+  // Effect to log initial demo state variables
+  useEffect(() => {
+    console.log("[Demo Debug] PatientWorkspaceViewModern initial demo checks:", {
+      isDemoActive,
+      isDemoRouteActive,
+      isDorothy: dorothyRobinsonPatient?.id === initialPatientStub.id,
+      dorothyIdFromContext: dorothyRobinsonPatient?.id,
+      initialPatientStubId: initialPatientStub.id,
+      currentDemoStage: demoStage
+    });
+  }, [isDemoActive, isDemoRouteActive, dorothyRobinsonPatient, initialPatientStub.id, demoStage]);
 
 
   useEffect(() => {

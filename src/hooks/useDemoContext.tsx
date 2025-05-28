@@ -213,7 +213,7 @@ export const DemoProvider = ({ children }: DemoProviderProps) => {
         } else {
           router.push(`/patients/${patient.id}?demo=true`);
         }
-        advanceDemoStage('consultationPanelReady');
+        advanceDemoStage('navigatingToWorkspace'); // Changed from consultationPanelReady
       } else {
         console.error("Demo patient Dorothy Robinson not found.");
         exitDemo();
