@@ -11,14 +11,43 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Target patients to check
+// Target patients to check (can be extended)
 const TARGET_PATIENTS = [
   'Bob Jones',
   'James Lee', 
   'Dorothy Robinson',
   'Alice Smith',
-  'Maria Gomez'
+  'Maria Gomez',
+  'Justin Rodriguez'
 ];
+
+// Cleanup strategies with different criteria
+const CLEANUP_STRATEGIES = {
+  VERY_RECENT: {
+    name: 'Very Recent Duplicates',
+    timeWindow: 10 * 60 * 1000, // 10 minutes
+    groupingWindow: 1000, // 1 second
+    description: 'Extremely recent duplicates (last 10 minutes, within 1 second)'
+  },
+  RECENT: {
+    name: 'Recent Testing Artifacts',
+    timeWindow: 6 * 60 * 60 * 1000, // 6 hours
+    groupingWindow: 10 * 1000, // 10 seconds
+    description: 'Recent testing artifacts (last 6 hours, within 10 seconds)'
+  },
+  CONSERVATIVE: {
+    name: 'Conservative Cleanup',
+    timeWindow: 24 * 60 * 60 * 1000, // 24 hours
+    groupingWindow: 5 * 1000, // 5 seconds
+    description: 'Conservative cleanup (last 24 hours, within 5 seconds)'
+  },
+  TARGETED: {
+    name: 'Targeted Patient Cleanup',
+    timeWindow: null, // All time
+    groupingWindow: 5 * 1000, // 5 seconds
+    description: 'All-time cleanup for specific target patients'
+  }
+};
 
 /**
  * Check if an encounter appears to be fake/empty
@@ -26,8 +55,8 @@ const TARGET_PATIENTS = [
  */
 function isLikelyFakeEncounter(encounter) {
   // Check for empty or minimal content in key fields
-  const hasTranscript = encounter.transcript && encounter.transcript.trim().length > 0;
-  const hasSoapNote = encounter.soap_note && encounter.soap_note.trim().length > 0;
+  const hasTranscript = encounter.transcript && encounter.transcript.trim().length > 100;
+  const hasSoapNote = encounter.soap_note && encounter.soap_note.trim().length > 50;
   const hasReasonCode = encounter.reason_code && encounter.reason_code.trim().length > 0;
   const hasReasonDisplay = encounter.reason_display_text && encounter.reason_display_text.trim().length > 0;
   const hasTreatments = encounter.treatments && Array.isArray(encounter.treatments) && encounter.treatments.length > 0;
@@ -48,6 +77,59 @@ function isLikelyFakeEncounter(encounter) {
   // Consider it fake if it has 0 or 1 meaningful fields
   // This is very conservative - real encounters should have multiple fields
   return meaningfulFields <= 1;
+}
+
+/**
+ * Analyze encounter quality and provide statistics
+ */
+async function analyzeEncounterQuality(timeWindow = null) {
+  console.log('🔍 Analyzing encounter data quality...\n');
+  
+  let query = supabase.from('encounters').select('*');
+  
+  if (timeWindow) {
+    const cutoffTime = new Date(Date.now() - timeWindow).toISOString();
+    query = query.gte('created_at', cutoffTime);
+  }
+  
+  const { data: encounters, error } = await query.limit(1000);
+  
+  if (error) {
+    console.error('Error analyzing encounters:', error);
+    return null;
+  }
+  
+  const fakeEncounters = encounters.filter(isLikelyFakeEncounter);
+  const realEncounters = encounters.filter(enc => !isLikelyFakeEncounter(enc));
+  
+  console.log('📊 Quality Analysis Results:');
+  console.log(`  Total encounters analyzed: ${encounters.length}`);
+  console.log(`  Likely fake encounters: ${fakeEncounters.length} (${Math.round(fakeEncounters.length/encounters.length*100)}%)`);
+  console.log(`  Likely real encounters: ${realEncounters.length} (${Math.round(realEncounters.length/encounters.length*100)}%)`);
+  
+  // Show sample of each type
+  if (realEncounters.length > 0) {
+    console.log('\n✅ Sample real encounter:');
+    const sample = realEncounters[0];
+    console.log(`   Reason: ${sample.reason_display_text || 'None'}`);
+    console.log(`   Has Transcript: ${sample.transcript ? 'YES (' + sample.transcript.length + ' chars)' : 'NO'}`);
+    console.log(`   Has SOAP: ${sample.soap_note ? 'YES (' + sample.soap_note.length + ' chars)' : 'NO'}`);
+  }
+  
+  if (fakeEncounters.length > 0) {
+    console.log('\n🎭 Sample fake encounter:');
+    const sample = fakeEncounters[0];
+    console.log(`   Reason: ${sample.reason_display_text || 'None'}`);
+    console.log(`   Has Transcript: ${sample.transcript ? 'YES (' + sample.transcript.length + ' chars)' : 'NO'}`);
+    console.log(`   Has SOAP: ${sample.soap_note ? 'YES (' + sample.soap_note.length + ' chars)' : 'NO'}`);
+  }
+  
+  return {
+    total: encounters.length,
+    fake: fakeEncounters.length,
+    real: realEncounters.length,
+    fakePercentage: Math.round(fakeEncounters.length/encounters.length*100)
+  };
 }
 
 /**
@@ -111,26 +193,70 @@ async function findTargetPatientEncounters() {
 }
 
 /**
+ * Find encounters based on strategy criteria
+ */
+async function findEncountersByStrategy(strategy) {
+  console.log(`🔍 Finding encounters using strategy: ${strategy.name}...\n`);
+  
+  let query = supabase
+    .from('encounters')
+    .select('*')
+    .eq('is_deleted', false)
+    .order('patient_supabase_id, created_at');
+  
+  if (strategy.timeWindow) {
+    const cutoffTime = new Date(Date.now() - strategy.timeWindow).toISOString();
+    query = query.gte('created_at', cutoffTime);
+  }
+  
+  const { data: encounters, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching encounters:', error);
+    return {};
+  }
+  
+  console.log(`📊 Encounters found: ${encounters.length}`);
+  
+  // Group by patient
+  const patientGroups = {};
+  encounters.forEach(encounter => {
+    if (!patientGroups[encounter.patient_supabase_id]) {
+      patientGroups[encounter.patient_supabase_id] = [];
+    }
+    patientGroups[encounter.patient_supabase_id].push(encounter);
+  });
+  
+  console.log(`👥 Patients with encounters: ${Object.keys(patientGroups).length}`);
+  
+  return patientGroups;
+}
+
+/**
  * Analyze encounters to find fake ones created in quick succession
  */
-function analyzeFakeEncounters(patientEncounters) {
-  console.log('\n🔍 Analyzing encounters for fake data patterns...\n');
+function analyzeFakeEncounters(patientEncounters, strategy) {
+  console.log(`\n🔍 Analyzing encounters for fake data patterns using ${strategy.name}...\n`);
   
   const fakeEncounterGroups = [];
   
-  Object.entries(patientEncounters).forEach(([patientName, data]) => {
-    const { patient, encounters } = data;
+  Object.entries(patientEncounters).forEach(([patientKey, encounters]) => {
+    // Handle both formats: named patients and ID-based groups
+    const patientName = typeof encounters === 'object' && encounters.patient 
+      ? patientKey 
+      : `Patient-${patientKey}`;
+    const encounterList = Array.isArray(encounters) ? encounters : encounters.encounters;
     
-    if (encounters.length === 0) {
+    if (encounterList.length === 0) {
       console.log(`   ${patientName}: No encounters`);
       return;
     }
     
-    console.log(`\n📋 Analyzing ${patientName} (${encounters.length} encounters):`);
+    console.log(`\n📋 Analyzing ${patientName} (${encounterList.length} encounters):`);
     
     // First, identify likely fake encounters
-    const fakeEncounters = encounters.filter(isLikelyFakeEncounter);
-    const realEncounters = encounters.filter(enc => !isLikelyFakeEncounter(enc));
+    const fakeEncounters = encounterList.filter(isLikelyFakeEncounter);
+    const realEncounters = encounterList.filter(enc => !isLikelyFakeEncounter(enc));
     
     console.log(`   🎭 Likely fake encounters: ${fakeEncounters.length}`);
     console.log(`   ✅ Likely real encounters: ${realEncounters.length}`);
@@ -140,7 +266,7 @@ function analyzeFakeEncounters(patientEncounters) {
       return;
     }
     
-    // Group fake encounters by creation time (within 5 seconds of each other)
+    // Group fake encounters by creation time
     fakeEncounters.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     
     let currentGroup = [fakeEncounters[0]];
@@ -151,10 +277,9 @@ function analyzeFakeEncounters(patientEncounters) {
       const previous = fakeEncounters[i - 1];
       
       const timeDiff = new Date(current.created_at) - new Date(previous.created_at);
-      const timeDiffSeconds = timeDiff / 1000;
       
-      // Group encounters created within 5 seconds of each other
-      if (timeDiffSeconds <= 5) {
+      // Group encounters created within the strategy's grouping window
+      if (timeDiff <= strategy.groupingWindow) {
         currentGroup.push(current);
       } else {
         if (currentGroup.length > 1) {
@@ -177,7 +302,7 @@ function analyzeFakeEncounters(patientEncounters) {
       
       fakeEncounterGroups.push({
         patientName,
-        patient,
+        patient: typeof encounters === 'object' && encounters.patient ? encounters.patient : null,
         encounters: group,
         timeSpan: timeSpan / 1000
       });
@@ -198,7 +323,7 @@ function analyzeFakeEncounters(patientEncounters) {
 }
 
 /**
- * Delete fake encounter groups
+ * Delete fake encounter groups with batch processing
  */
 async function deleteFakeEncounters(fakeGroups, dryRun = true) {
   if (fakeGroups.length === 0) {
@@ -237,60 +362,124 @@ async function deleteFakeEncounters(fakeGroups, dryRun = true) {
     return totalToDelete;
   }
   
-  // Actually delete the encounters
-  console.log('\n🗑️  Deleting fake encounters...');
+  // Actually delete the encounters in batches
+  console.log('\n🗑️  Deleting fake encounters in batches...');
   
   const idsToDelete = encountersToDelete.map(enc => enc.id);
+  const batchSize = 50;
+  let deletedCount = 0;
   
-  const { data, error } = await supabase
-    .from('encounters')
-    .delete()
-    .in('id', idsToDelete)
-    .select();
-  
-  if (error) {
-    console.error('❌ Error deleting encounters:', error);
-    return 0;
+  for (let i = 0; i < idsToDelete.length; i += batchSize) {
+    const batch = idsToDelete.slice(i, i + batchSize);
+    
+    const { data, error } = await supabase
+      .from('encounters')
+      .delete()
+      .in('id', batch)
+      .select();
+    
+    if (error) {
+      console.error(`❌ Error deleting batch ${Math.floor(i / batchSize) + 1}:`, error);
+      break;
+    }
+    
+    deletedCount += data.length;
+    console.log(`✅ Deleted batch ${Math.floor(i / batchSize) + 1}: ${data.length} encounters (total: ${deletedCount})`);
   }
   
-  console.log(`✅ Successfully deleted ${data.length} fake encounters`);
-  return data.length;
+  console.log(`✅ Successfully deleted ${deletedCount} fake encounters`);
+  return deletedCount;
+}
+
+/**
+ * Get patient names for better reporting
+ */
+async function enrichWithPatientNames(fakeGroups) {
+  const patientIds = [...new Set(fakeGroups.map(g => g.encounters[0].patient_supabase_id))];
+  
+  if (patientIds.length === 0) return fakeGroups;
+  
+  const { data: patients } = await supabase
+    .from('patients')
+    .select('id, first_name, last_name')
+    .in('id', patientIds);
+
+  const patientMap = {};
+  patients?.forEach(p => {
+    patientMap[p.id] = `${p.first_name} ${p.last_name}`;
+  });
+
+  return fakeGroups.map(group => ({
+    ...group,
+    patientName: patientMap[group.encounters[0].patient_supabase_id] || group.patientName
+  }));
 }
 
 async function main() {
-  console.log('🧹 Fake Consultation Cleanup Tool\n');
-  console.log('Target patients:', TARGET_PATIENTS.join(', '));
-  console.log('\nThis tool will:');
-  console.log('1. Find encounters for the specified patients');
-  console.log('2. Identify encounters with empty/minimal data');
-  console.log('3. Group fake encounters created within 5 seconds of each other');
-  console.log('4. Delete only grouped fake encounters (very conservative)\n');
+  console.log('🧹 Comprehensive Fake Consultation Cleanup Tool\n');
+  
+  const args = process.argv.slice(2);
+  const isExecute = args.includes('--execute');
+  const strategyName = args.find(arg => arg.startsWith('--strategy='))?.split('=')[1] || 'CONSERVATIVE';
+  const analyzeOnly = args.includes('--analyze-only');
+  
+  const strategy = CLEANUP_STRATEGIES[strategyName];
+  if (!strategy) {
+    console.error(`❌ Unknown strategy: ${strategyName}`);
+    console.log('Available strategies:', Object.keys(CLEANUP_STRATEGIES).join(', '));
+    return;
+  }
+  
+  console.log(`📋 Using strategy: ${strategy.name}`);
+  console.log(`📝 Description: ${strategy.description}`);
+  console.log(`⏰ Time window: ${strategy.timeWindow ? Math.round(strategy.timeWindow / (60 * 60 * 1000)) + ' hours' : 'All time'}`);
+  console.log(`🕐 Grouping window: ${strategy.groupingWindow / 1000} seconds\n`);
+  
+  if (analyzeOnly) {
+    console.log('🔬 Analysis-only mode enabled\n');
+  }
   
   try {
-    // Find patient encounters
-    const patientEncounters = await findTargetPatientEncounters();
+    // First, analyze overall encounter quality
+    await analyzeEncounterQuality(strategy.timeWindow);
     
-    if (Object.keys(patientEncounters).length === 0) {
-      console.log('❌ No target patients found in database');
+    if (analyzeOnly) {
+      console.log('\n✅ Analysis completed!');
       return;
     }
     
-    // Analyze for fake encounters
-    const fakeGroups = analyzeFakeEncounters(patientEncounters);
+    let patientEncounters;
+    let fakeGroups;
+    
+    if (strategyName === 'TARGETED') {
+      // Use targeted patient approach
+      console.log('\nTarget patients:', TARGET_PATIENTS.join(', '));
+      patientEncounters = await findTargetPatientEncounters();
+      
+      if (Object.keys(patientEncounters).length === 0) {
+        console.log('❌ No target patients found in database');
+        return;
+      }
+      
+      fakeGroups = analyzeFakeEncounters(patientEncounters, strategy);
+    } else {
+      // Use time-based approach
+      const encounters = await findEncountersByStrategy(strategy);
+      fakeGroups = analyzeFakeEncounters(encounters, strategy);
+      fakeGroups = await enrichWithPatientNames(fakeGroups);
+    }
     
     if (fakeGroups.length === 0) {
       console.log('\n🎉 No fake encounter groups found! All encounters appear legitimate.');
       return;
     }
     
-    const isExecute = process.argv.includes('--execute');
-    
     if (!isExecute) {
       console.log('\n🧪 Running in DRY RUN mode...\n');
       await deleteFakeEncounters(fakeGroups, true);
       console.log('\n' + '='.repeat(60));
       console.log('To actually delete these fake encounters, run:');
-      console.log('node scripts/synthetic-data/cleanup-fake-consultations.js --execute');
+      console.log(`node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=${strategyName} --execute`);
       console.log('='.repeat(60));
     } else {
       console.log('\n🚀 EXECUTING cleanup...\n');
@@ -307,8 +496,42 @@ async function main() {
   }
 }
 
-if (require.main === module) {
-  main();
+function showHelp() {
+  console.log('🧹 Comprehensive Fake Consultation Cleanup Tool\n');
+  console.log('Usage: node scripts/synthetic-data/cleanup-fake-consultations.js [options]\n');
+  console.log('Options:');
+  console.log('  --strategy=STRATEGY  Cleanup strategy to use (default: CONSERVATIVE)');
+  console.log('  --execute            Actually perform the cleanup (default: dry run)');
+  console.log('  --analyze-only       Only analyze encounter quality, don\'t clean up');
+  console.log('  --help               Show this help message\n');
+  console.log('Available strategies:');
+  Object.entries(CLEANUP_STRATEGIES).forEach(([key, strategy]) => {
+    console.log(`  ${key.padEnd(12)} - ${strategy.description}`);
+  });
+  console.log('\nExamples:');
+  console.log('  # Analyze encounter quality only');
+  console.log('  node scripts/synthetic-data/cleanup-fake-consultations.js --analyze-only');
+  console.log('');
+  console.log('  # Dry run with conservative strategy');
+  console.log('  node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE');
+  console.log('');
+  console.log('  # Execute very recent cleanup');
+  console.log('  node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=VERY_RECENT --execute');
 }
 
-module.exports = { findTargetPatientEncounters, analyzeFakeEncounters, deleteFakeEncounters }; 
+if (require.main === module) {
+  if (process.argv.includes('--help')) {
+    showHelp();
+  } else {
+    main();
+  }
+}
+
+module.exports = { 
+  findTargetPatientEncounters, 
+  analyzeFakeEncounters, 
+  deleteFakeEncounters,
+  analyzeEncounterQuality,
+  isLikelyFakeEncounter,
+  CLEANUP_STRATEGIES
+}; 
