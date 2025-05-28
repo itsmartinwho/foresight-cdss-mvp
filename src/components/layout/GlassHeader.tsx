@@ -4,8 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import QuickSearch from "@/components/ui/QuickSearch";
+import { useDemo } from "@/contexts/DemoContext";
+import { ArrowClockwise } from '@phosphor-icons/react';
 
 export default function GlassHeader() {
+  const { hasDemoRun, demoStage } = useDemo();
+  
+  const handleResetDemo = () => {
+    console.log('Demo reset from header menu');
+    localStorage.removeItem('hasDemoRun');
+    window.location.reload();
+  };
+
   return (
     <header className="fixed inset-x-0 top-0 z-40 h-16 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-xl border-b border-[rgba(255,255,255,0.084)] bg-transparent">
       <div className="flex items-center gap-2">
@@ -46,6 +56,15 @@ export default function GlassHeader() {
             <Link href="/settings" className="px-4 py-2 rounded hover:bg-white/10">
               Settings
             </Link>
+            {(hasDemoRun || demoStage === 'finished') && (
+              <button
+                onClick={handleResetDemo}
+                className="px-4 py-2 rounded hover:bg-white/10 text-left flex items-center gap-2"
+              >
+                <ArrowClockwise className="h-4 w-4" />
+                Reset Demo
+              </button>
+            )}
           </PopoverContent>
         </Popover>
       </div>
