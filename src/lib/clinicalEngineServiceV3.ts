@@ -151,7 +151,7 @@ Latest Encounter Transcript: ${transcript}
 Please generate differential diagnoses based on this information.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4.1-2025-04-14", // Corrected model name as specified by user
+        model: "gpt-4o", // Fixed: Using actual OpenAI model name
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -163,7 +163,7 @@ Please generate differential diagnoses based on this information.`;
       const response = completion.choices[0].message.content;
       
       if (!response) {
-        throw new Error('No response from GPT-4.1 for differential diagnoses');
+        throw new Error('No response from GPT-4o for differential diagnoses');
       }
 
       // Parse JSON response
@@ -216,7 +216,7 @@ Differential Diagnoses from Colleague: ${JSON.stringify(differentialDiagnoses, n
 Please provide your primary diagnosis and treatment plan.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: "o4-mini-2025-04-16", // Corrected model name as specified by user
+        model: "gpt-4o-mini", // Fixed: Using actual OpenAI model name
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -228,7 +228,7 @@ Please provide your primary diagnosis and treatment plan.`;
       const response = completion.choices[0].message.content;
       
       if (!response) {
-        throw new Error('No response from o4-mini for diagnosis and treatment');
+        throw new Error('No response from gpt-4o-mini for diagnosis and treatment');
       }
 
       const result = JSON.parse(response);
@@ -321,7 +321,7 @@ Please provide your primary diagnosis and treatment plan.`;
   ): Promise<string> {
     try {
       const completion = await this.openai.chat.completions.create({
-        model: "o4-mini-2025-04-16", // Corrected model name as specified by user
+        model: "gpt-4o-mini", // Fixed: Using actual OpenAI model name
         messages: [
           { 
             role: "system", 

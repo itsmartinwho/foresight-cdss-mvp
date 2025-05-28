@@ -13,19 +13,19 @@ The Clinical Engine V3 represents a significant improvement over previous versio
    - Includes demographics, medical history, encounters, lab results, conditions, and treatments
    - Provides full patient context rather than isolated data points
 
-2. **Stage 2: Differential Diagnosis Generation (GPT-4.1)**
-   - Model: `gpt-4.1-2025-04-14`
+2. **Stage 2: Differential Diagnosis Generation (GPT-4o)**
+   - Model: `gpt-4o`
    - Prompt: "You are a US-based doctor tasked to create differential diagnoses based on the provided patient information and data from the latest encounter and rank them based on their likelihood"
    - Output: 3-5 ranked differential diagnoses with likelihood and key factors
    - Saved to database for auditability and display in diagnosis tab
 
-3. **Stage 3: Primary Diagnosis and Treatment Plan (o4-mini)**
-   - Model: `o4-mini-2025-04-16`
+3. **Stage 3: Primary Diagnosis and Treatment Plan (GPT-4o-mini)**
+   - Model: `gpt-4o-mini`
    - Prompt: "You are a US-based doctor tasked to create a diagnosis and treatment plan based on the provided patient information, data from the latest encounter, and differential diagnosis provided by another doctor"
    - Uses structured JSON output for consistent parsing
    - Considers all patient data and differential diagnoses from Stage 2
 
-4. **Stage 4: Additional Clinical Field Extraction (o4-mini)**
+4. **Stage 4: Additional Clinical Field Extraction (GPT-4o-mini)**
    - Separate calls to extract specific fields:
      - `conditionsDescription`: Concise medical condition description
      - `conditionsCode`: Appropriate ICD-10 code
@@ -98,9 +98,9 @@ OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### GPT Model Specifications
-- **Differential Diagnosis**: `gpt-4.1-2025-04-14` (GPT-4.1) - Enhanced reasoning capabilities
-- **Primary Diagnosis**: `o4-mini-2025-04-16` - Fast, cost-effective for structured outputs
-- **Field Extraction**: `o4-mini-2025-04-16` - Specialized single-field extraction
+- **Differential Diagnosis**: `gpt-4o` (GPT-4o) - Enhanced reasoning capabilities
+- **Primary Diagnosis**: `gpt-4o-mini` - Fast, cost-effective for structured outputs
+- **Field Extraction**: `gpt-4o-mini` - Specialized single-field extraction
 
 ## Usage
 
