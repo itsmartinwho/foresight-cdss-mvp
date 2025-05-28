@@ -131,4 +131,79 @@ This document outlines the fixes applied to resolve the encounter deletion probl
 Existing code calling these methods should be updated to:
 1. Add `await` keyword for async operations
 2. Check return values for success/failure
-3. Handle the new `includeDeleted` parameter where needed 
+3. Handle the new `includeDeleted` parameter where needed
+
+---
+
+## Fake Consultation Cleanup (May 28, 2025)
+
+### Problem Statement
+
+Due to a bug in the system, numerous fake consultations with empty data were created for several patients. These fake encounters contained no meaningful clinical data (no transcript, SOAP notes, reason codes, treatments, etc.) and were created in rapid succession, cluttering the patient records.
+
+### Affected Patients
+
+- **Bob Jones** (ID: TEST_CHRONIC_001)
+- **James Lee** (ID: VPQRFHNAHJYJ) 
+- **Dorothy Robinson** (ID: 0681FA35-A794-4684-97BD-00B88370DB41)
+- **Alice Smith** (ID: TEST_HEALTHY_001)
+- **Maria Gomez** (ID: RUGOWDBR4X61)
+
+### Cleanup Tool Created
+
+Created `scripts/synthetic-data/cleanup-fake-consultations.js` - a conservative cleanup tool that:
+
+1. **Identifies fake encounters** by checking for empty/minimal data:
+   - No transcript content
+   - No SOAP notes
+   - No reason codes or display text
+   - No treatments
+   - No observations
+   - No prior authorization justification
+
+2. **Groups encounters by timing**: Only considers encounters created within 5 seconds of each other as candidates for deletion
+
+3. **Conservative approach**: Only deletes encounters that are:
+   - Part of a group of 2+ similar fake encounters
+   - Created in quick succession (≤5 seconds apart)
+   - Have minimal meaningful data (≤1 populated clinical fields)
+
+4. **Safety measures**:
+   - Preserves isolated fake encounters (not in groups) for safety
+   - Dry-run mode by default to preview changes
+   - Requires explicit `--execute` flag for actual deletion
+
+### Cleanup Results
+
+**Successfully removed 74 fake encounters:**
+
+- **Bob Jones**: 10 fake encounters removed (2 groups: 3 + 7 encounters)
+- **James Lee**: 26 fake encounters removed (2 groups: 22 + 4 encounters)  
+- **Dorothy Robinson**: 38 fake encounters removed (1 group: 38 encounters)
+- **Alice Smith**: 3 isolated fake encounters preserved for safety
+- **Maria Gomez**: 2 isolated fake encounters preserved for safety
+
+**Post-cleanup encounter counts:**
+- Bob Jones: 13 → 3 encounters (2 real + 1 isolated fake preserved)
+- James Lee: 34 → 8 encounters (3 real + 5 isolated fakes preserved)
+- Dorothy Robinson: 42 → 4 encounters (4 real, all fakes removed)
+- Alice Smith: 4 encounters (1 real + 3 isolated fakes preserved)
+- Maria Gomez: 5 encounters (3 real + 2 isolated fakes preserved)
+
+### Usage
+
+```bash
+# Dry run (preview only)
+node scripts/synthetic-data/cleanup-fake-consultations.js
+
+# Execute cleanup
+node scripts/synthetic-data/cleanup-fake-consultations.js --execute
+```
+
+### Safety Features
+
+- **Conservative detection**: Only flags encounters with ≤1 meaningful clinical fields
+- **Timing-based grouping**: Only deletes encounters created in rapid succession
+- **Isolated encounter preservation**: Single fake encounters are preserved to avoid accidental deletion of legitimate consultations
+- **Dry-run default**: Requires explicit execution flag to prevent accidental deletions
+- **Detailed logging**: Provides comprehensive analysis and preview of what will be deleted 
