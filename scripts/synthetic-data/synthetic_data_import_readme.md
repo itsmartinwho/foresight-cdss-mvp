@@ -18,8 +18,9 @@ This folder contains all the necessary scripts and documentation for importing s
 5. **`correct_inconsistencies.js`** - Patient name correction and data consistency
 6. **`validate_import_results.js`** - Post-import validation and verification
 
-### Utility Scripts
-7. **`run_synthetic_data_import.js`** - Orchestration script for complete import process
+### Cleanup and Maintenance Scripts
+7. **`cleanup-fake-consultations.js`** - Comprehensive tool for cleaning up fake/empty encounters
+8. **`run_synthetic_data_import.js`** - Orchestration script for complete import process
 
 ## 🚀 Quick Start Guide
 
@@ -48,6 +49,18 @@ node scripts/synthetic-data/clean_transcript_data.js public/data/transcript-file
 
 # 2. Import transcript updates
 node scripts/synthetic-data/import_transcript_data.js public/data/transcript-file-cleaned.json
+```
+
+### Cleanup Fake/Empty Encounters
+```bash
+# Analyze encounter quality
+node scripts/synthetic-data/cleanup-fake-consultations.js --analyze-only
+
+# Clean up recent duplicates (dry run)
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE
+
+# Execute cleanup
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=CONSERVATIVE --execute
 ```
 
 ## 📋 Data Format Requirements
@@ -109,6 +122,13 @@ If your JSON file was interrupted during generation:
 - Ensure your `.env.local` file has correct Supabase credentials
 - Verify network connectivity to Supabase
 
+### Fake/Empty Encounters from Testing
+If you notice empty encounters created during testing or due to bugs:
+1. Use the comprehensive cleanup tool: `cleanup-fake-consultations.js`
+2. Start with analysis mode: `--analyze-only`
+3. Choose appropriate strategy based on timeframe
+4. Always run in dry-run mode first before executing cleanup
+
 ## 📊 Expected Success Rates
 - **Standard imports:** 90-100% success rate
 - **Transcript imports:** 100% success rate (if properly formatted)
@@ -123,6 +143,9 @@ rm public/data/synthetic-data*.json
 
 # Remove import log files
 rm scripts/import_errors*.log
+
+# Clean up any fake encounters from testing (if needed)
+node scripts/synthetic-data/cleanup-fake-consultations.js --strategy=RECENT --execute
 ```
 
 ## 📚 Related Documentation
@@ -131,6 +154,7 @@ rm scripts/import_errors*.log
 - **Generation Guide:** `/docs/synthetic_data_generation_guide.md`
 - **Import History:** `/docs/IMPORT_COMPLETION_SUMMARY.md`
 - **Database Schema:** `/scripts/schema.sql`
+- **Cleanup Tool Guide:** `/docs/scripts/cleanup-fake-consultations.md`
 
 ## 🎯 Best Practices
 
