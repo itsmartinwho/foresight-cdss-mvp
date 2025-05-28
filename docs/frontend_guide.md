@@ -72,6 +72,58 @@ _For the current project structure and component organization, refer to [./archi
 - **Utility files**: `descriptive-name.ts`
 - **Test files**: `ComponentName.test.tsx` or `ComponentName.spec.tsx` (Jest/RTL), `*.spec.ts` (Playwright), `*.stories.tsx` (Storybook).
 
+### `ConsultationPanel` Component
+
+The `ConsultationPanel` (`src/components/modals/ConsultationPanel.tsx`) is a key UI component for creating new consultations. It has replaced older modal implementations for this purpose.
+
+**Key Features:**
+*   **Full-Screen Modal:** Uses a glassmorphic design with a backdrop blur, rendered via React Portal.
+*   **Immediate Encounter Creation:** Automatically creates a new encounter in Supabase when the panel is opened.
+*   **Patient Context:** Displays patient name and encounter ID.
+*   **Clinical Plan Workflow:**
+    1.  **Transcript Entry:** Large auto-focusing textarea for consultation notes.
+    2.  **AI Trigger:** "Clinical Plan" button enabled after 10+ characters in transcript.
+    3.  **AI Processing:** Calls `/api/clinical-engine` (mock or future real endpoint) with patient ID, encounter ID, and transcript.
+    4.  **Tabbed Results:** Displays AI-generated diagnosis and treatment plans in editable textareas within a tabbed interface (Transcript, Diagnosis, Treatment).
+    5.  **Error Handling:** Graceful fallback for API failures, allowing manual completion.
+*   **State Management:** Uses local React state (`useState`) for transcript, diagnosis, treatment text, active tab, and loading states.
+
+**Styling:**
+*   Glassmorphic container: `w-[90%] max-w-4xl`, `max-h-[90vh]`.
+*   Backdrop: `fixed inset-0 z-50 bg-black/70 backdrop-blur-md`.
+
+**API Integration (`/api/clinical-engine`):
+*   **Request:** `{ patientId: string, encounterId: string, transcript: string }`
+*   **Response (Expected):** `{ diagnosticResult: { diagnosisName?: string, primaryDiagnosis?: string, recommendedTreatments?: string[], treatmentPlan?: string } }`
+
+**Usage Example:**
+```tsx
+import ConsultationPanel from '@/components/modals/ConsultationPanel';
+// ... other imports and component logic
+
+function SomeParentComponent() {
+  const [showPanel, setShowPanel] = useState(false);
+  const patient = /* get patient object */;
+
+  const handleConsultationCreated = (encounter: Encounter) => {
+    console.log('New encounter created:', encounter.id);
+    // Further logic after encounter creation
+  };
+
+  return (
+    <>
+      <Button onClick={() => setShowPanel(true)}>New Consultation</Button>
+      <ConsultationPanel
+        isOpen={showPanel}
+        onClose={() => setShowPanel(false)}
+        patient={patient}
+        onConsultationCreated={handleConsultationCreated}
+      />
+    </>
+  );
+}
+```
+
 ## State Management
 
 _Refer to [./architecture.md#ui-patterns-conventions-and-styling](./architecture.md#ui-patterns-conventions-and-styling) (specifically State Management subsection) for current practices (React state/Context, `ForesightApp.tsx` for app-level state)._
@@ -112,6 +164,27 @@ _Refer to [./architecture.md#ui-patterns-conventions-and-styling](./architecture
 **Core Accent Colors (as of recent UI update):**
 *   **Primary Accent:** `--custom-blue-teal` (HSL `209 70% 46%` / Hex `#256D9C`). This is aliased via `--neon-val` and used for global `--accent` and `--ring` variables.
 *   **Secondary Accent:** White (`#FFFFFF` / HSL `0 0% 100%`). Used in combination with the primary accent, especially in gradients.
+
+### Patient Workspace Modernization (`PatientWorkspaceViewModern.tsx`)
+A significant modernization effort for the patient workspace resulted in `src/components/views/PatientWorkspaceViewModern.tsx`. This component restructures the patient detail page with a unified glassmorphic design and improved content organization.
+
+**Core Changes & Features:**
+*   **Unified Content Surface:** The entire patient detail page is wrapped in a single `ContentSurface` container, eliminating nested cards and providing a consistent frosted-glass look.
+*   **Reusable `Section` Component (`src/components/ui/section.tsx`):**
+    *   Provides both non-collapsible and collapsible sections (using Radix UI Collapsible primitive with smooth animations).
+    *   Features consistent styling, typography, hover effects, and accessibility (ARIA attributes, keyboard navigation).
+    *   Props include `collapsible` (boolean) and `defaultOpen` (boolean).
+*   **Organized Data Sections:** Patient information (demographics) and tab-based navigation for data types (Consultation, Diagnosis, etc.) are organized into these `Section` components. Most sections are collapsible and default to open.
+*   **Styling Enhancements (Phase 2 of Modernization):**
+    *   **Typography:** Consistent hierarchy (e.g., section headers `text-step-1 font-bold`, patient name `text-step-3 font-bold`).
+    *   **Spacing:** Standardized vertical rhythm (`space-y-8` on `ContentSurface`, `mb-8` for sections, `space-y-4` within sections).
+    *   **Glassmorphism Refinements:** Enhanced patient avatar, subtle hover effects on collapsible triggers, improved active tab states.
+    *   **`DiagnosisTab` Improvements:** Removed `ScrollArea` in favor of native scrolling, eliminated nested cards, used `bg-muted/30` backgrounds for hierarchy.
+*   **Design Principles Applied:**
+    *   **Glassmorphic Design:** Single frosted-glass surface, translucent backgrounds, rounded corners, no card-in-card nesting.
+    *   **Progressive Disclosure:** Collapsible sections for better content organization (though default to open currently).
+    *   **Accessibility:** Semantic HTML, keyboard navigation, ARIA attributes.
+*   **Integration:** `ForesightApp.tsx` was updated to use `PatientWorkspaceViewModern`.
 
 ### Styling by Component Type
 
@@ -288,4 +361,47 @@ _Refer to [./development_guide.md#testing-standards](./development_guide.md#test
 
 ## Code Quality Tools
 - **ESLint & Prettier**: Enforce project rules.
-- **TypeScript strict mode**: Enabled. 
+- **TypeScript strict mode**: Enabled.
+
+## Plasma Background Effect
+
+A subtle, animated gradient flow background effect is implemented using Three.js and a custom GLSL fragment shader. It is designed to be visible through semi-transparent UI layers without interfering with readability.
+
+### Implementation Overview
+*   **Technology:** Three.js with a custom GLSL fragment shader using Ashima 3D simplex noise.
+*   **Effect:** A smooth, flowing gradient effect, not a metallic plasma sheen.
+*   **Pattern:** A singleton pattern managed *outside* the main React render tree. The `<PlasmaBackground />` component (in `src/components/PlasmaBackground.tsx`, used in `src/app/layout.tsx`) creates a `<canvas id="plasma-bg">` element once on initial mount, prepends it to `document.body`, and starts the Three.js animation loop. The component itself then renders `null`.
+*   **Persistence:** This approach ensures the canvas is not affected by React re-renders or DOM manipulations during navigation, providing a stable background.
+*   **Reduced Motion:** Honors the user's `prefers-reduced-motion` setting. If true, a static linear gradient is painted onto the canvas instead of the Three.js animation.
+    *   Static gradient colors: Custom Blue-Teal (`rgba(37, 109, 156, 0.4)`), Cool light grey (`rgba(217, 224, 230, 0.3)`), Near white (`rgba(240, 242, 245, 0.2)`).
+*   **Styling:** The canvas has `position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; background-color: white;`.
+*   **Visibility:** The effect's visibility relies on the transparency of UI elements above it and its own shader's opacity. The shader's final global alpha is set to `0.55` (55%). UI layers like `GlassHeader`, `GlassSidebar`, and the `main` content area use semi-transparent backgrounds.
+
+### Shader Details (from `src/components/PlasmaBackground.tsx`)
+*   **Noise:** Ashima 3-D simplex noise (`snoise`).
+*   **Core Constants:**
+    *   `FLOW_SCALE = 0.8`
+    *   `TIME_SPEED = 0.008`
+    *   `VERTICAL_DRIFT = 0.3`
+    *   `LAYER_COUNT = 3.0` (multiple noise octaves are layered for smooth flow)
+*   **Color Palette (Flowing Gradient):
+    1.  `color1 = vec3(0.145, 0.427, 0.612);` (Custom Blue-Teal)
+    2.  `color2 = vec3(0.85, 0.88, 0.9);` (Cool light grey)
+    3.  `color3 = vec3(0.94, 0.95, 0.96);` (Near white)
+    4.  `color4 = vec3(0.98, 0.98, 0.99);` (Subtle white)
+*   **Logic:** The shader generates a `gradientBase` value by layering simplex noise with vertical drift. This base value is then used to mix the four defined colors, creating smooth gradient transitions. Subtle luminosity variations and a gentle vignette are also applied.
+*   **Final Opacity:** `gl_FragColor = vec4(finalColor, 0.55);`
+*   **Customization:** Shader constants (e.g., `FLOW_SCALE`, `TIME_SPEED`), color vectors, and the final alpha in `gl_FragColor` can be tweaked in `src/components/PlasmaBackground.tsx` for different visual effects.
+
+### Motion Reduction Fallback
+*   If `window.matchMedia('(prefers-reduced-motion: reduce)').matches` is true, the Three.js initialization is skipped. A helper function `paintStaticGradient` paints a 2D linear gradient onto the canvas using the predefined professional medical teal gradient colors.
+
+### Layering
+The plasma canvas (`<canvas id="plasma-bg">`) is at `z-index: 0`. UI elements like `GlassHeader` (z-index 40) and `GlassSidebar` are layered on top with semi-transparent backgrounds to allow the effect to show through.
+
+### Troubleshooting
+*   **Invisible Effect/Shader Errors:** Check GLSL syntax in `src/components/PlasmaBackground.tsx` (WebGL 1 supports GLSL 1.0 compatible syntax).
+*   **Intensity Issues:** Adjust shader constants, color values, or the final alpha (`0.55`) in the fragment shader. Also check the opacity of overlying UI elements.
+*   **Effect Covers UI:** Ensure `z-index: 0` and `pointer-events: none` are correctly set on the canvas (handled by the singleton initialization in `PlasmaBackground.tsx`).
+
+Refer to `src/components/PlasmaBackground.tsx` for the definitive component implementation and the detailed GLSL shader code. 
