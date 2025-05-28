@@ -14,16 +14,31 @@ Open the browser developer tools (F12) and look for these console messages:
 
 ### 2. Reset Demo State
 
-If the demo has already run, you can reset it by running this in the browser console:
+If the demo has already run (you'll see `hasDemoRun: true` in console), you can reset it using any of these methods:
+
+**Method 1 - Use the exposed function:**
 ```javascript
 resetDemo()
 ```
 
-Or manually:
+**Method 2 - Use the alternative function:**
+```javascript
+forceShowDemo()
+```
+
+**Method 3 - Manual reset:**
 ```javascript
 localStorage.removeItem('hasDemoRun');
 window.location.reload();
 ```
+
+**Method 4 - Complete manual reset:**
+```javascript
+localStorage.clear();
+window.location.reload();
+```
+
+> **Note:** After running any reset command, the page will automatically reload and the demo modal should appear.
 
 ### 3. Expected Demo Flow
 
@@ -51,6 +66,16 @@ Patient details:
 - Verify localStorage doesn't have `hasDemoRun: true`
 - Ensure you're on the dashboard page
 
+**Demo functions not available in console:**
+- Wait for the page to fully load (check for "Demo functions available" message in console)
+- Try refreshing the page and waiting a few seconds
+- If still not available, use the manual reset method
+
+**"ReferenceError: javascript is not defined" error:**
+- This happens when trying to run code that's not properly defined
+- Use one of the alternative reset methods listed above
+- Make sure you're typing the function name correctly (no extra characters)
+
 **Demo fails to start:**
 - Check for JavaScript errors in console
 - Verify DemoProvider is wrapping the app
@@ -60,6 +85,15 @@ Patient details:
 - Check demo stage in console logs
 - Verify animation services are working
 - Look for any race conditions in patient data loading
+
+**If all else fails:**
+Try this complete reset sequence:
+```javascript
+// Clear all localStorage
+localStorage.clear();
+// Force reload
+window.location.href = window.location.href;
+```
 
 ### 6. Manual Demo Testing
 

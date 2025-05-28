@@ -136,7 +136,7 @@ function ForesightApp() {
 
 // Simple debug component to test demo context
 function DemoDebugComponent() {
-  const { hasDemoRun, isDemoModalOpen, demoStage } = useDemo();
+  const { hasDemoRun, isDemoModalOpen, demoStage, skipDemo } = useDemo();
   
   useEffect(() => {
     console.log('DemoDebugComponent - Demo state:', { hasDemoRun, isDemoModalOpen, demoStage });
@@ -144,11 +144,27 @@ function DemoDebugComponent() {
     // Expose reset function globally for testing
     if (typeof window !== 'undefined') {
       (window as any).resetDemo = () => {
+        console.log('Resetting demo state...');
         localStorage.removeItem('hasDemoRun');
+        console.log('Demo state cleared. Reloading page...');
         window.location.reload();
       };
+      
+      // Also expose a function to force show the demo
+      (window as any).forceShowDemo = () => {
+        console.log('Forcing demo to show...');
+        localStorage.removeItem('hasDemoRun');
+        // Don't reload, just trigger the state change
+        skipDemo(); // This will reset the state
+        setTimeout(() => {
+          localStorage.removeItem('hasDemoRun');
+          window.location.reload();
+        }, 100);
+      };
+      
+      console.log('Demo functions available: resetDemo(), forceShowDemo()');
     }
-  }, [hasDemoRun, isDemoModalOpen, demoStage]);
+  }, [hasDemoRun, isDemoModalOpen, demoStage, skipDemo]);
   
   return null;
 }

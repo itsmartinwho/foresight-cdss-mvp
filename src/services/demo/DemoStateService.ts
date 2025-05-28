@@ -59,11 +59,25 @@ export class DemoStateService {
   // Utility method for testing - can be called from browser console
   static resetDemoForTesting(): void {
     if (typeof window !== 'undefined') {
+      console.log('DemoStateService: Resetting demo state...');
       localStorage.removeItem(this.DEMO_STORAGE_KEY);
-      console.log('Demo state reset. Refresh the page to see the demo modal.');
+      console.log('DemoStateService: Demo state cleared from localStorage');
+      
+      // Trigger a storage event to notify other components
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: this.DEMO_STORAGE_KEY,
+        newValue: null,
+        oldValue: 'true',
+        storageArea: localStorage
+      }));
+      
+      console.log('DemoStateService: Demo state reset complete. Refresh the page to see the demo modal.');
       
       // Also expose globally for easy access
-      (window as any).resetDemo = () => this.resetDemoForTesting();
+      (window as any).resetDemoState = () => {
+        this.resetDemoForTesting();
+        setTimeout(() => window.location.reload(), 100);
+      };
     }
   }
 } 
