@@ -482,7 +482,19 @@ export default function ConsultationPanel({
   if (!mounted || !isOpen) return null;
 
   const panelContent = (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={(e) => {
+        // Close when clicking the backdrop (outside the modal)
+        if (e.target === e.currentTarget) {
+          if (isDemoMode) {
+            onClose();
+          } else {
+            handleClose();
+          }
+        }
+      }}
+    >
       <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Discard (X) button */}
         <Button 

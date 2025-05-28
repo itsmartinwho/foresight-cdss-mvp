@@ -622,7 +622,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           isOpen={demoWorkspace.isDemoPanelOpen || demoPanelForceOpen}
           onClose={() => {
             setDemoPanelForceOpen(false);
-            demoWorkspace.exitDemo();
+            demoState.exitDemoStayOnPage();
           }}
           patient={patient}
           onConsultationCreated={handleConsultationCreated}

@@ -23,6 +23,7 @@ export interface DemoOrchestratorActions {
   startDemo: () => Promise<void>;
   skipDemo: () => void;
   exitDemo: () => void;
+  exitDemoStayOnPage: () => void;
   advanceDemoStage: (stage: DemoStage) => void;
   setDemoModalOpen: (isOpen: boolean) => void;
 }
@@ -142,6 +143,19 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     router.push('/dashboard');
   }, [resetDemoAnimationStates, router]);
 
+  const exitDemoStayOnPage = useCallback(() => {
+    resetDemoAnimationStates();
+    setIsDemoActive(false);
+    DemoStateService.setDemoRun(true);
+    setHasDemoRunState(true);
+    setDemoStage('finished');
+    setIsDemoModalOpen(false);
+    // Remove demo=true from URL but stay on current page
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('demo');
+    router.replace(currentUrl.pathname + currentUrl.search);
+  }, [resetDemoAnimationStates, router]);
+
   const startDemo = useCallback(async () => {
     console.log('Starting demo...');
     resetDemoAnimationStates();
@@ -199,6 +213,7 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     startDemo,
     skipDemo,
     exitDemo,
+    exitDemoStayOnPage,
     advanceDemoStage,
     setDemoModalOpen,
   };
