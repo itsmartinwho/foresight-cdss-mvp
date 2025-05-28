@@ -287,11 +287,12 @@ export default function ConsultationPanel({
 
   // Create encounter for non-demo mode in a separate effect
   useEffect(() => {
-    if (shouldCreateEncounterRef.current && !encounter && !isCreating) {
+    if (!isDemoMode && shouldCreateEncounterRef.current && !encounter && !isCreating) {
+      console.log('ConsultationPanel: Attempting to create REAL encounter.');
       shouldCreateEncounterRef.current = false; // Prevent multiple calls
       createEncounter();
     }
-  }, [encounter, isCreating, createEncounter]);
+  }, [isDemoMode, shouldCreateEncounterRef, encounter, isCreating, createEncounter]);
 
   const handleClose = useCallback(async () => {
     if (isDemoMode) {

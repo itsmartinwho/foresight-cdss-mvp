@@ -627,7 +627,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           patient={patient}
           onConsultationCreated={handleConsultationCreated}
           isDemoMode={true}  // Force demo mode when on demo route
-          initialDemoTranscript="Patient presents with joint pain and stiffness, particularly in the morning. Reports fatigue and general malaise over the past few weeks."  // Hardcode for testing
+          initialDemoTranscript={demoConsultation.initialDemoTranscript}
           demoDiagnosis={demoConsultation.demoDiagnosis}
           demoTreatment={demoConsultation.demoTreatment}
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
