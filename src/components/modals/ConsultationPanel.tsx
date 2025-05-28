@@ -295,16 +295,48 @@ export default function ConsultationPanel({
     setIsSaving(true);
     const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
     try {
-      await supabaseDataService.updateEncounterTranscript(patient.id, compositeId, transcriptText);
-      toast({ title: "Consultation Saved", description: "Transcript saved successfully." });
+      // Save transcript
+      if (transcriptText && transcriptText.trim()) {
+        await supabaseDataService.updateEncounterTranscript(patient.id, compositeId, transcriptText);
+      }
+
+      // Save diagnosis as primary diagnosis in conditions table
+      if (diagnosisText && diagnosisText.trim()) {
+        await supabaseDataService.savePrimaryDiagnosis(
+          patient.id, 
+          encounter.encounterIdentifier,
+          diagnosisText
+        );
+      }
+
+      // Save treatments
+      if (treatmentText && treatmentText.trim()) {
+        // Parse treatment text into Treatment objects
+        const treatmentLines = treatmentText.split('\n').filter(line => line.trim());
+        const treatments = treatmentLines.map((line, index) => ({
+          drug: line.trim(),
+          status: 'recommended',
+          rationale: `Treatment plan item ${index + 1}`
+        }));
+        
+        await supabaseDataService.updateEncounterTreatments(patient.id, compositeId, treatments);
+      }
+
+      // Save combined SOAP note if we have diagnosis and/or treatment
+      if ((diagnosisText && diagnosisText.trim()) || (treatmentText && treatmentText.trim())) {
+        const soapNote = `S: ${transcriptText || 'See transcript'}\nO: Clinical examination performed\nA: ${diagnosisText || 'See diagnosis'}\nP: ${treatmentText || 'See treatment plan'}`;
+        await supabaseDataService.updateEncounterSOAPNote(patient.id, compositeId, soapNote);
+      }
+
+      toast({ title: "Consultation Saved", description: "All consultation data saved successfully." });
       onClose();
     } catch (error) {
-      console.error('Failed to save data:', error);
-      toast({ title: "Save Failed", description: "Could not save data. Please try again.", variant: "destructive" });
+      console.error('Failed to save consultation data:', error);
+      toast({ title: "Save Failed", description: "Could not save consultation data. Please try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
-  }, [isDemoMode, patient.id, encounter, transcriptText, onClose, toast, isSaving]);
+  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving]);
 
   // Discard handler: close without saving and remove the created encounter
   const handleDiscard = useCallback(() => {

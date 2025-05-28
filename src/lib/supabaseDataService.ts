@@ -711,6 +711,33 @@ class SupabaseDataService {
     console.log("SOAP note updated successfully in DB and cache for encounter:", encounterCompositeId);
   }
 
+  async updateEncounterTreatments(patientId: string, encounterCompositeId: string, treatments: Treatment[]): Promise<void> {
+    const originalEncounterId = encounterCompositeId.split('_').pop();
+    if (!originalEncounterId) {
+      console.error('SupabaseDataService: Could not extract originalEncounterId from composite ID:', encounterCompositeId);
+      throw new Error('Invalid encounterCompositeId');
+    }
+
+    const { error } = await this.supabase
+      .from('encounters')
+      .update({ treatments: treatments })
+      .eq('encounter_id', originalEncounterId);
+
+    if (error) {
+      console.error('SupabaseDataService: Error updating treatments in DB:', error.message);
+      throw error;
+    }
+
+    // Update local cache
+    if (this.encounters[encounterCompositeId]) {
+      this.encounters[encounterCompositeId].treatments = treatments;
+      this.emitChange();
+    } else {
+      console.warn(`SupabaseDataService: updateEncounterTreatments - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
+    }
+    console.log("Treatments updated successfully in DB and cache for encounter:", encounterCompositeId);
+  }
+
   async createNewEncounter(
     patientId: string,
     opts?: { reason?: string; scheduledStart?: string; scheduledEnd?: string; duration?: number }
@@ -1155,6 +1182,82 @@ class SupabaseDataService {
       this.emitChange();
     } catch (error) {
       console.error('Error saving differential diagnoses:', error);
+      throw error;
+    }
+  }
+
+  async savePrimaryDiagnosis(
+    patientId: string, 
+    encounterId: string, 
+    diagnosisName: string,
+    diagnosisCode?: string
+  ): Promise<void> {
+    try {
+      // Get patient UUID
+      const patient = this.patients[patientId];
+      if (!patient) {
+        throw new Error(`Patient ${patientId} not found`);
+      }
+
+      const patientUuid = Object.keys(this.patientUuidToOriginalId).find(
+        uuid => this.patientUuidToOriginalId[uuid] === patientId
+      );
+
+      if (!patientUuid) {
+        throw new Error(`Patient UUID not found for ${patientId}`);
+      }
+
+      // Get encounter UUID
+      const encounter = this.encounters[`${patientId}_${encounterId}`];
+      if (!encounter) {
+        throw new Error(`Encounter ${encounterId} not found for patient ${patientId}`);
+      }
+
+      // Delete existing primary diagnosis for this encounter (encounter-diagnosis category)
+      await this.supabase
+        .from('conditions')
+        .delete()
+        .eq('patient_id', patientUuid)
+        .eq('encounter_id', encounter.id)
+        .eq('category', 'encounter-diagnosis');
+
+      // Insert new primary diagnosis if provided
+      if (diagnosisName && diagnosisName.trim()) {
+        const { error } = await this.supabase
+          .from('conditions')
+          .insert({
+            patient_id: patientUuid,
+            encounter_id: encounter.id,
+            code: diagnosisCode || '',
+            description: diagnosisName,
+            category: 'encounter-diagnosis',
+            clinical_status: 'active',
+            verification_status: 'confirmed'
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Update local cache
+        if (!this.diagnoses[patientId]) {
+          this.diagnoses[patientId] = [];
+        }
+
+        // Remove old primary diagnosis for this encounter and add new one
+        this.diagnoses[patientId] = this.diagnoses[patientId]
+          .filter(dx => !(dx.encounterId === encounter.id && dx.code === 'encounter-diagnosis'))
+          .concat([{
+            patientId: patientId,
+            encounterId: encounter.id,
+            code: diagnosisCode || '',
+            description: diagnosisName
+          }]);
+      }
+
+      this.emitChange();
+    } catch (error) {
+      console.error('Error saving primary diagnosis:', error);
       throw error;
     }
   }
