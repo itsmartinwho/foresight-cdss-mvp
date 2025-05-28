@@ -52,6 +52,13 @@ export function useDemoConsultation({
     return "Patient presents with joint pain and stiffness, particularly in the morning. Reports fatigue and general malaise over the past few weeks. No recent trauma or injury. Family history of autoimmune conditions.";
   };
   
+  // Additional debug logging after functions are declared
+  console.log('useDemoConsultation transcript debug:', {
+    hasTranscript: !!getDemoTranscript(),
+    transcriptLength: getDemoTranscript()?.length || 0,
+    transcriptPreview: getDemoTranscript()?.substring(0, 50) + '...'
+  });
+  
   // Demo diagnosis based on stage
   const getDemoDiagnosis = () => {
     if (!isDemoMode) return undefined;

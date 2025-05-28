@@ -45,7 +45,8 @@ export function useDemoWorkspace({
     demoPatientId: demoPatient?.id,
     patientId: patient.id,
     shouldRunDemoUi,
-    demoStage
+    demoStage,
+    isDemoPanelOpen
   });
 
   // Handle demo lifecycle and panel visibility

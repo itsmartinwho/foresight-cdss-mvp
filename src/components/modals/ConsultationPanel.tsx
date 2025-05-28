@@ -69,9 +69,11 @@ export default function ConsultationPanel({
     isDemoMode,
     hasPatient: !!patient,
     patientName: patient?.name,
-    initialDemoTranscript: initialDemoTranscript?.substring(0, 50) + '...',
-    demoDiagnosis: !!demoDiagnosis,
-    demoTreatment: !!demoTreatment
+    initialDemoTranscript: initialDemoTranscript || 'undefined',
+    initialDemoTranscriptLength: initialDemoTranscript?.length || 0,
+    demoDiagnosis: demoDiagnosis || 'undefined',
+    demoTreatment: demoTreatment || 'undefined',
+    hasOnDemoClinicalPlanClick: !!onDemoClinicalPlanClick
   });
 
   const { toast } = useToast();

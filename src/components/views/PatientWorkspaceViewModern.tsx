@@ -216,7 +216,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       isDemoActive: demoState.isDemoActive,
       loading,
       hasPatientData: !!patient?.name,
-      demoPanelForceOpen
+      demoPanelForceOpen,
+      patientName: patient?.name,
+      demoPatientName: demoState.demoPatient?.name
     });
     
     // Force open demo panel when conditions are met
@@ -226,6 +228,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         setDemoPanelForceOpen(true);
         // Also advance the demo stage if needed
         if (demoState.demoStage === 'navigatingToWorkspace') {
+          console.log('Advancing stage from navigatingToWorkspace to consultationPanelReady');
           demoState.advanceDemoStage('consultationPanelReady');
         }
       }
