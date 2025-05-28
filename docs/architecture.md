@@ -65,8 +65,8 @@ _The application flow centers around clinician interaction with patient data and
 
 ### Screen-by-Screen AI Tool Relevance
 *   **Dashboard (`DashboardView.tsx`):** Placeholder for Tool D alerts.
-*   **Patient Management (`PatientsListView.tsx`, `PatientWorkspaceView.tsx`):**
-    *   `PatientWorkspaceView.tsx`: Placeholders for Tool B (Diagnosis/Treatment, documents), Tool F (Clinical Trials), Tool D (Alerts).
+*   **Patient Management (`PatientsListView.tsx`, `PatientWorkspaceViewModern.tsx`):**
+    *   `PatientWorkspaceViewModern.tsx`: Placeholders for Tool B (Diagnosis/Treatment, documents), Tool F (Clinical Trials), Tool D (Alerts).
 *   **Consultation Screens:** Forms capture data (Aspirational: detailed transcript for Tool B).
 *   **Advisor Screen (`AdvisorView.tsx`):** Tool A interface.
 *   **Alerts Screen (`AlertsScreenView.tsx`):** Placeholder for Tool D alerts.

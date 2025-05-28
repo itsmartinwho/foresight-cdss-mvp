@@ -40,7 +40,7 @@ interface ConsultationTabProps {
   selectedEncounter: Encounter | null;
   patientName?: string; // Made optional as it might not always be directly passed if patient object is available
   patient: Patient | null;
-  // Props for new consultation UI, passed from PatientWorkspaceView
+  // Props for new consultation UI, passed from PatientWorkspaceViewModern
   isStartingNewConsultation?: boolean;
   newConsultationReason?: string;
   onNewConsultationReasonChange?: (reason: string) => void;

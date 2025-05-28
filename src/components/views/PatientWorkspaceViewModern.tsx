@@ -524,7 +524,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         patient={patient} // This is the regular patient for the non-demo panel
         onConsultationCreated={handleConsultationCreated}
       />
-      )}
 
       {/* Demo Consultation Panel */}
       {shouldRunDemoUi && dorothyRobinsonPatient && (
