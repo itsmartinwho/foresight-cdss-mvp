@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
 import { X, Microphone as Mic, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
 import { format } from 'date-fns';
 import type { Patient, Encounter } from '@/lib/types';
@@ -88,10 +89,11 @@ export default function ConsultationPanel({
   const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
-  const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   
   // Refs
-  const transcriptTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const transcriptEditorRef = useRef<RichTextEditorRef>(null);
+  const diagnosisEditorRef = useRef<RichTextEditorRef>(null);
+  const treatmentEditorRef = useRef<RichTextEditorRef>(null);
 
   // Ensure we only render on client side
   useEffect(() => {
@@ -100,11 +102,8 @@ export default function ConsultationPanel({
 
   // Auto-focus and cursor positioning for transcript textarea
   useEffect(() => {
-    if (started && transcriptTextareaRef.current) {
-      transcriptTextareaRef.current.focus();
-      const textLength = transcriptTextareaRef.current.value.length;
-      transcriptTextareaRef.current.setSelectionRange(textLength, textLength);
-      transcriptTextareaRef.current.scrollTop = transcriptTextareaRef.current.scrollHeight;
+    if (started && transcriptEditorRef.current) {
+      transcriptEditorRef.current.focus();
     }
   }, [started]);
 
@@ -341,10 +340,10 @@ export default function ConsultationPanel({
     if (isTranscribing && !isPaused) {
       return; // Already transcribing
     }
-    // Capture current cursor position in textarea
-    const textarea = transcriptTextareaRef.current;
-    const selStart = textarea ? textarea.selectionStart : transcriptText.length;
-    setCursorPosition(selStart);
+    
+    // Start conversation if not already started
+    if (!started) setStarted(true);
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -360,17 +359,17 @@ export default function ConsultationPanel({
           if (data.channel && data.is_final && data.channel.alternatives?.[0]?.transcript) {
             const chunk = data.channel.alternatives[0].transcript;
             if (chunk.trim()) {
-              setTranscriptText(prev => {
-                const current = prev || '';
-                const pos = cursorPosition !== null ? cursorPosition : current.length;
-                const prefix = current.slice(0, pos);
-                const suffix = current.slice(pos);
-                const needSpace = prefix && !prefix.endsWith(' ') && !chunk.startsWith(' ');
-                const newText = prefix + (needSpace ? ' ' : '') + chunk + suffix;
-                const newCursor = pos + (needSpace ? 1 : 0) + chunk.length;
-                setCursorPosition(newCursor);
-                return newText;
-              });
+              // Use RichTextEditor's insertText method for better integration
+              if (transcriptEditorRef.current) {
+                const textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
+                transcriptEditorRef.current.insertText(textToAdd);
+              } else {
+                // Fallback to state update if ref not available
+                setTranscriptText(prev => {
+                  const current = prev || '';
+                  return current + (current.length > 0 && !current.endsWith(' ') && !chunk.startsWith(' ') ? ' ' : '') + chunk;
+                });
+              }
             }
           }
         } catch {
@@ -407,7 +406,7 @@ export default function ConsultationPanel({
     } catch (err) {
       toast({ title: "Error", description: `Transcription error: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
     }
-  }, [isDemoMode, cursorPosition, isTranscribing, isPaused, transcriptText, toast]);
+  }, [isDemoMode, isTranscribing, isPaused, started, transcriptText, toast]);
 
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
@@ -559,14 +558,14 @@ export default function ConsultationPanel({
                             </Button>
                           </div>
                         </div>
-                        <Textarea
-                          ref={transcriptTextareaRef}
-                          value={transcriptText}
-                          onChange={(e) => setTranscriptText(e.target.value)} // Keep local edits possible
+                        <RichTextEditor
+                          ref={transcriptEditorRef}
+                          content={transcriptText}
+                          onContentChange={setTranscriptText}
                           placeholder={isDemoMode ? "Demo transcript loaded." : "Type or dictate the consultation notes here..."}
-                          className="flex-1 resize-none text-base"
-                          style={{ minHeight: '300px' }}
-                          readOnly={isDemoMode && !initialDemoTranscript} // Example: make readOnly if no initial transcript in demo
+                          disabled={isDemoMode && !initialDemoTranscript}
+                          minHeight="300px"
+                          className="flex-1"
                         />
                       </div>
                     )}
@@ -574,12 +573,13 @@ export default function ConsultationPanel({
                     {planGenerated && activeTab === 'diagnosis' && (
                       <div className="h-full flex flex-col space-y-4">
                         <h3 className="text-lg font-medium">Diagnosis</h3>
-                        <Textarea
-                          value={diagnosisText}
-                          onChange={(e) => setDiagnosisText(e.target.value)}
+                        <RichTextEditor
+                          ref={diagnosisEditorRef}
+                          content={diagnosisText}
+                          onContentChange={setDiagnosisText}
                           placeholder={isDemoMode ? "Demo diagnosis loaded." : "Enter or edit the diagnosis..."}
-                          className="flex-1 resize-none text-base"
-                          style={{ minHeight: '300px' }}
+                          minHeight="300px"
+                          className="flex-1"
                         />
                       </div>
                     )}
@@ -587,12 +587,13 @@ export default function ConsultationPanel({
                     {planGenerated && activeTab === 'treatment' && (
                       <div className="h-full flex flex-col space-y-4">
                         <h3 className="text-lg font-medium">Treatment Plan</h3>
-                        <Textarea
-                          value={treatmentText}
-                          onChange={(e) => setTreatmentText(e.target.value)}
+                        <RichTextEditor
+                          ref={treatmentEditorRef}
+                          content={treatmentText}
+                          onContentChange={setTreatmentText}
                           placeholder={isDemoMode ? "Demo treatment plan loaded." : "Enter or edit the treatment plan..."}
-                          className="flex-1 resize-none text-base"
-                          style={{ minHeight: '300px' }}
+                          minHeight="300px"
+                          className="flex-1"
                         />
                       </div>
                     )}

@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea was used, or a contentEditable div
-import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle, TextB as Bold, TextItalic as Italic, ListBullets as List, ArrowCounterClockwise as Undo, ArrowClockwise as Redo } from '@phosphor-icons/react';
+import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
+import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle } from '@phosphor-icons/react';
 import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import path
 import { Encounter, Patient, ClinicalOutputPackage, DifferentialDiagnosis } from '@/lib/types'; // Renamed Admission to Encounter
 import { supabaseDataService } from '@/lib/supabaseDataService'; // Import supabaseDataService
@@ -73,12 +74,12 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [lastSavedTranscript, setLastSavedTranscript] = useState<string>('');
   const [transcriptChanged, setTranscriptChanged] = useState<boolean>(false);
-  const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState<boolean>(false); // Added isPaused state
   const [showPriorAuthModal, setShowPriorAuthModal] = useState(false);
 
   const transcriptAreaRef = useRef<HTMLDivElement>(null);
+  const richTextEditorRef = useRef<RichTextEditorRef>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Added mediaRecorderRef
   const socketRef = useRef<WebSocket | null>(null); // Added socketRef for consistency with original file
 
@@ -104,6 +105,10 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       setEditableTranscript(currentTranscript);
       setLastSavedTranscript(currentTranscript);
       setTranscriptChanged(false);
+      // Set content in the RichTextEditor
+      if (richTextEditorRef.current) {
+        richTextEditorRef.current.setContent(currentTranscript);
+      }
       if (ws) {
         ws.close();
         setWs(null);
@@ -119,6 +124,10 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       setEditableTranscript("");
       setLastSavedTranscript("");
       setTranscriptChanged(false);
+      // Clear content in the RichTextEditor
+      if (richTextEditorRef.current) {
+        richTextEditorRef.current.setContent("");
+      }
       if (ws) {
         ws.close();
         setWs(null);
@@ -129,10 +138,10 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   }, [selectedEncounter, patient, ws]);
 
   const getCursorPosition = (): number | null => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      return range.startOffset;
+    // Note: With Tiptap, cursor position management is handled internally
+    // We can get the current selection position if needed using editor.state.selection
+    if (richTextEditorRef.current?.editor) {
+      return richTextEditorRef.current.editor.state.selection.from;
     }
     return null;
   };
@@ -176,11 +185,11 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   };
   
   const handleDivFocus = () => {
-    // Intentionally left blank for now, was: setCursorPosition(getCursorPosition());
+    // Intentionally left blank - Tiptap handles focus internally
   };
 
   const handleDivKeyUpOrMouseUp = () => {
-    // Intentionally left blank for now, was: setCursorPosition(getCursorPosition());
+    // Intentionally left blank - Tiptap handles cursor position internally
   };
 
   const startTranscription = async () => {
@@ -192,7 +201,6 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
     if (isTranscribing && !isPaused) return;
 
     const currentCursor = getCursorPosition();
-    setCursorPosition(currentCursor);
     console.log("Starting transcription, cursor at:", currentCursor);
 
     let encounterToUse = selectedEncounter;
@@ -243,22 +251,18 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           if (data && data.channel && data.is_final && data.channel.alternatives[0].transcript) {
             const newTextChunk = data.channel.alternatives[0].transcript;
             if (newTextChunk.trim() !== '') {
-              setEditableTranscript((prevText) => {
-                const currentText = prevText || '';
-                let newComposedText;
-                let nextCursorPos = cursorPosition;
-
-                if (nextCursorPos !== null && nextCursorPos >= 0 && nextCursorPos <= currentText.length) {
-                  newComposedText = currentText.slice(0, nextCursorPos) + newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ') + currentText.slice(nextCursorPos);
-                  nextCursorPos = nextCursorPos + newTextChunk.length + (newTextChunk.endsWith(' ') ? 0 : 1);
-                } else {
-                  newComposedText = currentText + (currentText.length > 0 && !currentText.endsWith(' ') && !newTextChunk.startsWith(' ') ? ' ' : '') + newTextChunk;
-                  nextCursorPos = newComposedText.length;
-                }
-                setCursorPosition(nextCursorPos);
-                setTranscriptChanged(true);
-                return newComposedText;
-              });
+              // Use RichTextEditor's insertText method for better integration
+              if (richTextEditorRef.current) {
+                const currentContent = richTextEditorRef.current.getContent();
+                const textToAdd = newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ');
+                richTextEditorRef.current.insertText(textToAdd);
+              } else {
+                // Fallback to state update if ref not available
+                setEditableTranscript((prevText) => {
+                  const currentText = prevText || '';
+                  return currentText + (currentText.length > 0 && !currentText.endsWith(' ') && !newTextChunk.startsWith(' ') ? ' ' : '') + newTextChunk;
+                });
+              }
             }
           }
         } catch (_) { /* console.error("Error processing ws message", _); */ }
@@ -332,15 +336,6 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
     setTimeout(() => {
       handleSaveTranscript();
     }, 250); // Delay to allow final transcript processing
-  };
-
-  const applyFormat = (command: string, value?: string) => {
-    if (transcriptAreaRef.current) {
-      transcriptAreaRef.current.focus();
-      document.execCommand(command, false, value);
-      const newText = transcriptAreaRef.current.innerHTML;
-      handleTranscriptChange(newText); // Call with the string content
-    }
   };
 
   const handleAIResultsSave = async () => {
@@ -518,40 +513,18 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           </div>
         )}
 
-        {!isTranscribing && selectedEncounter && (
-           <div className="mt-2 p-2 border-b border-border flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={() => applyFormat('bold')} title="Bold">
-              <Bold className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => applyFormat('italic')} title="Italic">
-              <Italic className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List">
-              <List className="h-4 w-4" />
-            </Button>
-            <div className="mx-1 h-5 border-l border-border"></div>
-            <Button variant="outline" size="sm" onClick={() => applyFormat('undo')} title="Undo">
-              <Undo className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => applyFormat('redo')} title="Redo">
-              <Redo className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
       </CardHeader>
       <CardContent className="flex-grow overflow-y-auto">
         {(selectedEncounter || editableTranscript || isTranscribing || isStartingNewConsultation) ? (
-          <div
-            ref={transcriptAreaRef}
-            contentEditable={!isTranscribing}
-            suppressContentEditableWarning
-            onInput={(e) => handleTranscriptChange((e.currentTarget as HTMLDivElement).innerHTML)}
-            onFocus={handleDivFocus}
-            onKeyUp={handleDivKeyUpOrMouseUp}
-            onMouseUp={handleDivKeyUpOrMouseUp}
-            className="whitespace-pre-wrap outline-none p-1 min-h-[300px] h-full border rounded-md"
-            dangerouslySetInnerHTML={{ __html: editableTranscript }}
+          <RichTextEditor
+            ref={richTextEditorRef}
+            content={editableTranscript}
+            onContentChange={handleTranscriptChange}
+            placeholder="Start typing your consultation notes or click the microphone to begin transcription..."
+            disabled={isTranscribing}
+            showToolbar={!isTranscribing}
+            minHeight="300px"
+            className="h-full"
           />
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
