@@ -133,6 +133,7 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
   }, [resetDemoAnimationStates, router]);
 
   const startDemo = useCallback(async () => {
+    console.log('Starting demo...');
     resetDemoAnimationStates();
     setIsDemoModalOpen(false);
     setIsDemoActive(true);
@@ -141,11 +142,14 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     try {
       // Use mock demo patient data instead of fetching from database
       const demoPatient = DemoDataService.getPatientData();
+      console.log('Demo patient data:', demoPatient);
       setDemoPatient(demoPatient);
       DemoStateService.setDemoRun(true);
       setHasDemoRunState(true);
       
       const encounterData = DemoDataService.getEncounterData();
+      console.log('Demo encounter data:', encounterData);
+      console.log('Navigating to patient workspace...');
       router.push(`/patients/${demoPatient.id}?demo=true&encounterId=${encounterData.id}`);
       advanceDemoStage('navigatingToWorkspace');
     } catch (error) {
