@@ -17,7 +17,7 @@ import AlertsScreenView from "@/components/views/AlertsScreenView";
 import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
 import SettingsScreenView from "@/components/views/SettingsScreenView";
 import LoadingAnimation from '@/components/LoadingAnimation';
-import { DemoProvider } from "@/contexts/DemoContext";
+import { DemoProvider, useDemo } from "@/contexts/DemoContext";
 
 function ForesightApp() {
   const pathname = usePathname();
@@ -128,9 +128,29 @@ function ForesightApp() {
 
   return (
     <DemoProvider>
+      <DemoDebugComponent />
       {currentView}
     </DemoProvider>
   );
+}
+
+// Simple debug component to test demo context
+function DemoDebugComponent() {
+  const { hasDemoRun, isDemoModalOpen, demoStage } = useDemo();
+  
+  useEffect(() => {
+    console.log('DemoDebugComponent - Demo state:', { hasDemoRun, isDemoModalOpen, demoStage });
+    
+    // Expose reset function globally for testing
+    if (typeof window !== 'undefined') {
+      (window as any).resetDemo = () => {
+        localStorage.removeItem('hasDemoRun');
+        window.location.reload();
+      };
+    }
+  }, [hasDemoRun, isDemoModalOpen, demoStage]);
+  
+  return null;
 }
 
 export default ForesightApp;
