@@ -19,7 +19,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import AlertSidePanel from "@/components/ui/AlertSidePanel";
 
 // Demo Context and UI
-import { useDemo } from "@/hooks/useDemoContext";
+import { useDemo } from "@/contexts/DemoContext";
 import {
   Dialog,
   DialogContent,

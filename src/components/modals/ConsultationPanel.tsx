@@ -67,6 +67,7 @@ export default function ConsultationPanel({
   const { toast } = useToast();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const isCurrentlyCreatingEncounter = useRef(false);
   const [mounted, setMounted] = useState(false);
   
   // Form state
@@ -189,15 +190,19 @@ export default function ConsultationPanel({
   }, [toast, patient.id, encounter?.id, transcriptText]);
 
   const createEncounter = useCallback(async () => {
-    if (!patient?.id || isCreating) return;
-    
+    if (!patient?.id || isCurrentlyCreatingEncounter.current) {
+      return;
+    }
+
+    isCurrentlyCreatingEncounter.current = true;
     setIsCreating(true);
     try {
-      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, {
+      const newEncounterData = {
         reason: reason || undefined,
         scheduledStart: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
         duration: duration || undefined,
-      });
+      };
+      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, newEncounterData);
       
       setEncounter(newEncounter);
       
@@ -214,8 +219,9 @@ export default function ConsultationPanel({
       onClose();
     } finally {
       setIsCreating(false);
+      isCurrentlyCreatingEncounter.current = false;
     }
-  }, [patient?.id, isCreating, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
+  }, [patient?.id, reason, scheduledDate, duration, onConsultationCreated, onClose, toast, setEncounter, setIsCreating]);
 
   // Reset form when panel opens and create encounter
   // eslint-disable-next-line react-hooks/exhaustive-deps

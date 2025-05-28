@@ -17,7 +17,7 @@ import AlertsScreenView from "@/components/views/AlertsScreenView";
 import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
 import SettingsScreenView from "@/components/views/SettingsScreenView";
 import LoadingAnimation from '@/components/LoadingAnimation';
-import { DemoProvider } from "@/hooks/useDemoContext";
+import { DemoProvider } from "@/contexts/DemoContext";
 
 function ForesightApp() {
   const pathname = usePathname();

@@ -32,7 +32,9 @@ import ContentSurface from "@/components/layout/ContentSurface";
 import Section from "@/components/ui/section";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ConsultationPanel from '@/components/modals/ConsultationPanel';
-import { useDemo } from '@/hooks/useDemoContext'; // Added for demo
+import { useDemo } from '@/contexts/DemoContext';
+import { useDemoWorkspace } from '@/hooks/demo/useDemoWorkspace';
+import { useDemoConsultation } from '@/hooks/demo/useDemoConsultation';
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -57,50 +59,29 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const [isTabContentOpen, setIsTabContentOpen] = useState(true);
 
   const router = useRouter();
-  const searchParams = useSearchParams(); // Already here
+  const searchParams = useSearchParams();
 
-  // Demo states and hooks
-  const {
-    isDemoActive,
-    demoStage,
-    dorothyRobinsonPatient,
-    exitDemo,
-    advanceDemoStage,
-    animatedTranscript,
-    diagnosisForDemo,
-    treatmentPlanForDemo,
-  } = useDemo();
+  // Demo integration - now clean and separated
+  const demoState = useDemo();
+  const demoWorkspace = useDemoWorkspace({
+    patient: initialPatientStub,
+    isDemoActive: demoState.isDemoActive,
+    demoStage: demoState.demoStage,
+    demoPatient: demoState.demoPatient,
+    exitDemo: demoState.exitDemo,
+    advanceDemoStage: demoState.advanceDemoStage,
+  });
 
-  const isDemoRouteActive = searchParams.get('demo') === 'true';
-  const shouldRunDemoUi = isDemoActive && isDemoRouteActive && dorothyRobinsonPatient?.id === initialPatientStub.id;
-  const [isDemoPanelOpen, setIsDemoPanelOpen] = useState(false);
-
-  // Effect to handle demo lifecycle and panel visibility
-  useEffect(() => {
-    if (shouldRunDemoUi) {
-      if (demoStage === 'consultationPanelReady') {
-        setIsDemoPanelOpen(true);
-        advanceDemoStage('animatingTranscript');
-      } else if (demoStage === 'finished' || !isDemoActive) {
-        setIsDemoPanelOpen(false);
-      }
-    } else if (isDemoPanelOpen) {
-      // If demo conditions are no longer met (e.g., navigated away, demo exited), close panel
-      setIsDemoPanelOpen(false);
-    }
-  }, [demoStage, shouldRunDemoUi, isDemoActive, advanceDemoStage, isDemoPanelOpen]);
-  
-  // Effect to exit demo if patient ID mismatches or demo is no longer active on this route
-  useEffect(() => {
-    if (isDemoActive && isDemoRouteActive && dorothyRobinsonPatient?.id !== initialPatientStub.id) {
-      exitDemo();
-    }
-    if (isDemoActive && !isDemoRouteActive && initialPatientStub.id === dorothyRobinsonPatient?.id) {
-      // If demo was active for this patient, but demo param is gone, exit
-      exitDemo();
-    }
-  }, [isDemoActive, isDemoRouteActive, dorothyRobinsonPatient?.id, initialPatientStub.id, exitDemo]);
-
+  const demoConsultation = useDemoConsultation({
+    patient: initialPatientStub,
+    isDemoActive: demoState.isDemoActive,
+    demoStage: demoState.demoStage,
+    demoPatient: demoState.demoPatient,
+    animatedTranscript: demoState.animatedTranscript,
+    diagnosisText: demoState.diagnosisText,
+    treatmentPlanText: demoState.treatmentPlanText,
+    advanceDemoStage: demoState.advanceDemoStage,
+  });
 
   useEffect(() => {
     if (initialTab) {
@@ -149,6 +130,17 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   useEffect(() => {
     loadPatientData();
   }, [loadPatientData]);
+
+  // Advance demo stage when workspace is ready
+  useEffect(() => {
+    if (demoWorkspace.shouldRunDemoUi && demoState.demoStage === 'navigatingToWorkspace') {
+      // Small delay to ensure component is fully loaded
+      const timer = setTimeout(() => {
+        demoState.advanceDemoStage('consultationPanelReady');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [demoWorkspace.shouldRunDemoUi, demoState.demoStage, demoState.advanceDemoStage]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
@@ -531,22 +523,19 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       />
 
       {/* Demo Consultation Panel */}
-      {shouldRunDemoUi && dorothyRobinsonPatient && (
+      {demoWorkspace.shouldRunDemoUi && demoState.demoPatient && (
         <ConsultationPanel
-          isOpen={isDemoPanelOpen}
+          isOpen={demoWorkspace.isDemoPanelOpen}
           onClose={() => {
-            exitDemo();
-            setIsDemoPanelOpen(false);
+            demoWorkspace.exitDemo();
           }}
-          patient={dorothyRobinsonPatient}
-          isDemoMode={true}
-          initialDemoTranscript={animatedTranscript}
-          demoDiagnosis={diagnosisForDemo}
-          demoTreatment={treatmentPlanForDemo}
-          onDemoClinicalPlanClick={() => {
-            advanceDemoStage('simulatingPlanGeneration');
-          }}
-          isDemoGeneratingPlan={demoStage === 'simulatingPlanGeneration'} 
+          patient={demoState.demoPatient}
+          isDemoMode={demoConsultation.isDemoMode}
+          initialDemoTranscript={demoConsultation.initialDemoTranscript}
+          demoDiagnosis={demoConsultation.demoDiagnosis}
+          demoTreatment={demoConsultation.demoTreatment}
+          onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
+          isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
         />
       )}
     </ContentSurface>
