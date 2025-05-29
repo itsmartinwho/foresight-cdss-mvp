@@ -183,7 +183,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       setLoading(false);
       isLoadingDataRef.current = false;
     }
-  }, [patient?.id, demoState.isDemoActive, demoState.demoPatient]);
+  }, [patient?.id, demoState.isDemoActive, demoState.demoPatient, selectedEncounterForConsultation]);
 
   useEffect(() => {
     loadPatientData();
