@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { Button } from './Button';
+// import { Button } from './Button'; // Old local button
+import { Button } from '@/components/ui/button'; // Actual application button
 import './header.css';
 
 type User = {
@@ -42,12 +43,12 @@ export const Header = ({ user, onLogin, onLogout, onCreateAccount }: HeaderProps
             <span className="welcome">
               Welcome, <b>{user.name}</b>!
             </span>
-            <Button size="small" onClick={onLogout} label="Log out" />
+            <Button size="sm" onClick={onLogout}>Log out</Button> {/* Updated to use actual Button props */}
           </>
         ) : (
           <>
-            <Button size="small" onClick={onLogin} label="Log in" />
-            <Button primary size="small" onClick={onCreateAccount} label="Sign up" />
+            <Button size="sm" variant="outline" onClick={onLogin}>Log in</Button> {/* Updated */}
+            <Button size="sm" onClick={onCreateAccount}>Sign up</Button> {/* Updated */}
           </>
         )}
       </div>
