@@ -14,7 +14,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function streamResponse(
   model: string,
-  payload: any, // Can be messages for chat.completions or input for responses
+  payload: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
   controller: ReadableStreamDefaultController,
   reqSignal: AbortSignal,
   isControllerClosedRef: { value: boolean }
@@ -63,18 +63,19 @@ async function streamResponse(
   try {
     let stream;
     if (model === "o4-mini") {
-      // o4-mini uses the standard chat completions API with reasoning capabilities
       stream = await openai.chat.completions.create({
         model,
         stream: true,
-        messages: payload, // Contains messages array
-        reasoning_effort: "medium", // Special parameter for o4-mini reasoning
+        messages: payload,
+        tools: [], // Must be present if tool_choice is used, even if empty for built-in tools
+        tool_choice: "auto", 
+        reasoning_effort: "medium",
       }, { signal: reqSignal });
     } else {
       stream = await openai.chat.completions.create({
         model,
         stream: true,
-        messages: payload, // Contains messages array
+        messages: payload,
       }, { signal: reqSignal });
     }
 
@@ -82,12 +83,42 @@ async function streamResponse(
       if (reqSignal.aborted || isControllerClosedRef.value) {
         break;
       }
-      let content = ""; // To be populated for markdown_chunk
-      
-      // Handle standard chat completion chunks for both models
+      let content = ""; 
+
       content = chunk.choices?.[0]?.delta?.content;
 
-      // Common handling for content to be added to markdown buffer
+      if (model === "o4-mini" && chunk.choices?.[0]?.delta?.tool_calls) {
+        const toolCalls = chunk.choices[0].delta.tool_calls;
+        for (const toolCall of toolCalls) {
+          if (toolCall.function?.name === 'python' || (toolCall.function?.name === 'code_interpreter' && toolCall.function?.arguments)) {
+            // This indicates the model wants to run Python code.
+            // The arguments typically contain the code.
+            const code = toolCall.function.arguments;
+            if (code) {
+                // The model is about to execute code. Send the code to the client.
+                const toolCodePayload = { type: "tool_code_chunk", language: "python", content: JSON.parse(code).code }; // Assuming code is { code: "..."}
+                controller.enqueue(encoder.encode(`data:${JSON.stringify(toolCodePayload)}\n\n`));
+            }
+          } 
+        }
+      }
+      
+      // If the model provides tool outputs directly in the stream (less common for chat.completions, more for assistants)
+      // This part might need adjustment based on actual o4-mini behavior with code interpreter via chat completions
+      if (model === "o4-mini" && chunk.choices?.[0]?.message?.tool_calls) {
+        const completedToolCalls = chunk.choices[0].message.tool_calls;
+        for (const toolCall of completedToolCalls) {
+           // Look for outputs from a python/code_interpreter tool execution
+           // The actual structure of tool outputs needs to be verified from OpenAI docs for o4-mini code interpreter via chat completions
+           // This is a placeholder based on common patterns.
+           if (toolCall.type === 'tool' && toolCall.id && toolCall.function?.name === 'python_interpreter_result') {
+             const outputContent = toolCall.function.arguments; // Or wherever the output is nested
+             const outputPayload = { type: "code_interpreter_output", language: "plaintext", content: outputContent };
+             controller.enqueue(encoder.encode(`data:${JSON.stringify(outputPayload)}\n\n`));
+           }
+        }
+      }
+
       if (content) {
         chunkBuffer += content;
         if (shouldFlush(chunkBuffer)) {
