@@ -259,7 +259,7 @@ export default function AdvisorView() {
             if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
               let parsedTableData = null;
               let outputFormat: 'json' | 'csv' | 'plaintext' = 'plaintext';
-              letoutputText = data.content; // Default to full content as text
+              let outputText = data.content; // Default to full content as text
 
               if (data.content && typeof data.content === 'string' &&
                   (data.content.trim().startsWith('[') && data.content.trim().endsWith(']'))) {
