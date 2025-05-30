@@ -78,6 +78,15 @@ export interface AssistantMessageContent {
   isFallback?: boolean;
   fallbackMarkdown?: string; // Made optional
   isMarkdownStream?: boolean; // Added for smd.js integration
+  toolCode?: { language: string; content: string; };
+  codeInterpreterOutputText?: string;
+  codeInterpreterImageId?: string;
+  finalMarkdown?: string;
+  codeInterpreterTableData?: {
+    columns: Array<{ accessorKey: string; header: string }>;
+    data: Array<Record<string, any>>;
+  } | null;
+  codeInterpreterOutputFormat?: 'json' | 'csv' | 'plaintext';
 }
 
 export interface ChatMessage {

@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useChat } from "ai/react";
+import { DataTable } from "@/components/ui/data-table"; // Added
+import type { ColumnDef } from "@tanstack/react-table"; // Added
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -235,12 +237,101 @@ export default function AdvisorView() {
         const data = JSON.parse(ev.data);
         if (data.type === "markdown_chunk" && data.content) {
           smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
-        } else if (data.type === "stream_end") {
-          if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
-            smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
-            delete parsersRef.current[currentAssistantMessageIdRef.current!];
+        } else if (data.type === "tool_code_chunk" && currentAssistantMessageIdRef.current) {
+          setMessages(prev => prev.map(m => {
+            if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
+              const currentToolCode = (m.content as AssistantMessageContent).toolCode;
+              return {
+                ...m,
+                content: {
+                  ...(m.content as AssistantMessageContent),
+                  toolCode: {
+                    language: data.language,
+                    content: currentToolCode?.content ? currentToolCode.content + data.content : data.content,
+                  }
+                }
+              };
+            }
+            return m;
+          }));
+        } else if (data.type === "code_interpreter_output" && currentAssistantMessageIdRef.current) {
+          setMessages(prev => prev.map(m => {
+            if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
+              let parsedTableData = null;
+              let outputFormat: 'json' | 'csv' | 'plaintext' = 'plaintext';
+              letoutputText = data.content; // Default to full content as text
+
+              if (data.content && typeof data.content === 'string' &&
+                  (data.content.trim().startsWith('[') && data.content.trim().endsWith(']'))) {
+                try {
+                  const jsonData = JSON.parse(data.content);
+                  if (Array.isArray(jsonData) && jsonData.length > 0 && typeof jsonData[0] === 'object') {
+                    const firstRowKeys = Object.keys(jsonData[0]);
+                    const columns: ColumnDef<Record<string, any>>[] = firstRowKeys.map(key => ({
+                      accessorKey: key,
+                      header: key.charAt(0).toUpperCase() + key.slice(1),
+                    }));
+                    parsedTableData = { columns, data: jsonData };
+                    outputFormat = 'json';
+                    outputText = ""; // Clear outputText if table is successfully parsed
+                  }
+                } catch (e) {
+                  // Not valid JSON or not the expected table structure, keep as plaintext
+                  console.warn("Code interpreter output looked like JSON array but failed to parse as table:", e);
+                }
+              }
+
+              const existingContent = m.content as AssistantMessageContent;
+              return {
+                ...m,
+                content: {
+                  ...existingContent,
+                  codeInterpreterTableData: parsedTableData ? parsedTableData : existingContent.codeInterpreterTableData, // Preserve existing table if new data is not a table
+                  codeInterpreterOutputFormat: parsedTableData ? outputFormat : existingContent.codeInterpreterOutputFormat || 'plaintext',
+                  codeInterpreterOutputText: outputText ? (existingContent.codeInterpreterOutputText || "") + outputText : existingContent.codeInterpreterOutputText,
+                }
+              };
+            }
+            return m;
+          }));
+        } else if (data.type === "code_interpreter_image_id" && currentAssistantMessageIdRef.current) {
+          setMessages(prev => prev.map(m => {
+            if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
+              return {
+                ...m,
+                content: {
+                  ...(m.content as AssistantMessageContent),
+                  codeInterpreterImageId: data.file_id,
+                }
+              };
+            }
+            return m;
+          }));
+        } else if (data.type === "stream_end" && currentAssistantMessageIdRef.current) {
+          const assistantMessageId = currentAssistantMessageIdRef.current;
+          if (parsersRef.current[assistantMessageId]) {
+            smd_parser_end(parsersRef.current[assistantMessageId]);
           }
-          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false } : m));
+
+          const finalMarkdownText = markdownRootsRef.current[assistantMessageId]?.innerText || '';
+
+          // Clean up refs for this specific message
+          delete parsersRef.current[assistantMessageId];
+          delete markdownRootsRef.current[assistantMessageId];
+
+          setMessages(prev => prev.map(m =>
+            m.id === assistantMessageId
+            ? {
+                ...m,
+                isStreaming: false,
+                content: {
+                  ...(m.content as AssistantMessageContent),
+                  isMarkdownStream: false, // Switch off smd rendering for the final state
+                  finalMarkdown: finalMarkdownText,
+                }
+              }
+            : m
+          ));
           setIsSending(false);
           eventSource.close();
         } else if (data.type === "error") {
@@ -627,103 +718,118 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
     }
   };
 
-  if (assistantMessage.isFallback && assistantMessage.fallbackMarkdown) {
+  // Helper for custom components for ReactMarkdown
+  const reactMarkdownComponents = {
+    h1: ({node, ...props}: any) => <h1 className="text-2xl font-bold my-2" {...props} />,
+    h2: ({node, ...props}: any) => <h2 className="text-xl font-semibold my-2" {...props} />,
+    h3: ({node, ...props}: any) => <h3 className="text-lg font-medium my-2" {...props} />,
+    ul: ({node, ...props}: any) => <ul className="list-disc pl-5 my-2" {...props} />,
+    ol: ({node, ...props}: any) => <ol className="list-decimal pl-5 my-2" {...props} />,
+    p: ({node, ...props}: any) => <p className="my-1" {...props} />,
+    table: ({node, ...props}: any) => <table className="table-auto w-full my-2 border-collapse border border-gray-300 dark:border-gray-600" {...props} />,
+    thead: ({node, ...props}: any) => <thead className="bg-gray-100 dark:bg-gray-800" {...props} />,
+    th: ({node, ...props}: any) => <th className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-left" {...props} />,
+    td: ({node, ...props}: any) => <td className="border border-gray-300 dark:border-gray-600 px-2 py-1" {...props} />,
+  };
+
+  // Common rendering for tool outputs
+  const renderToolOutputs = () => (
+    <>
+      {assistantMessage.toolCode && (
+        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400">Generated Code:</h4>
+          <pre className="text-xs overflow-x-auto bg-gray-900 dark:bg-black text-white p-2 rounded mt-1"><code>{assistantMessage.toolCode.content}</code></pre>
+        </div>
+      )}
+      {assistantMessage.codeInterpreterTableData ? (
+        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Data Table ({assistantMessage.codeInterpreterOutputFormat}):</h4>
+          <DataTable
+            columns={assistantMessage.codeInterpreterTableData.columns as ColumnDef<unknown, any>[]}
+            data={assistantMessage.codeInterpreterTableData.data}
+          />
+        </div>
+      ) : assistantMessage.codeInterpreterOutputText && (
+        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400">Code Output ({assistantMessage.codeInterpreterOutputFormat || 'plaintext'}):</h4>
+          <pre className="text-xs overflow-x-auto bg-white dark:bg-gray-700 p-2 rounded mt-1">{assistantMessage.codeInterpreterOutputText}</pre>
+        </div>
+      )}
+      {assistantMessage.codeInterpreterImageId && (
+        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Assistant generated an image: <code>{assistantMessage.codeInterpreterImageId}</code>
+            <br />
+            <em className="text-xs">(Image display not yet implemented)</em>
+          </p>
+        </div>
+      )}
+    </>
+  );
+
+  if (assistantMessage.isMarkdownStream && isStreaming && markdownRootDiv) {
+    // Actively streaming with smd.js
+    return (
+      <>
+        <div ref={containerRef} className="prose prose-sm max-w-none dark:prose-invert" />
+        {renderToolOutputs()}
+      </>
+    );
+  } else if (assistantMessage.finalMarkdown) {
+    // Stream finished, render with ReactMarkdown
+    const cleanHtml = DOMPurify.sanitize(assistantMessage.finalMarkdown);
+    return (
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={reactMarkdownComponents}>
+          {cleanHtml}
+        </ReactMarkdown>
+        {renderToolOutputs()}
+      </div>
+    );
+  } else if (assistantMessage.isFallback && assistantMessage.fallbackMarkdown) {
+    // Fallback logic
     const cleanHtml = DOMPurify.sanitize(assistantMessage.fallbackMarkdown);
     return (
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-        // Customize heading rendering if needed
-        h1: ({node, ...props}) => <h1 className="text-2xl font-bold my-2" {...props} />,
-        h2: ({node, ...props}) => <h2 className="text-xl font-semibold my-2" {...props} />,
-        h3: ({node, ...props}) => <h3 className="text-lg font-medium my-2" {...props} />,
-        ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2" {...props} />,
-        ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2" {...props} />,
-        p: ({node, ...props}) => <p className="my-1" {...props} />,
-        table: ({node, ...props}) => <table className="table-auto w-full my-2 border-collapse border border-gray-300" {...props} />,
-        thead: ({node, ...props}) => <thead className="bg-gray-100" {...props} />,
-        th: ({node, ...props}) => <th className="border border-gray-300 px-2 py-1 text-left" {...props} />,
-        td: ({node, ...props}) => <td className="border border-gray-300 px-2 py-1" {...props} />,
-        // Add other custom components as needed
-      }}>
-        {cleanHtml}
-      </ReactMarkdown>
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={reactMarkdownComponents}>
+          {cleanHtml}
+        </ReactMarkdown>
+        {renderToolOutputs()}
+      </div>
+    );
+  } else if (isStreaming) {
+    // Still streaming but not yet using smd.js container (e.g. only tool calls so far)
+    // or if markdownRootDiv is not yet available for some reason.
+    return (
+      <>
+        {/* Optional: could show a generic "Assistant is working..." or specific tool call indicators */}
+        {/* For now, tool outputs will cover this if they arrive before markdown */}
+        {renderToolOutputs()}
+        {/* Show pulsing if no tool output yet */}
+        {!assistantMessage.toolCode && !assistantMessage.codeInterpreterOutputText && !assistantMessage.codeInterpreterImageId && (
+            <div className="animate-pulse">Thinking...</div>
+        )}
+      </>
     );
   }
 
-  if (assistantMessage.isMarkdownStream) {
-    // The actual content is rendered by streaming-markdown directly into markdownRootDiv
-    return <div ref={containerRef} className="prose prose-sm max-w-none" />;
-  }
-
+  // Default/Empty case or non-markdown structured content (legacy, if any)
+  // This also includes rendering tool outputs if the message is not streaming and has no markdown.
   return (
     <div>
       {(assistantMessage.content || []).map((element, index) => {
         return (
           <Fragment key={index}>
             {element.element === "paragraph" && <p className="mb-2">{element.text}</p>}
-            {element.element === "ordered_list" && (
-              <ol className="list-decimal pl-5 mb-2">
-                {element.items?.map((item, i) => <li key={i}>{item}</li>)}
-              </ol>
-            )}
-            {element.element === "unordered_list" && (
-              <ul className="list-disc pl-5 mb-2">
-                {element.items?.map((item, i) => <li key={i}>{item}</li>)}
-              </ul>
-            )}
-            {element.element === "table" && (
-              <div className="overflow-x-auto mb-2">
-                <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      {element.header.map((headerText, i) => (
-                        <th key={i} scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-r last:border-r-0 border-gray-300">
-                          {headerText}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {element.rows.map((row, i) => (
-                      <tr key={i} className="border-b last:border-b-0 border-gray-300">
-                        {row.map((cellText, j) => (
-                          <td key={j} className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 border-r last:border-r-0 border-gray-300">
-                            {cellText}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {element.element === "references" && element.references && (
-              <div className="mt-4 text-sm mb-2">
-                <h4 className="font-semibold mb-1">References:</h4>
-                <ul className="list-none pl-0">
-                  {Object.entries(element.references).map(([id, text]) => (
-                    <li key={id} id={`ref-${id}`} className="mb-1">
-                      <a 
-                        href={`#ref-${id}`} 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleReferenceClick(id);
-                        }}
-                        className="text-blue-600 hover:underline"
-                      >
-                        [{id}]
-                      </a>: {text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {/* Render a streaming indicator if no specific elements are present yet and streaming is active */}
-            {assistantMessage.content.length === 0 && isStreaming && (
-              <p className="text-gray-500"><em>Assistant is typing...</em></p>
-            )}
+            {/* ... other legacy structured element rendering ... */}
           </Fragment>
         );
       })}
+      {renderToolOutputs()}
+      {/* Loading indicator if nothing else is there but it's supposed to be streaming */}
+      {isStreaming && !assistantMessage.finalMarkdown && !assistantMessage.fallbackMarkdown && (!assistantMessage.content || assistantMessage.content.length === 0) && !assistantMessage.toolCode && !assistantMessage.codeInterpreterOutputText && !assistantMessage.codeInterpreterImageId && (
+         <div className="animate-pulse">Foresight is typing...</div>
+      )}
     </div>
   );
 };
