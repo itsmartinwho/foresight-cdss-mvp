@@ -8,7 +8,7 @@ import OpenAI from "openai";
 // 5. streamMarkdownOnly implementation
 // 6. Security and recovery (DOMPurify on client, discard empty tool args)
 
-const systemPrompt = "You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.";
+const systemPrompt = "You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy. For tasks like data analysis, generating tables, creating charts from data, or performing calculations, you can use the Code Interpreter tool by writing and executing Python code.";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -80,23 +80,48 @@ async function streamResponse(
       if (reqSignal.aborted || isControllerClosedRef.value) {
         break;
       }
-      let content = "";
+      let content = ""; // To be populated for markdown_chunk
       if (model === "o3") {
-        // For o3, the structure might be different. Let's assume a similar delta content for now.
-        // This might need adjustment based on actual o3 streaming API response.
-        // Based on the docs for o1-preview (similar model), it might be chunk.delta or chunk.choices[0].delta.content
-        // For now, trying a more generic approach that OpenAI SDKs tend to use for streaming deltas.
-        if (chunk.choices && chunk.choices[0]?.delta?.content) {
-            content = chunk.choices[0].delta.content;
-        } else if (typeof chunk.delta === 'string') { // fallback for a simpler delta structure
-            content = chunk.delta;
-        } else if (chunk.output_text) { // Check if a non-delta field comes through in streaming for o3
-            content = chunk.output_text; // This would imply non-delta streaming if it's the full text each time
+        // Handle o3 stream events (including Code Interpreter)
+        // Based on OpenAI's documentation for streaming with tool use (e.g. assistants API events)
+        // Actual events from `responses.create` might need verification.
+
+        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'text_delta' && chunk.delta.text) {
+          content = chunk.delta.text; // Regular text from LLM
+        } else if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'tool_code_delta' && chunk.delta.text_delta) {
+          // This seems to be how o3 streams the code interpreter input code
+          const codeChunk = chunk.delta.text_delta;
+          if (codeChunk) {
+            const toolCodePayload = { type: "tool_code_chunk", language: "python", content: codeChunk };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(toolCodePayload)}\n\n`));
+          }
+          continue; // Skip adding to chunkBuffer
+        } else if (chunk.type === 'tool_outputs_chunk' && chunk.tool_outputs_chunk?.outputs) {
+          // Process outputs from Code Interpreter
+          chunk.tool_outputs_chunk.outputs.forEach((output: any) => { // Add 'any' type for output if specific type is unknown
+            if (output.type === 'code_interpreter' && output.code_interpreter?.outputs) {
+              output.code_interpreter.outputs.forEach((ciOutput: any) => { // Add 'any' for ciOutput
+                if (ciOutput.type === 'text' && ciOutput.text) {
+                  const outputPayload = { type: "code_interpreter_output", language: "plaintext", content: ciOutput.text };
+                  controller.enqueue(encoder.encode(`data:${JSON.stringify(outputPayload)}\n\n`));
+                } else if (ciOutput.type === 'image' && ciOutput.image?.file_id) {
+                  console.log("Code Interpreter generated image, File ID:", ciOutput.image.file_id);
+                  const imagePayload = { type: "code_interpreter_image_id", file_id: ciOutput.image.file_id };
+                  controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
+                }
+              });
+            }
+          });
+          continue; // Skip adding to chunkBuffer
         }
-      } else {
+        // Add other o3 specific chunk type handling here if necessary
+        // For example, if there's a specific event for tool_calls or tool_call_delta distinct from content_block_delta
+
+      } else { // For other models like gpt-4.1-mini
         content = chunk.choices?.[0]?.delta?.content;
       }
 
+      // Common handling for content to be added to markdown buffer
       if (content) {
         chunkBuffer += content;
         if (shouldFlush(chunkBuffer)) {
@@ -107,6 +132,7 @@ async function streamResponse(
       }
     }
 
+    // After the loop, if there's remaining content in chunkBuffer, send it
     if (!isControllerClosedRef.value && chunkBuffer.length > 0) {
       const outPayload = { type: "markdown_chunk", content: chunkBuffer };
       controller.enqueue(encoder.encode(`data:${JSON.stringify(outPayload)}\n\n`));
@@ -244,6 +270,45 @@ export async function GET(req: NextRequest) {
       apiPayload = {
         input: processedMessagesForO3,
         reasoning: { "effort": "medium" },
+        tools: [
+          {
+            "type": "code_interpreter",
+            "container": { "type": "auto" }
+          },
+          // CONCEPTUAL MCP TOOL INTEGRATION:
+          // To enable an MCP tool, we would add its definition here.
+          // For example, to connect to a hypothetical external drug information MCP server:
+          /*
+          {
+            "type": "mcp",
+            "mcp": {
+              // "url": "https://example-mcp-drug-server.com/mcp", // If we need to specify it
+              "tool_name": "fetchDrugInfo", // The specific tool exposed by the MCP server
+              "description": "Fetches information about a drug, like side effects and contraindications.",
+              "parameters": { // Schema for the parameters the tool accepts
+                "type": "object",
+                "properties": {
+                  "drugName": {
+                    "type": "string",
+                    "description": "The name of the drug to fetch information for."
+                  }
+                },
+                "required": ["drugName"]
+              }
+            }
+          }
+          */
+          // The `streamResponse` function would then need to be updated to handle:
+          // 1. `chunk.delta.type === 'tool_use_delta'` (or similar) for when the LLM decides to use `fetchDrugInfo`.
+          //    - This chunk would contain the tool name and the arguments (e.g., { drugName: "Lisinopril" }).
+          //    - Our backend might then need to either:
+          //        a) Call the MCP server itself (if `mcp.url` is defined and we proxy).
+          //        b) Expect OpenAI's service to call a registered/public MCP server and stream results back.
+          // 2. `tool_outputs_chunk` (or similar) containing the results from the MCP tool.
+          //    - This would be fed back into the LLM to generate a final response.
+          //    - The frontend would also need to be aware of these new event types if we want to display interim status.
+          // The system prompt would also be updated to inform the LLM about this new capability.
+        ]
       };
     } else {
       // For gpt-4.1-mini and other chat completion models
