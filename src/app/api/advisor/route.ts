@@ -62,7 +62,7 @@ async function streamResponse(
 
   try {
     let stream;
-    if (model === "o3") {
+    if (model === "o4-mini") {
       stream = await openai.responses.create({
         model,
         stream: true,
@@ -81,15 +81,15 @@ async function streamResponse(
         break;
       }
       let content = ""; // To be populated for markdown_chunk
-      if (model === "o3") {
-        // Handle o3 stream events (including Code Interpreter)
+      if (model === "o4-mini") {
+        // Handle o4-mini stream events (including Code Interpreter)
         // Based on OpenAI's documentation for streaming with tool use (e.g. assistants API events)
         // Actual events from `responses.create` might need verification.
 
         if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'text_delta' && chunk.delta.text) {
           content = chunk.delta.text; // Regular text from LLM
         } else if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'tool_code_delta' && chunk.delta.text_delta) {
-          // This seems to be how o3 streams the code interpreter input code
+          // This seems to be how o4-mini streams the code interpreter input code
           const codeChunk = chunk.delta.text_delta;
           if (codeChunk) {
             const toolCodePayload = { type: "tool_code_chunk", language: "python", content: codeChunk };
@@ -114,7 +114,7 @@ async function streamResponse(
           });
           continue; // Skip adding to chunkBuffer
         }
-        // Add other o3 specific chunk type handling here if necessary
+        // Add other o4-mini specific chunk type handling here if necessary
         // For example, if there's a specific event for tool_calls or tool_call_delta distinct from content_block_delta
 
       } else { // For other models like gpt-4.1-mini
@@ -228,18 +228,18 @@ export async function GET(req: NextRequest) {
     }
 
     const thinkMode = url.searchParams.get("think") === "true";
-    const model = thinkMode ? "o3" : "gpt-4.1-mini"; // Use gpt-4.1-mini as default based on prior comment
+    const model = thinkMode ? "o4-mini" : "gpt-4.1-mini"; // Use correct model names as specified by user
     
     let apiPayload;
     if (thinkMode) {
-      // For o3, combine system prompt with the first user message if messages exist.
-      // The o3 'input' expects an array of objects, typically starting with a user role.
+      // For o4-mini, combine system prompt with the first user message if messages exist.
+      // The o4-mini 'input' expects an array of objects, typically starting with a user role.
       // We'll take all messages, prepend system prompt to the *content* of the very first message if it's a user message,
       // or prepend a new user message with the system prompt if the history starts with an assistant.
-      // Then we map to the format o3 expects for its 'input' array.
-      // The 'reasoning' parameter is also specific to o3.
+      // Then we map to the format o4-mini expects for its 'input' array.
+      // The 'reasoning' parameter is also specific to o4-mini.
 
-      const processedMessagesForO3 = [];
+      const processedMessagesForO4 = [];
       let systemPromptApplied = false;
       if (messagesFromClient.length > 0) {
         messagesFromClient.forEach((msg, index) => {
@@ -249,26 +249,26 @@ export async function GET(req: NextRequest) {
               content = `${systemPrompt}\n\n${content}`;
               systemPromptApplied = true;
             }
-            processedMessagesForO3.push({ role: 'user', content });
+            processedMessagesForO4.push({ role: 'user', content });
           } else if (msg.role === 'assistant') {
-            // o3 input format seems to be [{role: 'user', content: '...'}, {role: 'assistant', content: '...'}, ...]
+            // o4-mini input format seems to be [{role: 'user', content: '...'}, {role: 'assistant', content: '...'}, ...]
             // It might not support direct assistant messages without a preceding user message in its 'input'.
-            // For simplicity, we will pass assistant messages as is, but this might need review based on o3 behavior.
-            processedMessagesForO3.push({ role: 'assistant', content: msg.content });
+            // For simplicity, we will pass assistant messages as is, but this might need review based on o4-mini behavior.
+            processedMessagesForO4.push({ role: 'assistant', content: msg.content });
           }
         });
       } else {
          // If there are no messages from client, send system prompt as first user message
-         processedMessagesForO3.push({ role: 'user', content: systemPrompt });
+         processedMessagesForO4.push({ role: 'user', content: systemPrompt });
          systemPromptApplied = true;
       }
       // Ensure there's at least one user message if all were assistant or empty.
-      if (!systemPromptApplied && processedMessagesForO3.length === 0) {
-        processedMessagesForO3.push({ role: 'user', content: systemPrompt });
+      if (!systemPromptApplied && processedMessagesForO4.length === 0) {
+        processedMessagesForO4.push({ role: 'user', content: systemPrompt });
       }
 
       apiPayload = {
-        input: processedMessagesForO3,
+        input: processedMessagesForO4,
         reasoning: { "effort": "medium" },
         tools: [
           {

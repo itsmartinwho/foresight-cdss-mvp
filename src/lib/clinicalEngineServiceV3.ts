@@ -66,11 +66,11 @@ export class ClinicalEngineServiceV3 {
       
       const finalTranscript = transcript || currentEncounter?.encounter.transcript || '';
       
-      // Stage 2: Generate differential diagnoses using GPT-4.1
+      // Stage 2: Generate differential diagnoses using GPT-4.1-mini
       console.log('Stage 2: Generating differential diagnoses...');
       const differentialDiagnoses = await this.generateDifferentialDiagnoses(patientData, finalTranscript);
       
-      // Stage 3: Generate primary diagnosis and treatment plan using GPT-4o-mini
+      // Stage 3: Generate primary diagnosis and treatment plan using o4-mini
       console.log('Stage 3: Generating diagnosis and treatment plan...');
       const diagnosticResult = await this.generateDiagnosisAndTreatment(
         patientData, 
@@ -78,7 +78,7 @@ export class ClinicalEngineServiceV3 {
         differentialDiagnoses
       );
       
-      // Stage 4: Generate additional clinical fields
+      // Stage 4: Generate additional clinical fields using o4-mini
       console.log('Stage 4: Generating additional clinical fields...');
       await this.generateAdditionalFields(patientData, finalTranscript, diagnosticResult, actualEncounterId);
       
@@ -124,7 +124,7 @@ export class ClinicalEngineServiceV3 {
   }
 
   /**
-   * Stage 2: Generate differential diagnoses using GPT-4.1
+   * Stage 2: Generate differential diagnoses using GPT-4.1-mini
    */
   private async generateDifferentialDiagnoses(
     patientData: any,
@@ -186,7 +186,7 @@ Please generate differential diagnoses based on this information.`;
   }
 
   /**
-   * Stage 3: Generate primary diagnosis and treatment plan using GPT-4o-mini
+   * Stage 3: Generate primary diagnosis and treatment plan using o4-mini
    */
   private async generateDiagnosisAndTreatment(
     patientData: any,
@@ -256,7 +256,7 @@ Please provide your primary diagnosis and treatment plan.`;
   }
 
   /**
-   * Stage 4: Generate additional clinical fields using GPT-4o-mini
+   * Stage 4: Generate additional clinical fields using o4-mini
    */
   private async generateAdditionalFields(
     patientData: any,
@@ -311,7 +311,7 @@ Please provide your primary diagnosis and treatment plan.`;
   }
 
   /**
-   * Extract a single field using GPT-4o-mini
+   * Extract a single field using o4-mini
    */
   private async extractSingleField(
     patientData: any,
