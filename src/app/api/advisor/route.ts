@@ -63,10 +63,12 @@ async function streamResponse(
   try {
     let stream;
     if (model === "o4-mini") {
-      stream = await openai.responses.create({
+      // o4-mini uses the standard chat completions API with reasoning capabilities
+      stream = await openai.chat.completions.create({
         model,
         stream: true,
-        ...payload, // Contains input and reasoning
+        messages: payload, // Contains messages array
+        reasoning_effort: "medium", // Special parameter for o4-mini reasoning
       }, { signal: reqSignal });
     } else {
       stream = await openai.chat.completions.create({
@@ -81,45 +83,9 @@ async function streamResponse(
         break;
       }
       let content = ""; // To be populated for markdown_chunk
-      if (model === "o4-mini") {
-        // Handle o4-mini stream events (including Code Interpreter)
-        // Based on OpenAI's documentation for streaming with tool use (e.g. assistants API events)
-        // Actual events from `responses.create` might need verification.
-
-        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'text_delta' && chunk.delta.text) {
-          content = chunk.delta.text; // Regular text from LLM
-        } else if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'tool_code_delta' && chunk.delta.text_delta) {
-          // This seems to be how o4-mini streams the code interpreter input code
-          const codeChunk = chunk.delta.text_delta;
-          if (codeChunk) {
-            const toolCodePayload = { type: "tool_code_chunk", language: "python", content: codeChunk };
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(toolCodePayload)}\n\n`));
-          }
-          continue; // Skip adding to chunkBuffer
-        } else if (chunk.type === 'tool_outputs_chunk' && chunk.tool_outputs_chunk?.outputs) {
-          // Process outputs from Code Interpreter
-          chunk.tool_outputs_chunk.outputs.forEach((output: any) => { // Add 'any' type for output if specific type is unknown
-            if (output.type === 'code_interpreter' && output.code_interpreter?.outputs) {
-              output.code_interpreter.outputs.forEach((ciOutput: any) => { // Add 'any' for ciOutput
-                if (ciOutput.type === 'text' && ciOutput.text) {
-                  const outputPayload = { type: "code_interpreter_output", language: "plaintext", content: ciOutput.text };
-                  controller.enqueue(encoder.encode(`data:${JSON.stringify(outputPayload)}\n\n`));
-                } else if (ciOutput.type === 'image' && ciOutput.image?.file_id) {
-                  console.log("Code Interpreter generated image, File ID:", ciOutput.image.file_id);
-                  const imagePayload = { type: "code_interpreter_image_id", file_id: ciOutput.image.file_id };
-                  controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
-                }
-              });
-            }
-          });
-          continue; // Skip adding to chunkBuffer
-        }
-        // Add other o4-mini specific chunk type handling here if necessary
-        // For example, if there's a specific event for tool_calls or tool_call_delta distinct from content_block_delta
-
-      } else { // For other models like gpt-4.1-mini
-        content = chunk.choices?.[0]?.delta?.content;
-      }
+      
+      // Handle standard chat completion chunks for both models
+      content = chunk.choices?.[0]?.delta?.content;
 
       // Common handling for content to be added to markdown buffer
       if (content) {
@@ -232,84 +198,11 @@ export async function GET(req: NextRequest) {
     
     let apiPayload;
     if (thinkMode) {
-      // For o4-mini, combine system prompt with the first user message if messages exist.
-      // The o4-mini 'input' expects an array of objects, typically starting with a user role.
-      // We'll take all messages, prepend system prompt to the *content* of the very first message if it's a user message,
-      // or prepend a new user message with the system prompt if the history starts with an assistant.
-      // Then we map to the format o4-mini expects for its 'input' array.
-      // The 'reasoning' parameter is also specific to o4-mini.
-
-      const processedMessagesForO4 = [];
-      let systemPromptApplied = false;
-      if (messagesFromClient.length > 0) {
-        messagesFromClient.forEach((msg, index) => {
-          if (msg.role === 'user') {
-            let content = msg.content;
-            if (index === 0 && !systemPromptApplied) {
-              content = `${systemPrompt}\n\n${content}`;
-              systemPromptApplied = true;
-            }
-            processedMessagesForO4.push({ role: 'user', content });
-          } else if (msg.role === 'assistant') {
-            // o4-mini input format seems to be [{role: 'user', content: '...'}, {role: 'assistant', content: '...'}, ...]
-            // It might not support direct assistant messages without a preceding user message in its 'input'.
-            // For simplicity, we will pass assistant messages as is, but this might need review based on o4-mini behavior.
-            processedMessagesForO4.push({ role: 'assistant', content: msg.content });
-          }
-        });
-      } else {
-         // If there are no messages from client, send system prompt as first user message
-         processedMessagesForO4.push({ role: 'user', content: systemPrompt });
-         systemPromptApplied = true;
-      }
-      // Ensure there's at least one user message if all were assistant or empty.
-      if (!systemPromptApplied && processedMessagesForO4.length === 0) {
-        processedMessagesForO4.push({ role: 'user', content: systemPrompt });
-      }
-
-      apiPayload = {
-        input: processedMessagesForO4,
-        reasoning: { "effort": "medium" },
-        tools: [
-          {
-            "type": "code_interpreter",
-            "container": { "type": "auto" }
-          },
-          // CONCEPTUAL MCP TOOL INTEGRATION:
-          // To enable an MCP tool, we would add its definition here.
-          // For example, to connect to a hypothetical external drug information MCP server:
-          /*
-          {
-            "type": "mcp",
-            "mcp": {
-              // "url": "https://example-mcp-drug-server.com/mcp", // If we need to specify it
-              "tool_name": "fetchDrugInfo", // The specific tool exposed by the MCP server
-              "description": "Fetches information about a drug, like side effects and contraindications.",
-              "parameters": { // Schema for the parameters the tool accepts
-                "type": "object",
-                "properties": {
-                  "drugName": {
-                    "type": "string",
-                    "description": "The name of the drug to fetch information for."
-                  }
-                },
-                "required": ["drugName"]
-              }
-            }
-          }
-          */
-          // The `streamResponse` function would then need to be updated to handle:
-          // 1. `chunk.delta.type === 'tool_use_delta'` (or similar) for when the LLM decides to use `fetchDrugInfo`.
-          //    - This chunk would contain the tool name and the arguments (e.g., { drugName: "Lisinopril" }).
-          //    - Our backend might then need to either:
-          //        a) Call the MCP server itself (if `mcp.url` is defined and we proxy).
-          //        b) Expect OpenAI's service to call a registered/public MCP server and stream results back.
-          // 2. `tool_outputs_chunk` (or similar) containing the results from the MCP tool.
-          //    - This would be fed back into the LLM to generate a final response.
-          //    - The frontend would also need to be aware of these new event types if we want to display interim status.
-          // The system prompt would also be updated to inform the LLM about this new capability.
-        ]
-      };
+      // For o4-mini, use standard chat completions format with reasoning_effort parameter
+      apiPayload = [
+        { role: "system" as const, content: systemPrompt },
+        ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
+      ];
     } else {
       // For gpt-4.1-mini and other chat completion models
       apiPayload = [
