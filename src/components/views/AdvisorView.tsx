@@ -64,6 +64,7 @@ export default function AdvisorView() {
   // Refs for streaming-markdown (one parser + root div per assistant message)
   const parsersRef = useRef<Record<string, any>>({});
   const markdownRootsRef = useRef<Record<string, HTMLDivElement>>({});
+  const rawMarkdownAccumulatorRef = useRef<Record<string, string>>({}); // Added ref for accumulating raw markdown
 
   // Use a ref to store the ID of the current assistant message being streamed to.
   // This helps manage state updates correctly within the EventSource callbacks.
@@ -181,6 +182,7 @@ export default function AdvisorView() {
     const markdownRootDiv = document.createElement('div');
     markdownRootsRef.current[assistantId] = markdownRootDiv;
     parsersRef.current[assistantId] = smd_parser(smd_default_renderer(markdownRootDiv));
+    rawMarkdownAccumulatorRef.current[assistantId] = ""; // Initialize accumulator
 
     setMessages((prev) => [...prev, userMessage, {
       id: assistantId,
@@ -236,7 +238,12 @@ export default function AdvisorView() {
       try {
         const data = JSON.parse(ev.data);
         if (data.type === "markdown_chunk" && data.content) {
-          smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
+          if (parsersRef.current[currentAssistantMessageIdRef.current!]) { // Check if parser exists
+            smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
+          }
+          if (rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!]) { // Check if accumulator exists
+            rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!] += data.content;
+          }
         } else if (data.type === "tool_code_chunk" && currentAssistantMessageIdRef.current) {
           setMessages(prev => prev.map(m => {
             if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
@@ -313,11 +320,12 @@ export default function AdvisorView() {
             smd_parser_end(parsersRef.current[assistantMessageId]);
           }
 
-          const finalMarkdownText = markdownRootsRef.current[assistantMessageId]?.innerText || '';
+          const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
 
           // Clean up refs for this specific message
           delete parsersRef.current[assistantMessageId];
           delete markdownRootsRef.current[assistantMessageId];
+          delete rawMarkdownAccumulatorRef.current[assistantMessageId];
 
           setMessages(prev => prev.map(m =>
             m.id === assistantMessageId
@@ -327,7 +335,7 @@ export default function AdvisorView() {
                 content: {
                   ...(m.content as AssistantMessageContent),
                   isMarkdownStream: false, // Switch off smd rendering for the final state
-                  finalMarkdown: finalMarkdownText,
+                  finalMarkdown: accumulatedRawMarkdown, // Use accumulated raw markdown
                 }
               }
             : m
