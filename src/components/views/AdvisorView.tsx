@@ -24,7 +24,6 @@ import type { ColumnDef } from "@tanstack/react-table"; // Added
 import { ChartRenderer } from '@/components/advisor/chart-renderer';
 import { TableRenderer } from '@/components/advisor/table-renderer';
 import { detectMedicalChartCode, preparePythonCodeForExecution } from '@/components/advisor/code-detector';
-import { DebugChartDetection } from '@/components/advisor/debug-chart-detection';
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -412,7 +411,6 @@ export default function AdvisorView() {
         >
           <div className="w-full max-w-5xl mx-auto space-y-6 pb-44"> {/* Centered to input box width */}
             {/* Temporary Debug Component */}
-            <DebugChartDetection />
             
             {messages.map((msg) => (
               <div
@@ -702,6 +700,20 @@ export default function AdvisorView() {
 const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent, isStreaming?: boolean, markdownRootDiv?: HTMLDivElement }> = ({ assistantMessage, isStreaming, markdownRootDiv }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Debug logging to understand the message flow
+  useEffect(() => {
+    console.log('AssistantMessageRenderer render:', {
+      isStreaming,
+      hasMarkdownStream: assistantMessage.isMarkdownStream,
+      hasFinalMarkdown: !!assistantMessage.finalMarkdown,
+      hasMarkdownRootDiv: !!markdownRootDiv,
+      isFallback: assistantMessage.isFallback,
+      hasFallbackMarkdown: !!assistantMessage.fallbackMarkdown,
+      finalMarkdownLength: assistantMessage.finalMarkdown?.length || 0,
+      finalMarkdownPreview: assistantMessage.finalMarkdown?.substring(0, 200) || 'None'
+    });
+  }, [assistantMessage, isStreaming, markdownRootDiv]);
+
   useEffect(() => {
     if (containerRef.current && markdownRootDiv) {
       // Clear previous children
@@ -889,6 +901,34 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         );
       })}
       {renderToolOutputs()}
+      
+      {/* Fallback chart detection from markdownRootDiv if no finalMarkdown */}
+      {!assistantMessage.finalMarkdown && !assistantMessage.fallbackMarkdown && markdownRootDiv && (() => {
+        const rootContent = markdownRootDiv.innerText || '';
+        console.log('AssistantMessageRenderer (fallback): Checking markdownRootDiv content:', rootContent.substring(0, 200));
+        if (rootContent.length > 100) {
+          const fallbackChartBlocks = detectMedicalChartCode(rootContent);
+          console.log('AssistantMessageRenderer (fallback): Detected chart code blocks from rootDiv:', fallbackChartBlocks);
+          return fallbackChartBlocks.map((codeBlock) => (
+            <div key={`fallback-chart-${codeBlock.id}`} className="my-4">
+              {codeBlock.isChartCode && (
+                <ChartRenderer
+                  pythonCode={preparePythonCodeForExecution(codeBlock.code)}
+                  description={codeBlock.description}
+                />
+              )}
+              {codeBlock.isTableCode && !codeBlock.isChartCode && (
+                <TableRenderer
+                  pythonCode={preparePythonCodeForExecution(codeBlock.code)}
+                  description={codeBlock.description}
+                />
+              )}
+            </div>
+          ));
+        }
+        return null;
+      })()}
+      
       {/* Loading indicator if nothing else is there but it's supposed to be streaming */}
       {isStreaming && !assistantMessage.finalMarkdown && !assistantMessage.fallbackMarkdown && (!assistantMessage.content || assistantMessage.content.length === 0) && !assistantMessage.toolCode && !assistantMessage.codeInterpreterOutputText && !assistantMessage.codeInterpreterImageId && (
          <div className="animate-pulse">Foresight is typing...</div>
