@@ -13,7 +13,7 @@ const baseSystemPrompt = `You are Foresight, an AI medical advisor for US physic
 
 When data analysis, tables, or charts are appropriate for the physician's request or to enhance your explanation:
 1. Determine the most clinically relevant type of visualization (e.g., timeline, trend chart, comparison table).
-2. Utilize the provided patient context FIRST. If the necessary data for a specific, relevant visualization is not available in the provided patient context or conversation history, clearly state what specific data points you need to create it. Do NOT invent data.
+2. Utilize the provided patient context FIRST (see 'Current Patient Information' section above if present). If the necessary data for a specific, relevant visualization is not available in the provided patient context or conversation history, clearly state what specific data points you need to create it. Do NOT invent data.
 3. Once you have the necessary data (from context or physician input), write executable Python code using markdown code blocks to generate the chart or table.
 
 Format your Python code blocks for charts and tables precisely like this:
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const payloadParam = url.searchParams.get("payload");
     let messagesFromClient: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
-    let patientSummaryForSystemPrompt: string = "";
+    let patientSummaryBlock: string = ""; 
 
     if (!payloadParam) {
       if (!requestAbortController.signal.aborted) requestAbortController.abort();
@@ -186,29 +186,26 @@ export async function GET(req: NextRequest) {
       }
       messagesFromClient = parsedPayload.messages;
 
-      // Extract patient context if present as the first system message
       if (messagesFromClient.length > 0 && messagesFromClient[0].role === 'system') {
         try {
           const patientData = JSON.parse(messagesFromClient[0].content);
           if (patientData.patient) {
-            // Dynamically build context string from all patient fields for the system prompt
             const patientDetails = Object.entries(patientData.patient)
-              .map(([key, value]) => {
+              .map(([key, value]) => {                
                 const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                return `${formattedKey}: ${value}`;
+                return `- ${formattedKey}: ${value}`;
               })
-              .join('\n'); // Use newline for better readability in the prompt
+              .join('\n'); 
             
             if (patientDetails) {
-              patientSummaryForSystemPrompt = `PATIENT CONTEXT:\n${patientDetails}\n\n--------------------\n\n`;
+              patientSummaryBlock = `### Current Patient Information & Directives\nThis is the primary data for the current consultation. Analyze and use this information first. If specific data points are missing for a visualization YOU DEEM CLINICALLY RELEVANT, clearly state what is needed. Do not invent data.\n\n**Patient Summary:**\n${patientDetails}\n\n--------------------\n\n### Your Role and General Instructions\n`;
             }
-            messagesFromClient.shift(); // Remove the system message with patient JSON
+            messagesFromClient.shift(); 
           }
         } catch (e) {
           console.warn("Could not parse patient context from system message:", e);
         }
       }
-
     } catch (e: any) {
       console.error("Failed to parse payload or invalid messages format:", e.message);
       if (!requestAbortController.signal.aborted) requestAbortController.abort();
@@ -220,18 +217,17 @@ export async function GET(req: NextRequest) {
     const thinkMode = url.searchParams.get("think") === "true";
     const model = thinkMode ? "o4-mini" : "gpt-4.1-mini";
     
-    console.log(`Using model: ${model}, think mode: ${thinkMode}`);
+    const finalSystemPrompt = patientSummaryBlock + baseSystemPrompt;
     
-    // Construct the final system prompt including patient context if available
-    const finalSystemPrompt = patientSummaryForSystemPrompt + baseSystemPrompt;
-    if (patientSummaryForSystemPrompt) {
-        console.log("Patient context is being added to system prompt:", patientSummaryForSystemPrompt);
+    if (patientSummaryBlock) {
+      console.log("DEBUG: Patient Summary Block being prepended:\n", patientSummaryBlock);
+    } else {
+      console.log("DEBUG: No Patient Summary Block was generated.");
     }
+    console.log("DEBUG: Final System Prompt being sent to AI (first 700 chars):\n", finalSystemPrompt.substring(0, 700));
 
-    // Prepare API payload
     const apiPayload = [
       { role: "system" as const, content: finalSystemPrompt },
-      // Filter out any remaining system messages from messagesFromClient, just in case
       ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
     ];
 
