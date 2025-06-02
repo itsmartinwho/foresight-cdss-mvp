@@ -93,66 +93,64 @@ function detectChartGenerationCode(code: string, language: string): boolean {
     return false;
   }
   
-  // Keywords that indicate chart generation
-  const chartKeywords = [
-    'plt.', 'matplotlib', 'seaborn', 'plotly',
-    'plt.plot', 'plt.bar', 'plt.hist', 'plt.scatter',
-    'plt.pie', 'plt.line', 'plt.area', 'plt.box',
-    'plt.figure', 'plt.subplot', 'plt.xlabel', 'plt.ylabel',
-    'plt.title', 'plt.legend', 'plt.grid', 'plt.tick',
-    'sns.', 'px.', 'go.', 'fig.show', 'plt.show',
-    'savefig', 'to_plot', 'chart', 'graph',
-    'visualization', 'plot', '.plot('
-  ];
-  
-  // Medical chart specific patterns
-  const medicalChartKeywords = [
-    'vital', 'blood pressure', 'heart rate', 
-    'temperature', 'labs', 'medication',
-    'trend', 'timeline', 'patient data',
-    'clinical', 'diagnosis', 'symptoms',
-    'severity', 'visit', 'date'
-  ];
-  
+  // Make detection case-insensitive
   const codeLines = code.toLowerCase().split('\n');
-  const fullCodeLower = code.toLowerCase();
+  const fullCode = code.toLowerCase();
   
-  // Check for chart generation keywords
-  const hasChartKeywords = chartKeywords.some(keyword => 
-    fullCodeLower.includes(keyword.toLowerCase())
+  // Primary chart keywords - if any of these are found, it's definitely a chart
+  const primaryChartKeywords = [
+    'plt.', 'matplotlib', 'plt.show()', 'plt.plot', 'plt.bar', 'plt.scatter',
+    'plt.hist', 'plt.pie', 'plt.figure', 'plt.subplot', '.plot(',
+    'seaborn', 'sns.', 'plotly', 'px.', 'go.'
+  ];
+  
+  // Secondary indicators - medical/data analysis context
+  const medicalChartKeywords = [
+    'vital signs', 'blood pressure', 'heart rate', 'temperature',
+    'symptom', 'treatment', 'medication', 'diagnosis', 'patient',
+    'clinical', 'medical', 'health', 'lab result', 'test result'
+  ];
+  
+  // Data visualization indicators
+  const dataVizKeywords = [
+    'chart', 'graph', 'plot', 'visualization', 'trend', 'analysis',
+    'xlabel', 'ylabel', 'title', 'legend', 'grid', 'figure',
+    'marker', 'line', 'bar', 'scatter'
+  ];
+  
+  // Check for primary chart keywords (definitive)
+  const hasPrimaryKeywords = primaryChartKeywords.some(keyword => 
+    fullCode.includes(keyword.toLowerCase())
   );
   
-  // Check for medical context
+  if (hasPrimaryKeywords) {
+    console.log('Chart detection: Found primary chart keyword');
+    return true;
+  }
+  
+  // Check for combination of medical + data viz keywords
   const hasMedicalContext = medicalChartKeywords.some(keyword => 
-    fullCodeLower.includes(keyword.toLowerCase())
+    fullCode.includes(keyword.toLowerCase())
+  );
+  const hasDataVizContext = dataVizKeywords.some(keyword => 
+    fullCode.includes(keyword.toLowerCase())
   );
   
-  // Check for data manipulation that typically precedes charts
-  const hasDataManipulation = (
-    fullCodeLower.includes('pandas') || 
-    fullCodeLower.includes('pd.') ||
-    fullCodeLower.includes('dataframe') ||
-    fullCodeLower.includes('groupby') ||
-    fullCodeLower.includes('aggregate') ||
-    fullCodeLower.includes('pivot')
-  );
+  if (hasMedicalContext && hasDataVizContext) {
+    console.log('Chart detection: Found medical + data viz context');
+    return true;
+  }
   
-  // If it's a longer code block with data manipulation, likely a chart
-  const isLongDataCode = hasDataManipulation && codeLines.length > 3;
+  // Check for pandas + matplotlib imports combination
+  const hasMatplotlib = fullCode.includes('matplotlib') || fullCode.includes('plt');
+  const hasPandas = fullCode.includes('pandas') || fullCode.includes('pd.');
   
-  // Be more aggressive - if it looks like it might generate a chart, include it
-  const result = hasChartKeywords || (hasMedicalContext && hasDataManipulation) || isLongDataCode;
+  if (hasMatplotlib && hasPandas) {
+    console.log('Chart detection: Found matplotlib + pandas combination');
+    return true;
+  }
   
-  console.log(`Chart detection for code block:`, {
-    hasChartKeywords,
-    hasMedicalContext,
-    hasDataManipulation,
-    isLongDataCode,
-    result,
-    codeSnippet: code.substring(0, 200)
-  });
-  
-  return result;
+  return false;
 }
 
 /**

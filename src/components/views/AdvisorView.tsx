@@ -244,7 +244,7 @@ export default function AdvisorView() {
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) { // Check if parser exists
             smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
           }
-          if (rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!]) { // Check if accumulator exists
+          if (currentAssistantMessageIdRef.current! in rawMarkdownAccumulatorRef.current) {
             rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!] += data.content;
           }
         } else if (data.type === "tool_code_chunk" && currentAssistantMessageIdRef.current) {
@@ -324,6 +324,8 @@ export default function AdvisorView() {
           }
 
           const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
+          console.log('Stream ended. Accumulated raw markdown length:', accumulatedRawMarkdown.length);
+          console.log('Accumulated raw markdown preview:', accumulatedRawMarkdown.substring(0, 300));
 
           // Clean up refs for this specific message
           delete parsersRef.current[assistantMessageId];
