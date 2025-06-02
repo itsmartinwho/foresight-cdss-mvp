@@ -31,7 +31,7 @@ export function ChartRenderer({ pythonCode, description, patientData }: ChartRen
       
       console.log('ChartRenderer: Loading Pyodide script...');
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
+      script.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.6/full/pyodide.js';
       script.onload = () => {
         console.log('ChartRenderer: Pyodide script loaded successfully');
       };
