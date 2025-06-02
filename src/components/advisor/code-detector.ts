@@ -13,16 +13,27 @@ export interface CodeBlock {
 export function detectCodeBlocks(text: string): CodeBlock[] {
   const codeBlocks: CodeBlock[] = [];
   
-  // Regex to match code blocks with optional language specification
-  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  // Updated regex to be more flexible with newlines and language specification
+  const codeBlockRegex = /```(\w+)?\s*([\s\S]*?)```/g;
   let match;
   let blockIndex = 0;
   
   while ((match = codeBlockRegex.exec(text)) !== null) {
     const language = match[1] || 'text';
     const code = match[2].trim();
+    
+    // Skip empty code blocks
+    if (!code) continue;
+    
     const isChartCode = detectChartGenerationCode(code, language);
     const isTableCode = detectTableGenerationCode(code, language);
+    
+    console.log(`Detected code block ${blockIndex}:`, {
+      language,
+      isChartCode,
+      isTableCode,
+      codePreview: code.substring(0, 100) + (code.length > 100 ? '...' : '')
+    });
     
     // Extract description from surrounding text
     const description = extractCodeDescription(text, match.index);
@@ -39,6 +50,7 @@ export function detectCodeBlocks(text: string): CodeBlock[] {
     blockIndex++;
   }
   
+  console.log(`Total code blocks detected: ${codeBlocks.length}`);
   return codeBlocks;
 }
 
@@ -55,9 +67,11 @@ function detectChartGenerationCode(code: string, language: string): boolean {
     'plt.', 'matplotlib', 'seaborn', 'plotly',
     'plt.plot', 'plt.bar', 'plt.hist', 'plt.scatter',
     'plt.pie', 'plt.line', 'plt.area', 'plt.box',
+    'plt.figure', 'plt.subplot', 'plt.xlabel', 'plt.ylabel',
+    'plt.title', 'plt.legend', 'plt.grid', 'plt.tick',
     'sns.', 'px.', 'go.', 'fig.show', 'plt.show',
     'savefig', 'to_plot', 'chart', 'graph',
-    'visualization', 'plot'
+    'visualization', 'plot', '.plot('
   ];
   
   // Medical chart specific patterns
@@ -65,27 +79,49 @@ function detectChartGenerationCode(code: string, language: string): boolean {
     'vital', 'blood pressure', 'heart rate', 
     'temperature', 'labs', 'medication',
     'trend', 'timeline', 'patient data',
-    'clinical', 'diagnosis', 'symptoms'
+    'clinical', 'diagnosis', 'symptoms',
+    'severity', 'visit', 'date'
   ];
   
   const codeLines = code.toLowerCase().split('\n');
+  const fullCodeLower = code.toLowerCase();
   
   // Check for chart generation keywords
   const hasChartKeywords = chartKeywords.some(keyword => 
-    codeLines.some(line => line.includes(keyword.toLowerCase()))
+    fullCodeLower.includes(keyword.toLowerCase())
+  );
+  
+  // Check for medical context
+  const hasMedicalContext = medicalChartKeywords.some(keyword => 
+    fullCodeLower.includes(keyword.toLowerCase())
   );
   
   // Check for data manipulation that typically precedes charts
-  const hasDataManipulation = codeLines.some(line => 
-    line.includes('pandas') || 
-    line.includes('pd.') ||
-    line.includes('dataframe') ||
-    line.includes('groupby') ||
-    line.includes('aggregate') ||
-    line.includes('pivot')
+  const hasDataManipulation = (
+    fullCodeLower.includes('pandas') || 
+    fullCodeLower.includes('pd.') ||
+    fullCodeLower.includes('dataframe') ||
+    fullCodeLower.includes('groupby') ||
+    fullCodeLower.includes('aggregate') ||
+    fullCodeLower.includes('pivot')
   );
   
-  return hasChartKeywords || (hasDataManipulation && codeLines.length > 5);
+  // If it's a longer code block with data manipulation, likely a chart
+  const isLongDataCode = hasDataManipulation && codeLines.length > 3;
+  
+  // Be more aggressive - if it looks like it might generate a chart, include it
+  const result = hasChartKeywords || (hasMedicalContext && hasDataManipulation) || isLongDataCode;
+  
+  console.log(`Chart detection for code block:`, {
+    hasChartKeywords,
+    hasMedicalContext,
+    hasDataManipulation,
+    isLongDataCode,
+    result,
+    codeSnippet: code.substring(0, 200)
+  });
+  
+  return result;
 }
 
 /**
@@ -98,20 +134,41 @@ function detectTableGenerationCode(code: string, language: string): boolean {
   
   // Keywords that indicate table generation
   const tableKeywords = [
-    'pd.DataFrame', 'pandas.DataFrame', 'dataframe', 'df',
+    'pd.dataframe', 'pandas.dataframe', 'dataframe', 'df',
     'to_csv', 'to_excel', 'table', 'pivot_table',
     'groupby', 'aggregate', 'summary', 'describe',
-    'crosstab', 'value_counts', 'tabulate'
+    'crosstab', 'value_counts', 'tabulate',
+    'head()', 'tail()', 'info()', 'columns'
   ];
   
-  const codeLines = code.toLowerCase().split('\n');
+  const fullCodeLower = code.toLowerCase();
   
   // Check for table generation keywords
   const hasTableKeywords = tableKeywords.some(keyword => 
-    codeLines.some(line => line.includes(keyword.toLowerCase()))
+    fullCodeLower.includes(keyword.toLowerCase())
   );
   
-  return hasTableKeywords;
+  // Look for DataFrame assignment patterns
+  const hasDataFrameAssignment = /(?:df|data|table|result)\s*=.*dataframe/i.test(code);
+  
+  // Check if it creates structured data but doesn't seem to be for charts
+  const hasStructuredData = (
+    fullCodeLower.includes('dataframe') || 
+    fullCodeLower.includes('pd.') ||
+    fullCodeLower.includes('data =') ||
+    fullCodeLower.includes('table =')
+  ) && !fullCodeLower.includes('plt.');
+  
+  const result = hasTableKeywords || hasDataFrameAssignment || hasStructuredData;
+  
+  console.log(`Table detection for code block:`, {
+    hasTableKeywords,
+    hasDataFrameAssignment,
+    hasStructuredData,
+    result
+  });
+  
+  return result;
 }
 
 /**

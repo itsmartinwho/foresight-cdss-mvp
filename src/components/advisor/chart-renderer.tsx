@@ -23,12 +23,20 @@ export function ChartRenderer({ pythonCode, description, patientData }: ChartRen
   // Load Pyodide
   useEffect(() => {
     const loadPyodideScript = async () => {
-      if (window.loadPyodide) return;
+      console.log('ChartRenderer: Checking if Pyodide is available...');
+      if (window.loadPyodide) {
+        console.log('ChartRenderer: Pyodide already available');
+        return;
+      }
       
+      console.log('ChartRenderer: Loading Pyodide script...');
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
       script.onload = () => {
-        console.log('Pyodide script loaded');
+        console.log('ChartRenderer: Pyodide script loaded successfully');
+      };
+      script.onerror = (error) => {
+        console.error('ChartRenderer: Failed to load Pyodide script:', error);
       };
       document.head.appendChild(script);
     };

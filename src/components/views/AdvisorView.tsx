@@ -792,6 +792,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
     
     // Detect chart code blocks
     const chartCodeBlocks = detectMedicalChartCode(assistantMessage.finalMarkdown);
+    console.log('AssistantMessageRenderer: Detected chart code blocks:', chartCodeBlocks);
     
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -801,7 +802,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         
         {/* Render executable chart components */}
         {chartCodeBlocks.map((codeBlock) => (
-          <div key={`chart-${codeBlock.id}`}>
+          <div key={`chart-${codeBlock.id}`} className="my-4">
             {codeBlock.isChartCode && (
               <ChartRenderer
                 pythonCode={preparePythonCodeForExecution(codeBlock.code)}
@@ -826,6 +827,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
     
     // Detect chart code blocks in fallback markdown too
     const chartCodeBlocks = detectMedicalChartCode(assistantMessage.fallbackMarkdown);
+    console.log('AssistantMessageRenderer (fallback): Detected chart code blocks:', chartCodeBlocks);
     
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -835,7 +837,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         
         {/* Render executable chart components */}
         {chartCodeBlocks.map((codeBlock) => (
-          <div key={`chart-${codeBlock.id}`}>
+          <div key={`chart-${codeBlock.id}`} className="my-4">
             {codeBlock.isChartCode && (
               <ChartRenderer
                 pythonCode={preparePythonCodeForExecution(codeBlock.code)}
