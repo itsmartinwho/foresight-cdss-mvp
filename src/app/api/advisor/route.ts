@@ -9,12 +9,12 @@ import OpenAI from "openai";
 // 6. Security and recovery (DOMPurify on client, discard empty tool args)
 
 // Enhanced system prompt for better code interpreter usage
-const systemPrompt = `You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.
+const baseSystemPrompt = `You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.
 
 When data analysis, tables, or charts are appropriate for the physician's request or to enhance your explanation:
 1. Determine the most clinically relevant type of visualization (e.g., timeline, trend chart, comparison table).
-2. If the necessary data for this specific visualization is not available in the provided patient context or conversation history, clearly state what specific data points you need to create it. Do NOT invent data.
-3. Once you have (or are provided with) the necessary data, write executable Python code using markdown code blocks to generate the chart or table.
+2. Utilize the provided patient context FIRST. If the necessary data for a specific, relevant visualization is not available in the provided patient context or conversation history, clearly state what specific data points you need to create it. Do NOT invent data.
+3. Once you have the necessary data (from context or physician input), write executable Python code using markdown code blocks to generate the chart or table.
 
 Format your Python code blocks for charts and tables precisely like this:
 
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const payloadParam = url.searchParams.get("payload");
     let messagesFromClient: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
-    let patientContextString: string | null = null;
+    let patientSummaryForSystemPrompt: string = "";
 
     if (!payloadParam) {
       if (!requestAbortController.signal.aborted) requestAbortController.abort();
@@ -191,35 +191,21 @@ export async function GET(req: NextRequest) {
         try {
           const patientData = JSON.parse(messagesFromClient[0].content);
           if (patientData.patient) {
-            // Dynamically build context string from all patient fields
+            // Dynamically build context string from all patient fields for the system prompt
             const patientDetails = Object.entries(patientData.patient)
               .map(([key, value]) => {
                 const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                 return `${formattedKey}: ${value}`;
               })
-              .join(', ');
+              .join('\n'); // Use newline for better readability in the prompt
             
             if (patientDetails) {
-              patientContextString = `Regarding patient: ${patientDetails}.\n\n`;
+              patientSummaryForSystemPrompt = `PATIENT CONTEXT:\n${patientDetails}\n\n--------------------\n\n`;
             }
             messagesFromClient.shift(); // Remove the system message with patient JSON
           }
         } catch (e) {
           console.warn("Could not parse patient context from system message:", e);
-        }
-      }
-
-      // If patient context was extracted, prepend it to the last user message
-      if (patientContextString && messagesFromClient.length > 0) {
-        let lastUserMessageIndex = -1;
-        for (let i = messagesFromClient.length - 1; i >= 0; i--) {
-          if (messagesFromClient[i].role === 'user') {
-            lastUserMessageIndex = i;
-            break;
-          }
-        }
-        if (lastUserMessageIndex !== -1) {
-          messagesFromClient[lastUserMessageIndex].content = patientContextString + messagesFromClient[lastUserMessageIndex].content;
         }
       }
 
@@ -235,10 +221,17 @@ export async function GET(req: NextRequest) {
     const model = thinkMode ? "o4-mini" : "gpt-4.1-mini";
     
     console.log(`Using model: ${model}, think mode: ${thinkMode}`);
+    
+    // Construct the final system prompt including patient context if available
+    const finalSystemPrompt = patientSummaryForSystemPrompt + baseSystemPrompt;
+    if (patientSummaryForSystemPrompt) {
+        console.log("Patient context is being added to system prompt:", patientSummaryForSystemPrompt);
+    }
 
     // Prepare API payload
     const apiPayload = [
-      { role: "system" as const, content: systemPrompt },
+      { role: "system" as const, content: finalSystemPrompt },
+      // Filter out any remaining system messages from messagesFromClient, just in case
       ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
     ];
 
