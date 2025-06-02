@@ -13,44 +13,75 @@ export interface CodeBlock {
 export function detectCodeBlocks(text: string): CodeBlock[] {
   const codeBlocks: CodeBlock[] = [];
   
+  console.log('detectCodeBlocks: Input text length:', text.length);
+  console.log('detectCodeBlocks: First 500 chars of text:', text.substring(0, 500));
+  
   // Updated regex to be more flexible with newlines and language specification
   const codeBlockRegex = /```(\w+)?\s*([\s\S]*?)```/g;
   let match;
   let blockIndex = 0;
   
-  while ((match = codeBlockRegex.exec(text)) !== null) {
-    const language = match[1] || 'text';
-    const code = match[2].trim();
+  // Also try a simpler pattern that matches the exact format from screenshots
+  const simpleCodeBlockRegex = /```python([\s\S]*?)```/g;
+  
+  console.log('detectCodeBlocks: Testing with aggressive regex...');
+  
+  // Try both patterns
+  const regexesToTry = [
+    { name: 'flexible', regex: codeBlockRegex },
+    { name: 'simple-python', regex: simpleCodeBlockRegex }
+  ];
+  
+  for (const { name, regex } of regexesToTry) {
+    console.log(`detectCodeBlocks: Trying ${name} regex...`);
+    regex.lastIndex = 0; // Reset regex
     
-    // Skip empty code blocks
-    if (!code) continue;
-    
-    const isChartCode = detectChartGenerationCode(code, language);
-    const isTableCode = detectTableGenerationCode(code, language);
-    
-    console.log(`Detected code block ${blockIndex}:`, {
-      language,
-      isChartCode,
-      isTableCode,
-      codePreview: code.substring(0, 100) + (code.length > 100 ? '...' : '')
-    });
-    
-    // Extract description from surrounding text
-    const description = extractCodeDescription(text, match.index);
-    
-    codeBlocks.push({
-      id: `code-block-${blockIndex}`,
-      language,
-      code,
-      isChartCode,
-      isTableCode,
-      description
-    });
-    
-    blockIndex++;
+    while ((match = regex.exec(text)) !== null) {
+      console.log(`detectCodeBlocks: Found match with ${name} regex:`, match);
+      
+      let language, code;
+      if (name === 'simple-python') {
+        language = 'python';
+        code = match[1].trim();
+      } else {
+        language = match[1] || 'text';
+        code = match[2].trim();
+      }
+      
+      // Skip empty code blocks
+      if (!code) {
+        console.log('detectCodeBlocks: Skipping empty code block');
+        continue;
+      }
+      
+      const isChartCode = detectChartGenerationCode(code, language);
+      const isTableCode = detectTableGenerationCode(code, language);
+      
+      console.log(`detectCodeBlocks: Block ${blockIndex}:`, {
+        language,
+        isChartCode,
+        isTableCode,
+        codeLength: code.length,
+        codePreview: code.substring(0, 100)
+      });
+      
+      // Extract description from surrounding text
+      const description = extractCodeDescription(text, match.index || 0);
+      
+      codeBlocks.push({
+        id: `code-block-${blockIndex}`,
+        language,
+        code,
+        isChartCode,
+        isTableCode,
+        description
+      });
+      
+      blockIndex++;
+    }
   }
   
-  console.log(`Total code blocks detected: ${codeBlocks.length}`);
+  console.log('detectCodeBlocks: Total blocks found:', codeBlocks.length);
   return codeBlocks;
 }
 

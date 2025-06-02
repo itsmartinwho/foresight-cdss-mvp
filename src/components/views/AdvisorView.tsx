@@ -24,6 +24,7 @@ import type { ColumnDef } from "@tanstack/react-table"; // Added
 import { ChartRenderer } from '@/components/advisor/chart-renderer';
 import { TableRenderer } from '@/components/advisor/table-renderer';
 import { detectMedicalChartCode, preparePythonCodeForExecution } from '@/components/advisor/code-detector';
+import { DebugChartDetection } from '@/components/advisor/debug-chart-detection';
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -410,6 +411,9 @@ export default function AdvisorView() {
           className="flex-1 min-h-0 p-6 overflow-y-auto"
         >
           <div className="w-full max-w-5xl mx-auto space-y-6 pb-44"> {/* Centered to input box width */}
+            {/* Temporary Debug Component */}
+            <DebugChartDetection />
+            
             {messages.map((msg) => (
               <div
                 key={msg.id}

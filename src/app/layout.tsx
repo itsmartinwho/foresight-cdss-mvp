@@ -33,7 +33,10 @@ export default function RootLayout({
         <meta name="description" content="Clinical Decision Support System for healthcare providers" />
         
         {/* Pyodide for Python execution in browser */}
-        <Script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></Script>
+        <Script 
+          src="https://cdn.jsdelivr.net/pyodide/v0.27.6/full/pyodide.js"
+          strategy="beforeInteractive"
+        />
       </head>
       <body>
         <DynamicDemoProvider>
