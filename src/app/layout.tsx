@@ -3,6 +3,7 @@
 import React from 'react';
 import './globals.css';
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
 
 import PlasmaBackground from '../components/PlasmaBackground';
 import GlassHeader from '@/components/layout/GlassHeader';
@@ -30,6 +31,9 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Foresight</title>
         <meta name="description" content="Clinical Decision Support System for healthcare providers" />
+        
+        {/* Pyodide for Python execution in browser */}
+        <Script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></Script>
       </head>
       <body>
         <DynamicDemoProvider>

@@ -21,6 +21,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useChat } from "ai/react";
 import { DataTable } from "@/components/ui/data-table"; // Added
 import type { ColumnDef } from "@tanstack/react-table"; // Added
+import { ChartRenderer } from '@/components/advisor/chart-renderer';
+import { TableRenderer } from '@/components/advisor/table-renderer';
+import { detectMedicalChartCode, preparePythonCodeForExecution } from '@/components/advisor/code-detector';
 
 // Local types for Web Speech API to avoid 'any'
 interface SpeechRecognitionAlternative {
@@ -786,22 +789,68 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
   } else if (assistantMessage.finalMarkdown) {
     // Stream finished, render with ReactMarkdown
     const cleanHtml = DOMPurify.sanitize(assistantMessage.finalMarkdown);
+    
+    // Detect chart code blocks
+    const chartCodeBlocks = detectMedicalChartCode(assistantMessage.finalMarkdown);
+    
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={reactMarkdownComponents}>
           {cleanHtml}
         </ReactMarkdown>
+        
+        {/* Render executable chart components */}
+        {chartCodeBlocks.map((codeBlock) => (
+          <div key={`chart-${codeBlock.id}`}>
+            {codeBlock.isChartCode && (
+              <ChartRenderer
+                pythonCode={preparePythonCodeForExecution(codeBlock.code)}
+                description={codeBlock.description}
+              />
+            )}
+            {codeBlock.isTableCode && !codeBlock.isChartCode && (
+              <TableRenderer
+                pythonCode={preparePythonCodeForExecution(codeBlock.code)}
+                description={codeBlock.description}
+              />
+            )}
+          </div>
+        ))}
+        
         {renderToolOutputs()}
       </div>
     );
   } else if (assistantMessage.isFallback && assistantMessage.fallbackMarkdown) {
     // Fallback logic
     const cleanHtml = DOMPurify.sanitize(assistantMessage.fallbackMarkdown);
+    
+    // Detect chart code blocks in fallback markdown too
+    const chartCodeBlocks = detectMedicalChartCode(assistantMessage.fallbackMarkdown);
+    
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={reactMarkdownComponents}>
           {cleanHtml}
         </ReactMarkdown>
+        
+        {/* Render executable chart components */}
+        {chartCodeBlocks.map((codeBlock) => (
+          <div key={`chart-${codeBlock.id}`}>
+            {codeBlock.isChartCode && (
+              <ChartRenderer
+                pythonCode={preparePythonCodeForExecution(codeBlock.code)}
+                description={codeBlock.description}
+              />
+            )}
+            {codeBlock.isTableCode && !codeBlock.isChartCode && (
+              <TableRenderer
+                pythonCode={preparePythonCodeForExecution(codeBlock.code)}
+                description={codeBlock.description}
+              />
+            )}
+          </div>
+        ))}
+        
         {renderToolOutputs()}
       </div>
     );
