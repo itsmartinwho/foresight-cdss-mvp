@@ -8,7 +8,17 @@ import OpenAI from "openai";
 // 5. streamMarkdownOnly implementation
 // 6. Security and recovery (DOMPurify on client, discard empty tool args)
 
-const systemPrompt = "You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy. For tasks like data analysis, generating tables, creating charts from data, or performing calculations, you can use the Code Interpreter tool by writing and executing Python code.";
+// Enhanced system prompt for better code interpreter usage
+const systemPrompt = `You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.
+
+For tasks involving data analysis, generating tables, creating charts from data, or performing calculations, write Python code using markdown code blocks. When you generate code, explain what it does and what the expected output would be. Use libraries like matplotlib, pandas, seaborn, numpy, and scipy as needed for medical data analysis and visualization.
+
+### Important instructions for data analysis:
+- When asked to create charts or analyze data, always provide Python code that would accomplish the task
+- Explain the approach and methodology clearly
+- If creating visualizations, describe what the chart would show
+- For tables, format them in markdown when possible
+- Always provide medical context and interpretation of any data analysis`;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -63,15 +73,15 @@ async function streamResponse(
   try {
     let stream;
     if (model === "o4-mini") {
+      // o4-mini uses reasoning_effort parameter
       stream = await openai.chat.completions.create({
         model,
         stream: true,
         messages: payload,
-        tools: [], // Must be present if tool_choice is used, even if empty for built-in tools
-        tool_choice: "auto", 
         reasoning_effort: "medium",
       }, { signal: reqSignal });
     } else {
+      // gpt-4.1-mini uses standard format
       stream = await openai.chat.completions.create({
         model,
         stream: true,
@@ -83,42 +93,8 @@ async function streamResponse(
       if (reqSignal.aborted || isControllerClosedRef.value) {
         break;
       }
-      let content = ""; 
-
-      content = chunk.choices?.[0]?.delta?.content;
-
-      if (model === "o4-mini" && chunk.choices?.[0]?.delta?.tool_calls) {
-        const toolCalls = chunk.choices[0].delta.tool_calls;
-        for (const toolCall of toolCalls) {
-          if (toolCall.function?.name === 'python' || (toolCall.function?.name === 'code_interpreter' && toolCall.function?.arguments)) {
-            // This indicates the model wants to run Python code.
-            // The arguments typically contain the code.
-            const code = toolCall.function.arguments;
-            if (code) {
-                // The model is about to execute code. Send the code to the client.
-                const toolCodePayload = { type: "tool_code_chunk", language: "python", content: JSON.parse(code).code }; // Assuming code is { code: "..."}
-                controller.enqueue(encoder.encode(`data:${JSON.stringify(toolCodePayload)}\n\n`));
-            }
-          } 
-        }
-      }
       
-      // If the model provides tool outputs directly in the stream (less common for chat.completions, more for assistants)
-      // This part might need adjustment based on actual o4-mini behavior with code interpreter via chat completions
-      if (model === "o4-mini" && chunk.choices?.[0]?.message?.tool_calls) {
-        const completedToolCalls = chunk.choices[0].message.tool_calls;
-        for (const toolCall of completedToolCalls) {
-           // Look for outputs from a python/code_interpreter tool execution
-           // The actual structure of tool outputs needs to be verified from OpenAI docs for o4-mini code interpreter via chat completions
-           // This is a placeholder based on common patterns.
-           if (toolCall.type === 'tool' && toolCall.id && toolCall.function?.name === 'python_interpreter_result') {
-             const outputContent = toolCall.function.arguments; // Or wherever the output is nested
-             const outputPayload = { type: "code_interpreter_output", language: "plaintext", content: outputContent };
-             controller.enqueue(encoder.encode(`data:${JSON.stringify(outputPayload)}\n\n`));
-           }
-        }
-      }
-
+      const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
         chunkBuffer += content;
         if (shouldFlush(chunkBuffer)) {
@@ -129,7 +105,7 @@ async function streamResponse(
       }
     }
 
-    // After the loop, if there's remaining content in chunkBuffer, send it
+    // Send remaining content
     if (!isControllerClosedRef.value && chunkBuffer.length > 0) {
       const outPayload = { type: "markdown_chunk", content: chunkBuffer };
       controller.enqueue(encoder.encode(`data:${JSON.stringify(outPayload)}\n\n`));
@@ -184,7 +160,6 @@ export async function GET(req: NextRequest) {
             // Dynamically build context string from all patient fields
             const patientDetails = Object.entries(patientData.patient)
               .map(([key, value]) => {
-                // Prettify common keys for better readability
                 const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                 return `${formattedKey}: ${value}`;
               })
@@ -197,8 +172,6 @@ export async function GET(req: NextRequest) {
           }
         } catch (e) {
           console.warn("Could not parse patient context from system message:", e);
-          // Optionally, remove the unparseable system message or leave it
-          // For now, we'll leave it if it's not parsable as patient data
         }
       }
 
@@ -225,22 +198,15 @@ export async function GET(req: NextRequest) {
     }
 
     const thinkMode = url.searchParams.get("think") === "true";
-    const model = thinkMode ? "o4-mini" : "gpt-4.1-mini"; // Use correct model names as specified by user
+    const model = thinkMode ? "o4-mini" : "gpt-4.1-mini";
     
-    let apiPayload;
-    if (thinkMode) {
-      // For o4-mini, use standard chat completions format with reasoning_effort parameter
-      apiPayload = [
-        { role: "system" as const, content: systemPrompt },
-        ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
-      ];
-    } else {
-      // For gpt-4.1-mini and other chat completion models
-      apiPayload = [
-        { role: "system" as const, content: systemPrompt },
-        ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
-      ];
-    }
+    console.log(`Using model: ${model}, think mode: ${thinkMode}`);
+
+    // Prepare API payload
+    const apiPayload = [
+      { role: "system" as const, content: systemPrompt },
+      ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
+    ];
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -261,7 +227,7 @@ export async function GET(req: NextRequest) {
           requestAbortController.signal.removeEventListener('abort', mainAbortListener);
           return;
         }
-        
+
         console.log(`Routing to streamResponse with model: ${model}`);
         await streamResponse(model, apiPayload, controller, requestAbortController.signal, isControllerClosedRef);
         requestAbortController.signal.removeEventListener('abort', mainAbortListener);
@@ -277,7 +243,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error) errorMessage = error.message;
     else if (typeof error === 'string') errorMessage = error;
     if (!requestAbortController.signal.aborted) {
-        requestAbortController.abort(); // Ensure main abort controller is signaled on global error exit
+        requestAbortController.abort();
     }
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500, headers: { "Content-Type": "application/json" },
