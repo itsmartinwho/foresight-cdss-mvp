@@ -158,10 +158,8 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     setHasDemoRunState(true);
     setDemoStage('finished');
     setIsDemoModalOpen(false);
-    // Remove demo=true from URL but stay on current page
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.delete('demo');
-    router.replace(currentUrl.pathname + currentUrl.search);
+    // Navigate to dashboard when demo ends to avoid 404 on demo patient page
+    router.push('/dashboard');
   }, [resetDemoAnimationStates, router]);
 
   const startDemo = useCallback(async () => {
