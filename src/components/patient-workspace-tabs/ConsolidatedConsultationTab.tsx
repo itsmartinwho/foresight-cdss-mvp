@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, X } from '@phosphor-icons/react';
+import { FileText, Eye, X, Trash } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,14 @@ interface ConsolidatedConsultationTabProps {
   patient: Patient | null;
   selectedEncounter: Encounter | null;
   allEncounters: EncounterDetailsWrapper[] | null;
+  onDeleteEncounter: (encounterId: string) => void;
 }
 
 export default function ConsolidatedConsultationTab({ 
   patient, 
   selectedEncounter, 
-  allEncounters 
+  allEncounters, 
+  onDeleteEncounter 
 }: ConsolidatedConsultationTabProps) {
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
 
@@ -275,6 +277,32 @@ export default function ConsolidatedConsultationTab({
           document.body
         )
       }
+
+      {/* Danger Zone */}
+      <div className="space-y-4 pt-6 mt-6 border-t border-destructive/20">
+        <h2 className="text-lg font-semibold text-destructive">Danger Zone</h2>
+        <div className="bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-foreground">
+                Delete This Consultation
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                This will mark the consultation as deleted. It can be restored later from the "All Data" tab.
+              </p>
+            </div>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => selectedEncounter && onDeleteEncounter(selectedEncounter.id)}
+              disabled={!selectedEncounter}
+            >
+              <Trash className="mr-2 h-4 w-4"/>
+              Delete Consultation
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 

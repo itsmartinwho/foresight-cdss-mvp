@@ -433,32 +433,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                     <div className="font-mono text-sm text-foreground bg-muted/50 px-2 py-1 rounded">{patient.id}</div>
                   </>
                 )}
-
-                {/* Consultation Date with Delete Button */}
-                {selectedEncounterForConsultation && (
-                  <>
-                    <div className="font-semibold text-muted-foreground">Current Consultation:</div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground">
-                        {new Date(selectedEncounterForConsultation.scheduledStart).toLocaleDateString()} - {selectedEncounterForConsultation.reasonDisplayText || selectedEncounterForConsultation.reasonCode || 'Encounter'}
-                      </span>
-                      {!showDeleteConfirmation && (
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
-                          size="sm"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
-                          title="Delete consultation"
-                        >
-                          <Trash2 className="h-3 w-3 group-hover:h-4 group-hover:w-4 transition-all duration-200" />
-                          <span className="sr-only group-hover:not-sr-only group-hover:absolute group-hover:left-8 group-hover:bg-destructive group-hover:text-destructive-foreground group-hover:px-2 group-hover:py-1 group-hover:rounded group-hover:text-xs group-hover:whitespace-nowrap group-hover:z-10">
-                            Delete
-                          </span>
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                )}
               </div>
               </div>
             </CollapsibleContent>
@@ -526,6 +500,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               patient={patient}
               selectedEncounter={selectedEncounterForConsultation}
               allEncounters={activeEncounterDetails}
+              onDeleteEncounter={openDeleteConfirmation}
             />
           )}
           
