@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Patient } from '@/lib/types';
-import { DEMO_PATIENT_ID } from '@/services/demo/DemoDataService';
+import { DEMO_PATIENT_ID, DemoDataService } from '@/services/demo/DemoDataService';
 import { DemoStage } from '@/services/demo/DemoStateService';
 
 export interface DemoConsultationBehavior {
@@ -43,13 +43,13 @@ export function useDemoConsultation({
     demoStage
   });
   
-  // Demo transcript progression based on stage
+  // Demo transcript progression based on stage - use real enriched data
   const getDemoTranscript = () => {
     if (!isDemoMode) return undefined;
     
-    // Always return the full transcript when in demo mode
-    // The animation will handle showing it progressively
-    return "Patient presents with joint pain and stiffness, particularly in the morning. Reports fatigue and general malaise over the past few weeks. No recent trauma or injury. Family history of autoimmune conditions.";
+    // Use the real enriched transcript from DemoDataService
+    const encounterData = DemoDataService.getEncounterData();
+    return encounterData.transcript || undefined;
   };
   
   // Additional debug logging after functions are declared
@@ -59,27 +59,29 @@ export function useDemoConsultation({
     transcriptPreview: getDemoTranscript()?.substring(0, 50) + '...'
   });
   
-  // Demo diagnosis based on stage
+  // Demo diagnosis based on stage - use real enriched data
   const getDemoDiagnosis = () => {
     if (!isDemoMode) return undefined;
     
     switch (demoStage) {
       case 'showingPlan':
       case 'finished':
-        return "Based on the clinical presentation, patient history, and symptoms, the primary diagnosis is Rheumatoid Arthritis (RA). The morning stiffness, joint pain, and systemic symptoms are characteristic of early RA.";
+        // Use the real enriched diagnosis from DemoDataService
+        return DemoDataService.getDiagnosisText();
       default:
         return undefined;
     }
   };
   
-  // Demo treatment based on stage
+  // Demo treatment based on stage - use real enriched data
   const getDemoTreatment = () => {
     if (!isDemoMode) return undefined;
     
     switch (demoStage) {
       case 'showingPlan':
       case 'finished':
-        return "Recommended treatment plan:\n• Start methotrexate 15mg weekly with folic acid supplementation\n• Short-term prednisone 10mg daily for 2 weeks, then taper\n• Regular monitoring with CBC, liver function tests\n• Rheumatology referral for ongoing management\n• Patient education on joint protection and exercise";
+        // Use the real enriched treatment plan from DemoDataService
+        return DemoDataService.getTreatmentPlanText();
       default:
         return undefined;
     }
