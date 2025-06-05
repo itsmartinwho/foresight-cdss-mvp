@@ -29,77 +29,139 @@ export interface DemoEncounterData {
 }
 
 export const DEMO_PATIENT_ID = "0681FA35-A794-4684-97BD-00B88370DB41";
-export const DEMO_ENCOUNTER_ID = "097bf62e-9bd9-4972-a972-2714038ff55e";
+export const DEMO_ENCOUNTER_ID = "cf909cae-2c0b-4dd4-8c49-e4b7dfef62f8";
 
-// Dorothy Robinson demo patient data
+// Dorothy Robinson demo patient data - Updated with real enriched data
 const dorothyRobinsonPatientData: Patient = {
   id: DEMO_PATIENT_ID,
   name: "Dorothy Robinson",
   firstName: "Dorothy",
   lastName: "Robinson",
   gender: "female",
-  dateOfBirth: "1978-04-15",
-  photo: "/images/demo-patient-dorothy.jpg",
+  dateOfBirth: "1978-10-02",
+  photo: "https://ui-avatars.com/api/?name=DR&background=D0F0C0&color=ffffff&size=60&rounded=true",
   race: "White",
-  ethnicity: "Not Hispanic or Latino",
-  maritalStatus: "Married",
-  language: "English",
-  povertyPercentage: 15,
+  ethnicity: "Hispanic or Latino",
+  maritalStatus: "Unknown",
+  language: "Spanish",
+  povertyPercentage: 19.16,
   alerts: [
     {
-      id: "demo-alert-1",
+      id: "0681FA35-A794-4684-97BD-00B88370DB41_malignancy_history",
       patientId: DEMO_PATIENT_ID,
-      msg: "Patient has a history of chronic lower back pain with episodes of inflammation.",
-      date: "2024-01-15",
-      type: "inflammatory",
-      severity: "medium",
-      triggeringFactors: ["Previous gastroenteritis", "HLA-B27 positive"],
-      suggestedActions: ["Monitor inflammatory markers", "Consider rheumatology follow-up"],
-      createdAt: "2024-01-15T09:00:00Z",
-      confidence: 85,
-      likelihood: 3,
-      conditionType: "Reactive Arthritis"
-    },
-    {
-      id: "demo-alert-2", 
-      patientId: DEMO_PATIENT_ID,
-      msg: "Monitor for GI side effects with current NSAID therapy.",
-      date: "2024-01-20",
-      type: "inflammatory",
-      severity: "low",
-      triggeringFactors: ["Long-term NSAID use"],
-      suggestedActions: ["Monitor for GI symptoms", "Consider gastroprotection"],
-      createdAt: "2024-01-20T14:30:00Z",
-      confidence: 70,
-      likelihood: 2,
-      conditionType: "NSAID-related GI risk"
+      msg: "History of acute myelomonocytic leukemia in complete remission; higher risk of secondary malignancies and infection.",
+      date: "2025-01-15",
+      type: "oncology",
+      severity: "moderate",
+      triggeringFactors: ["Previous AML", "Immunocompromised history"],
+      suggestedActions: ["Monitor for infection signs", "Regular oncology follow-up"],
+      createdAt: "2025-01-15T09:00:00Z",
+      confidence: 95,
+      likelihood: 4,
+      conditionType: "Cancer History"
     }
   ] as ComplexCaseAlert[],
-  nextAppointment: "2024-03-01T10:00:00Z",
-  reason: "Follow-up for reactive arthritis management"
+  nextAppointment: "2025-07-01T10:00:00Z",
+  reason: "Oncology follow-up and general health maintenance"
 };
 
+// Most recent encounter data from database (May 17, 2025 - Constipation case)
 const dorothyRobinsonEncounterJSON: Omit<DemoEncounterData, 'diagnosis'> = {
   id: DEMO_ENCOUNTER_ID,
   patientId: DEMO_PATIENT_ID,
-  encounterIdentifier: "2",
-  actualStart: "2010-11-06T11:41:58Z",
-  actualEnd: "2010-11-21T17:39:59Z",
-  reasonCode: "Reactive arthritis (Reiter's)",
-  reasonDisplayText: "Reiter's disease, vertebrae",
-  transcript: "Clinician: Hi Dorothy, I understand you've been having back pain and some other symptoms. Can you tell me more about them?\nDorothy: Yes, for the past few weeks my lower back has been very stiff and painful, especially in the mornings. I've also had pain in my heels when I walk, and my eyes have been red and irritated.\nClinician: That's interesting. Did you notice any rash or any urinary symptoms, like pain when you urinate?\nDorothy: I haven't noticed a rash. I did have some burning when I urinate, on and off, but I wasn't sure if it was important.\nClinician: Any recent infections or illnesses before these symptoms started? Sometimes a stomach bug or other infection can trigger these kinds of symptoms.\nDorothy: Actually, yes – I had a really bad stomach flu about a month ago. It lasted a few days and I felt better, but then a couple weeks later this all started.\nClinician: Thank you. This combination of joint pain, heel pain, eye redness, and recent infection makes me suspect something called Reiter's syndrome, or reactive arthritis. It's an arthritis that can happen after an infection. Let's do a physical exam and some tests.\n[**Exam:** Tenderness over the lower back (sacroiliac joints) and heels (Achilles tendon areas). Slight swelling of the right knee. Redness in both eyes consistent with conjunctivitis.]\nClinician: On exam, you have some inflammation in your lower back and right knee, and your eyes are indeed red. I'm going to order some blood tests to check for inflammation and a genetic marker called HLA-B27, which is often positive in reactive arthritis. In the meantime, we'll start treatment to help with your pain.\nDorothy: Okay, thank you, doctor.\n",
-  soapNote: "S: 32-year-old female with 3-week history of inflammatory low back pain (worse in the morning, improving with activity), plus bilateral heel pain and episodes of eye redness. Also had dysuria intermittently. Notable gastrointestinal illness ~1 month ago.\nO: Exam reveals tenderness at sacroiliac joints and Achilles tendon insertions, restricted lumbar flexion (positive Schober's test), and mild effusion of the right knee. Bilateral conjunctivitis present. Labs: ESR 40 mm/hr (elevated), HLA-B27 positive.\nA: Reactive Arthritis (Reiter's syndrome) triggered by recent infection (likely gastrointestinal). Differential diagnoses considered: ankylosing spondylitis (less likely given acute onset and GI trigger), rheumatoid arthritis (unlikely due to involvement of spine and enthesitis).\nP: Start NSAID therapy (Indomethacin 50 mg TID) for pain and inflammation. Monitor symptoms. If no improvement in 1-2 months or disease becomes chronic, initiate Sulfasalazine. Advise rest and stretching exercises. Ophthalmology consult for eye inflammation. Follow-up in 2 weeks.",
+  encounterIdentifier: "ENC-0681FA35-A794-4684-97BD-00B88370DB41-003",
+  actualStart: "2025-05-17T14:11:57.063Z",
+  actualEnd: "2025-05-17T14:56:57.063Z",
+  reasonCode: "K59.00",
+  reasonDisplayText: "Constipation, unspecified",
+  transcript: `Resident (Dr. Ramos): Buenas tardes, Señorita Robinson. Usted fue admitida anoche desde urgencias por estreñimiento severo y dolor abdominal. ¿Cuándo fue su última evacuación intestinal?
+
+Patient (en español): Hace seis días. He intentado usar senna y supositorios de glicerina en casa, pero no he podido defecar.
+
+Resident: ¿Ha tenido náuseas, vómitos o sangrado rectal?
+Patient: Un poco de náuseas después de comer, pero no he vomitado y no hay sangre en las heces.
+
+Resident: ¿Cómo está su dieta e ingesta de líquidos últimamente?
+Patient: He estado comiendo comida rápida y solo bebo alrededor de un vaso de agua al día.
+
+Resident: Entiendo. Revisemos su abdomen. (Palpa abdomen.)
+
+—Examen físico breve:
+Abdomen: Blando, distendido, ligero dolor en fosa iliaca izquierda sin rebote ni rigidez. Ruidos hidroaéreos hiporreactivos.
+Signos vitales: Temp 37.0 °C, PA 116/74 mmHg, FC 80 lpm, FR 16/min.
+
+Resident: Le hicimos una radiografía abdominal en urgencias. Dr. Chen viene a verla para el plan.
+
+—Dr. Chen (turno de la mañana): Veo fecalomas en colon ascendente y transverso, sin niveles hidroaéreos ni signo de obstrucción completa. Sus electrolitos están dentro de límites normales y TSH normal.
+
+Patient: Me preocupa que sea algo más serio.
+
+Dr. Chen: Dado que tuvo un breve curso de opioides tras cirugía dental hace dos semanas, sospechamos estreñimiento por disminución del tránsito intestinal inducido por medicamentos y baja ingesta de fibra.
+
+Patient: ¿Qué haremos?
+
+Dr. Chen: Admitiremos para hidratación y régimen de evacuación agresivo. Le explico en español: 
+• Manténgase NPO por 6 horas más, luego líquidos claros. 
+• Le administraremos polietilenglicol 17 g en 240 mL cada 6 horas hasta que evacúe. 
+• Docusato sodio 200 mg PO BID para ablandar heces. 
+• Supositorio de glicerina PR cada 12 horas según necesidad. 
+• IV suero salino 0.9% 1000 mL en 8 horas y luego evaluamos si tolera vía oral. 
+• Dieta alta en fibra cuando tolere.
+• Consultaremos a nutrición para plan de 25–30 g de fibra diaria y al fisioterapeuta para movilidad.
+
+Patient: Entendido.
+
+Dr. Chen: Evite medicamentos que constipen. Su hidrocodona se suspendió en urgencias. Esperamos que evacúe hoy o mañana. Si no, haremos enema.
+
+Patient: Gracias, doctor.`,
+  soapNote: `S: 46-year-old female admitted for 6-day history of constipation and mild diffuse abdominal discomfort. Reports low fiber diet and recent short-course opioid use (hydrocodone) post-dental surgery. No fever, no hematochezia, no weight loss.
+
+O: Temp 37.0 °C, BP 116/74 mmHg, HR 80 bpm, RR 16/min. Abdomen soft, distended, mild LLQ tenderness, no rebound, hypoactive bowel sounds. Rectal exam: hard stool in vault, brown, guaiac-negative. Abdominal X-ray: diffuse colonic fecal retention, no SBO or perforation. Labs: Na 137 mmol/L, TSH 2.1 µIU/mL.
+
+A:
+1. K59.00 Functional constipation, likely opioid-induced + low-fiber diet.
+2. Z85.6 Personal history of leukemia.
+3. E86.0 Mild dehydration.
+
+P:
+• Admit for bowel regimen and hydration.
+• NPO 6 h → clear liquids → advance to high-fiber diet when BM occurs.
+• Polyethylene glycol 3350 17 g PO q6h until BM, luego 17 g nightly × 14 days.
+• Docusate sodium 200 mg PO BID.
+• Glycerin suppository PR q12h PRN si no defeca en 12 h.
+• IV 0.9% NaCl 1000 mL over 8 h, luego evaluar estado hídrico y pasar a PO.
+• Suspender hidrocodona; controlar dolor con acetaminofén.
+• Consultas: Nutrición (plan de fibra 25–30 g/día), Fisioterapia promotora de movilidad.
+• Dar de alta cuando pase 2 movimientos intestinales y tolera dieta.`,
   treatments: [
-    { drug: "Indomethacin 50 mg TID", status: "Prescribed", rationale: "NSAID for inflammation and pain relief in reactive arthritis." },
-    { drug: "Sulfasalazine (start if no improvement in 1-2 months)", status: "Planned", rationale: "DMARD to help manage chronic reactive arthritis if initial NSAID therapy is insufficient." }
+    { 
+      drug: "Polyethylene glycol 3350 17g q6h until BM, then 17g nightly × 14 days", 
+      status: "Prescribed", 
+      rationale: "Osmotic laxative for severe constipation and maintenance therapy." 
+    },
+    { 
+      drug: "Docusate sodium 200mg PO BID", 
+      status: "Prescribed", 
+      rationale: "Stool softener to facilitate easier bowel movements." 
+    },
+    { 
+      drug: "Glycerin suppository PR q12h PRN", 
+      status: "As needed", 
+      rationale: "Rectal stimulant if no bowel movement within 12 hours." 
+    },
+    { 
+      drug: "High-fiber diet counseling with 25-30g fiber daily", 
+      status: "Patient education", 
+      rationale: "Prevention of future constipation episodes through dietary modification." 
+    }
   ]
 };
 
 const dorothyRobinsonDiagnosisJSON: DemoDiagnosisData = {
   patientId: DEMO_PATIENT_ID,
   encounterId: DEMO_ENCOUNTER_ID,
-  code: "M02.9",
-  description: "Reactive arthritis (Reiter's syndrome)"
+  code: "K59.00",
+  description: "Functional constipation, likely opioid-induced with contributing low-fiber diet"
 };
 
 export const demoEncounterData: DemoEncounterData = {
@@ -124,7 +186,7 @@ export class DemoDataService {
     if (Array.isArray(demoEncounterData.treatments) && demoEncounterData.treatments.length > 0) {
       return demoEncounterData.treatments
         .map(t => `${t.drug} (${t.status}): ${t.rationale}`)
-        .join('\n');
+        .join('\n\n');
     }
     return "Treatment information not available for demo.";
   }

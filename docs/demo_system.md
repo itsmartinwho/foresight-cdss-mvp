@@ -13,10 +13,10 @@ The demo system is built around three core services that handle different aspect
 #### 1. DemoDataService (`src/services/demo/DemoDataService.ts`)
 
 Contains all demo data including:
-- **Dorothy Robinson Patient Data**: Complete patient profile with demographics, medical history, and conditions
-- **Encounter Data**: Structured encounter information with timestamps and medical details
-- **Transcript Lines**: Animated conversation transcript for the consultation demo
-- **Clinical Content**: Diagnosis text and treatment plan content
+- **Dorothy Robinson Patient Data**: Real enriched patient profile with demographics, medical history, and conditions (updated June 2025)
+- **Encounter Data**: Real structured encounter information from Dorothy's latest hospitalization (May 17, 2025 - constipation case)
+- **Transcript Lines**: Real bilingual (Spanish/English) conversation transcript from actual clinical encounter
+- **Clinical Content**: Real diagnosis text and comprehensive treatment plan from enriched database records
 
 **Key Methods:**
 - `getPatientData()`: Returns the demo patient (Dorothy Robinson)

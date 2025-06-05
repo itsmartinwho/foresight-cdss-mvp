@@ -58,13 +58,15 @@ window.location.reload();
 
 ### 4. Demo Patient Data
 
-The demo uses a mock patient "Dorothy Robinson" with ID: `0681FA35-A794-4684-97BD-00B88370DB41`
+The demo uses real enriched data for patient "Dorothy Robinson" with ID: `0681FA35-A794-4684-97BD-00B88370DB41`
 
 Patient details:
 - Name: Dorothy Robinson
 - Gender: Female
-- DOB: 1978-04-15
-- Condition: Reactive arthritis (Reiter's syndrome)
+- DOB: 1978-10-02
+- Language: Spanish
+- Medical History: Acute myelomonocytic leukemia in complete remission (since 1998)
+- Latest Encounter: May 17, 2025 - Constipation case with bilingual transcript
 
 ### 5. Troubleshooting
 
