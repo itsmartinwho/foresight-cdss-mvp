@@ -798,12 +798,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
   // Common rendering for tool outputs
   const renderToolOutputs = () => (
     <>
-      {assistantMessage.toolCode && (
-        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
-          <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400">Generated Code:</h4>
-          <pre className="text-xs overflow-x-auto bg-gray-900 dark:bg-black text-white p-2 rounded mt-1"><code>{assistantMessage.toolCode.content}</code></pre>
-        </div>
-      )}
+      {/* Hide code execution blocks - users only want to see results */}
       {assistantMessage.codeInterpreterTableData ? (
         <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
           <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Data Table ({assistantMessage.codeInterpreterOutputFormat}):</h4>

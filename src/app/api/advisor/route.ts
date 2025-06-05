@@ -22,10 +22,13 @@ When data analysis, tables, or charts would enhance your medical explanation or 
    - Do NOT invent patient data - always work with real data provided or create educational examples when appropriate
 
 3. **Chart Guidelines**:
-   - Create clear, professional medical visualizations
+   - Create clear, professional medical visualizations with high visual quality
    - Use appropriate chart types (line charts for trends, bar charts for comparisons, scatter plots for correlations)
    - Include descriptive titles, axis labels, and legends
    - Use professional color schemes suitable for medical documentation
+   - **Important**: Filter out empty/null dates and focus only on actual data points to avoid sparse timelines
+   - Set appropriate figure sizes (figsize=(12, 6) minimum) for clarity
+   - Use proper date formatting and smart date ranges (avoid showing empty periods)
    - Always explain the medical significance of the visualization
 
 4. **Table Guidelines**:
@@ -36,7 +39,10 @@ When data analysis, tables, or charts would enhance your medical explanation or 
 
 5. **Code Interpreter Usage**:
    - Use Python with matplotlib, pandas, seaborn, and numpy as needed
-   - Create professional-quality visualizations
+   - Create professional-quality visualizations with proper styling
+   - **Performance**: Keep data processing efficient - focus on the most relevant clinical data points
+   - Filter data intelligently to avoid empty periods in timelines
+   - Use datetime parsing and proper date ranges for time-based charts
    - Return structured data for tables when appropriate
    - Always provide clear medical interpretation of the results
 
@@ -288,7 +294,7 @@ export async function GET(req: NextRequest) {
             
             if (encounters.length > 0) {
               clinicalContext += `\n**Recent Encounters:**\n`;
-              encounters.slice(0, 5).forEach(encounterWrapper => { // Show last 5 encounters
+              encounters.slice(0, 3).forEach(encounterWrapper => { // Show last 3 encounters for efficiency
                 const encounter = encounterWrapper.encounter;
                 clinicalContext += `- ${encounter.scheduledStart.split('T')[0]}: ${encounter.reasonDisplayText || encounter.reasonCode || 'General visit'}`;
                 if (encounter.transcript) {
@@ -321,7 +327,7 @@ export async function GET(req: NextRequest) {
 
             if (allLabResults.length > 0) {
               clinicalContext += `\n**Laboratory Results:**\n`;
-              allLabResults.slice(0, 10).forEach(lab => { // Show recent 10 lab results
+              allLabResults.slice(0, 6).forEach(lab => { // Show recent 6 lab results for efficiency
                 clinicalContext += `- ${lab.dateTime ? lab.dateTime.split('T')[0] : 'Unknown date'}: ${lab.name} = ${lab.value}`;
                 if (lab.units) clinicalContext += ` ${lab.units}`;
                 if (lab.referenceRange) clinicalContext += ` (Ref: ${lab.referenceRange})`;
@@ -332,7 +338,7 @@ export async function GET(req: NextRequest) {
 
             if (allTreatments.length > 0) {
               clinicalContext += `\n**Current/Recent Treatments:**\n`;
-              allTreatments.slice(0, 10).forEach(treatment => { // Show recent 10 treatments
+              allTreatments.slice(0, 5).forEach(treatment => { // Show recent 5 treatments for efficiency
                 clinicalContext += `- ${treatment.drug}`;
                 if (treatment.status) clinicalContext += ` (Status: ${treatment.status})`;
                 if (treatment.rationale) clinicalContext += ` - ${treatment.rationale}`;
@@ -349,7 +355,14 @@ export async function GET(req: NextRequest) {
               });
             }
 
-            clinicalContext += `\n**Instructions:** Analyze this complete clinical data to provide comprehensive medical insights. Generate charts and tables for trends, comparisons, and clinical correlations as clinically appropriate. Do not invent data - use only the information provided above.\n\n--------------------\n\n`;
+            clinicalContext += `\n**Chart Creation Instructions:** 
+- When creating timeline charts, only plot actual encounter dates - do not include empty date ranges
+- Use compact, focused date ranges that highlight actual clinical activity periods
+- For medical timelines: focus on encounter dates, symptom progression, and treatment changes
+- Ensure charts are visually clean with proper spacing and professional medical styling
+- Filter out any null/empty dates to create cleaner visualizations
+
+**Analysis Instructions:** Analyze this complete clinical data to provide comprehensive medical insights. Generate charts and tables for trends, comparisons, and clinical correlations as clinically appropriate. Do not invent data - use only the information provided above.\n\n--------------------\n\n`;
             
             patientSummaryBlock = clinicalContext;
             console.log("Complete patient data loaded successfully");
