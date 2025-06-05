@@ -534,7 +534,7 @@ export default function AdvisorView() {
             }}
           >
             <div
-              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-6 py-4 flex flex-col gap-3 pointer-events-auto shadow-lg"
+              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-3 py-2 flex flex-col gap-3 pointer-events-auto shadow-lg"
             >
               {/* Patient context attachment tag */}
               {selectedPatientForContext && (
@@ -557,7 +557,7 @@ export default function AdvisorView() {
                   ? "Reasoning mode selected for your harder medical queries"
                   : "Ask anything"}
                 rows={1}
-                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-6 py-2"
+                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-2 py-1"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
