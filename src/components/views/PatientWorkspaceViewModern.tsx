@@ -51,7 +51,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
   const [isPatientOverviewOpen, setIsPatientOverviewOpen] = useState(true);
-  const [isTabContentOpen, setIsTabContentOpen] = useState(true);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -468,91 +467,72 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       </Collapsible>
 
-      {/* Tab Navigation & Content - Collapsible */}
-      <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-4">
+      {/* Tab Navigation & Content */}
+      <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/20 pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-            {/* Consultation Tab and Selector */}
-            <div className="flex items-center gap-3">
-              <TabBtn k="consultation">
-                Consultation
-              </TabBtn>
-              {activeEncounterDetails.length > 0 && (
-                <Select
-                  value={selectedEncounterForConsultation?.id || ""}
-                  onValueChange={(value) => {
-                    const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
-                    setSelectedEncounterForConsultation(foundEncounter);
-                    if(foundEncounter) setActiveTab('consultation');
-                  }}
-                  disabled={showDeleteConfirmation}
-                >
-                  <SelectTrigger className="w-64 h-9">
-                    <SelectValue placeholder="Select consultation..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeEncounterDetails.map((ew) => (
-                      <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
-                        {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* All Data Tab and New Consultation Button */}
-            <div className="flex items-center gap-3">
-              <TabBtn k="allData">
-                All Data
-              </TabBtn>
-              <Button
-                variant="default"
-                size="default"
-                onClick={() => {
-                  setShowConsultationPanel(true);
+          {/* Left Side: Consultation Tab and Selector */}
+          <div className="flex items-center gap-3">
+            <TabBtn k="consultation">
+              Consultation
+            </TabBtn>
+            {activeEncounterDetails.length > 0 && (
+              <Select
+                value={selectedEncounterForConsultation?.id || ""}
+                onValueChange={(value) => {
+                  const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === value)?.encounter || null;
+                  setSelectedEncounterForConsultation(foundEncounter);
+                  if(foundEncounter) setActiveTab('consultation');
                 }}
-                className="font-semibold"
+                disabled={showDeleteConfirmation}
               >
-                <PlusCircle className="mr-2 h-4 w-4"/>
-                New Consultation
-              </Button>
-            </div>
+                <SelectTrigger className="w-64 h-9">
+                  <SelectValue placeholder="Select consultation..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeEncounterDetails.map((ew) => (
+                    <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
+                      {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="hover:text-neon transition-all duration-200 p-2 rounded-lg hover:bg-foreground/5 flex-shrink-0"
+          {/* Right Side: All Data Tab and New Consultation Button */}
+          <div className="flex items-center gap-3">
+            <TabBtn k="allData">
+              All Data
+            </TabBtn>
+            <Button
+              variant="default"
+              size="default"
+              onClick={() => {
+                setShowConsultationPanel(true);
+              }}
+              className="font-semibold"
             >
-              <ChevronUp 
-                className={cn(
-                  "h-5 w-5 text-muted-foreground hover:text-neon transition-all duration-300 ease-in-out",
-                  isTabContentOpen ? "rotate-0" : "rotate-180"
-                )} 
-              />
+              <PlusCircle className="mr-2 h-4 w-4"/>
+              New Consultation
             </Button>
-          </CollapsibleTrigger>
+          </div>
         </div>
 
-        <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-          <div className="pt-4 transition-all duration-300 ease-in-out">
-            {/* Content Sections */}
-            {activeTab === "consultation" && patient && (
-              <ConsolidatedConsultationTab
-                patient={patient}
-                selectedEncounter={selectedEncounterForConsultation}
-                allEncounters={activeEncounterDetails}
-              />
-            )}
-            
-            {activeTab === "allData" && (
-              <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />
-            )}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+        <div className="pt-4">
+          {/* Content Sections */}
+          {activeTab === "consultation" && patient && (
+            <ConsolidatedConsultationTab
+              patient={patient}
+              selectedEncounter={selectedEncounterForConsultation}
+              allEncounters={activeEncounterDetails}
+            />
+          )}
+          
+          {activeTab === "allData" && (
+            <AllDataViewTab detailedPatientData={detailedPatientData} setDetailedPatientData={setDetailedPatientData} />
+          )}
+        </div>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirmation && encounterToDeleteId && (
