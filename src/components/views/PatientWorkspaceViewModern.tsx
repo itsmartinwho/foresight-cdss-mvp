@@ -433,22 +433,51 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                     <div className="font-mono text-sm text-foreground bg-muted/50 px-2 py-1 rounded">{patient.id}</div>
                   </>
                 )}
+
+                {/* Consultation Date with Delete Button */}
+                {selectedEncounterForConsultation && (
+                  <>
+                    <div className="font-semibold text-muted-foreground">Current Consultation:</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">
+                        {new Date(selectedEncounterForConsultation.scheduledStart).toLocaleDateString()} - {selectedEncounterForConsultation.reasonDisplayText || selectedEncounterForConsultation.reasonCode || 'Encounter'}
+                      </span>
+                      {!showDeleteConfirmation && (
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
+                          size="sm"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
+                          title="Delete consultation"
+                        >
+                          <Trash2 className="h-3 w-3 group-hover:h-4 group-hover:w-4 transition-all duration-200" />
+                          <span className="sr-only group-hover:not-sr-only group-hover:absolute group-hover:left-8 group-hover:bg-destructive group-hover:text-destructive-foreground group-hover:px-2 group-hover:py-1 group-hover:rounded group-hover:text-xs group-hover:whitespace-nowrap group-hover:z-10">
+                            Delete
+                          </span>
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
               </div>
             </CollapsibleContent>
           </div>
         </div>
 
-        <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
-          <div className="pt-4 transition-all duration-300 ease-in-out">
-            {/* Action Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-6">
-                {activeEncounterDetails.length > 0 && (
-                  <div className="w-full sm:w-auto">
-                    <label htmlFor="consultation-select" className="block text-sm font-semibold text-muted-foreground mb-2">
-                      Select Consultation:
-                    </label>
+
+      </Collapsible>
+
+      {/* Tab Navigation & Content - Collapsible */}
+      <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/20 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+            {/* Consultation Tab and Selector */}
+            <div className="flex items-center gap-3">
+              <TabBtn k="consultation">
+                Consultation
+              </TabBtn>
+              {activeEncounterDetails.length > 0 && (
                 <Select
                   value={selectedEncounterForConsultation?.id || ""}
                   onValueChange={(value) => {
@@ -458,8 +487,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                   }}
                   disabled={showDeleteConfirmation}
                 >
-                  <SelectTrigger className="w-full sm:w-72 h-11">
-                    <SelectValue placeholder="Select an encounter..." />
+                  <SelectTrigger className="w-64 h-9">
+                    <SelectValue placeholder="Select consultation..." />
                   </SelectTrigger>
                   <SelectContent>
                     {activeEncounterDetails.map((ew) => (
@@ -469,53 +498,28 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                     ))}
                   </SelectContent>
                 </Select>
-                  </div>
-                )}
-              </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <Button
-              variant="default"
-              size="lg"
-              onClick={() => {
-                setShowConsultationPanel(true);
-              }}
-              className="font-semibold"
-            >
-              <PlusCircle className="mr-2 h-5 w-5"/>
-              New Consultation
-            </Button>
-            
-            {selectedEncounterForConsultation && !showDeleteConfirmation && (
-              <Button 
-                variant="ghost" 
-                onClick={() => openDeleteConfirmation(selectedEncounterForConsultation.id)}
-                size="default"
-                className="font-semibold text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
-              >
-                <Trash2 className="mr-2 h-4 w-4 group-hover:h-5 group-hover:w-5 transition-all duration-200" />
-                Delete
-              </Button>
-            )}
-          </div>
-        </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+              )}
+            </div>
 
-      {/* Tab Navigation & Content - Collapsible */}
-      <Collapsible open={isTabContentOpen} onOpenChange={setIsTabContentOpen} className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/20 pb-4">
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto flex-1 sm:mr-4 scrollbar-hide">
-            {[
-              { key: "consultation", label: "Consultation" },
-              { key: "allData", label: "All Data" },
-            ].map((t) => (
-              <TabBtn key={t.key} k={t.key}>
-                {t.label}
+            {/* All Data Tab and New Consultation Button */}
+            <div className="flex items-center gap-3">
+              <TabBtn k="allData">
+                All Data
               </TabBtn>
-            ))}
+              <Button
+                variant="default"
+                size="default"
+                onClick={() => {
+                  setShowConsultationPanel(true);
+                }}
+                className="font-semibold"
+              >
+                <PlusCircle className="mr-2 h-4 w-4"/>
+                New Consultation
+              </Button>
+            </div>
           </div>
+
           <CollapsibleTrigger asChild>
             <Button 
               variant="ghost" 
