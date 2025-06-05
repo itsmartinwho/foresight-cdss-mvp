@@ -10,13 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { cn } from "@/lib/utils";
-import ConsultationTab from "@/app/consultation/[id]/ConsultationTab";
-import DiagnosisTab from "@/components/patient-workspace-tabs/DiagnosisTab";
-import TreatmentTab from "@/components/patient-workspace-tabs/TreatmentTab";
-import LabsTab from "@/components/patient-workspace-tabs/LabsTab";
-import PriorAuthTab from "@/components/patient-workspace-tabs/PriorAuthTab";
-import TrialsTab from "@/components/patient-workspace-tabs/TrialsTab";
-import HistoryTab from "@/components/patient-workspace-tabs/HistoryTab";
+import ConsolidatedConsultationTab from "@/components/patient-workspace-tabs/ConsolidatedConsultationTab";
 import AllDataViewTab from "@/components/patient-workspace-tabs/AllDataViewTab";
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import LoadingAnimation from "@/components/LoadingAnimation";
@@ -515,12 +509,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           <div className="flex gap-2 sm:gap-3 overflow-x-auto flex-1 sm:mr-4 scrollbar-hide">
             {[
               { key: "consultation", label: "Consultation" },
-              { key: "diagnosis", label: "Diagnosis" },
-              { key: "treatment", label: "Treatment" },
-              { key: "labs", label: "Labs" },
-              { key: "prior", label: "Prior Auth" },
-              { key: "trials", label: "Trials" },
-              { key: "history", label: "History" },
               { key: "allData", label: "All Data" },
             ].map((t) => (
               <TabBtn key={t.key} k={t.key}>
@@ -548,34 +536,11 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           <div className="pt-4 transition-all duration-300 ease-in-out">
             {/* Content Sections */}
             {activeTab === "consultation" && patient && (
-              <ConsultationTab
+              <ConsolidatedConsultationTab
                 patient={patient}
                 selectedEncounter={selectedEncounterForConsultation}
+                allEncounters={activeEncounterDetails}
               />
-            )}
-            
-            {activeTab === "diagnosis" && (
-              <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
-            )}
-            
-            {activeTab === "treatment" && (
-              <TreatmentTab patient={patient} allEncounters={activeEncounterDetails} />
-            )}
-            
-            {activeTab === "labs" && (
-              <LabsTab patient={patient} allEncounters={activeEncounterDetails} />
-            )}
-            
-            {activeTab === "prior" && (
-              <PriorAuthTab patient={patient} allEncounters={activeEncounterDetails} />
-            )}
-            
-            {activeTab === "trials" && (
-              <TrialsTab patient={patient} />
-            )}
-            
-            {activeTab === "history" && (
-              <HistoryTab patient={patient} allEncounters={activeEncounterDetails} />
             )}
             
             {activeTab === "allData" && (
