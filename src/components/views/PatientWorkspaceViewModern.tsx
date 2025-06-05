@@ -120,9 +120,24 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     
     try {
       // Handle demo mode with mock data
+      console.log('🔍 Demo condition check:', {
+        isDemoActive: demoState.isDemoActive,
+        patientId: patient.id,
+        demoPatientId: demoState.demoPatient?.id,
+        condition: demoState.isDemoActive && patient.id === demoState.demoPatient?.id
+      });
+      
       if (demoState.isDemoActive && patient.id === demoState.demoPatient?.id) {
+        console.log('✅ Using demo data for Dorothy Robinson');
         const demoPatient = DemoDataService.getPatientData();
         const demoEncounter = DemoDataService.getEncounterData();
+        
+        console.log('📊 Demo patient data:', {
+          name: demoPatient.name,
+          dob: demoPatient.dateOfBirth,
+          language: demoPatient.language,
+          ethnicity: demoPatient.ethnicity
+        });
         
         const mockEncounterWrapper: EncounterDetailsWrapper = {
           encounter: {
@@ -160,9 +175,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         setActiveEncounterDetails([mockEncounterWrapper]);
         setSelectedEncounterForConsultation(mockEncounterWrapper.encounter);
       } else {
+        console.log('⚠️ Using database data instead of demo data');
         // Normal database loading for non-demo mode
         const detailedData = await supabaseDataService.getPatientData(patient.id);
         if (detailedData) {
+          console.log('📋 Database patient data:', {
+            name: detailedData.patient.name,
+            dob: detailedData.patient.dateOfBirth,
+            language: detailedData.patient.language,
+            ethnicity: detailedData.patient.ethnicity
+          });
           setDetailedPatientData(detailedData);
           setPatient(detailedData.patient);
           
