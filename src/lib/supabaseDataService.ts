@@ -1071,6 +1071,44 @@ class SupabaseDataService {
     // console.log("SupabaseDataService (Prod Debug): Unsubscribed a callback. Total subscribers:", this.changeSubscribers.length);
   }
 
+  /**
+   * Clear demo patient data from cache when demo ends
+   * This prevents demo patients from appearing in upcoming consultations after demo ends
+   */
+  clearDemoPatientData(demoPatientId: string): void {
+    console.log(`SupabaseDataService: Clearing demo patient data for ${demoPatientId}`);
+    
+    // Remove patient from cache
+    if (this.patients[demoPatientId]) {
+      delete this.patients[demoPatientId];
+    }
+
+    // Remove all encounters for this patient
+    const patientEncounters = this.encountersByPatient[demoPatientId] || [];
+    patientEncounters.forEach(compositeKey => {
+      delete this.encounters[compositeKey];
+    });
+
+    // Clear patient encounter mapping
+    delete this.encountersByPatient[demoPatientId];
+
+    // Clear diagnoses and lab results
+    delete this.diagnoses[demoPatientId];
+    delete this.labResults[demoPatientId];
+    delete this.differentialDiagnoses[demoPatientId];
+
+    // Remove from UUID mapping
+    const uuidToRemove = Object.keys(this.patientUuidToOriginalId).find(
+      uuid => this.patientUuidToOriginalId[uuid] === demoPatientId
+    );
+    if (uuidToRemove) {
+      delete this.patientUuidToOriginalId[uuidToRemove];
+    }
+
+    console.log(`SupabaseDataService: Demo patient ${demoPatientId} cleared from cache`);
+    this.emitChange();
+  }
+
   getPatientDiagnoses(patientId: string): Diagnosis[] {
     return this.diagnoses[patientId] || [];
   }

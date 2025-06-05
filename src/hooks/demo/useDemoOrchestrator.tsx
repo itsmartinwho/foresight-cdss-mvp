@@ -149,6 +149,7 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     setDemoStage('finished');
     setIsDemoModalOpen(false);
     router.push('/dashboard');
+    supabaseDataService.clearDemoPatientData(DEMO_PATIENT_ID);
   }, [resetDemoAnimationStates, router]);
 
   const exitDemoStayOnPage = useCallback(() => {
@@ -160,6 +161,7 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     setIsDemoModalOpen(false);
     // Navigate to dashboard when demo ends to avoid 404 on demo patient page
     router.push('/dashboard');
+    supabaseDataService.clearDemoPatientData(DEMO_PATIENT_ID);
   }, [resetDemoAnimationStates, router]);
 
   const startDemo = useCallback(async () => {
@@ -195,6 +197,7 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     DemoStateService.setDemoRun(true);
     setHasDemoRunState(true);
     setDemoStage('finished');
+    supabaseDataService.clearDemoPatientData(DEMO_PATIENT_ID);
   }, [resetDemoAnimationStates]);
 
   const setDemoModalOpen = useCallback((open: boolean) => {
