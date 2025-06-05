@@ -87,6 +87,7 @@ export interface AssistantMessageContent {
     data: Array<Record<string, any>>;
   } | null;
   codeInterpreterOutputFormat?: 'json' | 'csv' | 'plaintext';
+  chartLoading?: boolean; // For showing chart loading placeholder
 }
 
 export interface ChatMessage {

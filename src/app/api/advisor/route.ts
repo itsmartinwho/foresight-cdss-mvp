@@ -16,6 +16,13 @@ When data analysis, tables, or charts would enhance your medical explanation or 
 
 1. **Automatic Chart/Table Generation**: Use the code_interpreter tool to create visualizations automatically. When you generate charts or tables, they will be displayed directly to the physician without requiring additional steps.
 
+**IMPORTANT**: Even when the user doesn't explicitly request visualizations, you should proactively create relevant charts or tables when:
+- Patient data contains time-series information (lab results, vital signs, medication history)
+- Multiple diagnoses or treatments can be compared
+- Clinical trends or patterns would be medically significant
+- A timeline of clinical events would aid understanding
+Choose the most appropriate visualization type (timeline charts, comparison tables, trend graphs, etc.) based on the clinical data available.
+
 2. **Data Requirements**: 
    - Utilize the provided patient context FIRST (see 'Current Patient Information' section above if present)
    - If the necessary data for a clinically relevant visualization is not available, clearly state what specific data points you need
@@ -151,11 +158,30 @@ async function createAssistantResponse(
       const assistantMessage = threadMessages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
       
       if (assistantMessage) {
-        // Send text content
+        // Send text content with simulated streaming for better UX
         for (const content of assistantMessage.content) {
           if (content.type === 'text') {
-            const textPayload = { type: "markdown_chunk", content: content.text.value };
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(textPayload)}\n\n`));
+            // Simulate streaming by breaking text into chunks
+            const fullText = content.text.value;
+            const chunkSize = 50; // Send ~50 characters at a time
+            const chunks = [];
+            
+            for (let i = 0; i < fullText.length; i += chunkSize) {
+              chunks.push(fullText.slice(i, i + chunkSize));
+            }
+            
+            // Send chunks with small delays to simulate streaming
+            for (let i = 0; i < chunks.length; i++) {
+              if (reqSignal.aborted) break;
+              
+              const textPayload = { type: "markdown_chunk", content: chunks[i] };
+              controller.enqueue(encoder.encode(`data:${JSON.stringify(textPayload)}\n\n`));
+              
+              // Small delay for streaming effect (skip delay for last chunk)
+              if (i < chunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 30));
+              }
+            }
           } else if (content.type === 'image_file') {
             // Send image file reference
             const imagePayload = { 
@@ -294,7 +320,7 @@ export async function GET(req: NextRequest) {
             
             if (encounters.length > 0) {
               clinicalContext += `\n**Recent Encounters:**\n`;
-              encounters.slice(0, 3).forEach(encounterWrapper => { // Show last 3 encounters for efficiency
+              encounters.forEach(encounterWrapper => { // Show all encounters
                 const encounter = encounterWrapper.encounter;
                 clinicalContext += `- ${encounter.scheduledStart.split('T')[0]}: ${encounter.reasonDisplayText || encounter.reasonCode || 'General visit'}`;
                 if (encounter.transcript) {
@@ -327,7 +353,7 @@ export async function GET(req: NextRequest) {
 
             if (allLabResults.length > 0) {
               clinicalContext += `\n**Laboratory Results:**\n`;
-              allLabResults.slice(0, 6).forEach(lab => { // Show recent 6 lab results for efficiency
+              allLabResults.forEach(lab => { // Show all lab results
                 clinicalContext += `- ${lab.dateTime ? lab.dateTime.split('T')[0] : 'Unknown date'}: ${lab.name} = ${lab.value}`;
                 if (lab.units) clinicalContext += ` ${lab.units}`;
                 if (lab.referenceRange) clinicalContext += ` (Ref: ${lab.referenceRange})`;
@@ -338,7 +364,7 @@ export async function GET(req: NextRequest) {
 
             if (allTreatments.length > 0) {
               clinicalContext += `\n**Current/Recent Treatments:**\n`;
-              allTreatments.slice(0, 5).forEach(treatment => { // Show recent 5 treatments for efficiency
+              allTreatments.forEach(treatment => { // Show all treatments
                 clinicalContext += `- ${treatment.drug}`;
                 if (treatment.status) clinicalContext += ` (Status: ${treatment.status})`;
                 if (treatment.rationale) clinicalContext += ` - ${treatment.rationale}`;
