@@ -374,13 +374,14 @@ export default function ConsultationPanel({
     
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        handleClose();
+        // Discard on Escape
+        handleDiscard();
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, handleClose]);
+  }, [isOpen, handleDiscard]);
 
   // Pause/resume transcription controls
   const pauseTranscription = useCallback(() => {
@@ -485,12 +486,12 @@ export default function ConsultationPanel({
     <div 
       className="fixed inset-0 z-[9999] bg-white/20 backdrop-blur-xl backdrop-saturate-150 flex items-center justify-center p-4"
       onClick={(e) => {
-        // Close when clicking the backdrop (outside the modal)
+        // Discard when clicking the backdrop (outside the modal)
         if (e.target === e.currentTarget) {
           if (isDemoMode) {
             onClose();
           } else {
-            handleClose();
+            handleDiscard();
           }
         }
       }}

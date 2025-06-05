@@ -17,7 +17,7 @@ export default function GlassHeader() {
   };
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 h-16 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-xl border-b border-[rgba(255,255,255,0.084)] bg-transparent">
+    <header className="fixed inset-x-0 top-0 z-40 h-12 flex items-center justify-between px-[clamp(1rem,3vw,2.5rem)] backdrop-blur-xl border-b border-[rgba(255,255,255,0.084)] bg-transparent">
       <div className="flex items-center gap-2">
         <Link href="/" className="flex items-center gap-0">
           <Image

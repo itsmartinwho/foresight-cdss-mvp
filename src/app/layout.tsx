@@ -42,9 +42,9 @@ export default function RootLayout({
         <DynamicDemoProvider>
           <PlasmaBackground />
           <GlassHeader />
-          <div className="flex flex-1 overflow-hidden pt-16 h-[calc(100svh-4rem)] min-h-0">
+          <div className="flex flex-1 overflow-hidden pt-12 h-[calc(100svh-4rem)] min-h-0">
             <GlassSidebar />
-            <main className="flex flex-col flex-1 overflow-hidden relative bg-transparent">
+            <main className="flex flex-col flex-1 overflow-hidden relative bg-transparent p-2">
               <React.Suspense fallback={<div>Loading page...</div>}>
                 <MotionWrapper>{children}</MotionWrapper>
               </React.Suspense>

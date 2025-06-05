@@ -37,7 +37,7 @@ export default function ContentSurface({
   return (
     <div
       className={cn(
-        'glass-soft rounded-2xl p-6 mx-auto my-6 max-w-7xl w-full',
+        'glass-soft rounded-2xl p-4 mx-auto max-w-7xl w-full',
         className
       )}
       {...rest}

@@ -81,9 +81,9 @@ export default function GlassSidebar() {
               className={`sidebar-button-bg rounded-full w-8 h-8 mb-4 ${collapsed ? 'self-center' : 'self-start ml-1'} hover:bg-white/20`}
             >
               {collapsed ? (
-                <PanelLeftOpen strokeWidth={1.5} className="h-5 w-5 text-white/50" />
+                <PanelLeftOpen strokeWidth={1.5} className="h-5 w-5 text-black" />
               ) : (
-                <PanelLeftClose strokeWidth={1.5} className="h-5 w-5 text-white/50" />
+                <PanelLeftClose strokeWidth={1.5} className="h-5 w-5 text-black" />
               )}
             </Button>
           </TooltipTrigger>

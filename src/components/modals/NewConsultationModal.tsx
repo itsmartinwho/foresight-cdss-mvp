@@ -199,7 +199,11 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden trigger; open controlled externally */}</DialogTrigger>
-      <DialogContent className={`max-w-lg ${shake ? 'animate-shake' : ''}`}>
+      <DialogContent
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className={`max-w-lg ${shake ? 'animate-shake' : ''}`}
+      >
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
         </DialogHeader>
@@ -420,6 +424,12 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
             variant="default" 
             iconLeft={<PlayCircle />} 
             onClick={handleCreate}
+            onFocus={(e) => {
+              // Prevent accidental activation when focus is moved during modal close
+              if (!open) {
+                e.target.blur();
+              }
+            }}
             disabled={isCreating}
           >
             {isCreating ? 'Creating...' : 'Start Consultation'}

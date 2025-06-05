@@ -82,6 +82,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const isLoadingDataRef = useRef(false);
   const loadedPatientIdRef = useRef<string | null>(null);
 
+  // Track previous consultation selection to restore on discard
+  const previousEncounterRef = useRef<Encounter | null>(null);
+
   useEffect(() => {
     if (initialTab) {
       setActiveTab(initialTab);
@@ -483,6 +486,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               variant="default"
               size="default"
               onClick={() => {
+                // Save current selection to restore if modal is discarded
+                previousEncounterRef.current = selectedEncounterForConsultation;
                 setShowConsultationPanel(true);
               }}
               className="font-semibold"
@@ -535,7 +540,12 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       {/* Regular Consultation Panel - separated from demo */}
       <ConsultationPanel
         isOpen={showConsultationPanel && !demoWorkspace.shouldRunDemoUi}
-        onClose={() => setShowConsultationPanel(false)}
+        onClose={() => {
+          // Close modal and restore previous selection if discarded
+          setShowConsultationPanel(false);
+          setSelectedEncounterForConsultation(previousEncounterRef.current);
+          previousEncounterRef.current = null;
+        }}
         patient={patient}
         onConsultationCreated={handleConsultationCreated}
         isDemoMode={false}
