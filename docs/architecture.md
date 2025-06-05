@@ -11,8 +11,8 @@
 This document outlines the comprehensive architecture of the Foresight CDSS MVP prototype. The system is designed with modularity, clear separation of concerns, and maintainability in mind, supporting both current functionality and future aspirations. It reflects the state of the system after several significant refactoring phases aimed at FHIR alignment and enhanced clinical engine capabilities.
 
 The application features several AI-powered clinical tools:
-*   **Tool A (Advisor):** Currently implemented as an AI-powered chatbot in the "Advisor" tab, using OpenAI via the `/api/advisor` route. It provides general medical information.
-*   **Tool B (Diagnosis and Treatment Engine):** An aspirational feature. Aims to ingest patient data and consultation transcripts to produce diagnoses and treatment plans, and generate related documents (referrals, prior authorizations). Placeholder UI elements for these outputs exist. The `src/clinical_engine_prototype/engine.py` script is an early prototype for this engine's logic and is not currently integrated.
+*   **Tool A (Advisor):** Currently implemented as an AI-powered chatbot in the "Advisor" tab, using OpenAI via the `/api/advisor` route. It provides general medical information, and allows user to ask questions based on attached files and attached data for patients in the database. 
+*   **Tool B (Diagnosis and Treatment Engine):** Aims to ingest patient data and consultation transcripts to produce diagnoses and treatment plans, and generate related documents (referrals, prior authorizations). The `src/clinical_engine_prototype/engine.py` script is an early prototype for this engine's logic. It's integrated but still needs improvement.
 *   **Tool C (Medical Co-pilot):** An aspirational, real-time AI assistant to provide nudges to physicians during consultations. Does not yet exist.
 *   **Tool D (Complex Conditions Alerts):** An aspirational tool to scan diagnostic outputs (from the future Tool B) and alert physicians to potential complex conditions. Placeholder UI for alerts exists, currently populated by mock data from the `patients.alerts` field in Supabase.
 *   **Tool F (Clinical Trial Matching):** An aspirational tool to find clinical trials for eligible patients. Placeholder UI for clinical trials exists, currently populated by mock data.
@@ -30,7 +30,7 @@ _The application flow centers around clinician interaction with patient data and
 
 1.  **Authentication Flow (Standard)**
     `Login Screen → Authentication → Dashboard`
-    - User enters credentials, system validates, redirects to dashboard or shows error.
+    - Does not exist yet. User enters credentials, system validates, redirects to dashboard or shows error.
 
 2.  **Patient Management Flow (Current)**
     `Dashboard → Patient List → Patient Search → Patient Details → Edit Patient / Add New Patient`
@@ -39,17 +39,17 @@ _The application flow centers around clinician interaction with patient data and
 3.  **Consultation Data Entry/Review Flow (Current - Basic; Aspirational - Detailed for Tool B)**
     `Patient Details → New Consultation (Modal) → Input Basic Encounter Information → Save`
     - Current: Input basic encounter information.
-    - Aspirational (for Tool B): Capture detailed consultation transcript.
+    - Users should be able to edit any fields related to a patient.
 
 4.  **Tool A: Advisor (AI Chatbot - Current)**
     `Select "Advisor" Tab → Type Question / Use Voice Input / Upload File → Receive AI-Generated Answer (Streamed)`
     - User interacts with AI chatbot in `AdvisorView.tsx` via `/api/advisor`.
-    - Optional features: model switching, paper search (may be buggy).
-    - Future: Attach specific patient context.
+    - Optional features: model switching, paper search (may be buggy, users can attach specific patient context. Voice mode and dictation might be buggy.
+    - Future: rendering charts and tables nicely within answers is still buggy.
 
-5.  **Tool B: Diagnosis and Treatment Engine (Aspirational - Placeholder UI Exists)**
-    `Consultation Ends → Trigger Tool B Analysis (Aspirational) → Physician Reviews/Amends AI Output (in placeholder UI) → Accept Plan → Optionally Generate Documents (placeholder forms)`
-    - `src/clinical_engine_prototype/engine.py` prototypes this logic.
+5.  **Tool B: Diagnosis and Treatment Engine**
+    `Consultation Ends → Trigger Tool B Analysis → Physician Reviews/Amends AI Output → Accept Plan → Optionally Generate Documents like prior authorization forms and referral forms (placeholder forms for now)`
+    - `src/clinical_engine_prototype/engine.py` implements this logic.
 
 6.  **Tool C: Medical Co-pilot (Aspirational - No UI Exists)**
     `During Live Consultation → AI Co-pilot Monitors → Delivers Discrete Nudges/Notifications`
@@ -60,13 +60,13 @@ _The application flow centers around clinician interaction with patient data and
 8.  **Tool F: Clinical Trial Matching (Aspirational - Placeholder UI & Mock Data Exist)**
     `Diagnosis Finalized → Tool F Scans for Trials (Aspirational) → Matching Trials Displayed (replacing mock data)`
 
-9.  **Reporting/Analytics Flow (Current - Basic; Aspirational - Advanced)**
+9.  **Reporting/Analytics Flow (Current - Mock up; Aspirational - basic analytics)**
     `Dashboard → Analytics Screen (AnalyticsScreenView.tsx) → View Basic Charts/Metrics`
 
 ### Screen-by-Screen AI Tool Relevance
 *   **Dashboard (`DashboardView.tsx`):** Placeholder for Tool D alerts.
 *   **Patient Management (`PatientsListView.tsx`, `PatientWorkspaceViewModern.tsx`):**
-    *   `PatientWorkspaceViewModern.tsx`: Placeholders for Tool B (Diagnosis/Treatment, documents), Tool F (Clinical Trials), Tool D (Alerts).
+    *   `PatientWorkspaceViewModern.tsx`: Tool B (Diagnosis/Treatment, placeholder for documents), placeholders for Tool F (Clinical Trials), Tool D (Alerts).
 *   **Consultation Screens:** Forms capture data (Aspirational: detailed transcript for Tool B).
 *   **Advisor Screen (`AdvisorView.tsx`):** Tool A interface.
 *   **Alerts Screen (`AlertsScreenView.tsx`):** Placeholder for Tool D alerts.
