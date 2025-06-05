@@ -514,7 +514,7 @@ export default function AdvisorView() {
 
         {/* Voice mode overlay */}
         {voiceMode && (
-          <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.6)] backdrop-blur-sm flex flex-col items-center justify-center text-center px-6">
+          <div className="fixed inset-0 z-50 bg-white/20 backdrop-blur-xl backdrop-saturate-150 flex flex-col items-center justify-center text-center px-6">
             <div className="animate-pulse mb-6">
               <Waves className="h-16 w-16 text-teal-300" />
             </div>

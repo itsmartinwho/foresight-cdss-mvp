@@ -245,7 +245,7 @@ export default function ConsolidatedConsultationTab({
 
       {/* Transcript Panel - TODO: Create dedicated transcript viewer */}
       {showTranscriptPanel && selectedEncounter?.transcript && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-white/20 backdrop-blur-xl backdrop-saturate-150 flex items-center justify-center p-4">
           <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
             <Button 
               variant="ghost" 
