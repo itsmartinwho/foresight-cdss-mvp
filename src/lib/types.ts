@@ -172,6 +172,9 @@ export interface ClinicalOutputPackage {
   referralDocument?: GeneratedReferralDocument;
   priorAuthDocument?: GeneratedPriorAuthDocument;
   evidenceSources: ClinicalSource[];
+  // New fields for OpenAI Code Interpreter support
+  visualizations?: string[]; // File IDs of generated charts/images
+  analysisText?: string; // Full analysis text from assistant
 }
 
 export interface PriorAuthorization {

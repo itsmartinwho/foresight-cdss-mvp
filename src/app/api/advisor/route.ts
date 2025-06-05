@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
+import { supabaseDataService } from "@/lib/supabaseDataService";
 
 // 1. Model routing (default to gpt-4.1-mini)
 // 2. Invoke chat-completions with streaming
@@ -8,68 +9,79 @@ import OpenAI from "openai";
 // 5. streamMarkdownOnly implementation
 // 6. Security and recovery (DOMPurify on client, discard empty tool args)
 
-// Enhanced system prompt for better code interpreter usage
+// Enhanced system prompt for OpenAI Code Interpreter
 const baseSystemPrompt = `You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.
 
-When data analysis, tables, or charts are appropriate for the physician's request or to enhance your explanation:
-1. Determine the most clinically relevant type of visualization (e.g., timeline, trend chart, comparison table).
-2. Utilize the provided patient context FIRST (see 'Current Patient Information' section above if present). If the necessary data for a specific, relevant visualization is not available in the provided patient context or conversation history, clearly state what specific data points you need to create it. Do NOT invent data.
-3. Once you have the necessary data (from context or physician input), write executable Python code using markdown code blocks to generate the chart or table.
+When data analysis, tables, or charts would enhance your medical explanation or are explicitly requested:
 
-Format your Python code blocks for charts and tables precisely like this:
+1. **Automatic Chart/Table Generation**: Use the code_interpreter tool to create visualizations automatically. When you generate charts or tables, they will be displayed directly to the physician without requiring additional steps.
 
-\`\`\`python
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np # if needed for calculations
+2. **Data Requirements**: 
+   - Utilize the provided patient context FIRST (see 'Current Patient Information' section above if present)
+   - If the necessary data for a clinically relevant visualization is not available, clearly state what specific data points you need
+   - Do NOT invent patient data - always work with real data provided or create educational examples when appropriate
 
-# Example: df = pd.DataFrame(data_from_patient_context_or_user_input)
-# Your Python code here to process data and generate the visualization
+3. **Chart Guidelines**:
+   - Create clear, professional medical visualizations
+   - Use appropriate chart types (line charts for trends, bar charts for comparisons, scatter plots for correlations)
+   - Include descriptive titles, axis labels, and legends
+   - Use professional color schemes suitable for medical documentation
+   - Always explain the medical significance of the visualization
 
-plt.figure(figsize=(10, 6))
-# ... chart generation code (e.g., plt.plot(), plt.bar()) ...
-plt.title('Descriptive Chart Title')
-plt.xlabel('X-axis Label')
-plt.ylabel('Y-axis Label')
-plt.legend() # If applicable
-plt.grid(True, alpha=0.3)
-plt.show() # For Pyodide, this will be handled by the frontend to display the chart
-\`\`\`
+4. **Table Guidelines**:
+   - Structure data clearly with appropriate headers
+   - Include relevant medical units and reference ranges where applicable
+   - Sort or organize data in clinically meaningful ways
+   - Explain the clinical significance of the data patterns
 
-For all Python code related to charts/tables, ensure:
-- Complete, executable code with all necessary imports (matplotlib, pandas, numpy as needed).
-- Use the actual data provided or requested. Do not generate placeholder or random data.
-- Professional medical chart formatting with clear titles, axis labels, and legends where appropriate.
-- Use matplotlib.pyplot for charts and pandas DataFrames for tables.
-- Explain the medical significance of the visualization and what it shows *before* presenting the code block.
-
-The physician will use this code to see actual data visualizations. Make your code practical, executable, and medically relevant based on the information at hand.
+5. **Code Interpreter Usage**:
+   - Use Python with matplotlib, pandas, seaborn, and numpy as needed
+   - Create professional-quality visualizations
+   - Return structured data for tables when appropriate
+   - Always provide clear medical interpretation of the results
 
 When responding to general medical queries:
-1. Provide evidence-based information.
-2. Include relevant medical context and differential diagnoses when appropriate.
-3. Suggest appropriate next steps or follow-up care.
-4. Use clear, professional language that respects both the physician's expertise and patient welfare.
-5. When in doubt, recommend consultation with specialists or additional testing.
+1. Provide evidence-based information
+2. Include relevant medical context and differential diagnoses when appropriate
+3. Suggest appropriate next steps or follow-up care
+4. Use clear, professional language that respects both the physician's expertise and patient welfare
+5. When in doubt, recommend consultation with specialists or additional testing
 
-Remember: You are assisting qualified medical professionals, not providing direct patient care.`;
+Remember: You are assisting qualified medical professionals, not providing direct patient care. Charts and tables you create will be automatically displayed to enhance clinical understanding.`;
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function streamResponse(
-  model: string,
-  payload: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+// Assistant ID for the medical advisor (you can create this once and store it)
+const MEDICAL_ADVISOR_ASSISTANT_ID = process.env.MEDICAL_ADVISOR_ASSISTANT_ID;
+
+async function createOrGetAssistant(): Promise<string> {
+  if (MEDICAL_ADVISOR_ASSISTANT_ID) {
+    return MEDICAL_ADVISOR_ASSISTANT_ID;
+  }
+
+  // Create a new assistant if not configured
+  const assistant = await openai.beta.assistants.create({
+    name: "Foresight Medical Advisor",
+    instructions: baseSystemPrompt,
+    model: "gpt-4.1-mini",
+    tools: [{ type: "code_interpreter" }],
+  });
+
+  console.log("Created new assistant with ID:", assistant.id);
+  console.log("Please set MEDICAL_ADVISOR_ASSISTANT_ID environment variable to:", assistant.id);
+  
+  return assistant.id;
+}
+
+async function createAssistantResponse(
+  assistantId: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
   controller: ReadableStreamDefaultController,
   reqSignal: AbortSignal,
   isControllerClosedRef: { value: boolean }
 ) {
   const encoder = new TextEncoder();
   let streamEndedByThisFunction = false;
-  let chunkBuffer = "";
-
-  function shouldFlush(buffer: string): boolean {
-    return buffer.length > 600 || buffer.includes("\n\n");
-  }
 
   const cleanupAndCloseController = () => {
     if (isControllerClosedRef.value || streamEndedByThisFunction) return;
@@ -80,76 +92,125 @@ async function streamResponse(
       controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
       controller.close();
     } catch (e) {
-      console.warn("Error closing controller in streamResponse cleanup:", e);
+      console.warn("Error closing controller in createAssistantResponse cleanup:", e);
     }
   };
 
   if (reqSignal.aborted) {
-    if (chunkBuffer.length > 0 && !isControllerClosedRef.value) {
-      const outPayload = { type: "markdown_chunk", content: chunkBuffer };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(outPayload)}\n\n`));
-      chunkBuffer = "";
-    }
     cleanupAndCloseController();
     return;
   }
 
   const clientDisconnectListener = () => {
-    if (chunkBuffer.length > 0 && !isControllerClosedRef.value) {
-      const outPayload = { type: "markdown_chunk", content: chunkBuffer };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(outPayload)}\n\n`));
-      chunkBuffer = "";
-    }
     cleanupAndCloseController();
   };
   reqSignal.addEventListener('abort', clientDisconnectListener, { once: true });
 
   try {
-    let stream;
-    if (model === "o4-mini") {
-      // o4-mini uses reasoning_effort parameter
-      stream = await openai.chat.completions.create({
-        model,
-        stream: true,
-        messages: payload,
-        reasoning_effort: "medium",
-      }, { signal: reqSignal });
-    } else {
-      // gpt-4.1-mini uses standard format
-      stream = await openai.chat.completions.create({
-        model,
-        stream: true,
-        messages: payload,
-      }, { signal: reqSignal });
+    // Create a thread
+    const thread = await openai.beta.threads.create();
+
+    // Add all previous messages to the thread
+    for (const message of messages) {
+      await openai.beta.threads.messages.create(thread.id, {
+        role: message.role,
+        content: message.content
+      });
     }
 
-    for await (const chunk of stream) {
-      if (reqSignal.aborted || isControllerClosedRef.value) {
+    // Run the assistant
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: assistantId,
+    });
+
+    // Poll for completion
+    let runStatus = run;
+    while (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
+      if (reqSignal.aborted) {
         break;
       }
       
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (content) {
-        chunkBuffer += content;
-        if (shouldFlush(chunkBuffer)) {
-          const outPayload = { type: "markdown_chunk", content: chunkBuffer };
-          controller.enqueue(encoder.encode(`data:${JSON.stringify(outPayload)}\n\n`));
-          chunkBuffer = "";
-        }
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
 
-    // Send remaining content
-    if (!isControllerClosedRef.value && chunkBuffer.length > 0) {
-      const outPayload = { type: "markdown_chunk", content: chunkBuffer };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(outPayload)}\n\n`));
-      chunkBuffer = "";
+    if (reqSignal.aborted) {
+      cleanupAndCloseController();
+      return;
     }
+
+    if (runStatus.status === 'completed') {
+      // Get the messages
+      const threadMessages = await openai.beta.threads.messages.list(thread.id);
+      const assistantMessage = threadMessages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
+      
+      if (assistantMessage) {
+        // Send text content
+        for (const content of assistantMessage.content) {
+          if (content.type === 'text') {
+            const textPayload = { type: "markdown_chunk", content: content.text.value };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(textPayload)}\n\n`));
+          } else if (content.type === 'image_file') {
+            // Send image file reference
+            const imagePayload = { 
+              type: "code_interpreter_image", 
+              file_id: content.image_file.file_id 
+            };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
+          }
+        }
+      }
+
+      // Get run steps to check for code interpreter outputs
+      const runSteps = await openai.beta.threads.runs.steps.list(thread.id, run.id);
+      
+      for (const step of runSteps.data) {
+        if (step.type === 'tool_calls' && 'tool_calls' in step.step_details) {
+          for (const toolCall of step.step_details.tool_calls) {
+            if (toolCall.type === 'code_interpreter') {
+              // Send code that was executed
+              if (toolCall.code_interpreter.input) {
+                const codePayload = { 
+                  type: "code_interpreter_code", 
+                  content: toolCall.code_interpreter.input 
+                };
+                controller.enqueue(encoder.encode(`data:${JSON.stringify(codePayload)}\n\n`));
+              }
+
+              // Send outputs
+              for (const output of toolCall.code_interpreter.outputs) {
+                if (output.type === 'logs') {
+                  const logPayload = { 
+                    type: "code_interpreter_output", 
+                    content: output.logs 
+                  };
+                  controller.enqueue(encoder.encode(`data:${JSON.stringify(logPayload)}\n\n`));
+                } else if (output.type === 'image') {
+                  const imagePayload = { 
+                    type: "code_interpreter_image", 
+                    file_id: output.image.file_id 
+                  };
+                  controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
+                }
+              }
+            }
+          }
+        }
+      }
+    } else {
+      // Handle error cases
+      const errorPayload = { type: "error", message: `Assistant run failed with status: ${runStatus.status}` };
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
+    }
+
+    // Clean up the thread
+    await openai.beta.threads.del(thread.id);
+
   } catch (error: any) {
     if (!(error.name === 'AbortError' || reqSignal.aborted)) {
-      console.error(`Error in streamResponse (model: ${model}):`, error);
+      console.error(`Error in createAssistantResponse:`, error);
       if (!isControllerClosedRef.value) {
-        const errorPayload = { type: "error", message: `Streaming failed: ${error.message || 'Unknown error'}` };
+        const errorPayload = { type: "error", message: `Assistant error: ${error.message || 'Unknown error'}` };
         controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
       }
     }
@@ -169,6 +230,7 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const payloadParam = url.searchParams.get("payload");
+    const patientId = url.searchParams.get("patientId");
     let messagesFromClient: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
     let patientSummaryBlock: string = ""; 
 
@@ -186,7 +248,120 @@ export async function GET(req: NextRequest) {
       }
       messagesFromClient = parsedPayload.messages;
 
-      if (messagesFromClient.length > 0 && messagesFromClient[0].role === 'system') {
+      // If patientId is provided, fetch complete patient data
+      if (patientId) {
+        try {
+          console.log(`Fetching complete patient data for patient ID: ${patientId}`);
+          const completePatientData = await supabaseDataService.getPatientData(patientId);
+          
+          if (completePatientData && completePatientData.patient) {
+            // Format comprehensive patient data for clinical context
+            const patientInfo = completePatientData.patient;
+            const encounters = completePatientData.encounters || [];
+            
+            // Calculate age from dateOfBirth if available
+            let ageText = 'Unknown';
+            if (patientInfo.dateOfBirth) {
+              try {
+                const birthDate = new Date(patientInfo.dateOfBirth);
+                const today = new Date();
+                const age = today.getFullYear() - birthDate.getFullYear();
+                ageText = `${age} years old`;
+              } catch (e) {
+                console.warn('Could not calculate age from dateOfBirth:', patientInfo.dateOfBirth);
+              }
+            }
+
+            let clinicalContext = `### Complete Patient Clinical Data\n`;
+            clinicalContext += `**Patient:** ${patientInfo.firstName} ${patientInfo.lastName} (ID: ${patientInfo.id})\n`;
+            clinicalContext += `**Demographics:** ${ageText}, ${patientInfo.gender || 'Unknown gender'}\n`;
+            if (patientInfo.dateOfBirth) clinicalContext += `**Date of Birth:** ${patientInfo.dateOfBirth}\n`;
+            if (patientInfo.race) clinicalContext += `**Race:** ${patientInfo.race}\n`;
+            if (patientInfo.ethnicity) clinicalContext += `**Ethnicity:** ${patientInfo.ethnicity}\n`;
+            if (patientInfo.maritalStatus) clinicalContext += `**Marital Status:** ${patientInfo.maritalStatus}\n`;
+            if (patientInfo.language) clinicalContext += `**Language:** ${patientInfo.language}\n`;
+            
+            // Collect all diagnoses across encounters
+            const allDiagnoses: any[] = [];
+            const allLabResults: any[] = [];
+            const allTreatments: any[] = [];
+            
+            if (encounters.length > 0) {
+              clinicalContext += `\n**Recent Encounters:**\n`;
+              encounters.slice(0, 5).forEach(encounterWrapper => { // Show last 5 encounters
+                const encounter = encounterWrapper.encounter;
+                clinicalContext += `- ${encounter.scheduledStart.split('T')[0]}: ${encounter.reasonDisplayText || encounter.reasonCode || 'General visit'}`;
+                if (encounter.transcript) {
+                  const truncatedTranscript = encounter.transcript.length > 100 
+                    ? encounter.transcript.substring(0, 100) + '...' 
+                    : encounter.transcript;
+                  clinicalContext += ` - Notes: ${truncatedTranscript}`;
+                }
+                clinicalContext += `\n`;
+                
+                // Collect diagnoses from this encounter
+                allDiagnoses.push(...encounterWrapper.diagnoses);
+                allLabResults.push(...encounterWrapper.labResults);
+                
+                // Collect treatments from encounter if available
+                if (encounter.treatments) {
+                  allTreatments.push(...encounter.treatments);
+                }
+              });
+            }
+
+            if (allDiagnoses.length > 0) {
+              clinicalContext += `\n**Medical Conditions/Diagnoses:**\n`;
+              allDiagnoses.forEach(diagnosis => {
+                clinicalContext += `- ${diagnosis.description || 'Unknown condition'}`;
+                if (diagnosis.code) clinicalContext += ` (${diagnosis.code})`;
+                clinicalContext += `\n`;
+              });
+            }
+
+            if (allLabResults.length > 0) {
+              clinicalContext += `\n**Laboratory Results:**\n`;
+              allLabResults.slice(0, 10).forEach(lab => { // Show recent 10 lab results
+                clinicalContext += `- ${lab.dateTime ? lab.dateTime.split('T')[0] : 'Unknown date'}: ${lab.name} = ${lab.value}`;
+                if (lab.units) clinicalContext += ` ${lab.units}`;
+                if (lab.referenceRange) clinicalContext += ` (Ref: ${lab.referenceRange})`;
+                if (lab.flag) clinicalContext += ` [${lab.flag}]`;
+                clinicalContext += `\n`;
+              });
+            }
+
+            if (allTreatments.length > 0) {
+              clinicalContext += `\n**Current/Recent Treatments:**\n`;
+              allTreatments.slice(0, 10).forEach(treatment => { // Show recent 10 treatments
+                clinicalContext += `- ${treatment.drug}`;
+                if (treatment.status) clinicalContext += ` (Status: ${treatment.status})`;
+                if (treatment.rationale) clinicalContext += ` - ${treatment.rationale}`;
+                clinicalContext += `\n`;
+              });
+            }
+
+            if (patientInfo.alerts && patientInfo.alerts.length > 0) {
+              clinicalContext += `\n**Clinical Alerts:**\n`;
+              patientInfo.alerts.forEach(alert => {
+                clinicalContext += `- ${alert.severity?.toUpperCase()} Alert: ${alert.msg || 'No message'}`;
+                if (alert.type) clinicalContext += ` (Type: ${alert.type})`;
+                clinicalContext += `\n`;
+              });
+            }
+
+            clinicalContext += `\n**Instructions:** Analyze this complete clinical data to provide comprehensive medical insights. Generate charts and tables for trends, comparisons, and clinical correlations as clinically appropriate. Do not invent data - use only the information provided above.\n\n--------------------\n\n`;
+            
+            patientSummaryBlock = clinicalContext;
+            console.log("Complete patient data loaded successfully");
+          }
+        } catch (error) {
+          console.error("Failed to fetch patient data:", error);
+          // Continue without patient data but log the error
+        }
+      }
+
+      // Legacy support: Check for basic patient context in system messages
+      if (!patientSummaryBlock && messagesFromClient.length > 0 && messagesFromClient[0].role === 'system') {
         try {
           const patientData = JSON.parse(messagesFromClient[0].content);
           if (patientData.patient) {
@@ -214,22 +389,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const thinkMode = url.searchParams.get("think") === "true";
-    const model = thinkMode ? "o4-mini" : "gpt-4.1-mini";
-    
-    const finalSystemPrompt = patientSummaryBlock + baseSystemPrompt;
-    
+    // Update assistant instructions with patient context if available
     if (patientSummaryBlock) {
-      console.log("DEBUG: Patient Summary Block being prepended:\n", patientSummaryBlock);
-    } else {
-      console.log("DEBUG: No Patient Summary Block was generated.");
+      console.log("DEBUG: Patient Summary Block detected:\n", patientSummaryBlock);
+      // We'll add patient context as the first user message instead of system prompt
+      messagesFromClient.unshift({ role: "user", content: patientSummaryBlock });
     }
-    console.log("DEBUG: Final System Prompt being sent to AI (first 700 chars):\n", finalSystemPrompt.substring(0, 700));
-
-    const apiPayload = [
-      { role: "system" as const, content: finalSystemPrompt },
-      ...messagesFromClient.filter(m => m.role === "user" || m.role === "assistant")
-    ];
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -251,8 +416,14 @@ export async function GET(req: NextRequest) {
           return;
         }
 
-        console.log(`Routing to streamResponse with model: ${model}`);
-        await streamResponse(model, apiPayload, controller, requestAbortController.signal, isControllerClosedRef);
+        // Create or get assistant
+        const assistantId = await createOrGetAssistant();
+        
+        // Filter out system messages since assistant instructions are set at creation
+        const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
+        
+        console.log(`Creating assistant response with ID: ${assistantId}`);
+        await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, isControllerClosedRef);
         requestAbortController.signal.removeEventListener('abort', mainAbortListener);
       }
     });
