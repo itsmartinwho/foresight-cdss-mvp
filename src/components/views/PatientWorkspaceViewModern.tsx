@@ -363,59 +363,41 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
       {/* Patient Overview - Collapsible */}
       <Collapsible open={isPatientOverviewOpen} onOpenChange={setIsPatientOverviewOpen} className="border-b border-border/20 pb-6 pl-12">
-        {/* Patient Header */}
-        <div className="flex items-center gap-6">
-          <Avatar className="h-16 w-16 border-2 border-neon/30 shadow-lg">
+        {/* Patient Header - Always visible */}
+        <div className="flex items-start gap-6">
+          <Avatar className="h-16 w-16 border-2 border-neon/30 shadow-lg flex-shrink-0">
             <AvatarImage src={patient.photo} alt={patient.name} />
             <AvatarFallback className="text-2xl bg-neon/20 text-neon font-bold">
               {patient.name ? patient.name.charAt(0).toUpperCase() : "P"}
             </AvatarFallback>
           </Avatar>
           
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h1 className="text-step-3 font-bold text-foreground">{patient.name}</h1>
-                {!isPatientOverviewOpen && (
-                  <>
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="hover:text-neon transition-all duration-200 p-2 rounded-lg hover:bg-foreground/5"
-                      >
-                        <ChevronUp 
-                          className={cn(
-                            "h-5 w-5 text-muted-foreground hover:text-neon transition-all duration-300 ease-in-out",
-                            isPatientOverviewOpen ? "rotate-0" : "rotate-180"
-                          )} 
-                        />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <span className="text-sm text-muted-foreground font-normal">
-                      DOB: {formatDate(patient.dateOfBirth)}
-                    </span>
-                  </>
-                )}
-                {isPatientOverviewOpen && (
-                  <CollapsibleTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="hover:text-neon transition-all duration-200 p-2 rounded-lg hover:bg-foreground/5 ml-3"
-                    >
-                      <ChevronUp 
-                        className={cn(
-                          "h-5 w-5 text-muted-foreground hover:text-neon transition-all duration-300 ease-in-out",
-                          isPatientOverviewOpen ? "rotate-0" : "rotate-180"
-                        )} 
-                      />
-                    </Button>
-                  </CollapsibleTrigger>
-                )}
-              </div>
+          <div className="flex-1 min-w-0">
+            {/* Name and controls row */}
+            <div className="flex items-center gap-3 mb-4">
+              <h1 className="text-step-3 font-bold text-foreground">{patient.name}</h1>
+              
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="hover:text-neon transition-all duration-200 p-2 rounded-lg hover:bg-foreground/5"
+                >
+                  <ChevronUp 
+                    className={cn(
+                      "h-5 w-5 text-muted-foreground hover:text-neon transition-all duration-300 ease-in-out",
+                      isPatientOverviewOpen ? "rotate-0" : "rotate-180"
+                    )} 
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              
+              {!isPatientOverviewOpen && (
+                <span className="text-sm text-muted-foreground font-normal">
+                  DOB: {formatDate(patient.dateOfBirth)}
+                </span>
+              )}
             </div>
-            {isPatientOverviewOpen && <div className="mt-4"></div>}
 
             <CollapsibleContent className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden">
               <div className="transition-all duration-300 ease-in-out">
