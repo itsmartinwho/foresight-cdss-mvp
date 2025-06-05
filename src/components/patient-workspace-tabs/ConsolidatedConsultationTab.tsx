@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { FileText, Eye, X } from '@phosphor-icons/react';
@@ -243,34 +244,37 @@ export default function ConsolidatedConsultationTab({
         </CardContent>
       </Card>
 
-      {/* Transcript Panel - TODO: Create dedicated transcript viewer */}
-      {showTranscriptPanel && selectedEncounter?.transcript && (
-        <div className="fixed inset-0 z-50 bg-white/20 backdrop-blur-xl backdrop-saturate-150 flex items-center justify-center p-4">
-          <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20 z-10"
-              onClick={() => setShowTranscriptPanel(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <div className="pt-8 pb-4 border-b border-border/50">
-              <h2 className="text-xl font-semibold mb-2">Consultation Transcript</h2>
-              <p className="text-sm text-muted-foreground">
-                {new Date(selectedEncounter.scheduledStart).toLocaleDateString()} - {selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode}
-              </p>
-            </div>
-            <div className="flex-1 overflow-auto p-4">
-              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
-                  {selectedEncounter.transcript}
-                </pre>
+      {/* Transcript Panel - Portal-rendered to document body */}
+      {showTranscriptPanel && selectedEncounter?.transcript && 
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-white/20 backdrop-blur-xl backdrop-saturate-150 flex items-center justify-center p-4">
+            <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20 z-10"
+                onClick={() => setShowTranscriptPanel(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <div className="pt-8 pb-4 border-b border-border/50">
+                <h2 className="text-xl font-semibold mb-2">Consultation Transcript</h2>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(selectedEncounter.scheduledStart).toLocaleDateString()} - {selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode}
+                </p>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                  <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
+                    {selectedEncounter.transcript}
+                  </pre>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 } 
