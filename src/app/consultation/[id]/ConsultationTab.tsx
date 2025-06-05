@@ -566,7 +566,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         )}
 
       </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
+      <CardContent className="flex-grow overflow-y-auto p-4">
         {(selectedEncounter || editableTranscript || isTranscribing || isStartingNewConsultation) ? (
           <RichTextEditor
             ref={richTextEditorRef}
