@@ -627,7 +627,7 @@ export default function ConsultationPanel({
                                     handleClinicalPlan();
                                   }
                                 }}
-                                disabled={isDemoMode ? isDemoGeneratingPlan : (isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan)}
+                                disabled={isDemoMode || isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan}
                                 className="flex items-center gap-2"
                               >
                                 {(isGeneratingPlan || isDemoGeneratingPlan) ? (
