@@ -158,14 +158,14 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       { key: "firstName", header: "First Name", sortable: true, className: "w-[180px] truncate" },
       { key: "lastName", header: "Last Name", sortable: true, className: "w-[140px] truncate" },
       { key: "gender", header: "Gender", sortable: true, className: "w-[100px]" },
-      { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[180px]" },
+      { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[185px] min-w-[185px]" },
     ];
 
     const additionalColumns: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
       { key: "race", header: "Race", sortable: true, className: "w-[110px] truncate" },
       { key: "maritalStatus", header: "Marital Status", sortable: true, className: "w-[140px] truncate" },
       { key: "language", header: "Language", sortable: true, className: "w-[110px] truncate" },
-      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[140px]" },
+      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[145px] min-w-[145px]" },
       { key: "nextAppointment", header: "Next Appointment", sortable: true, className: "w-[180px] truncate" },
       { key: "reason", header: "General Reason", sortable: true, className: "w-[220px] truncate" },
     ];
