@@ -389,7 +389,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         </div>
 
         {/* Fixed Right Side Panel - New Consultation */}
-        <div className="fixed top-44 right-6 bottom-6 w-80 z-10">
+        <div className="fixed top-36 right-6 bottom-6 w-80 z-10">
           <div 
             className="relative h-full bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors overflow-hidden"
             onClick={() => setShowNewConsultModal(true)}
