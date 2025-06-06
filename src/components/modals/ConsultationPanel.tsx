@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
-import { X, Microphone as Mic, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
+import { X, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { format } from 'date-fns';
 import type { Patient, Encounter, Treatment } from '@/lib/types';
@@ -464,7 +464,7 @@ export default function ConsultationPanel({
 
           if (!startVoiceInputRef.current) {
             console.warn('[ConsultationPanel] startVoiceInputRef.current is null, cannot auto-start');
-            toast({ title: "Auto-start Warning", description: "Transcription function not ready. Please click 'Start Recording' manually.", variant: "destructive" });
+            toast({ title: "Auto-start Warning", description: "Transcription function not ready. Transcription will start automatically when ready.", variant: "destructive" });
             return;
           }
 
@@ -487,7 +487,7 @@ export default function ConsultationPanel({
             console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
           } catch (fallbackError) {
             console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
-            toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Please click 'Start Recording' manually.", variant: "destructive" });
+            toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Transcription will retry automatically.", variant: "destructive" });
           }
         }
       })();
@@ -586,9 +586,6 @@ export default function ConsultationPanel({
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
                           <div className="flex items-center gap-2">
-                            {!isDemoMode && !isTranscribing && (
-                              <Button variant="outline" size="sm" onClick={startVoiceInput} disabled={isGeneratingPlan || isSaving} className="gap-2"><Mic className="h-4 w-4" /> Start Recording</Button>
-                            )}
                             {!(isDemoMode && planGenerated) && (
                               <Button
                                 variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}

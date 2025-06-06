@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea was used, or a contentEditable div
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
-import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle } from '@phosphor-icons/react';
+import { FloppyDisk as Save, PauseCircle, PlayCircle } from '@phosphor-icons/react';
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import path
 import { Encounter, Patient, ClinicalOutputPackage, DifferentialDiagnosis } from '@/lib/types'; // Renamed Admission to Encounter
@@ -568,11 +568,6 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
             {transcriptChanged && !isTranscribing && (
               <Button variant="default" size="sm" onClick={handleManualSave}>
                 <Save className="h-4 w-4 mr-2" /> Save
-              </Button>
-            )}
-            {!isTranscribing && (selectedEncounter || isStartingNewConsultation) && (
-              <Button variant="ghost" size="icon" onClick={startTranscription} title="Start Transcription">
-                <Mic className="h-5 w-5" />
               </Button>
             )}
           </div>
