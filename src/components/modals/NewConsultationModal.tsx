@@ -234,7 +234,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
               ) : (
                 <div className="border rounded-md overflow-hidden">
                   <div className="relative border-b p-1">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-text-placeholder" />
                     <Input
                       placeholder="Search patient by name or ID..."
                       className="pl-10 text-step--1"
