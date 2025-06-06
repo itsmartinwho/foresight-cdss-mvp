@@ -208,14 +208,14 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
           <DialogTitle>Start New Consultation</DialogTitle>
         </DialogHeader>
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-2 mb-3">
             <TabsTrigger value="existing">Existing Patient</TabsTrigger>
             <TabsTrigger value="new">New Patient</TabsTrigger>
           </TabsList>
 
           {/* Existing patient tab */}
           <TabsContent value="existing">
-            <div className="space-y-4">
+            <div className="space-y-3">
               <label className="font-semibold text-step--1 flex items-center">
                 Select patient <span className="text-destructive">*</span>{errors.selectedPatient && <span className="text-destructive text-xs ml-2">Required field</span>}
               </label>
@@ -306,7 +306,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
 
           {/* New patient tab */}
           <TabsContent value="new">
-            <div className="space-y-3">
+            <div className="space-y-2">
               <p className="font-semibold text-step--1">Patient info</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
@@ -416,7 +416,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         </Tabs>
 
         {/* shared fields now handled inside tabs */}
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="flex justify-end gap-2 mt-3">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
