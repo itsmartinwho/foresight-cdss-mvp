@@ -151,7 +151,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         {/* Right Side Panel - New Consultation */}
         <div className="w-80 flex-shrink-0">
           <div 
-            className="h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
+            className="h-64 bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
             onClick={() => setShowNewConsultModal(true)}
           >
             <div className="text-center space-y-4">
