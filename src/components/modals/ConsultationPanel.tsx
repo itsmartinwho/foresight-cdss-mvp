@@ -111,19 +111,39 @@ export default function ConsultationPanel({
 
   const stopTranscription = useCallback(() => {
     if (isDemoMode) return;
-    
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      mediaRecorderRef.current.stop();
+    let stopped = false;
+    if (mediaRecorderRef.current) {
+      try {
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+          stopped = true;
+        }
+      } catch (e) {
+        // ignore
+      }
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => {
+          if (track.readyState === 'live') {
+            track.stop();
+          }
+        });
+        stopped = true;
+      }
       mediaRecorderRef.current = null;
     }
-    
+    if (socketRef.current) {
+      try {
+        if (socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.close();
+        }
+      } catch (e) {}
+      socketRef.current = null;
+    }
     setIsTranscribing(false);
     setIsPaused(false);
+    if (stopped) {
+      console.log('[Transcription] Cleaned up media recorder and tracks.');
+    }
   }, [isDemoMode]);
 
   const handleClose = useCallback(async () => {

@@ -101,17 +101,37 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const [priorAuthDetails, setPriorAuthDetails] = useState<any>(null);
 
   const stopTranscription = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      mediaRecorderRef.current.stop();
+    let stopped = false;
+    if (mediaRecorderRef.current) {
+      try {
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+          stopped = true;
+        }
+      } catch (e) {}
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => {
+          if (track.readyState === 'live') {
+            track.stop();
+          }
+        });
+        stopped = true;
+      }
       mediaRecorderRef.current = null;
+    }
+    if (socketRef.current) {
+      try {
+        if (socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.close();
+        }
+      } catch (e) {}
+      socketRef.current = null;
     }
     setIsTranscribing(false);
     setIsPaused(false);
+    if (stopped) {
+      console.log('[Transcription] Cleaned up media recorder and tracks.');
+    }
   }, []);
 
   useEffect(() => {
