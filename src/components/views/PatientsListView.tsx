@@ -376,8 +376,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           </TabsList>
         </div>
 
-        {/* Main Content Area with glass background */}
-        <div className="flex-1 overflow-y-auto pr-96 bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6">
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto pr-96">
           {/* Main Content - Tables */}
           <TabsContent value="allPatients" className="mt-0 h-full">
             {renderAllPatientsTable()}
