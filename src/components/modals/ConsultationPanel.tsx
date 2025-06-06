@@ -287,7 +287,13 @@ export default function ConsultationPanel({
     }
   }, [isDemoMode, shouldCreateEncounterRef, encounter, isCreating, createEncounter]);
 
-
+  // Demo mode: Watch for animated transcript updates during demo
+  useEffect(() => {
+    if (isDemoMode && isOpen && initialDemoTranscript !== undefined) {
+      // Update transcript text when animated content changes
+      setTranscriptText(initialDemoTranscript);
+    }
+  }, [isDemoMode, isOpen, initialDemoTranscript]);
 
   const handleClose = useCallback(async () => {
     if (isDemoMode) {

@@ -69,6 +69,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       ],
       content,
       editable: !disabled,
+      immediatelyRender: false,
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
         onContentChange?.(html);
@@ -99,6 +100,17 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         }
       },
     }));
+
+    // Update editor content when content prop changes (essential for animated transcript)
+    useEffect(() => {
+      if (editor && content !== undefined) {
+        const currentContent = editor.getHTML();
+        // Only update if content actually changed to avoid unnecessary re-renders
+        if (currentContent !== content) {
+          editor.commands.setContent(content, false); // false = don't add to history
+        }
+      }
+    }, [editor, content]);
 
     if (!editor) {
       return null;
