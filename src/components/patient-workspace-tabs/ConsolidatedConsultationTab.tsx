@@ -249,7 +249,7 @@ export default function ConsolidatedConsultationTab({
       {/* Transcript Panel - Portal-rendered to document body */}
       {showTranscriptPanel && selectedEncounter?.transcript && 
         createPortal(
-          <div className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center">
             <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
               <Button 
                 variant="ghost" 

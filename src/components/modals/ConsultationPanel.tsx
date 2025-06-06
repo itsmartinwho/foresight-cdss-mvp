@@ -490,7 +490,7 @@ export default function ConsultationPanel({
 
   const panelContent = (
     <div 
-      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center"
       onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
     >
       <div className="glass-dense rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
