@@ -484,7 +484,7 @@ export default function ConsultationPanel({
 
   const panelContent = (
     <div 
-      className="fixed inset-0 z-[9999] bg-white/20 backdrop-blur-xl backdrop-saturate-150 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-black/20 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => {
         // Discard when clicking the backdrop (outside the modal)
         if (e.target === e.currentTarget) {
@@ -496,7 +496,7 @@ export default function ConsultationPanel({
         }
       }}
     >
-      <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Discard (X) button */}
         <Button 
           variant="ghost" 
