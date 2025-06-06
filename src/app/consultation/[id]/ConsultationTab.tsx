@@ -588,7 +588,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
               minHeight="300px"
               className="h-full"
             />
-            {isTranscribing && (
+            {(isTranscribing || isPaused) && (
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                 <AudioWaveform
                   isRecording={isTranscribing}

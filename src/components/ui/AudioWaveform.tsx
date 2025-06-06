@@ -200,7 +200,8 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
     }
   }, [isRecording, isPaused, barCount, barColor]);
 
-  if (!isRecording) return null;
+  // Show the component when recording OR when paused (active transcription session)
+  if (!isRecording && !isPaused) return null;
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md border border-white/20 rounded-full shadow-lg ${className}`}>
