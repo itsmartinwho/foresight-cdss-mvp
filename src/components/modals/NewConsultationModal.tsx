@@ -219,42 +219,44 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
               <label className="font-semibold text-step--1 flex items-center">
                 Select patient <span className="text-destructive">*</span>{errors.selectedPatient && <span className="text-destructive text-xs ml-2">Required field</span>}
               </label>
-              {selectedPatient ? (
-                <div className="border rounded-md px-3 py-2 flex justify-between items-center bg-muted/20">
-                  <span className="text-step--1">{selectedPatient.name || `${selectedPatient.firstName ?? ''} ${selectedPatient.lastName ?? ''}`.trim() || selectedPatient.id}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0" 
-                    onClick={() => setSelectedPatient(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="border rounded-md overflow-hidden">
-                  <div className="relative border-b p-1">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-text-placeholder" />
-                    <Input
-                      placeholder="Search patient by name or ID..."
-                      className="pl-10 text-step--1"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+              <div className="min-h-[180px]">
+                {selectedPatient ? (
+                  <div className="border rounded-md px-3 py-2 flex justify-between items-center bg-muted/20">
+                    <span className="text-step--1">{selectedPatient.name || `${selectedPatient.firstName ?? ''} ${selectedPatient.lastName ?? ''}`.trim() || selectedPatient.id}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0" 
+                      onClick={() => setSelectedPatient(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {filteredPatients.map((p) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setSelectedPatient(p)}
-                        className="px-3 py-2 cursor-pointer hover:bg-muted/50 text-step--1 text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]"
-                      >
-                        {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
-                      </div>
-                    ))}
+                ) : (
+                  <div className="border rounded-md overflow-hidden">
+                    <div className="relative border-b p-1">
+                      <MagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-text-placeholder" />
+                      <Input
+                        placeholder="Search patient by name or ID..."
+                        className="pl-10 text-step--1"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto">
+                      {filteredPatients.map((p) => (
+                        <div
+                          key={p.id}
+                          onClick={() => setSelectedPatient(p)}
+                          className="px-3 py-2 cursor-pointer hover:bg-muted/50 text-step--1 text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]"
+                        >
+                          {p.name || `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || p.id}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               {/* Reason */}
               <div>
                 <Label htmlFor="consultReason" className="font-semibold text-step--1">Reason for encounter</Label>
