@@ -11,7 +11,7 @@ export type DemoStage =
   | 'finished';
 
 export class DemoStateService {
-  private static readonly DEMO_STORAGE_KEY = 'hasDemoRun';
+  private static readonly DEMO_STORAGE_KEY = 'hasDemoRun_v2'; // Changed to reset demo for all users
   
   static hasDemoRun(): boolean {
     if (typeof window === 'undefined') return false;
