@@ -437,51 +437,33 @@ export default function ConsultationPanel({
       autoStartAttemptedRef.current.add(encounterId);
       setStarted(true);
       
-      // Clear any existing timeout
-      if (autoStartTimeoutRef.current) {
-        clearTimeout(autoStartTimeoutRef.current);
-      }
-      
-      // Auto-start transcription after encounter is created
-      console.log('[ConsultationPanel] Setting setTimeout for auto-start...');
-      autoStartTimeoutRef.current = setTimeout(async () => {
+      // Attempt to start transcription immediately
+      (async () => {
+        console.log('[ConsultationPanel] Attempting immediate auto-start of transcription');
         try {
-          console.log('[ConsultationPanel] TIMEOUT CALLBACK EXECUTING - Auto-start transcription callback fired');
-          console.log('[ConsultationPanel] Current state in timeout:', {
-            isTranscribing: isTranscribing,
-            hasStartVoiceInputRef: !!startVoiceInputRef.current,
-            startVoiceInputRef: startVoiceInputRef.current?.toString().substring(0, 100) + '...',
-            apiKey: !!process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY,
-            encounterId: encounterId
-          });
-          
-          // Robust checks before starting
           if (isTranscribing) {
             console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
             return;
           }
-          
+
           if (!startVoiceInputRef.current) {
             console.warn('[ConsultationPanel] startVoiceInputRef.current is null, cannot auto-start');
             toast({ title: "Auto-start Warning", description: "Transcription function not ready. Please click 'Start Recording' manually.", variant: "destructive" });
             return;
           }
-          
+
           const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
           if (!apiKey) {
             console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
             toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
             return;
           }
-          
+
           console.log('[ConsultationPanel] All checks passed, calling startVoiceInput via ref...');
           await startVoiceInputRef.current();
           console.log('[ConsultationPanel] Auto-start transcription successful');
-          
         } catch (error) {
           console.error('[ConsultationPanel] Auto-start transcription failed via ref:', error);
-          console.error('[ConsultationPanel] Error details:', error?.message, error?.stack);
-          
           // Fallback to direct function call
           try {
             console.log('[ConsultationPanel] Attempting fallback to direct function call...');
@@ -489,21 +471,12 @@ export default function ConsultationPanel({
             console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
           } catch (fallbackError) {
             console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
-            console.error('[ConsultationPanel] Fallback error details:', fallbackError?.message, fallbackError?.stack);
             toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Please click 'Start Recording' manually.", variant: "destructive" });
           }
         }
-      }, 1000); // Even longer delay to ensure everything is ready
-      
-      return () => {
-        if (autoStartTimeoutRef.current) {
-          console.log('[ConsultationPanel] Cleaning up auto-start timeout...');
-          clearTimeout(autoStartTimeoutRef.current);
-          autoStartTimeoutRef.current = null;
-        }
-      };
+      })();
     }
-  }, [isDemoMode, encounter, started, isTranscribing, isOpen, toast]);
+  }, [isDemoMode, encounter, isOpen, toast]);
   
   useEffect(() => {
     if (!isOpen) return;
