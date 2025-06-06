@@ -260,7 +260,11 @@ export default function ConsultationPanel({
       shouldCreateEncounterRef.current = !isDemoMode;
       
       if (isDemoMode) {
-        setTranscriptText(initialDemoTranscript || '');
+        // In demo mode, transcript is managed by animation - don't override it
+        // Only set it if we're not in the animation stage
+        if (initialDemoTranscript && (!transcriptText || transcriptText.length === 0)) {
+          setTranscriptText(initialDemoTranscript);
+        }
         setDiagnosisText(demoDiagnosis || '');
         setTreatmentText(demoTreatment || '');
         setStarted(true);
@@ -293,6 +297,13 @@ export default function ConsultationPanel({
       createEncounter();
     }
   }, [isDemoMode, shouldCreateEncounterRef, encounter, isCreating, createEncounter]);
+
+  // Update transcript text during demo animation
+  useEffect(() => {
+    if (isDemoMode && initialDemoTranscript) {
+      setTranscriptText(initialDemoTranscript);
+    }
+  }, [isDemoMode, initialDemoTranscript]);
 
   const handleClose = useCallback(async () => {
     if (isDemoMode) {

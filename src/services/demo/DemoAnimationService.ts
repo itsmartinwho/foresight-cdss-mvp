@@ -1,5 +1,5 @@
 // Demo Animation Service - Handles all demo animations and timings
-export const TRANSCRIPT_ANIMATION_INTERVAL = 1200; 
+export const TRANSCRIPT_ANIMATION_INTERVAL = 400; 
 export const CLINICAL_PLAN_SIMULATION_DELAY = 200; 
 
 export class DemoAnimationService {
@@ -17,18 +17,22 @@ export class DemoAnimationService {
       return;
     }
 
+    console.log(`Starting transcript animation with ${transcriptLines.length} lines`);
     this.clearTranscriptAnimation();
     
     let currentIndex = 1;
     let animatedText = transcriptLines[0] || '';
+    console.log(`Animation line 0/${transcriptLines.length}: "${animatedText.substring(0, 50)}..."`);
     onLineUpdate(animatedText);
 
     this.transcriptIntervalId = setInterval(() => {
       if (currentIndex < transcriptLines.length) {
         animatedText += '\n' + transcriptLines[currentIndex];
+        console.log(`Animation line ${currentIndex}/${transcriptLines.length}: "${transcriptLines[currentIndex].substring(0, 50)}..."`);
         onLineUpdate(animatedText);
         currentIndex++;
       } else {
+        console.log('Transcript animation completed');
         this.clearTranscriptAnimation();
         onComplete();
       }
