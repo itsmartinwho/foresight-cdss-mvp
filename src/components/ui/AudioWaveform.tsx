@@ -35,66 +35,80 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
   const animationRef = useRef<number>();
   const audioContextRef = useRef<AudioContext>();
   const analyserRef = useRef<AnalyserNode>();
+  const sourceRef = useRef<MediaStreamAudioSourceNode>();
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
 
+  // Initialize audio context when we have a media stream
   useEffect(() => {
     const initAudio = async () => {
-      if (isRecording && !isPaused && mediaStream && !isInitialized) {
-        try {
-          // Use the provided media stream
-          setHasPermission(true);
+      if (!isRecording || isPaused || !mediaStream || isInitialized) {
+        console.log('AudioWaveform: Skipping init - isRecording:', isRecording, 'isPaused:', isPaused, 'hasMediaStream:', !!mediaStream, 'isInitialized:', isInitialized);
+        return;
+      }
 
-          // Create audio context and analyser
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          audioContextRef.current = audioContext;
-
-          const analyser = audioContext.createAnalyser();
-          analyser.fftSize = 256;
-          analyser.smoothingTimeConstant = 0.8;
-          analyserRef.current = analyser;
-
-          const source = audioContext.createMediaStreamSource(mediaStream);
-          source.connect(analyser);
-
-          setIsInitialized(true);
-          console.log('AudioWaveform: Audio context initialized with existing stream');
-        } catch (error) {
-          console.error('AudioWaveform: Error setting up audio analysis:', error);
-          setHasPermission(false);
-        }
-      } else if ((!isRecording || isPaused) && isInitialized) {
-        // Pause the animation but keep the audio context for resume
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
+      try {
+        console.log('AudioWaveform: Initializing with mediaStream:', mediaStream);
+        console.log('AudioWaveform: MediaStream tracks:', mediaStream.getTracks());
         
-        // Only clean up completely when stopping
-        if (!isRecording) {
-          if (audioContextRef.current) {
-            audioContextRef.current.close();
-          }
-          setIsInitialized(false);
-          console.log('AudioWaveform: Audio context closed');
+        // Check if we have audio tracks
+        const audioTracks = mediaStream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          console.warn('AudioWaveform: No audio tracks found in mediaStream');
+          return;
         }
+
+        console.log('AudioWaveform: Found audio tracks:', audioTracks);
+
+        // Create audio context
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = audioContext;
+
+        // Create analyser
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.3; // Reduced for more responsive animation
+        analyserRef.current = analyser;
+
+        // Create source from media stream
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        sourceRef.current = source;
+        source.connect(analyser);
+
+        setHasPermission(true);
+        setIsInitialized(true);
+        console.log('AudioWaveform: Audio context and analyser setup complete');
+      } catch (error) {
+        console.error('AudioWaveform: Error setting up audio analysis:', error);
+        setHasPermission(false);
       }
     };
 
     initAudio();
 
+    // Cleanup function
     return () => {
-      // Cleanup on unmount
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (!isRecording && audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        console.log('AudioWaveform: Cleaning up audio context');
+        if (sourceRef.current) {
+          sourceRef.current.disconnect();
+        }
+        audioContextRef.current.close();
+        setIsInitialized(false);
       }
     };
   }, [isRecording, isPaused, mediaStream, isInitialized]);
 
+  // Start/stop animation based on recording state
   useEffect(() => {
     if (!isRecording || isPaused || !isInitialized || !analyserRef.current || !canvasRef.current) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = undefined;
+      }
       return;
     }
 
@@ -106,10 +120,24 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
+    console.log('AudioWaveform: Starting animation loop, buffer length:', bufferLength);
+
     const draw = () => {
+      if (!isRecording || isPaused) {
+        console.log('AudioWaveform: Stopping animation - recording stopped or paused');
+        return;
+      }
+
       animationRef.current = requestAnimationFrame(draw);
 
+      // Get frequency data
       analyser.getByteFrequencyData(dataArray);
+
+      // Calculate average volume for debugging
+      const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+      if (average > 1) { // Only log when there's actual audio
+        console.log('AudioWaveform: Audio level average:', average);
+      }
 
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -123,7 +151,8 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
       // Draw bars
       for (let i = 0; i < barCount; i++) {
         const dataIndex = Math.floor((i / barCount) * bufferLength);
-        const barHeight = Math.max(2, (dataArray[dataIndex] / 255) * canvas.height * 0.7);
+        const value = dataArray[dataIndex];
+        const barHeight = Math.max(3, (value / 255) * canvas.height * 0.8);
         
         const x = startX + i * (barWidth + barSpacing);
         const y = (canvas.height - barHeight) / 2;
@@ -133,14 +162,17 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
       }
     };
 
+    // Start animation
+    console.log('AudioWaveform: Starting draw loop');
     draw();
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = undefined;
       }
     };
-  }, [isRecording, isPaused, isInitialized, barCount, barColor]);
+  }, [isRecording, isPaused, isInitialized, barCount, barColor, height]);
 
   // Draw idle state when not recording or paused
   useEffect(() => {
@@ -160,7 +192,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
     const startX = (canvas.width - totalBarsWidth) / 2;
     const minBarHeight = 3;
 
-    ctx.fillStyle = isPaused ? `${barColor}80` : `${barColor}40`; // More transparent when idle
+    ctx.fillStyle = isPaused ? `${barColor}80` : `${barColor}40`;
     for (let i = 0; i < barCount; i++) {
       const x = startX + i * (barWidth + barSpacing);
       const y = (canvas.height - minBarHeight) / 2;

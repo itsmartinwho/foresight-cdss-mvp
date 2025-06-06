@@ -107,6 +107,7 @@ export default function ConsultationPanel({
   const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
   
   // New state for confirmation dialog
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
@@ -133,6 +134,10 @@ export default function ConsultationPanel({
       if (mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop());
       mediaRecorderRef.current = null;
+    }
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
     }
     if (socketRef.current) {
       if (socketRef.current.readyState === WebSocket.OPEN) socketRef.current.close();
@@ -262,6 +267,7 @@ export default function ConsultationPanel({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (!isOpen) return stream.getTracks().forEach(track => track.stop());
 
+      audioStreamRef.current = stream; // Store the original stream for waveform
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const mediaRecorder = mediaRecorderRef.current;
       
@@ -611,7 +617,7 @@ export default function ConsultationPanel({
                               <AudioWaveform
                                 isRecording={isTranscribing}
                                 isPaused={isPaused}
-                                mediaStream={mediaRecorderRef.current?.stream || null}
+                                mediaStream={audioStreamRef.current}
                                 onPause={pauseTranscription}
                                 onResume={resumeTranscription}
                                 onStop={stopTranscription}

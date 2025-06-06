@@ -83,6 +83,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const richTextEditorRef = useRef<RichTextEditorRef>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Added mediaRecorderRef
   const socketRef = useRef<WebSocket | null>(null); // Added socketRef for consistency with original file
+  const audioStreamRef = useRef<MediaStream | null>(null); // Store original audio stream for waveform
   const isSavingRef = useRef(false); // Track save state to prevent race conditions
 
   const encounterStateForAutoSaveRef = useRef<{
@@ -119,6 +120,14 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         stopped = true;
       }
       mediaRecorderRef.current = null;
+    }
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => {
+        if (track.readyState === 'live') {
+          track.stop();
+        }
+      });
+      audioStreamRef.current = null;
     }
     if (socketRef.current) {
       try {
@@ -295,6 +304,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream; // Store original stream for waveform
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const wsInstance = new WebSocket(
         'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
@@ -588,7 +598,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
                 <AudioWaveform
                   isRecording={isTranscribing}
                   isPaused={isPaused}
-                  mediaStream={mediaRecorderRef.current?.stream || null}
+                  mediaStream={audioStreamRef.current}
                   onPause={pauseTranscription}
                   onResume={startTranscription}
                   onStop={stopTranscriptionAndSave}
