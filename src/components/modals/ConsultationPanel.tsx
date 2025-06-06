@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
 import { X, Microphone as Mic, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
 import { format } from 'date-fns';
-import type { Patient, Encounter } from '@/lib/types';
+import type { Patient, Encounter, Treatment } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -133,24 +133,49 @@ export default function ConsultationPanel({
       return;
     }
     if (isSaving) return;
-
+  
     setIsSaving(true);
     try {
-      const encounterUpdatePayload = {
-        transcript: transcriptText.trim() || undefined,
-        diagnosis: diagnosisText.trim() || undefined,
-        treatment: treatmentText.trim() || undefined,
-        soapNote: (transcriptText || diagnosisText || treatmentText) 
-          ? `S: ${transcriptText || 'See transcript'}\nO: Clinical examination performed\nA: ${diagnosisText || 'See diagnosis'}\nP: ${treatmentText || 'See treatment plan'}`
-          : undefined,
-      };
+      if (!encounter) throw new Error("Encounter not available for saving.");
+  
+      const updatePromises = [];
+      const compositeEncounterId = `${patient.id}_${encounter.encounterIdentifier}`;
+  
+      const finalTranscript = transcriptText.trim();
+      if (finalTranscript) {
+        updatePromises.push(supabaseDataService.updateEncounterTranscript(patient.id, compositeEncounterId, finalTranscript));
+      }
       
-      await supabaseDataService.updateEncounterDetails(patient.id, encounter.id, encounterUpdatePayload);
+      const finalDiagnosis = diagnosisText.trim();
+      if (finalDiagnosis) {
+        updatePromises.push(supabaseDataService.savePrimaryDiagnosis(patient.id, encounter.encounterIdentifier, finalDiagnosis));
+      }
+      
+      const finalTreatmentText = treatmentText.trim();
+      if (finalTreatmentText) {
+        const treatments: Treatment[] = [{
+          drug: finalTreatmentText,
+          status: 'prescribed',
+          rationale: 'Physician\'s assessment during consultation.'
+        }];
+        updatePromises.push(supabaseDataService.updateEncounterTreatments(patient.id, compositeEncounterId, treatments));
+      }
+      
+      const soapNote = (finalTranscript || finalDiagnosis || finalTreatmentText) 
+          ? `S: ${finalTranscript || 'See transcript'}\nO: Clinical examination performed\nA: ${finalDiagnosis || 'See diagnosis'}\nP: ${finalTreatmentText || 'See treatment plan'}`
+          : undefined;
+      
+      if (soapNote) {
+        updatePromises.push(supabaseDataService.updateEncounterSOAPNote(patient.id, compositeEncounterId, soapNote));
+      }
+      
+      await Promise.all(updatePromises);
       
       toast({ title: "Consultation Saved" });
       onClose();
     } catch (error) {
-      toast({ title: "Save Failed", variant: "destructive" });
+      console.error("Failed to save consultation:", error);
+      toast({ title: "Save Failed", description: error instanceof Error ? error.message : "An unknown error occurred.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }

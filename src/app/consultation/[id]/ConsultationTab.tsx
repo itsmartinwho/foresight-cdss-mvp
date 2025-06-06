@@ -495,7 +495,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [isStartingNewConsultation, isTranscribing, selectedEncounter]);
+  }, [isStartingNewConsultation, isTranscribing, selectedEncounter, startTranscription]);
 
   // JSX for rendering will be added here
   return (
