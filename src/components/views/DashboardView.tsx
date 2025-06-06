@@ -96,19 +96,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       </div>
 
       {/* Main Content Area with glass background */}
-      <div className="relative flex-1 overflow-y-auto pr-96 bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6 overflow-hidden">
-        {/* Background Image with transparency for main content */}
-        <div 
-          className="absolute inset-0 rounded-xl"
-          style={{
-            backgroundImage: `url(${SIDE_PANEL_CONFIG.backgroundImage})`,
-            backgroundSize: SIDE_PANEL_CONFIG.backgroundSize,
-            backgroundPosition: SIDE_PANEL_CONFIG.backgroundPosition,
-            backgroundRepeat: SIDE_PANEL_CONFIG.backgroundRepeat,
-            opacity: SIDE_PANEL_CONFIG.opacity * 0.7, // Slightly less opaque than side panel
-            zIndex: -1,
-          }}
-        />
+      <div className="flex-1 overflow-y-auto pr-96 bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6">
         {/* Main Content - Table */}
         {upcomingAppointments.length > 0 ? (
           <Table className="mobile-card:block sm:table text-step-0">
