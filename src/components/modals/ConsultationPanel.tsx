@@ -65,6 +65,19 @@ export default function ConsultationPanel({
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false,
 }: ConsultationPanelProps) {
+  // Debug demo mode detection
+  useEffect(() => {
+    if (isOpen) {
+      console.log('[ConsultationPanel] Demo mode detection:', {
+        isDemoMode,
+        patientId: patient?.id,
+        hasInitialTranscript: !!initialDemoTranscript,
+        hasDemoDiagnosis: !!demoDiagnosis,
+        hasDemoTreatment: !!demoTreatment,
+        hasOnClickHandler: !!onDemoClinicalPlanClick
+      });
+    }
+  }, [isOpen, isDemoMode, patient?.id, initialDemoTranscript, demoDiagnosis, demoTreatment, onDemoClinicalPlanClick]);
   const { toast } = useToast();
   const demoState = useDemo();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
@@ -310,6 +323,7 @@ export default function ConsultationPanel({
   // Update ref whenever startVoiceInput changes
   useEffect(() => {
     startVoiceInputRef.current = startVoiceInput;
+    console.log('[ConsultationPanel] Updated startVoiceInputRef, function available:', !!startVoiceInput);
   }, [startVoiceInput]);
 
   const createEncounter = useCallback(async () => {
@@ -398,17 +412,59 @@ export default function ConsultationPanel({
   // Single effect to handle encounter creation -> start transcription sequence
   useEffect(() => {
     if (!isDemoMode && encounter && !started && !isTranscribing && isOpen) {
-      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounter.id);
+      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounter.id, {
+        isDemoMode,
+        encounter: !!encounter,
+        started,
+        isTranscribing,
+        isOpen,
+        hasVoiceInputRef: !!startVoiceInputRef.current,
+        apiKey: !!process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY
+      });
       setStarted(true);
+      
       // Auto-start transcription after encounter is created
-      const timer = setTimeout(() => {
-        if (!isTranscribing && startVoiceInputRef.current) {
-          startVoiceInputRef.current();
+      const timer = setTimeout(async () => {
+        console.log('[ConsultationPanel] Attempting auto-start transcription...');
+        
+        // Robust checks before starting
+        if (isTranscribing) {
+          console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
+          return;
         }
-      }, 300);
+        
+        if (!startVoiceInputRef.current) {
+          console.warn('[ConsultationPanel] startVoiceInputRef.current is null, cannot auto-start');
+          return;
+        }
+        
+        const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+        if (!apiKey) {
+          console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
+          toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+          return;
+        }
+        
+                 try {
+           console.log('[ConsultationPanel] Calling startVoiceInput via ref...');
+           await startVoiceInputRef.current();
+           console.log('[ConsultationPanel] Auto-start transcription successful');
+         } catch (error) {
+           console.error('[ConsultationPanel] Auto-start transcription failed via ref, trying direct call:', error);
+           // Fallback to direct function call
+           try {
+             await startVoiceInput();
+             console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
+           } catch (fallbackError) {
+             console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
+             toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Please click 'Start Recording' manually.", variant: "destructive" });
+           }
+         }
+      }, 500); // Slightly longer delay to ensure ref is set
+      
       return () => clearTimeout(timer);
     }
-  }, [isDemoMode, encounter, started, isTranscribing, isOpen]);
+  }, [isDemoMode, encounter, started, isTranscribing, isOpen, toast, startVoiceInput]);
   
   useEffect(() => {
     if (!isOpen) return;
