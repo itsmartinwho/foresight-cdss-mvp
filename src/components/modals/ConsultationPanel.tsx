@@ -129,25 +129,45 @@ export default function ConsultationPanel({
   }, []);
 
   const stopTranscription = useCallback((resetPaused: boolean = true) => {
-    if (isDemoMode) return;
+    console.log("ConsultationPanel stopTranscription called with resetPaused:", resetPaused, "current states:", { isTranscribing, isPaused });
+    if (isDemoMode) {
+      console.log("ConsultationPanel stopTranscription: Skipping in demo mode");
+      return;
+    }
     if (mediaRecorderRef.current) {
-      if (mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop());
+      if (mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        console.log("ConsultationPanel: MediaRecorder stopped");
+      }
+      mediaRecorderRef.current.stream?.getTracks().forEach(track => {
+        track.stop();
+        console.log("ConsultationPanel: Media stream track stopped");
+      });
       mediaRecorderRef.current = null;
     }
     if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log("ConsultationPanel: Audio stream track stopped");
+      });
       audioStreamRef.current = null;
     }
     if (socketRef.current) {
-      if (socketRef.current.readyState === WebSocket.OPEN) socketRef.current.close();
+      if (socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.close();
+        console.log("ConsultationPanel: WebSocket closed");
+      }
       socketRef.current = null;
     }
     setIsTranscribing(false);
+    console.log("ConsultationPanel: setIsTranscribing(false) called");
     if (resetPaused) {
       setIsPaused(false);
+      console.log("ConsultationPanel: setIsPaused(false) called because resetPaused is true");
+    } else {
+      console.log("ConsultationPanel: isPaused state preserved because resetPaused is false");
     }
-  }, [isDemoMode]);
+  }, [isDemoMode, isTranscribing, isPaused]);
 
   const handleSaveAndClose = useCallback(async () => {
     stopTranscription(true); // Reset paused state when saving and closing
@@ -247,18 +267,27 @@ export default function ConsultationPanel({
   }, [isPaused]);
 
   const pauseTranscription = useCallback(() => {
+    console.log("ConsultationPanel pauseTranscription called - current states:", { isTranscribing, isPaused });
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
+      console.log("ConsultationPanel: Transcription paused - mediaRecorder paused, isPaused set to true");
+    } else {
+      console.log("ConsultationPanel pauseTranscription: mediaRecorder not in recording state:", mediaRecorderRef.current?.state);
     }
-  }, []);
+  }, [isTranscribing, isPaused]);
 
   const resumeTranscription = useCallback(() => {
+    console.log("ConsultationPanel resumeTranscription called - current states:", { isTranscribing, isPaused });
     if (mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
+      setIsTranscribing(true); // Ensure we're in transcribing state
+      console.log("ConsultationPanel: Transcription resumed - mediaRecorder resumed, isPaused set to false, isTranscribing set to true");
+    } else {
+      console.log("ConsultationPanel resumeTranscription: mediaRecorder not in paused state:", mediaRecorderRef.current?.state);
     }
-  }, []);
+  }, [isTranscribing, isPaused]);
 
   const startVoiceInput = useCallback(async () => {
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;

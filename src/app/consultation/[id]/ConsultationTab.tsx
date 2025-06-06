@@ -103,14 +103,18 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const [priorAuthDetails, setPriorAuthDetails] = useState<any>(null);
 
   const stopTranscription = useCallback((resetPaused: boolean = true) => {
+    console.log("stopTranscription called with resetPaused:", resetPaused, "current states:", { isTranscribing, isPaused });
     let stopped = false;
     if (mediaRecorderRef.current) {
       try {
         if (mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
           stopped = true;
+          console.log("MediaRecorder stopped");
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log("Error stopping mediaRecorder:", e);
+      }
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => {
           if (track.readyState === 'live') {
@@ -118,6 +122,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           }
         });
         stopped = true;
+        console.log("Media stream tracks stopped");
       }
       mediaRecorderRef.current = null;
     }
@@ -128,23 +133,31 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         }
       });
       audioStreamRef.current = null;
+      console.log("Audio stream tracks stopped");
     }
     if (socketRef.current) {
       try {
         if (socketRef.current.readyState === WebSocket.OPEN) {
           socketRef.current.close();
+          console.log("WebSocket closed");
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log("Error closing WebSocket:", e);
+      }
       socketRef.current = null;
     }
     setIsTranscribing(false);
+    console.log("setIsTranscribing(false) called");
     if (resetPaused) {
       setIsPaused(false);
+      console.log("setIsPaused(false) called because resetPaused is true");
+    } else {
+      console.log("isPaused state preserved because resetPaused is false");
     }
     if (stopped) {
       console.log('[Transcription] Cleaned up media recorder and tracks.');
     }
-  }, []);
+  }, [isTranscribing, isPaused]);
 
   useEffect(() => {
     // Stop any active transcription when the selected encounter changes or is cleared
@@ -294,13 +307,9 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         return;
     }
     
-    if (isPaused) {
-       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
-        mediaRecorderRef.current.resume();
-        setIsPaused(false);
-        setIsTranscribing(true);
-        console.log("Resumed transcription");
-      }
+    // Don't handle resume here - that's handled by resumeTranscription function
+    if (isPaused || isTranscribing) {
+      console.log("startTranscription: Already transcribing or paused, ignoring start request");
       return;
     }
 
@@ -398,10 +407,25 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   };
 
   const pauseTranscription = () => {
+    console.log("pauseTranscription called - current states:", { isTranscribing, isPaused });
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
-      console.log("Transcription paused.");
+      console.log("Transcription paused - mediaRecorder paused, isPaused set to true");
+    } else {
+      console.log("pauseTranscription: mediaRecorder not in recording state:", mediaRecorderRef.current?.state);
+    }
+  };
+
+  const resumeTranscription = () => {
+    console.log("resumeTranscription called - current states:", { isTranscribing, isPaused });
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
+      mediaRecorderRef.current.resume();
+      setIsPaused(false);
+      setIsTranscribing(true); // Ensure we're in transcribing state
+      console.log("Transcription resumed - mediaRecorder resumed, isPaused set to false, isTranscribing set to true");
+    } else {
+      console.log("resumeTranscription: mediaRecorder not in paused state:", mediaRecorderRef.current?.state);
     }
   };
 
@@ -597,7 +621,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
                 isPaused={isPaused}
                 mediaStream={audioStreamRef.current}
                 onPause={pauseTranscription}
-                onResume={startTranscription}
+                onResume={resumeTranscription}
                 onStop={stopTranscriptionAndSave}
               />
             </div>

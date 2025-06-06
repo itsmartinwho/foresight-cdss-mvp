@@ -201,7 +201,13 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
   }, [isRecording, isPaused, barCount, barColor]);
 
   // Show the component when recording OR when paused (active transcription session)
-  if (!isRecording && !isPaused) return null;
+  console.log('AudioWaveform render decision:', { isRecording, isPaused, shouldHide: !isRecording && !isPaused });
+  if (!isRecording && !isPaused) {
+    console.log('AudioWaveform: Returning null because isRecording=false AND isPaused=false');
+    return null;
+  }
+
+  console.log('AudioWaveform: Rendering component, isRecording:', isRecording, 'isPaused:', isPaused);
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md border border-white/20 rounded-full shadow-lg ${className}`}>
