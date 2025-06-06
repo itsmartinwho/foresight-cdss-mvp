@@ -1,6 +1,6 @@
 // Demo Animation Service - Handles all demo animations and timings
 export const TRANSCRIPT_ANIMATION_INTERVAL = 1200; 
-export const CLINICAL_PLAN_SIMULATION_DELAY = 1800; 
+export const CLINICAL_PLAN_SIMULATION_DELAY = 200; 
 
 export class DemoAnimationService {
   private static transcriptIntervalId: NodeJS.Timeout | null = null;
