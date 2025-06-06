@@ -94,9 +94,9 @@
 /* Modal overlay with light glassmorphic background */
 .glass-backdrop {
   position: fixed;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(24px) saturate(112%);
-  -webkit-backdrop-filter: blur(24px) saturate(112%);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
 }
 
 .glass-backdrop::before {
@@ -105,8 +105,8 @@
   inset: 0;
   background: radial-gradient(
     ellipse 1200px 800px at 50% 20%,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.015) 50%,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.01) 50%,
     transparent 80%
   );
   pointer-events: none;
