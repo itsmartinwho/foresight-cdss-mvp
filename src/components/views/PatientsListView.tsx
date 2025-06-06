@@ -355,7 +355,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   return (
     <ContentSurface fullBleed className="p-6 flex flex-col">
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "allPatients" | "allConsultations")} className="flex flex-col flex-grow">
-        <div className="flex justify-between items-center mb-6">
+        {/* Header with Tabs Only */}
+        <div className="mb-6">
           <TabsList className="bg-transparent p-0">
             <TabsTrigger 
               value="allPatients" 
@@ -370,23 +371,47 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
               All Consultations
             </TabsTrigger>
           </TabsList>
-          <Button 
-            variant="default"
-            iconLeft={<PlusCircle />}
-            onClick={() => setShowNewConsultModal(true)}
-            size="sm"
-            className="ml-auto rounded-full"
-          >
-            New Consultation
-          </Button>
         </div>
-        <TabsContent value="allPatients" className="mt-0 flex-grow">
-          {renderAllPatientsTable()}
-        </TabsContent>
-        <TabsContent value="allConsultations" className="mt-0 flex-grow">
-          {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
-          {renderTable("Past Consultations", sortedRows.past, 'past')}
-        </TabsContent>
+
+        {/* Main Content Area with Side Panel Layout */}
+        <div className="flex-1 flex gap-6 min-h-0">
+          {/* Main Content - Tables */}
+          <div className="flex-1 overflow-y-auto">
+            <TabsContent value="allPatients" className="mt-0 h-full">
+              {renderAllPatientsTable()}
+            </TabsContent>
+            <TabsContent value="allConsultations" className="mt-0 h-full space-y-6">
+              {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
+              {renderTable("Past Consultations", sortedRows.past, 'past')}
+            </TabsContent>
+          </div>
+
+          {/* Right Side Panel - New Consultation */}
+          <div className="w-80 flex-shrink-0">
+            <div className="h-full bg-glass-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 flex flex-col items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <PlusCircle className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Schedule a consultation for any patient
+                  </p>
+                </div>
+                <Button
+                  variant="default"
+                  size="lg"
+                  onClick={() => setShowNewConsultModal(true)}
+                  className="w-full"
+                >
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  New Consultation
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </Tabs>
       <NewConsultationModal 
         open={showNewConsultModal} 
