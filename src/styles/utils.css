@@ -93,10 +93,10 @@
 
 /* Modal overlay with light glassmorphic background */
 .glass-backdrop {
+  position: fixed;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(32px) saturate(150%);
   -webkit-backdrop-filter: blur(32px) saturate(150%);
-  position: relative;
 }
 
 .glass-backdrop::before {
