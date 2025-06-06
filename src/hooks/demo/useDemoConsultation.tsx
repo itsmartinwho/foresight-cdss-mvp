@@ -30,24 +30,15 @@ export function useDemoConsultation({
 }): DemoConsultationBehavior {
   const searchParams = useSearchParams();
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-  const prevDemoStage = useRef<DemoStage | null>(null);
-  const prevTranscriptLength = useRef<number>(0);
   
   // Check if this is the demo patient and demo is active
   // Also check URL parameter for demo mode
   const isDemoRoute = searchParams.get('demo') === 'true';
   const isDemoMode = isDemoActive && (patient?.id === DEMO_PATIENT_ID || isDemoRoute);
   
-  // Debug only on stage changes
-  if (demoStage !== prevDemoStage.current) {
-    console.log('Demo stage changed:', { from: prevDemoStage.current, to: demoStage, isDemoMode });
-    prevDemoStage.current = demoStage;
-  }
-  
   // Demo transcript progression based on stage - use real enriched data
   const getDemoTranscript = () => {
     if (!isDemoMode) {
-      console.log('getDemoTranscript: not in demo mode');
       return undefined;
     }
     
@@ -65,13 +56,6 @@ export function useDemoConsultation({
     // Before animation starts, return empty or undefined
     return undefined;
   };
-  
-  // Only log if transcript content changes significantly
-  const currentTranscriptLength = getDemoTranscript()?.length || 0;
-  if (Math.abs(currentTranscriptLength - (prevTranscriptLength.current || 0)) > 100) {
-    console.log('Transcript updated:', { length: currentTranscriptLength, stage: demoStage });
-    prevTranscriptLength.current = currentTranscriptLength;
-  }
   
   // Demo diagnosis based on stage - use real enriched data
   const getDemoDiagnosis = () => {
