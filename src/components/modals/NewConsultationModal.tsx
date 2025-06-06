@@ -202,7 +202,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       <DialogContent
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className={`max-w-lg ${shake ? 'animate-shake' : ''}`}
+        className={`max-w-lg pb-4 ${shake ? 'animate-shake' : ''}`}
       >
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
@@ -416,7 +416,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         </Tabs>
 
         {/* shared fields now handled inside tabs */}
-        <div className="flex justify-end gap-2 mt-3">
+        <div className="flex justify-end gap-2 mt-1">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
