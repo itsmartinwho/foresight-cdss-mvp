@@ -23,18 +23,12 @@ export function ChartRenderer({ pythonCode, description, patientData }: ChartRen
   // Load Pyodide
   useEffect(() => {
     const loadPyodideScript = async () => {
-      console.log('ChartRenderer: Checking if Pyodide is available...');
       if (window.loadPyodide) {
-        console.log('ChartRenderer: Pyodide already available');
         return;
       }
       
-      console.log('ChartRenderer: Loading Pyodide script...');
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.6/full/pyodide.js';
-      script.onload = () => {
-        console.log('ChartRenderer: Pyodide script loaded successfully');
-      };
       script.onerror = (error) => {
         console.error('ChartRenderer: Failed to load Pyodide script:', error);
       };
@@ -51,10 +45,7 @@ export function ChartRenderer({ pythonCode, description, patientData }: ChartRen
       setLoading(true);
       const pyodideInstance = await window.loadPyodide();
       
-      // Load required packages
       await pyodideInstance.loadPackage(['numpy', 'matplotlib', 'pandas']);
-      
-      // Set up matplotlib for web
       pyodideInstance.runPython(`
         import matplotlib
         matplotlib.use('Agg')  # Use non-interactive backend
@@ -88,12 +79,9 @@ export function ChartRenderer({ pythonCode, description, patientData }: ChartRen
       
       const pyodideInstance = await initializePyodide();
       
-      // Inject patient data if available
       if (patientData) {
         pyodideInstance.globals.set('patient_data', patientData);
       }
-      
-      // Prepare the code with image capture
       const wrappedCode = `
 ${pythonCode}
 
@@ -122,10 +110,7 @@ except Exception as e:
     chart_image = None
 `;
 
-      // Execute the code
       pyodideInstance.runPython(wrappedCode);
-      
-      // Get the chart image
       const chartBase64 = pyodideInstance.globals.get('chart_image');
       
       if (chartBase64) {

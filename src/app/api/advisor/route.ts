@@ -80,8 +80,7 @@ async function createOrGetAssistant(): Promise<string> {
     tools: [{ type: "code_interpreter" }],
   });
 
-  console.log("Created new assistant with ID:", assistant.id);
-  console.log("Please set MEDICAL_ADVISOR_ASSISTANT_ID environment variable to:", assistant.id);
+  
   
   return assistant.id;
 }
@@ -253,7 +252,6 @@ async function createAssistantResponse(
 }
 
 export async function GET(req: NextRequest) {
-  console.log("GET /api/advisor called");
   const requestAbortController = new AbortController();
   req.signal.addEventListener('abort', () => {
     requestAbortController.abort();
@@ -283,7 +281,7 @@ export async function GET(req: NextRequest) {
       // If patientId is provided, fetch complete patient data
       if (patientId) {
         try {
-          console.log(`Fetching complete patient data for patient ID: ${patientId}`);
+  
           const completePatientData = await supabaseDataService.getPatientData(patientId);
           
           if (completePatientData && completePatientData.patient) {
@@ -391,7 +389,6 @@ export async function GET(req: NextRequest) {
 **Analysis Instructions:** Analyze this complete clinical data to provide comprehensive medical insights. Generate charts and tables for trends, comparisons, and clinical correlations as clinically appropriate. Do not invent data - use only the information provided above.\n\n--------------------\n\n`;
             
             patientSummaryBlock = clinicalContext;
-            console.log("Complete patient data loaded successfully");
           }
         } catch (error) {
           console.error("Failed to fetch patient data:", error);
@@ -430,7 +427,7 @@ export async function GET(req: NextRequest) {
 
     // Update assistant instructions with patient context if available
     if (patientSummaryBlock) {
-      console.log("DEBUG: Patient Summary Block detected:\n", patientSummaryBlock);
+
       // We'll add patient context as the first user message instead of system prompt
       messagesFromClient.unshift({ role: "user", content: patientSummaryBlock });
     }
@@ -461,7 +458,7 @@ export async function GET(req: NextRequest) {
         // Filter out system messages since assistant instructions are set at creation
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
         
-        console.log(`Creating assistant response with ID: ${assistantId}`);
+  
         await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, isControllerClosedRef);
         requestAbortController.signal.removeEventListener('abort', mainAbortListener);
       }

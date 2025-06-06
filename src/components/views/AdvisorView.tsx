@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useChat } from "ai/react";
+
 import { DataTable } from "@/components/ui/data-table"; // Added
 import type { ColumnDef } from "@tanstack/react-table"; // Added
 import Image from 'next/image';
@@ -404,8 +404,7 @@ export default function AdvisorView() {
           }
 
           const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
-          console.log('Stream ended. Accumulated raw markdown length:', accumulatedRawMarkdown.length);
-          console.log('Accumulated raw markdown preview:', accumulatedRawMarkdown.substring(0, 300));
+          
 
           // Clean up refs for this specific message
           delete parsersRef.current[assistantMessageId];
@@ -470,7 +469,6 @@ export default function AdvisorView() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log("Selected file:", file.name);
       // TODO: Implement file attachment state and UI similar to patient context
     }
   };
@@ -782,19 +780,7 @@ export default function AdvisorView() {
 const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent, isStreaming?: boolean, markdownRootDiv?: HTMLDivElement }> = ({ assistantMessage, isStreaming, markdownRootDiv }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Debug logging to understand the message flow
-  useEffect(() => {
-    console.log('AssistantMessageRenderer render:', {
-      isStreaming,
-      hasMarkdownStream: assistantMessage.isMarkdownStream,
-      hasFinalMarkdown: !!assistantMessage.finalMarkdown,
-      hasMarkdownRootDiv: !!markdownRootDiv,
-      isFallback: assistantMessage.isFallback,
-      hasFallbackMarkdown: !!assistantMessage.fallbackMarkdown,
-      finalMarkdownLength: assistantMessage.finalMarkdown?.length || 0,
-      finalMarkdownPreview: assistantMessage.finalMarkdown?.substring(0, 200) || 'None'
-    });
-  }, [assistantMessage, isStreaming, markdownRootDiv]);
+
 
   useEffect(() => {
     if (containerRef.current && markdownRootDiv) {

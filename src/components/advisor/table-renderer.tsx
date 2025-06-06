@@ -25,7 +25,6 @@ export function TableRenderer({ pythonCode, description, patientData }: TableRen
       setLoading(true);
       const pyodideInstance = await window.loadPyodide();
       
-      // Load required packages
       await pyodideInstance.loadPackage(['pandas', 'numpy']);
       
       setPyodide(pyodideInstance);
@@ -45,12 +44,9 @@ export function TableRenderer({ pythonCode, description, patientData }: TableRen
       
       const pyodideInstance = await initializePyodide();
       
-      // Inject patient data if available
       if (patientData) {
         pyodideInstance.globals.set('patient_data', patientData);
       }
-      
-      // Prepare the code with table capture
       const wrappedCode = `
 import pandas as pd
 import numpy as np
@@ -83,10 +79,7 @@ except Exception as e:
     table_data = None
 `;
 
-      // Execute the code
       pyodideInstance.runPython(wrappedCode);
-      
-      // Get the table data
       const tableResult = pyodideInstance.globals.get('table_data');
       
       if (tableResult) {

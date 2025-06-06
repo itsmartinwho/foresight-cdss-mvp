@@ -13,9 +13,6 @@ export interface CodeBlock {
 export function detectCodeBlocks(text: string): CodeBlock[] {
   const codeBlocks: CodeBlock[] = [];
   
-  console.log('detectCodeBlocks: Input text length:', text.length);
-  console.log('detectCodeBlocks: First 500 chars of text:', text.substring(0, 500));
-  
   // Updated regex to be more flexible with newlines and language specification
   const codeBlockRegex = /```(\w+)?\s*([\s\S]*?)```/g;
   let match;
@@ -24,8 +21,6 @@ export function detectCodeBlocks(text: string): CodeBlock[] {
   // Also try a simpler pattern that matches the exact format from screenshots
   const simpleCodeBlockRegex = /```python([\s\S]*?)```/g;
   
-  console.log('detectCodeBlocks: Testing with aggressive regex...');
-  
   // Try both patterns
   const regexesToTry = [
     { name: 'flexible', regex: codeBlockRegex },
@@ -33,12 +28,9 @@ export function detectCodeBlocks(text: string): CodeBlock[] {
   ];
   
   for (const { name, regex } of regexesToTry) {
-    console.log(`detectCodeBlocks: Trying ${name} regex...`);
     regex.lastIndex = 0; // Reset regex
     
     while ((match = regex.exec(text)) !== null) {
-      console.log(`detectCodeBlocks: Found match with ${name} regex:`, match);
-      
       let language, code;
       if (name === 'simple-python') {
         language = 'python';
@@ -50,20 +42,11 @@ export function detectCodeBlocks(text: string): CodeBlock[] {
       
       // Skip empty code blocks
       if (!code) {
-        console.log('detectCodeBlocks: Skipping empty code block');
         continue;
       }
       
       const isChartCode = detectChartGenerationCode(code, language);
       const isTableCode = detectTableGenerationCode(code, language);
-      
-      console.log(`detectCodeBlocks: Block ${blockIndex}:`, {
-        language,
-        isChartCode,
-        isTableCode,
-        codeLength: code.length,
-        codePreview: code.substring(0, 100)
-      });
       
       // Extract description from surrounding text
       const description = extractCodeDescription(text, match.index || 0);
@@ -81,7 +64,6 @@ export function detectCodeBlocks(text: string): CodeBlock[] {
     }
   }
   
-  console.log('detectCodeBlocks: Total blocks found:', codeBlocks.length);
   return codeBlocks;
 }
 
@@ -124,7 +106,6 @@ function detectChartGenerationCode(code: string, language: string): boolean {
   );
   
   if (hasPrimaryKeywords) {
-    console.log('Chart detection: Found primary chart keyword');
     return true;
   }
   
@@ -137,7 +118,6 @@ function detectChartGenerationCode(code: string, language: string): boolean {
   );
   
   if (hasMedicalContext && hasDataVizContext) {
-    console.log('Chart detection: Found medical + data viz context');
     return true;
   }
   
@@ -146,7 +126,6 @@ function detectChartGenerationCode(code: string, language: string): boolean {
   const hasPandas = fullCode.includes('pandas') || fullCode.includes('pd.');
   
   if (hasMatplotlib && hasPandas) {
-    console.log('Chart detection: Found matplotlib + pandas combination');
     return true;
   }
   
@@ -188,16 +167,7 @@ function detectTableGenerationCode(code: string, language: string): boolean {
     fullCodeLower.includes('table =')
   ) && !fullCodeLower.includes('plt.');
   
-  const result = hasTableKeywords || hasDataFrameAssignment || hasStructuredData;
-  
-  console.log(`Table detection for code block:`, {
-    hasTableKeywords,
-    hasDataFrameAssignment,
-    hasStructuredData,
-    result
-  });
-  
-  return result;
+  return hasTableKeywords || hasDataFrameAssignment || hasStructuredData;
 }
 
 /**
