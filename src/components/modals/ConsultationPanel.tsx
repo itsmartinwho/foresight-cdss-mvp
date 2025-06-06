@@ -103,7 +103,6 @@ export default function ConsultationPanel({
   const diagnosisEditorRef = useRef<RichTextEditorRef>(null);
   const treatmentEditorRef = useRef<RichTextEditorRef>(null);
   const demoInitializedRef = useRef<boolean>(false);
-  const shouldCreateEncounterRef = useRef(false);
 
   // --- LIFECYCLE & SETUP ---
 
@@ -262,14 +261,37 @@ export default function ConsultationPanel({
       };
 
       ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        const chunk = data.channel?.alternatives?.[0]?.transcript;
-        if (chunk) {
-          if (transcriptEditorRef.current) {
-            transcriptEditorRef.current.insertText(chunk);
-          } else {
-            setTranscriptText(prev => prev + chunk);
+        try {
+          const data = JSON.parse(e.data);
+          if (data && data.channel && data.is_final && data.channel.alternatives[0]?.transcript) {
+            const chunk = data.channel.alternatives[0].transcript.trim();
+            if (chunk) {
+              const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
+              let textToAdd = chunk;
+              
+              // Add speaker label if available and appropriate
+              if (speaker !== null && speaker !== undefined) {
+                const currentContent = transcriptText;
+                const lines = currentContent.split('\n');
+                const lastLine = lines[lines.length - 1] || '';
+                
+                // Add speaker label if starting fresh or speaker changed
+                if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
+                  textToAdd = (currentContent ? '\n' : '') + `Speaker ${speaker}: ` + chunk;
+                } else {
+                  textToAdd = ' ' + chunk;
+                }
+              } else {
+                // No speaker info, just add appropriate spacing
+                textToAdd = (transcriptText ? ' ' : '') + chunk;
+              }
+              
+              // Only update via state to avoid double updates
+              setTranscriptText(prev => prev + textToAdd);
+            }
           }
+        } catch (error) {
+          console.warn('[ConsultationPanel] Error processing WebSocket message:', error);
         }
       };
 
@@ -334,6 +356,7 @@ export default function ConsultationPanel({
 
   useEffect(() => {
     if (isOpen) {
+      console.log('[ConsultationPanel] Panel opened, isDemoMode:', isDemoMode);
       // Reset state on open
       setEncounter(null);
       setReason('');
@@ -350,28 +373,33 @@ export default function ConsultationPanel({
       setShowConfirmationDialog(false);
       setEditedWhilePaused(false);
       
-      shouldCreateEncounterRef.current = !isDemoMode;
-      if (isDemoMode) setStarted(true);
+      if (isDemoMode) {
+        console.log('[ConsultationPanel] Demo mode - setting started to true');
+        setStarted(true);
+      } else {
+        console.log('[ConsultationPanel] Non-demo mode - creating encounter');
+        // For non-demo mode, we'll create encounter and start transcription in sequence
+        createEncounter();
+      }
 
     } else if (mounted) {
+      console.log('[ConsultationPanel] Panel closed - stopping transcription');
       stopTranscription();
-      shouldCreateEncounterRef.current = false;
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription, createEncounter]);
   
+  // Single effect to handle encounter creation -> start transcription sequence
   useEffect(() => {
-    if (!isDemoMode && isOpen && !encounter && !isCreating) {
-      createEncounter();
-    }
-  }, [isDemoMode, isOpen, encounter, isCreating, createEncounter]);
-  
-  useEffect(() => {
-    if (!isDemoMode && encounter && !started && !isTranscribing) {
+    if (!isDemoMode && encounter && !started && !isTranscribing && isOpen) {
       setStarted(true);
-      const timer = setTimeout(() => startVoiceInput(), 500);
+      // Auto-start transcription after encounter is created
+      const timer = setTimeout(() => {
+        console.log('[ConsultationPanel] Auto-starting transcription for new encounter');
+        startVoiceInput();
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isDemoMode, encounter, started, isTranscribing, startVoiceInput]);
+  }, [isDemoMode, encounter, started, isTranscribing, isOpen, startVoiceInput]);
   
   useEffect(() => {
     if (!isOpen) return;

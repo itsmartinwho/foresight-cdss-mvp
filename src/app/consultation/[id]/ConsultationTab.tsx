@@ -305,18 +305,18 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       wsInstance.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
-          if (data && data.channel && data.is_final && data.channel.alternatives[0].transcript) {
-            const newTextChunk = data.channel.alternatives[0].transcript;
+          if (data && data.channel && data.is_final && data.channel.alternatives[0]?.transcript) {
+            const newTextChunk = data.channel.alternatives[0].transcript.trim();
             const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
             
-            if (newTextChunk.trim() !== '') {
+            if (newTextChunk !== '') {
               let textToAdd = newTextChunk;
               
               // Add speaker label if available
               if (speaker !== null && speaker !== undefined) {
                 const speakerLabel = `Speaker ${speaker}: `;
-                // Check if this is a new speaker or we need to add a speaker label
-                const currentContent = richTextEditorRef.current?.getContent() || editableTranscript;
+                // Get current content from state to avoid ref/state sync issues
+                const currentContent = editableTranscript;
                 const lines = currentContent.split('\n');
                 const lastLine = lines[lines.length - 1] || '';
                 
@@ -328,24 +328,23 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
                 }
               } else {
                 // No speaker info, just add appropriate spacing
-                textToAdd = newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ');
+                textToAdd = (editableTranscript ? ' ' : '') + newTextChunk;
               }
               
-              // Use RichTextEditor's insertText method for better integration
-              if (richTextEditorRef.current) {
-                // Always append at the end during active transcription
-                const currentContent = richTextEditorRef.current.getContent();
-                richTextEditorRef.current.setContent(currentContent + textToAdd);
-              } else {
-                // Fallback to state update if ref not available
-                setEditableTranscript((prevText) => {
-                  const currentText = prevText || '';
-                  return currentText + textToAdd;
-                });
-              }
+              // Only update state to trigger single change event
+              setEditableTranscript((prevText) => {
+                const updatedText = prevText + textToAdd;
+                // Update the ref state tracker for auto-save
+                if (encounterStateForAutoSaveRef.current) {
+                  encounterStateForAutoSaveRef.current.transcriptToSave = updatedText;
+                }
+                return updatedText;
+              });
             }
           }
-        } catch (_) { /* console.error("Error processing ws message", _); */ }
+        } catch (error) {
+          console.warn('[ConsultationTab] Error processing WebSocket message:', error);
+        }
       };
 
       wsInstance.onopen = () => {
@@ -489,13 +488,14 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   // Auto-start transcription for new consultations
   useEffect(() => {
     if (isStartingNewConsultation && !isTranscribing && !selectedEncounter) {
+      console.log('[ConsultationTab] Auto-starting transcription for new consultation');
       // Small delay to ensure UI is ready
       const timer = setTimeout(() => {
         startTranscription();
-      }, 1000);
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isStartingNewConsultation, isTranscribing, selectedEncounter, startTranscription]);
+  }, [isStartingNewConsultation, isTranscribing, selectedEncounter]);
 
   // JSX for rendering will be added here
   return (
