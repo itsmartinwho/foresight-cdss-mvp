@@ -533,34 +533,40 @@ export default function ConsultationPanel({
                 )}>
                   <div className="flex space-x-4 px-1 py-2">
                     <button
-                      onClick={() => setActiveTab('transcript')}
+                      onClick={() => !isDemoMode && setActiveTab('transcript')}
+                      disabled={isDemoMode}
                       className={cn(
                         "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         activeTab === 'transcript'
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        isDemoMode && "cursor-not-allowed opacity-75"
                       )}
                     >
                       Transcript
                     </button>
                     <button
-                      onClick={() => setActiveTab('diagnosis')}
+                      onClick={() => !isDemoMode && setActiveTab('diagnosis')}
+                      disabled={isDemoMode}
                       className={cn(
                         "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         activeTab === 'diagnosis'
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        isDemoMode && "cursor-not-allowed opacity-75"
                       )}
                     >
                       Diagnosis
                     </button>
                     <button
-                      onClick={() => setActiveTab('treatment')}
+                      onClick={() => !isDemoMode && setActiveTab('treatment')}
+                      disabled={isDemoMode}
                       className={cn(
                         "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         activeTab === 'treatment'
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        isDemoMode && "cursor-not-allowed opacity-75"
                       )}
                     >
                       Treatment
@@ -616,30 +622,33 @@ export default function ConsultationPanel({
                                 {isPaused ? "Resume" : "Pause"}
                               </Button>
                             )}
-                            <Button
-                              variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
-                              onClick={() => {
-                                if (isDemoMode && onDemoClinicalPlanClick) {
-                                  onDemoClinicalPlanClick();
-                                } else if (!isDemoMode) {
-                                  handleClinicalPlan();
-                                }
-                              }}
-                              disabled={isDemoMode ? isDemoGeneratingPlan : (isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan)}
-                              className="flex items-center gap-2"
-                            >
-                              {(isGeneratingPlan || isDemoGeneratingPlan) ? (
-                                <>
-                                  <CircleNotch className="h-4 w-4 animate-spin" />
-                                  Analyzing...
-                                </>
-                              ) : (
-                                <>
-                                  <Brain className="h-4 w-4" />
-                                  Clinical Plan
-                                </>
-                              )}
-                            </Button>
+                            {/* Hide Clinical Plan button in demo mode after plan is generated */}
+                            {!(isDemoMode && planGenerated) && (
+                              <Button
+                                variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
+                                onClick={() => {
+                                  if (isDemoMode && onDemoClinicalPlanClick) {
+                                    onDemoClinicalPlanClick();
+                                  } else if (!isDemoMode) {
+                                    handleClinicalPlan();
+                                  }
+                                }}
+                                disabled={isDemoMode ? isDemoGeneratingPlan : (isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan)}
+                                className="flex items-center gap-2"
+                              >
+                                {(isGeneratingPlan || isDemoGeneratingPlan) ? (
+                                  <>
+                                    <CircleNotch className="h-4 w-4 animate-spin" />
+                                    Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Brain className="h-4 w-4" />
+                                    Clinical Plan
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </div>
                         <RichTextEditor
@@ -647,7 +656,8 @@ export default function ConsultationPanel({
                           content={transcriptText}
                           onContentChange={setTranscriptText}
                           placeholder={isDemoMode ? "Demo transcript loaded." : "Type or dictate the consultation notes here..."}
-                          disabled={isDemoMode && !initialDemoTranscript}
+                          disabled={isDemoMode}
+                          showToolbar={!isDemoMode}
                           minHeight="300px"
                           className="flex-1"
                         />
@@ -662,6 +672,8 @@ export default function ConsultationPanel({
                           content={diagnosisText}
                           onContentChange={setDiagnosisText}
                           placeholder={isDemoMode ? "Demo diagnosis loaded." : "Enter or edit the diagnosis..."}
+                          disabled={isDemoMode}
+                          showToolbar={!isDemoMode}
                           minHeight="300px"
                           className="flex-1"
                         />
@@ -676,6 +688,8 @@ export default function ConsultationPanel({
                           content={treatmentText}
                           onContentChange={setTreatmentText}
                           placeholder={isDemoMode ? "Demo treatment plan loaded." : "Enter or edit the treatment plan..."}
+                          disabled={isDemoMode}
+                          showToolbar={!isDemoMode}
                           minHeight="300px"
                           className="flex-1"
                         />

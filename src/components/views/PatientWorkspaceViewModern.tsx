@@ -218,10 +218,10 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       demoPatientName: demoState.demoPatient?.name
     });
     
-    // Force open demo panel when conditions are met
-    if (isDemoRoute && demoState.isDemoActive && !loading && patient?.name) {
+    // Force open demo panel immediately when on demo route, don't wait for loading
+    if (isDemoRoute && demoState.isDemoActive) {
       if (!demoPanelForceOpen) {
-        console.log('Force opening demo consultation panel');
+        console.log('Force opening demo consultation panel immediately');
         setDemoPanelForceOpen(true);
         // Also advance the demo stage if needed
         if (demoState.demoStage === 'navigatingToWorkspace') {
@@ -230,7 +230,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         }
       }
     }
-  }, [isDemoRoute, demoState, loading, patient?.name, demoPanelForceOpen]);
+  }, [isDemoRoute, demoState, demoPanelForceOpen]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
