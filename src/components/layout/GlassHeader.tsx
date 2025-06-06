@@ -23,10 +23,9 @@ export default function GlassHeader() {
           <Image
             src="/images/word-logo.png"
             alt="Foresight Logo"
-            width={180}
-            height={48}
-            className="py-0.5 translate-y-[2px]"
-            style={{ width: 'auto', height: 'auto' }}
+            width={120}
+            height={32}
+            className="h-8 w-auto"
           />
         </Link>
       </div>
