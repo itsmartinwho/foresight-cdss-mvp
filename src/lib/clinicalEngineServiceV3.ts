@@ -65,8 +65,7 @@ export class ClinicalEngineServiceV3 {
       tools: [{ type: "code_interpreter" }],
     });
 
-    console.log("Created new clinical engine assistant with ID:", assistant.id);
-    console.log("Please set CLINICAL_ENGINE_ASSISTANT_ID environment variable to:", assistant.id);
+
     
     return assistant.id;
   }
@@ -238,8 +237,6 @@ Please:
     transcript?: string
   ): Promise<ClinicalOutputPackage> {
     try {
-      console.log(`Starting enhanced diagnostic pipeline for patient ${patientId}, encounter ${compositeEncounterId}`);
-
       // Extract actual encounter_id for context loading
       let actualEncounterId = '';
       if (compositeEncounterId.startsWith(patientId + '_')) {
@@ -250,7 +247,6 @@ Please:
       }
 
       // Stage 1: Load comprehensive patient data
-      console.log('Stage 1: Loading comprehensive patient data...');
       const patientData = await supabaseDataService.getPatientData(patientId);
       
       if (!patientData || !patientData.patient) {
@@ -265,11 +261,9 @@ Please:
       const finalTranscript = transcript || currentEncounter?.encounter.transcript || '';
       
       // Stage 2: Generate differential diagnoses using GPT-4.1-mini
-      console.log('Stage 2: Generating differential diagnoses...');
       const differentialDiagnoses = await this.generateDifferentialDiagnoses(patientData, finalTranscript);
       
       // Stage 3: Generate primary diagnosis and treatment plan using o4-mini
-      console.log('Stage 3: Generating diagnosis and treatment plan...');
       const diagnosticResult = await this.generateDiagnosisAndTreatment(
         patientData, 
         finalTranscript, 
@@ -277,20 +271,16 @@ Please:
       );
       
       // Stage 4: Generate additional clinical fields using o4-mini
-      console.log('Stage 4: Generating additional clinical fields...');
       await this.generateAdditionalFields(patientData, finalTranscript, diagnosticResult, actualEncounterId);
       
       // Stage 5: Generate SOAP note
-      console.log('Stage 5: Generating SOAP note...');
       const soapNote = await this.generateSoapNote(patientData, finalTranscript, diagnosticResult);
       
       // Stage 6: Generate optional documents
-      console.log('Stage 6: Generating optional documents...');
       const referralDoc = await this.generateReferralIfNeeded(diagnosticResult, patientData);
       const priorAuthDoc = await this.generatePriorAuthIfNeeded(diagnosticResult, patientData);
       
       // Stage 7: Save results to database
-      console.log('Stage 7: Saving results to database...');
       if (currentEncounter?.encounter.id) {
         await this.saveResults(
           patientId, 
@@ -367,7 +357,6 @@ Please generate differential diagnoses based on this information.`;
       // Parse JSON response
       const differentials = JSON.parse(response) as DifferentialDiagnosis[];
       
-      console.log(`Generated ${differentials.length} differential diagnoses`);
       return differentials;
       
     } catch (error) {
@@ -434,7 +423,6 @@ Please provide your primary diagnosis and treatment plan.`;
       // Add differential diagnoses to result
       result.differentialDiagnoses = differentialDiagnoses;
       
-      console.log(`Generated primary diagnosis: ${result.diagnosisName}`);
       return result as DiagnosticResult;
       
     } catch (error) {
@@ -501,7 +489,7 @@ Please provide your primary diagnosis and treatment plan.`;
         reason_display_text: encounterReasonText
       });
 
-      console.log('Updated additional clinical fields');
+
       
     } catch (error) {
       console.error('Error generating additional fields:', error);
@@ -671,14 +659,14 @@ Please extract the requested information.`
           patientInformation: {
             name: `${patientData.patient.firstName} ${patientData.patient.lastName}`,
             dateOfBirth: patientData.patient.dateOfBirth || '',
-            insuranceId: "INS123456", // Mock
+            insuranceId: "INS123456",
             gender: patientData.patient.gender || ''
           },
           serviceRequest: {
             diagnosis: diagnosticResult.diagnosisName,
             diagnosisCode: diagnosticResult.diagnosisCode || '',
             requestedService: medication || diagnosticResult.recommendedTreatments[0],
-            serviceCode: "J1234", // Mock
+            serviceCode: "J1234",
             startDate: new Date().toISOString(),
             duration: "6 months",
             frequency: "As prescribed"

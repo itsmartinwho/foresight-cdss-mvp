@@ -146,10 +146,6 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
     if (!diagnosticResult || !patientId) return;
     
     try {
-      // In a real application, this would open a modal or navigate to a form
-      // For the MVP, we'll just log to console
-      console.log('Generating prior authorization for:', diagnosticResult.diagnosisName);
-      
       if (diagnosticResult.recommendedTreatments.length > 0) {
         const priorAuth = await clinicalEngineService.generatePriorAuthorization(
           diagnosticResult.diagnosisName,
@@ -157,12 +153,12 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
           patientId
         );
         
-        console.log('Prior authorization generated:', priorAuth);
-        alert('Prior authorization generated successfully. Check console for details.');
+        // In a real application, this would open a modal or navigate to a form
+        setError('Prior authorization generated successfully.');
       }
     } catch (err) {
       console.error('Error generating prior authorization:', err);
-      alert('Failed to generate prior authorization');
+      setError('Failed to generate prior authorization');
     }
   };
 
@@ -170,10 +166,6 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
     if (!diagnosticResult || !patientId) return;
     
     try {
-      // In a real application, this would open a modal or navigate to a form
-      // For the MVP, we'll just log to console
-      console.log('Generating specialist referral for:', diagnosticResult.diagnosisName);
-      
       let specialistType = 'General';
       
       if (diagnosticResult.diagnosisName.includes('Rheumatoid Arthritis')) {
@@ -188,11 +180,11 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
         patientId
       );
       
-      console.log('Specialist referral generated:', referral);
-      alert('Specialist referral generated successfully. Check console for details.');
+      // In a real application, this would open a modal or navigate to a form
+      setError('Specialist referral generated successfully.');
     } catch (err) {
       console.error('Error generating specialist referral:', err);
-      alert('Failed to generate specialist referral');
+      setError('Failed to generate specialist referral');
     }
   };
 
