@@ -588,6 +588,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
                 <AudioWaveform
                   isRecording={isTranscribing}
                   isPaused={isPaused}
+                  mediaStream={mediaRecorderRef.current?.stream || null}
                   onPause={pauseTranscription}
                   onResume={startTranscription}
                   onStop={stopTranscriptionAndSave}

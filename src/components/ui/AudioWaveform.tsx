@@ -5,6 +5,7 @@ import { Button } from './button';
 interface AudioWaveformProps {
   isRecording: boolean;
   isPaused: boolean;
+  mediaStream?: MediaStream | null; // Accept existing media stream
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
@@ -19,6 +20,7 @@ interface AudioWaveformProps {
 export const AudioWaveform: React.FC<AudioWaveformProps> = ({
   isRecording,
   isPaused,
+  mediaStream,
   onPause,
   onResume,
   onStop,
@@ -33,17 +35,14 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
   const animationRef = useRef<number>();
   const audioContextRef = useRef<AudioContext>();
   const analyserRef = useRef<AnalyserNode>();
-  const streamRef = useRef<MediaStream>();
-  const [hasPermission, setHasPermission] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
     const initAudio = async () => {
-      if (isRecording && !isPaused && !isInitialized) {
+      if (isRecording && !isPaused && mediaStream && !isInitialized) {
         try {
-          // Request microphone permission
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          streamRef.current = stream;
+          // Use the provided media stream
           setHasPermission(true);
 
           // Create audio context and analyser
@@ -55,12 +54,13 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
           analyser.smoothingTimeConstant = 0.8;
           analyserRef.current = analyser;
 
-          const source = audioContext.createMediaStreamSource(stream);
+          const source = audioContext.createMediaStreamSource(mediaStream);
           source.connect(analyser);
 
           setIsInitialized(true);
+          console.log('AudioWaveform: Audio context initialized with existing stream');
         } catch (error) {
-          console.error('Error accessing microphone:', error);
+          console.error('AudioWaveform: Error setting up audio analysis:', error);
           setHasPermission(false);
         }
       } else if ((!isRecording || isPaused) && isInitialized) {
@@ -71,13 +71,11 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
         
         // Only clean up completely when stopping
         if (!isRecording) {
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-          }
           if (audioContextRef.current) {
             audioContextRef.current.close();
           }
           setIsInitialized(false);
+          console.log('AudioWaveform: Audio context closed');
         }
       }
     };
@@ -86,9 +84,6 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 
     return () => {
       // Cleanup on unmount
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close();
       }
@@ -96,7 +91,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isRecording, isPaused, isInitialized]);
+  }, [isRecording, isPaused, mediaStream, isInitialized]);
 
   useEffect(() => {
     if (!isRecording || isPaused || !isInitialized || !analyserRef.current || !canvasRef.current) {

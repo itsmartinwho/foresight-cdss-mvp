@@ -611,6 +611,7 @@ export default function ConsultationPanel({
                               <AudioWaveform
                                 isRecording={isTranscribing}
                                 isPaused={isPaused}
+                                mediaStream={mediaRecorderRef.current?.stream || null}
                                 onPause={pauseTranscription}
                                 onResume={resumeTranscription}
                                 onStop={stopTranscription}
