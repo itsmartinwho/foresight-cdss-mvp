@@ -6,7 +6,8 @@
     "."
   ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:fast": "next dev --turbo --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,7 +20,10 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
     "storybook": "storybook dev -p 6006 -c tests/.storybook",
     "build-storybook": "storybook build -c tests/.storybook",
-    "resize:icons": "tsx scripts/favicon-resizing/resize-icons.ts"
+    "resize:icons": "tsx scripts/favicon-resizing/resize-icons.ts",
+    "clean": "rm -rf .next node_modules/.cache",
+    "predev": "npm run clean",
+    "optimize": "node scripts/optimize-dev.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

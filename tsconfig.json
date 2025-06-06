@@ -21,6 +21,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "preserveWatchOutput": true,
+    "pretty": true,
+    "forceConsistentCasingInFileNames": true,
     "plugins": [
       {
         "name": "next"
@@ -40,6 +43,9 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "out",
+    "dist"
   ]
 }
