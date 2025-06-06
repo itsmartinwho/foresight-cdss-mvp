@@ -57,12 +57,12 @@ export default function ConsultationPanel({
   onClose,
   patient,
   onConsultationCreated,
-  isDemoMode = false, // Default to false
+  isDemoMode = false,
   initialDemoTranscript,
   demoDiagnosis,
   demoTreatment,
   onDemoClinicalPlanClick,
-  isDemoGeneratingPlan = false, // Default to false
+  isDemoGeneratingPlan = false,
 }: ConsultationPanelProps) {
   const { toast } = useToast();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
@@ -85,6 +85,7 @@ export default function ConsultationPanel({
   const [tabBarVisible, setTabBarVisible] = useState(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
   // Transcription state and refs
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -93,9 +94,6 @@ export default function ConsultationPanel({
   
   // New state for confirmation dialog
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
-  const [pendingCloseAction, setPendingCloseAction] = useState<'save' | 'discard' | null>(null);
-  
-  // Track when user makes edits during pause to append new transcription at bottom
   const [editedWhilePaused, setEditedWhilePaused] = useState(false);
   
   // Refs
@@ -103,221 +101,33 @@ export default function ConsultationPanel({
   const diagnosisEditorRef = useRef<RichTextEditorRef>(null);
   const treatmentEditorRef = useRef<RichTextEditorRef>(null);
   const demoInitializedRef = useRef<boolean>(false);
+  const shouldCreateEncounterRef = useRef(false);
 
-  // Ensure we only render on client side
+  // --- LIFECYCLE & SETUP ---
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Debug demo state changes only
-  useEffect(() => {
-    if (isDemoMode && isOpen) {
-      console.log('Demo panel state:', { started, planGenerated, activeTab, hasTranscript: !!initialDemoTranscript });
+  const stopTranscription = useCallback(() => {
+    if (isDemoMode) return;
+    
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.close();
+      socketRef.current = null;
     }
-  }, [isDemoMode, isOpen, started, planGenerated, activeTab, initialDemoTranscript]);
-
-  // Auto-focus and cursor positioning for transcript textarea
-  useEffect(() => {
-    if (started && transcriptEditorRef.current) {
-      transcriptEditorRef.current.focus();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
     }
-  }, [started]);
-
-  // Log transcript length only for demo mode for debugging animation
-  useEffect(() => {
-    if (isDemoMode && transcriptText.length > 0) {
-      console.log(`Demo transcript length: ${transcriptText.length}`);
-    }
-  }, [isDemoMode, transcriptText]);
-
-  // Effect to make tab bar visible with a delay for transition
-  useEffect(() => {
-    if (planGenerated) {
-      const timer = setTimeout(() => {
-        setTabBarVisible(true);
-      }, 50); // Small delay to ensure element is in DOM for transition
-      return () => clearTimeout(timer);
-    } else {
-      setTabBarVisible(false); // Reset if plan is no longer generated (e.g. panel reset)
-    }
-  }, [planGenerated]);
-
-  const handleClinicalPlan = useCallback(async () => {
-    setIsGeneratingPlan(true);
-
-    try {
-      
-      // Call the clinical engine API
-      const response = await fetch('/api/clinical-engine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          patientId: patient.id, 
-          encounterId: encounter?.id,
-          transcript: transcriptText
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      // Extract diagnosis and treatment from the result
-      const diagnosis = result.diagnosticResult?.diagnosisName || 
-                       result.diagnosticResult?.primaryDiagnosis || 
-                       "Based on the transcript, a preliminary diagnosis has been generated.";
-      
-      const treatment = result.diagnosticResult?.recommendedTreatments?.join('\n') || 
-                       result.diagnosticResult?.treatmentPlan || 
-                       "Recommended treatment plan has been generated based on the diagnosis.";
-      
-      setDiagnosisText(diagnosis);
-      setTreatmentText(treatment);
-      setPlanGenerated(true);
-      setActiveTab('diagnosis'); // Switch to diagnosis tab on success
-
-    } catch (error) {
-      console.error("Error during clinical plan generation:", error);
-      
-      // Graceful fallback - still transition to tabbed interface but leave fields blank
-      setPlanGenerated(true);
-      setDiagnosisText('');
-      setTreatmentText('');
-      setActiveTab('diagnosis');
-      
-      toast({
-        title: "Unable to Generate Plan",
-        description: "Unable to generate plan automatically. You can complete the plan manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingPlan(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast, patient.id, encounter?.id]); // transcriptText captured in closure for API call
-
-  const createEncounter = useCallback(async () => {
-    if (!patient?.id || isCurrentlyCreatingEncounter.current) {
-      return;
-    }
-
-    isCurrentlyCreatingEncounter.current = true;
-    setIsCreating(true);
-    try {
-      const newEncounterData = {
-        reason: reason || undefined,
-        scheduledStart: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
-        duration: duration || undefined,
-      };
-      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, newEncounterData);
-      
-      setEncounter(newEncounter);
-      
-      if (onConsultationCreated) {
-        onConsultationCreated(newEncounter);
-      }
-    } catch (error) {
-      console.error('Failed to create encounter:', error);
-      toast({
-        title: "Error",
-        description: `Failed to create consultation encounter: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-      onClose();
-    } finally {
-      setIsCreating(false);
-      isCurrentlyCreatingEncounter.current = false;
-    }
-  }, [patient?.id, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
-
-  // Track if we should create encounter on open to prevent infinite loops
-  const shouldCreateEncounterRef = useRef(false);
-
-  // Reset form when panel opens and create encounter
-  useEffect(() => {
-    if (isOpen) {
-      // Common resets for both modes
-      setEncounter(null);
-      setReason('');
-      setScheduledDate(new Date());
-      setDuration(30);
-      setActiveTab('transcript');
-      setTabBarVisible(false);
-      setIsGeneratingPlan(false);
-      setStarted(false);
-      // Only reset transcript text if not in demo mode or if transcript is empty
-      if (!isDemoMode || !transcriptText) {
-        setTranscriptText('');
-      }
-      setDiagnosisText('');
-      setTreatmentText('');
-      setPlanGenerated(false);
-      setShowConfirmationDialog(false);
-      setPendingCloseAction(null);
-      setEditedWhilePaused(false);
-      
-      // Reset the creation flag
-      shouldCreateEncounterRef.current = !isDemoMode;
-      
-      if (isDemoMode) {
-        // Always initialize demo to started state
-        setStarted(true);
-        setActiveTab('transcript');
-        
-        // Set transcript content if available
-        if (initialDemoTranscript) {
-          setTranscriptText(initialDemoTranscript);
-        }
-        
-        // Set diagnosis and treatment when available
-        setDiagnosisText(demoDiagnosis || '');
-        setTreatmentText(demoTreatment || '');
-
-        // Show plan tabs if diagnosis or treatment is available
-        setPlanGenerated(!!(demoDiagnosis || demoTreatment));
-        
-        // DO NOT call createEncounter in demo mode
-      } else {
-        // For non-demo mode, start automatically
-        setStarted(true);
-      }
-    } else {
-      // Reset creation flag when panel closes
-      shouldCreateEncounterRef.current = false;
-      demoInitializedRef.current = false;
-    }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, transcriptText]);
-
-  // Create encounter for non-demo mode in a separate effect
-  useEffect(() => {
-    if (!isDemoMode && shouldCreateEncounterRef.current && !encounter && !isCreating) {
-      shouldCreateEncounterRef.current = false; // Prevent multiple calls
-      createEncounter();
-    }
-  }, [isDemoMode, shouldCreateEncounterRef, encounter, isCreating, createEncounter]);
-
-  // Auto-start transcription when encounter is created (non-demo mode)
-  useEffect(() => {
-    if (!isDemoMode && encounter && started && !isTranscribing && !isPaused) {
-      // Small delay to ensure UI is ready
-      const timer = setTimeout(() => {
-        startVoiceInput();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [encounter, started, isTranscribing, isPaused, isDemoMode]);
-
-  // Demo mode: Watch for animated transcript updates during demo
-  useEffect(() => {
-    if (isDemoMode && isOpen && initialDemoTranscript !== undefined) {
-      // Update transcript text when animated content changes
-      setTranscriptText(initialDemoTranscript);
-    }
-  }, [isDemoMode, isOpen, initialDemoTranscript]);
+    
+    setIsTranscribing(false);
+    setIsPaused(false);
+  }, [isDemoMode]);
 
   const handleClose = useCallback(async () => {
+    stopTranscription();
     if (isDemoMode) {
       onClose();
       return;
@@ -331,44 +141,25 @@ export default function ConsultationPanel({
     setIsSaving(true);
     const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
     try {
-      // Save transcript
       if (transcriptText && transcriptText.trim()) {
         await supabaseDataService.updateEncounterTranscript(patient.id, compositeId, transcriptText);
       }
-
-      // Save diagnosis as primary diagnosis in conditions table
       if (diagnosisText && diagnosisText.trim()) {
-        await supabaseDataService.savePrimaryDiagnosis(
-          patient.id, 
-          encounter.encounterIdentifier,
-          diagnosisText
-        );
+        await supabaseDataService.savePrimaryDiagnosis(patient.id, encounter.encounterIdentifier, diagnosisText);
       }
-
-      // Save treatments
       if (treatmentText && treatmentText.trim()) {
-        // Parse treatment text into Treatment objects
         const treatmentLines = treatmentText.split('\n').filter(line => line.trim());
         const treatments = treatmentLines.map((line, index) => ({
-          drug: line.trim(),
-          status: 'recommended',
-          rationale: `Treatment plan item ${index + 1}`
+          drug: line.trim(), status: 'recommended', rationale: `Treatment plan item ${index + 1}`
         }));
-        
         await supabaseDataService.updateEncounterTreatments(patient.id, compositeId, treatments);
       }
-
-      // Save combined SOAP note if we have diagnosis and/or treatment
       if ((diagnosisText && diagnosisText.trim()) || (treatmentText && treatmentText.trim())) {
         const soapNote = `S: ${transcriptText || 'See transcript'}\nO: Clinical examination performed\nA: ${diagnosisText || 'See diagnosis'}\nP: ${treatmentText || 'See treatment plan'}`;
         await supabaseDataService.updateEncounterSOAPNote(patient.id, compositeId, soapNote);
       }
-
       toast({ title: "Consultation Saved", description: "All consultation data saved successfully." });
-      
-      // Small delay to ensure data change notifications propagate to patient workspace
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       onClose();
     } catch (error) {
       console.error('Failed to save consultation data:', error);
@@ -376,10 +167,10 @@ export default function ConsultationPanel({
     } finally {
       setIsSaving(false);
     }
-  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving]);
+  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving, stopTranscription]);
 
-  // Discard handler: close without saving and remove the created encounter
   const handleDiscard = useCallback(() => {
+    stopTranscription();
     if (isDemoMode) {
       onClose();
       return;
@@ -389,38 +180,30 @@ export default function ConsultationPanel({
       supabaseDataService.permanentlyDeleteEncounter(patient.id, compositeId);
     }
     onClose();
-  }, [isDemoMode, encounter, patient.id, onClose]);
-
-  // Enhanced close handler with confirmation dialog
+  }, [isDemoMode, encounter, patient.id, onClose, stopTranscription]);
+  
   const handleCloseRequest = useCallback(() => {
     if (isDemoMode) {
       onClose();
       return;
     }
-
-    // Check if there's transcript content that would be lost
     if (transcriptText && transcriptText.trim()) {
       setShowConfirmationDialog(true);
-      setPendingCloseAction(null); // User needs to choose
     } else {
-      // No content to lose, proceed with discard
       handleDiscard();
     }
   }, [isDemoMode, transcriptText, onClose, handleDiscard]);
 
   const handleConfirmSave = useCallback(async () => {
     setShowConfirmationDialog(false);
-    setPendingCloseAction('save');
     await handleClose();
   }, [handleClose]);
 
   const handleConfirmDiscard = useCallback(() => {
     setShowConfirmationDialog(false);
-    setPendingCloseAction('discard');
     handleDiscard();
   }, [handleDiscard]);
 
-  // Track transcript changes to detect edits while paused
   const handleTranscriptChange = useCallback((newText: string) => {
     setTranscriptText(newText);
     if (isPaused) {
@@ -428,24 +211,8 @@ export default function ConsultationPanel({
     }
   }, [isPaused]);
 
-  // Handle escape key
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Discard on Escape
-        handleDiscard();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, handleDiscard]);
-
-  // Pause/resume transcription controls
   const pauseTranscription = useCallback(() => {
-    if (isDemoMode) return; // Disable in demo mode
+    if (isDemoMode) return;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
@@ -453,7 +220,7 @@ export default function ConsultationPanel({
   }, [isDemoMode]);
 
   const resumeTranscription = useCallback(() => {
-    if (isDemoMode) return; // Disable in demo mode
+    if (isDemoMode) return;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
@@ -461,84 +228,60 @@ export default function ConsultationPanel({
   }, [isDemoMode]);
 
   const startVoiceInput = useCallback(async () => {
-    if (isDemoMode) return; // Disable in demo mode
+    if (isDemoMode || isTranscribing) return;
 
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
     if (!apiKey) {
       toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
       return;
     }
-    if (isTranscribing && !isPaused) {
-      return; // Already transcribing
-    }
-    
-    // Start conversation if not already started
     if (!started) setStarted(true);
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
+
       const ws = new WebSocket(
         'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
         ['token', apiKey]
       );
       socketRef.current = ws;
+
       ws.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
-          if (data.channel && data.is_final && data.channel.alternatives?.[0]?.transcript) {
-            const chunk = data.channel.alternatives[0].transcript;
+          const chunk = data.channel?.alternatives?.[0]?.transcript;
+          if (chunk?.trim()) {
             const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
-            
-            if (chunk.trim()) {
-              let textToAdd = chunk;
-              
-              // Add speaker label if available
-              if (speaker !== null && speaker !== undefined) {
-                const speakerLabel = `Speaker ${speaker}: `;
-                // Check if this is a new speaker or we need to add a speaker label
-                const currentContent = transcriptEditorRef.current?.getContent() || transcriptText;
-                const lines = currentContent.split('\n');
-                const lastLine = lines[lines.length - 1] || '';
-                
-                // Add speaker label if starting fresh or speaker changed
-                if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
-                  textToAdd = (currentContent ? '\n' : '') + speakerLabel + chunk;
-                } else {
-                  textToAdd = ' ' + chunk;
-                }
+            let textToAdd = chunk;
+            if (speaker !== null) {
+              const speakerLabel = `Speaker ${speaker}: `;
+              const currentContent = transcriptEditorRef.current?.getContent() || transcriptText;
+              const lines = currentContent.split('\n');
+              const lastLine = lines[lines.length - 1] || '';
+              if (!lastLine.startsWith(speakerLabel)) {
+                textToAdd = (currentContent ? '\n' : '') + speakerLabel + chunk;
               } else {
-                // No speaker info, just add appropriate spacing
-                textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
+                textToAdd = ' ' + chunk;
               }
-              
-              // Use RichTextEditor's insertText method for better integration
-              if (transcriptEditorRef.current) {
-                if (editedWhilePaused) {
-                  // Append at the end regardless of cursor position
-                  transcriptEditorRef.current.setContent(transcriptText + (transcriptText ? '\n' : '') + textToAdd);
-                  setEditedWhilePaused(false);
-                } else {
-                  transcriptEditorRef.current.insertText(textToAdd);
-                }
+            } else {
+              textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
+            }
+            if (transcriptEditorRef.current) {
+              if (editedWhilePaused) {
+                transcriptEditorRef.current.setContent(transcriptText + (transcriptText ? '\n' : '') + textToAdd);
+                setEditedWhilePaused(false);
               } else {
-                // Fallback to state update if ref not available
-                setTranscriptText(prev => {
-                  const current = prev || '';
-                  if (editedWhilePaused) {
-                    setEditedWhilePaused(false);
-                    return current + (current ? '\n' : '') + textToAdd;
-                  }
-                  return current + (current.length > 0 && !current.endsWith(' ') && !textToAdd.startsWith(' ') ? ' ' : '') + textToAdd;
-                });
+                transcriptEditorRef.current.insertText(textToAdd);
               }
+            } else {
+              setTranscriptText(prev => prev + textToAdd);
             }
           }
-        } catch {
-          // ignore
-        }
+        } catch {}
       };
+
       ws.onopen = () => {
         mediaRecorder.addEventListener('dataavailable', (event) => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
@@ -549,41 +292,152 @@ export default function ConsultationPanel({
         setIsTranscribing(true);
         setIsPaused(false);
       };
+
       ws.onclose = () => {
-        setIsTranscribing(false);
-        setIsPaused(false);
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
+        // The stopTranscription function will handle cleanup
+        if (socketRef.current) { // Check if it's an intentional close
+          stopTranscription();
         }
-        stream.getTracks().forEach(t => t.stop());
       };
       ws.onerror = () => {
-        setIsTranscribing(false);
-        setIsPaused(false);
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
-        }
-        stream.getTracks().forEach(t => t.stop());
         toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
+        stopTranscription();
       };
     } catch (err) {
       toast({ title: "Error", description: `Transcription error: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
     }
-  }, [isDemoMode, isTranscribing, isPaused, started, toast, transcriptText, editedWhilePaused]);
+  }, [isDemoMode, isTranscribing, started, toast, transcriptText, editedWhilePaused, stopTranscription]);
 
-  // Stop transcription (new function for manual stop)
-  const stopTranscription = useCallback(() => {
-    if (isDemoMode) return;
-    
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+  const createEncounter = useCallback(async () => {
+    if (!patient?.id || isCurrentlyCreatingEncounter.current) return;
+    isCurrentlyCreatingEncounter.current = true;
+    setIsCreating(true);
+    try {
+      const newEncounterData = {
+        reason: reason || undefined,
+        scheduledStart: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
+        duration: duration || undefined,
+      };
+      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, newEncounterData);
+      setEncounter(newEncounter);
+      if (onConsultationCreated) onConsultationCreated(newEncounter);
+    } catch (error) {
+      console.error('Failed to create encounter:', error);
+      toast({ title: "Error", description: `Failed to create consultation encounter: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
+      onClose();
+    } finally {
+      setIsCreating(false);
+      isCurrentlyCreatingEncounter.current = false;
     }
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.close();
+  }, [patient?.id, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
+
+  const handleClinicalPlan = useCallback(async () => {
+    setIsGeneratingPlan(true);
+    try {
+      const response = await fetch('/api/clinical-engine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: patient.id, encounterId: encounter?.id, transcript: transcriptText }),
+      });
+      if (!response.ok) throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      const result = await response.json();
+      const diagnosis = result.diagnosticResult?.diagnosisName || "Based on the transcript, a preliminary diagnosis has been generated.";
+      const treatment = result.diagnosticResult?.recommendedTreatments?.join('\n') || "Recommended treatment plan has been generated based on the diagnosis.";
+      setDiagnosisText(diagnosis);
+      setTreatmentText(treatment);
+      setPlanGenerated(true);
+      setActiveTab('diagnosis');
+    } catch (error) {
+      console.error("Error during clinical plan generation:", error);
+      setPlanGenerated(true);
+      setDiagnosisText('');
+      setTreatmentText('');
+      setActiveTab('diagnosis');
+      toast({ title: "Unable to Generate Plan", description: "Unable to generate plan automatically. You can complete the plan manually.", variant: "destructive" });
+    } finally {
+      setIsGeneratingPlan(false);
     }
-    setIsTranscribing(false);
-    setIsPaused(false);
-  }, [isDemoMode]);
+  }, [toast, patient.id, encounter?.id, transcriptText]);
+
+  // --- EFFECT HOOKS ---
+
+  useEffect(() => {
+    if (planGenerated) {
+      const timer = setTimeout(() => setTabBarVisible(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setTabBarVisible(false);
+    }
+  }, [planGenerated]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Reset state on open
+      setEncounter(null);
+      setReason('');
+      setScheduledDate(new Date());
+      setDuration(30);
+      setActiveTab('transcript');
+      setTabBarVisible(false);
+      setIsGeneratingPlan(false);
+      setStarted(false);
+      if (!isDemoMode || !transcriptText) setTranscriptText('');
+      setDiagnosisText('');
+      setTreatmentText('');
+      setPlanGenerated(false);
+      setShowConfirmationDialog(false);
+      setEditedWhilePaused(false);
+      
+      shouldCreateEncounterRef.current = !isDemoMode;
+      
+      if (isDemoMode) {
+        setStarted(true);
+        if (initialDemoTranscript) setTranscriptText(initialDemoTranscript);
+        setDiagnosisText(demoDiagnosis || '');
+        setTreatmentText(demoTreatment || '');
+        setPlanGenerated(!!(demoDiagnosis || demoTreatment));
+      } else {
+        setStarted(true);
+      }
+    } else if (mounted) {
+      // Cleanup on close
+      stopTranscription();
+      shouldCreateEncounterRef.current = false;
+      demoInitializedRef.current = false;
+    }
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment]);
+  
+  useEffect(() => {
+    if (!isDemoMode && shouldCreateEncounterRef.current && !encounter && !isCreating) {
+      shouldCreateEncounterRef.current = false;
+      createEncounter();
+    }
+  }, [isDemoMode, encounter, isCreating, createEncounter]);
+  
+  useEffect(() => {
+    if (!isDemoMode && encounter && started && !isTranscribing) {
+      const timer = setTimeout(() => startVoiceInput(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isDemoMode, encounter, started, isTranscribing, startVoiceInput]);
+  
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => e.key === 'Escape' && handleCloseRequest();
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, handleCloseRequest]);
+  
+  useEffect(() => {
+    // Stop transcription when component unmounts
+    return () => {
+      if (isTranscribing) {
+        stopTranscription();
+      }
+    };
+  }, [isTranscribing, stopTranscription]);
 
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
@@ -591,12 +445,7 @@ export default function ConsultationPanel({
   const panelContent = (
     <div 
       className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center p-4"
-      onClick={(e) => {
-        // Handle close request when clicking the backdrop (outside the modal)
-        if (e.target === e.currentTarget) {
-          handleCloseRequest();
-        }
-      }}
+      onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
     >
       <div className="glass-dense rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Discard (X) button */}
@@ -713,17 +562,10 @@ export default function ConsultationPanel({
                                 </Button>
                               </>
                             )}
-                            {/* Hide Clinical Plan button in demo mode after plan is generated */}
                             {!(isDemoMode && planGenerated) && (
                               <Button
                                 variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
-                                onClick={() => {
-                                  if (isDemoMode && onDemoClinicalPlanClick) {
-                                    onDemoClinicalPlanClick();
-                                  } else if (!isDemoMode) {
-                                    handleClinicalPlan();
-                                  }
-                                }}
+                                onClick={handleClinicalPlan}
                                 disabled={isDemoMode || isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan}
                                 className="flex items-center gap-2"
                               >
@@ -788,7 +630,6 @@ export default function ConsultationPanel({
                     )}
                   </>
                 ) : (
-                  // Loading/creating state
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center space-y-4">
                       <p className="text-muted-foreground">Setting up consultation...</p>

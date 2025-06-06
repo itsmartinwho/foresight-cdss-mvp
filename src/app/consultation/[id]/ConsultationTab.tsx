@@ -100,7 +100,24 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [priorAuthDetails, setPriorAuthDetails] = useState<any>(null);
 
+  const stopTranscription = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+    setIsTranscribing(false);
+    setIsPaused(false);
+  }, []);
+
   useEffect(() => {
+    // Stop any active transcription when the selected encounter changes or is cleared
+    stopTranscription();
+    
     if (selectedEncounter && patient) { 
       const currentTranscript = selectedEncounter.transcript || '';
       setEditableTranscript(currentTranscript);
@@ -109,20 +126,6 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       // Set content in the RichTextEditor
       if (richTextEditorRef.current) {
         richTextEditorRef.current.setContent(currentTranscript);
-      }
-      
-      // Clean up any existing connections
-      if (ws) {
-        ws.close();
-        setWs(null);
-      }
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current = null;
       }
       
       setAiOutput(null);
@@ -141,34 +144,16 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         richTextEditorRef.current.setContent("");
       }
       
-      // Clean up connections when no encounter
-      if (ws) {
-        ws.close();
-        setWs(null);
-      }
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current = null;
-      }
-      
       setAiOutput(null);
       encounterStateForAutoSaveRef.current = null;
     }
     
     // Cleanup function
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
+      // Final cleanup on unmount
+      stopTranscription();
     };
-  }, [selectedEncounter, patient, ws]);
+  }, [selectedEncounter, patient, stopTranscription]);
 
   const getCursorPosition = (): number | null => {
     // Note: With Tiptap, cursor position management is handled internally
@@ -357,33 +342,18 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
       wsInstance.onclose = (event) => {
         console.log("WebSocket closed", event.reason, event.code);
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-            mediaRecorderRef.current.stop();
-        }
-        if (stream && typeof stream.getTracks === 'function') {
-            stream.getTracks().forEach(track => track.stop());
-        }
-        setIsTranscribing(false);
-        setIsPaused(false);
+        stopTranscription();
       };
 
       wsInstance.onerror = (error) => {
         console.error("WebSocket error:", error);
-        setIsTranscribing(false);
-        setIsPaused(false);
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-            mediaRecorderRef.current.stop();
-        }
-        if (stream && typeof stream.getTracks === 'function') {
-            stream.getTracks().forEach(track => track.stop());
-        }
+        stopTranscription();
       }
 
     } catch (err: unknown) {
       console.error('Error starting transcription system', err);
       alert(`Error starting transcription system: ${err instanceof Error ? err.message : String(err)}`);
-      setIsTranscribing(false);
-      setIsPaused(false);
+      stopTranscription();
     }
   };
 
@@ -397,16 +367,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
   const stopTranscriptionAndSave = () => {
     console.log("Stop & Save initiated.");
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({ type: 'CloseStream' }));
-      socketRef.current.close(); 
-    } else {
-      setIsTranscribing(false);
-      setIsPaused(false);
-    }
+    stopTranscription();
     
     setTimeout(() => {
       handleSaveTranscript();
