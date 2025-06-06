@@ -112,7 +112,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
               {upcomingAppointments.map(({ patient: p, encounter }) => (
                 <TableRow
                   key={`upcoming_dashboard_${p.id}_${encounter.id}`}
-                  className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row cursor-pointer hover:bg-white/10 hover:backdrop-blur-md transition-all duration-200 hover:shadow-md"
                   onClick={() => onStartConsult(p)}
                 >
                   <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
