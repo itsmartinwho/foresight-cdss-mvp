@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useDemo } from '@/contexts/DemoContext';
 
 interface ConsultationPanelProps {
   /** Controls open state from parent */
@@ -65,6 +66,7 @@ export default function ConsultationPanel({
   isDemoGeneratingPlan = false,
 }: ConsultationPanelProps) {
   const { toast } = useToast();
+  const demoState = useDemo();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const isCurrentlyCreatingEncounter = useRef(false);
@@ -111,93 +113,57 @@ export default function ConsultationPanel({
 
   const stopTranscription = useCallback(() => {
     if (isDemoMode) return;
-    let stopped = false;
     if (mediaRecorderRef.current) {
-      try {
-        if (mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
-          stopped = true;
-        }
-      } catch (e) {
-        // ignore
-      }
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => {
-          if (track.readyState === 'live') {
-            track.stop();
-          }
-        });
-        stopped = true;
-      }
+      if (mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop());
       mediaRecorderRef.current = null;
     }
     if (socketRef.current) {
-      try {
-        if (socketRef.current.readyState === WebSocket.OPEN) {
-          socketRef.current.close();
-        }
-      } catch (e) {}
+      if (socketRef.current.readyState === WebSocket.OPEN) socketRef.current.close();
       socketRef.current = null;
     }
     setIsTranscribing(false);
     setIsPaused(false);
-    if (stopped) {
-      console.log('[Transcription] Cleaned up media recorder and tracks.');
-    }
   }, [isDemoMode]);
 
-  const handleClose = useCallback(async () => {
+  const handleSaveAndClose = useCallback(async () => {
     stopTranscription();
-    if (isDemoMode) {
-      onClose();
-      return;
-    }
-    if (!encounter) {
+    if (isDemoMode || !encounter) {
       onClose();
       return;
     }
     if (isSaving) return;
 
     setIsSaving(true);
-    const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
     try {
-      if (transcriptText && transcriptText.trim()) {
-        await supabaseDataService.updateEncounterTranscript(patient.id, compositeId, transcriptText);
-      }
-      if (diagnosisText && diagnosisText.trim()) {
-        await supabaseDataService.savePrimaryDiagnosis(patient.id, encounter.encounterIdentifier, diagnosisText);
-      }
-      if (treatmentText && treatmentText.trim()) {
-        const treatmentLines = treatmentText.split('\n').filter(line => line.trim());
-        const treatments = treatmentLines.map((line, index) => ({
-          drug: line.trim(), status: 'recommended', rationale: `Treatment plan item ${index + 1}`
-        }));
-        await supabaseDataService.updateEncounterTreatments(patient.id, compositeId, treatments);
-      }
-      if ((diagnosisText && diagnosisText.trim()) || (treatmentText && treatmentText.trim())) {
-        const soapNote = `S: ${transcriptText || 'See transcript'}\nO: Clinical examination performed\nA: ${diagnosisText || 'See diagnosis'}\nP: ${treatmentText || 'See treatment plan'}`;
-        await supabaseDataService.updateEncounterSOAPNote(patient.id, compositeId, soapNote);
-      }
-      toast({ title: "Consultation Saved", description: "All consultation data saved successfully." });
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const encounterUpdatePayload = {
+        transcript: transcriptText.trim() || undefined,
+        diagnosis: diagnosisText.trim() || undefined,
+        treatment: treatmentText.trim() || undefined,
+        soapNote: (transcriptText || diagnosisText || treatmentText) 
+          ? `S: ${transcriptText || 'See transcript'}\nO: Clinical examination performed\nA: ${diagnosisText || 'See diagnosis'}\nP: ${treatmentText || 'See treatment plan'}`
+          : undefined,
+      };
+      
+      await supabaseDataService.updateEncounterDetails(patient.id, encounter.id, encounterUpdatePayload);
+      
+      toast({ title: "Consultation Saved" });
       onClose();
     } catch (error) {
-      console.error('Failed to save consultation data:', error);
-      toast({ title: "Save Failed", description: "Could not save consultation data. Please try again.", variant: "destructive" });
+      toast({ title: "Save Failed", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
   }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving, stopTranscription]);
 
-  const handleDiscard = useCallback(() => {
+  const handleDiscard = useCallback(async () => {
     stopTranscription();
     if (isDemoMode) {
       onClose();
       return;
     }
     if (encounter) {
-      const compositeId = `${patient.id}_${encounter.encounterIdentifier}`;
-      supabaseDataService.permanentlyDeleteEncounter(patient.id, compositeId);
+      await supabaseDataService.permanentlyDeleteEncounter(patient.id, encounter.id);
     }
     onClose();
   }, [isDemoMode, encounter, patient.id, onClose, stopTranscription]);
@@ -207,17 +173,18 @@ export default function ConsultationPanel({
       onClose();
       return;
     }
-    if (transcriptText && transcriptText.trim()) {
+    const hasUnsavedContent = transcriptText.trim() || diagnosisText.trim() || treatmentText.trim();
+    if (hasUnsavedContent) {
       setShowConfirmationDialog(true);
     } else {
       handleDiscard();
     }
-  }, [isDemoMode, transcriptText, onClose, handleDiscard]);
+  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, onClose, handleDiscard]);
 
-  const handleConfirmSave = useCallback(async () => {
+  const handleConfirmSave = useCallback(() => {
     setShowConfirmationDialog(false);
-    await handleClose();
-  }, [handleClose]);
+    handleSaveAndClose();
+  }, [handleSaveAndClose]);
 
   const handleConfirmDiscard = useCallback(() => {
     setShowConfirmationDialog(false);
@@ -232,150 +199,81 @@ export default function ConsultationPanel({
   }, [isPaused]);
 
   const pauseTranscription = useCallback(() => {
-    if (isDemoMode) return;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.pause();
       setIsPaused(true);
     }
-  }, [isDemoMode]);
+  }, []);
 
   const resumeTranscription = useCallback(() => {
-    if (isDemoMode) return;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+    if (mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
     }
-  }, [isDemoMode]);
+  }, []);
 
   const startVoiceInput = useCallback(async () => {
-    if (isDemoMode) return; // Disable in demo mode
-
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-    if (!apiKey) {
-      toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
-      return;
-    }
-    if (isTranscribing && !isPaused) {
-      return; // Already transcribing
-    }
+    if (!apiKey) return toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+    if (isTranscribing) return;
 
-    // Start conversation if not already started
-    if (!started) setStarted(true);
-
-    let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      toast({ title: "Microphone Error", description: "Could not access microphone. Please check your browser settings.", variant: "destructive" });
-      console.error('[Transcription] getUserMedia error:', err);
-      return;
-    }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!isOpen) return stream.getTracks().forEach(track => track.stop());
 
-    // If modal was closed during async getUserMedia, abort
-    if (!isOpen) {
-      stream.getTracks().forEach(track => track.stop());
-      return;
-    }
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const mediaRecorder = mediaRecorderRef.current;
+      
+      const ws = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true', ['token', apiKey]);
+      socketRef.current = ws;
 
-    let mediaRecorder;
-    try {
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-    } catch (err) {
-      stream.getTracks().forEach(track => track.stop());
-      toast({ title: "Recorder Error", description: "Could not start audio recorder. Please try again.", variant: "destructive" });
-      console.error('[Transcription] MediaRecorder creation error:', err);
-      return;
-    }
-    mediaRecorderRef.current = mediaRecorder;
+      ws.onopen = () => {
+        mediaRecorder.addEventListener('dataavailable', event => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
+        });
+        mediaRecorder.start(250);
+        setIsTranscribing(true);
+        setIsPaused(false);
+      };
 
-    const ws = new WebSocket(
-      'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
-      ['token', apiKey]
-    );
-    socketRef.current = ws;
-    ws.onmessage = (e) => {
-      try {
+      ws.onmessage = (e) => {
         const data = JSON.parse(e.data);
         const chunk = data.channel?.alternatives?.[0]?.transcript;
-        if (chunk?.trim()) {
-          const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
-          let textToAdd = chunk;
-          if (speaker !== null) {
-            const speakerLabel = `Speaker ${speaker}: `;
-            const currentContent = transcriptEditorRef.current?.getContent() || transcriptText;
-            const lines = currentContent.split('\n');
-            const lastLine = lines[lines.length - 1] || '';
-            if (!lastLine.startsWith(speakerLabel)) {
-              textToAdd = (currentContent ? '\n' : '') + speakerLabel + chunk;
-            } else {
-              textToAdd = ' ' + chunk;
-            }
-          } else {
-            textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
-          }
+        if (chunk) {
           if (transcriptEditorRef.current) {
-            if (editedWhilePaused) {
-              transcriptEditorRef.current.setContent(transcriptText + (transcriptText ? '\n' : '') + textToAdd);
-              setEditedWhilePaused(false);
-            } else {
-              transcriptEditorRef.current.insertText(textToAdd);
-            }
+            transcriptEditorRef.current.insertText(chunk);
           } else {
-            setTranscriptText(prev => prev + textToAdd);
+            setTranscriptText(prev => prev + chunk);
           }
         }
-      } catch {}
-    };
-    ws.onopen = () => {
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          ws.send(event.data);
-        }
-      });
-      try {
-        mediaRecorder.start(250);
-      } catch (err) {
-        stream.getTracks().forEach(track => track.stop());
-        toast({ title: "Recorder Error", description: "Could not start audio recorder. Please try again.", variant: "destructive" });
-        console.error('[Transcription] MediaRecorder start error:', err);
-        setIsTranscribing(false);
-        setIsPaused(() => false);
-        return;
-      }
-      setIsTranscribing(true);
-      setIsPaused(() => false);
-    };
-    ws.onclose = () => {
-      stopTranscription();
-    };
-    ws.onerror = () => {
-      toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
-      stopTranscription();
-    };
-  }, [isDemoMode, isTranscribing, isPaused, started, toast, transcriptText, editedWhilePaused, isOpen, stopTranscription]);
+      };
+
+      ws.onclose = stopTranscription;
+      ws.onerror = () => {
+        toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
+        stopTranscription();
+      };
+    } catch (err) {
+      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
+    }
+  }, [isTranscribing, isOpen, stopTranscription, toast]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCurrentlyCreatingEncounter.current) return;
     isCurrentlyCreatingEncounter.current = true;
     setIsCreating(true);
     try {
-      const newEncounterData = {
-        reason: reason || undefined,
-        scheduledStart: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
-        duration: duration || undefined,
-      };
-      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, newEncounterData);
+      const newEncounter = await supabaseDataService.createNewEncounter(patient.id, {});
       setEncounter(newEncounter);
-      if (onConsultationCreated) onConsultationCreated(newEncounter);
+      onConsultationCreated?.(newEncounter);
     } catch (error) {
-      console.error('Failed to create encounter:', error);
-      toast({ title: "Error", description: `Failed to create consultation encounter: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
+      toast({ title: "Error", description: `Failed to create consultation: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
       onClose();
     } finally {
       setIsCreating(false);
       isCurrentlyCreatingEncounter.current = false;
     }
-  }, [patient?.id, reason, scheduledDate, duration, onConsultationCreated, onClose, toast]);
+  }, [patient?.id, onConsultationCreated, onClose, toast]);
 
   const handleClinicalPlan = useCallback(async () => {
     setIsGeneratingPlan(true);
@@ -385,21 +283,14 @@ export default function ConsultationPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientId: patient.id, encounterId: encounter?.id, transcript: transcriptText }),
       });
-      if (!response.ok) throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
       const result = await response.json();
-      const diagnosis = result.diagnosticResult?.diagnosisName || "Based on the transcript, a preliminary diagnosis has been generated.";
-      const treatment = result.diagnosticResult?.recommendedTreatments?.join('\n') || "Recommended treatment plan has been generated based on the diagnosis.";
-      setDiagnosisText(diagnosis);
-      setTreatmentText(treatment);
+      setDiagnosisText(result.diagnosticResult?.diagnosisName || '');
+      setTreatmentText(result.diagnosticResult?.recommendedTreatments?.join('\n') || '');
       setPlanGenerated(true);
       setActiveTab('diagnosis');
     } catch (error) {
-      console.error("Error during clinical plan generation:", error);
-      setPlanGenerated(true);
-      setDiagnosisText('');
-      setTreatmentText('');
-      setActiveTab('diagnosis');
-      toast({ title: "Unable to Generate Plan", description: "Unable to generate plan automatically. You can complete the plan manually.", variant: "destructive" });
+      toast({ title: "Plan Generation Failed", variant: "destructive" });
     } finally {
       setIsGeneratingPlan(false);
     }
@@ -427,41 +318,31 @@ export default function ConsultationPanel({
       setTabBarVisible(false);
       setIsGeneratingPlan(false);
       setStarted(false);
-      if (!isDemoMode || !transcriptText) setTranscriptText('');
-      setDiagnosisText('');
-      setTreatmentText('');
-      setPlanGenerated(false);
+      setTranscriptText(isDemoMode ? initialDemoTranscript || '' : '');
+      setDiagnosisText(isDemoMode ? demoDiagnosis || '' : '');
+      setTreatmentText(isDemoMode ? demoTreatment || '' : '');
+      setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment)));
       setShowConfirmationDialog(false);
       setEditedWhilePaused(false);
       
       shouldCreateEncounterRef.current = !isDemoMode;
-      
-      if (isDemoMode) {
-        setStarted(true);
-        if (initialDemoTranscript) setTranscriptText(initialDemoTranscript);
-        setDiagnosisText(demoDiagnosis || '');
-        setTreatmentText(demoTreatment || '');
-        setPlanGenerated(!!(demoDiagnosis || demoTreatment));
-      } else {
-        setStarted(true);
-      }
+      if (isDemoMode) setStarted(true);
+
     } else if (mounted) {
-      // Cleanup on close
       stopTranscription();
       shouldCreateEncounterRef.current = false;
-      demoInitializedRef.current = false;
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription]);
   
   useEffect(() => {
-    if (!isDemoMode && shouldCreateEncounterRef.current && !encounter && !isCreating) {
-      shouldCreateEncounterRef.current = false;
+    if (!isDemoMode && isOpen && !encounter && !isCreating) {
       createEncounter();
     }
-  }, [isDemoMode, encounter, isCreating, createEncounter]);
+  }, [isDemoMode, isOpen, encounter, isCreating, createEncounter]);
   
   useEffect(() => {
-    if (!isDemoMode && encounter && started && !isTranscribing) {
+    if (!isDemoMode && encounter && !started && !isTranscribing) {
+      setStarted(true);
       const timer = setTimeout(() => startVoiceInput(), 500);
       return () => clearTimeout(timer);
     }
@@ -469,23 +350,45 @@ export default function ConsultationPanel({
   
   useEffect(() => {
     if (!isOpen) return;
-    const handleEscape = (e: KeyboardEvent) => e.key === 'Escape' && handleCloseRequest();
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (!isDemoMode || (isDemoMode && !demoState.isDemoModalOpen)) {
+          handleCloseRequest();
+        }
+      }
+    };
     document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, handleCloseRequest]);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, handleCloseRequest, isDemoMode, demoState.isDemoModalOpen]);
   
+  // Stop transcription when component unmounts
   useEffect(() => {
-    // Stop transcription when component unmounts
+    if (isTranscribing) {
+      stopTranscription();
+    }
+  }, [isTranscribing, stopTranscription, mounted]);
+
+  // Effect to handle transcription state on visibility change
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.hidden && isTranscribing && !isPaused) {
+        pauseTranscription();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup if transcription is running when component unmounts
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (isTranscribing) {
         stopTranscription();
       }
     };
-  }, [isTranscribing, stopTranscription]);
+  }, [isTranscribing, isPaused, pauseTranscription, stopTranscription, mounted]);
 
-  // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
 
   const panelContent = (
@@ -494,7 +397,6 @@ export default function ConsultationPanel({
       onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
     >
       <div className="glass-dense rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Discard (X) button */}
         <Button 
           variant="ghost" 
           size="icon"
@@ -504,128 +406,64 @@ export default function ConsultationPanel({
         >
           <X className="h-4 w-4" />
         </Button>
-
-        {/* Header */}
         <div className="pt-8 pb-4 border-b border-border/50">
           <h2 className="text-xl font-semibold mb-2">New Consultation</h2>
           <p className="text-sm text-muted-foreground">
             Patient: {patient.firstName} {patient.lastName} • {encounter?.id ? `ID: ${encounter.id}` : 'Creating...'}
           </p>
         </div>
-
-        {/* Main content area */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {(!encounter && !isCreating && !isDemoMode) ? (
             <div className="flex items-center justify-center flex-1">
-              <p className="text-sm text-muted-foreground">Failed to create consultation</p>
+              <p className="text-muted-foreground">Failed to create consultation</p>
             </div>
           ) : (
             <>
-              {/* Tab Navigation */}
               {planGenerated && (
-                <div className={cn(
-                  "border-b border-border/50 transition-all duration-300 ease-in-out",
-                  tabBarVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
-                )}>
+                <div className={cn("border-b border-border/50 transition-all", tabBarVisible ? "opacity-100" : "opacity-0")}>
                   <div className="flex space-x-4 px-1 py-2">
-                    <button
-                      onClick={() => setActiveTab('transcript')}
-                      className={cn(
-                        "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                        activeTab === 'transcript'
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      Transcript
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('diagnosis')}
-                      className={cn(
-                        "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                        activeTab === 'diagnosis'
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      Diagnosis
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('treatment')}
-                      className={cn(
-                        "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                        activeTab === 'treatment'
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      Treatment
-                    </button>
+                    {['transcript', 'diagnosis', 'treatment'].map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium rounded-md transition-all",
+                          activeTab === tab
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
-
-              {/* Content Area */}
               <div className="flex-1 overflow-hidden p-4">
                 {started ? (
-                  // Content based on active tab
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (
                       <div className="h-full flex flex-col space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
                           <div className="flex items-center gap-2">
-                            {!isTranscribing && !isDemoMode && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={startVoiceInput}
-                                disabled={isGeneratingPlan || isSaving}
-                                className="flex items-center gap-2"
-                              >
-                                <Mic className="h-4 w-4" />
-                                Start Recording
-                              </Button>
+                            {!isDemoMode && !isTranscribing && (
+                              <Button variant="outline" size="sm" onClick={startVoiceInput} disabled={isGeneratingPlan || isSaving} className="gap-2"><Mic className="h-4 w-4" /> Start Recording</Button>
                             )}
-                            {isTranscribing && !isDemoMode && (
+                            {!isDemoMode && isTranscribing && (
                               <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={isPaused ? resumeTranscription : pauseTranscription}
-                                  className="flex items-center gap-2"
-                                >
-                                  {isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
-                                  {isPaused ? "Resume" : "Pause"}
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={stopTranscription}
-                                  className="flex items-center gap-2"
-                                >
-                                  Stop Recording
-                                </Button>
+                                <Button variant="outline" size="sm" onClick={isPaused ? resumeTranscription : pauseTranscription} className="gap-2">{isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}{isPaused ? "Resume" : "Pause"}</Button>
+                                <Button variant="destructive" size="sm" onClick={stopTranscription} className="gap-2">Stop Recording</Button>
                               </>
                             )}
                             {!(isDemoMode && planGenerated) && (
                               <Button
                                 variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
-                                onClick={handleClinicalPlan}
-                                disabled={isDemoMode || isGeneratingPlan || transcriptText.length < 10 || isDemoGeneratingPlan}
-                                className="flex items-center gap-2"
+                                onClick={isDemoMode ? onDemoClinicalPlanClick : handleClinicalPlan}
+                                disabled={isGeneratingPlan || isDemoGeneratingPlan || transcriptText.length < 10}
+                                className="gap-2"
                               >
-                                {(isGeneratingPlan || isDemoGeneratingPlan) ? (
-                                  <>
-                                    <CircleNotch className="h-4 w-4 animate-spin" />
-                                    Analyzing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Brain className="h-4 w-4" />
-                                    Clinical Plan
-                                  </>
-                                )}
+                                {(isGeneratingPlan || isDemoGeneratingPlan) ? <><CircleNotch className="h-4 w-4 animate-spin" /> Analyzing...</> : <><Brain className="h-4 w-4" /> Clinical Plan</>}
                               </Button>
                             )}
                           </div>
@@ -634,7 +472,7 @@ export default function ConsultationPanel({
                           ref={transcriptEditorRef}
                           content={transcriptText}
                           onContentChange={handleTranscriptChange}
-                          placeholder={isDemoMode ? "Demo transcript loaded." : "Transcription will appear here automatically when recording starts..."}
+                          placeholder="Transcription will appear here..."
                           disabled={isDemoMode || isTranscribing}
                           showToolbar={!isDemoMode && !isTranscribing}
                           minHeight="300px"
@@ -642,89 +480,48 @@ export default function ConsultationPanel({
                         />
                       </div>
                     )}
-
                     {planGenerated && activeTab === 'diagnosis' && (
                       <div className="h-full flex flex-col space-y-4">
                         <h3 className="text-lg font-medium">Diagnosis</h3>
-                        <RichTextEditor
-                          ref={diagnosisEditorRef}
-                          content={diagnosisText}
-                          onContentChange={setDiagnosisText}
-                          placeholder={isDemoMode ? "Demo diagnosis loaded." : "Enter or edit the diagnosis..."}
-                          disabled={isDemoMode || isTranscribing}
-                          showToolbar={!isDemoMode && !isTranscribing}
-                          minHeight="300px"
-                          className="flex-1"
-                        />
+                        <RichTextEditor content={diagnosisText} onContentChange={setDiagnosisText} placeholder="Enter diagnosis..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
                       </div>
                     )}
-
                     {planGenerated && activeTab === 'treatment' && (
                       <div className="h-full flex flex-col space-y-4">
                         <h3 className="text-lg font-medium">Treatment Plan</h3>
-                        <RichTextEditor
-                          ref={treatmentEditorRef}
-                          content={treatmentText}
-                          onContentChange={setTreatmentText}
-                          placeholder={isDemoMode ? "Demo treatment plan loaded." : "Enter or edit the treatment plan..."}
-                          disabled={isDemoMode || isTranscribing}
-                          showToolbar={!isDemoMode && !isTranscribing}
-                          minHeight="300px"
-                          className="flex-1"
-                        />
+                        <RichTextEditor content={treatmentText} onContentChange={setTreatmentText} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center space-y-4">
-                      <p className="text-muted-foreground">Setting up consultation...</p>
-                    </div>
-                  </div>
+                  <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Setting up consultation...</p></div>
                 )}
               </div>
-
-              {/* Footer Actions */}
               {started && (
                 <div className="border-t border-border/50 pt-4 flex justify-end gap-2">
-                  <Button variant="secondary" onClick={handleCloseRequest} disabled={isSaving && !isDemoMode}>
-                    Close
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    onClick={handleClose}
-                    disabled={isSaving && !isDemoMode}
-                  >
-                    {(isSaving && !isDemoMode) ? "Saving..." : "Save & Close"}
-                  </Button>
+                  <Button variant="secondary" onClick={handleCloseRequest} disabled={isSaving}>Close</Button>
+                  <Button onClick={handleSaveAndClose} disabled={isSaving}>{(isSaving && !isDemoMode) ? "Saving..." : "Save & Close"}</Button>
                 </div>
               )}
             </>
           )}
         </div>
       </div>
-
-      {/* Confirmation Dialog */}
       {showConfirmationDialog && (
         <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Save transcript content?</h3>
             <p className="text-sm text-muted-foreground mb-6">
-              You have transcript content that will be lost if you don't save it. What would you like to do?
+              You have transcript content that will be lost if you don&apos;t save it. What would you like to do?
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="destructive" onClick={handleConfirmDiscard}>
-                Delete
-              </Button>
-              <Button variant="default" onClick={handleConfirmSave}>
-                Save
-              </Button>
+              <Button variant="destructive" onClick={handleConfirmDiscard}>Delete</Button>
+              <Button variant="default" onClick={handleConfirmSave}>Save</Button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-
   return createPortal(panelContent, document.body);
 }
