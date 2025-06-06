@@ -206,13 +206,20 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       {/* Demo Modal */}
       {demoStage === 'introModal' && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[500px]">
             <DialogHeader>
               <DialogTitle>See Foresight in Action</DialogTitle>
-              <DialogDescription>
-                Take a quick guided tour using a sample patient to see how Foresight can help you.
-              </DialogDescription>
             </DialogHeader>
+            <div className="flex justify-center items-center py-8">
+              <Image
+                src="/images/waves_animation.gif"
+                alt="Foresight Animation"
+                width={400}
+                height={256}
+                className="max-w-full max-h-64 object-contain"
+                unoptimized={true}
+              />
+            </div>
             <DialogFooter>
               <Button
                 variant="outline"
