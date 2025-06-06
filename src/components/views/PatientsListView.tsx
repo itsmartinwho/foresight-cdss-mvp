@@ -398,9 +398,6 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Schedule a consultation for any patient
-                  </p>
                 </div>
               </div>
             </div>

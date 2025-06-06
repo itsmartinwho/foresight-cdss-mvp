@@ -160,9 +160,6 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
-                <p className="text-sm text-muted-foreground">
-                  Start a new patient consultation session
-                </p>
               </div>
             </div>
           </div>
