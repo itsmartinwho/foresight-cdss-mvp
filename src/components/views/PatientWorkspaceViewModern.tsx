@@ -71,6 +71,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     patient,
     isDemoActive: demoState.isDemoActive,
     demoStage: demoState.demoStage,
+    animatedTranscript: demoState.animatedTranscript,
     onAdvanceStage: demoState.advanceDemoStage,
   });
 

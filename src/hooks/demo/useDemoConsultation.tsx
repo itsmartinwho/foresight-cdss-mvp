@@ -19,11 +19,13 @@ export function useDemoConsultation({
   patient,
   isDemoActive,
   demoStage,
+  animatedTranscript,
   onAdvanceStage,
 }: {
   patient?: Patient | null;
   isDemoActive: boolean;
   demoStage: DemoStage;
+  animatedTranscript?: string;
   onAdvanceStage?: (stage: DemoStage) => void;
 }): DemoConsultationBehavior {
   const searchParams = useSearchParams();
@@ -40,16 +42,28 @@ export function useDemoConsultation({
     DEMO_PATIENT_ID,
     isDemoRoute,
     isDemoMode,
-    demoStage
+    demoStage,
+    hasAnimatedTranscript: !!animatedTranscript,
+    animatedTranscriptLength: animatedTranscript?.length || 0
   });
   
   // Demo transcript progression based on stage - use real enriched data
   const getDemoTranscript = () => {
     if (!isDemoMode) return undefined;
     
-    // Use the real enriched transcript from DemoDataService
-    const encounterData = DemoDataService.getEncounterData();
-    return encounterData.transcript || undefined;
+    // During animation stage, use the animated transcript
+    if (demoStage === 'animatingTranscript' && animatedTranscript) {
+      return animatedTranscript;
+    }
+    
+    // After animation completes, use the full transcript
+    if (demoStage === 'simulatingPlanGeneration' || demoStage === 'showingPlan' || demoStage === 'finished') {
+      const encounterData = DemoDataService.getEncounterData();
+      return encounterData.transcript || undefined;
+    }
+    
+    // Before animation starts, return empty or undefined
+    return undefined;
   };
   
   // Additional debug logging after functions are declared
@@ -93,11 +107,12 @@ export function useDemoConsultation({
     
     setIsGeneratingPlan(true);
     
-    // Simulate clinical plan generation delay
+    // Note: Clinical plan generation delay is handled by DemoAnimationService
+    // This is just for UI state management
     setTimeout(() => {
       setIsGeneratingPlan(false);
       onAdvanceStage('showingPlan');
-    }, 1800); // Match the demo system timing
+    }, 200); // Quick UI update, actual delay handled by orchestrator
   };
   
   // Reset generation state when stage changes
