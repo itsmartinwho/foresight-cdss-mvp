@@ -12,7 +12,7 @@ export default function GlassHeader() {
   
   const handleResetDemo = () => {
     console.log('Demo reset from header menu');
-    localStorage.removeItem('hasDemoRun');
+    localStorage.removeItem('hasDemoRun_v3');
     window.location.reload();
   };
 

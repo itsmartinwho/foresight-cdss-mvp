@@ -130,4 +130,56 @@ The demo system consists of:
 - **useDemoOrchestrator**: Main hook that coordinates demo flow
 - **DemoProvider**: React context that makes demo state available
 
-All demo logic is separated from production code and uses mock data instead of database queries. 
+All demo logic is separated from production code and uses mock data instead of database queries.
+
+## 8. Race Condition Prevention Guide
+
+⚠️ **IMPORTANT**: The demo system is delicate and requires careful handling to prevent race conditions. Always consider these when making changes:
+
+### Known Race Conditions and Solutions
+
+#### 1. Encounter Creation Loops
+- **Issue**: `useEffect` dependencies on `createEncounter` callback causing infinite loops
+- **Solution**: Use refs to track creation state and separate dependency management
+- **Implementation**: `shouldCreateEncounterRef` in `ConsultationPanel.tsx`
+- **Key Code**: Never call `createEncounter` in demo mode, use `shouldCreateEncounterRef.current = !isDemoMode`
+
+#### 2. Demo/Production Logic Conflicts
+- **Issue**: Mixed demo and production state in same component instances
+- **Solution**: Separate demo and production consultation panels entirely
+- **Implementation**: Conditional rendering of separate `ConsultationPanel` instances
+- **Key Code**: Always use `isDemoMode` flag to separate logic paths
+
+#### 3. Transcription Service Conflicts
+- **Issue**: Multiple transcription sessions or conflicts with manual editing
+- **Solution**: State guards and proper WebSocket cleanup
+- **Implementation**: `isSavingRef` and connection cleanup in `ConsultationTab.tsx`
+
+#### 4. Patient Data Loading Races
+- **Issue**: Multiple simultaneous data loads triggering state updates
+- **Solution**: Loading state refs and patient ID tracking
+- **Implementation**: `isLoadingDataRef` and `loadedPatientIdRef` in `PatientWorkspaceViewModern.tsx`
+
+#### 5. LocalStorage Key Mismatches
+- **Issue**: Reset functions using wrong localStorage keys
+- **Solution**: Always use the current `DEMO_STORAGE_KEY` value (`hasDemoRun_v3`)
+- **Implementation**: Update all reset functions when storage key changes
+
+### Best Practices for Robust Implementation
+
+1. **Use Refs for State Guards**: Prevent multiple simultaneous operations
+2. **Separate Demo from Production**: Never mix demo and production logic in the same component instance
+3. **Proper Cleanup**: Always clean up WebSockets, timers, and event listeners
+4. **Dependency Management**: Be careful with useEffect dependencies, especially callbacks
+5. **Service Layer Separation**: Keep demo logic in services, not components
+6. **Storage Key Consistency**: Always use the current storage key from `DemoStateService.DEMO_STORAGE_KEY`
+7. **State Synchronization**: Use storage events for cross-tab synchronization
+8. **Proper Reset Logic**: Use `localStorage.removeItem()` not `setItem('false')` for complete reset
+
+### When Making Changes
+
+- **Always test demo reset functionality** after any changes
+- **Check console for demo state initialization logs** to verify proper state
+- **Use the UI reset button** (user profile → "Reset Demo") as the primary reset method
+- **Test both the global reset functions and UI reset button**
+- **Verify localStorage key consistency** across all reset methods 

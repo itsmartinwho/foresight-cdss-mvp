@@ -147,7 +147,7 @@ function DemoDebugComponent() {
       (window as any).resetDemo = function() {
         try {
           console.log('Resetting demo state...');
-          localStorage.removeItem('hasDemoRun');
+          localStorage.removeItem('hasDemoRun_v3');
           console.log('Demo state cleared. Reloading page...');
           window.location.reload();
         } catch (error) {
@@ -171,7 +171,7 @@ function DemoDebugComponent() {
       console.log('=== DEMO RESET INSTRUCTIONS ===');
       console.log('1. Type: resetDemo()');
       console.log('2. Or type: forceShowDemo()');
-      console.log('3. Or manually: localStorage.removeItem("hasDemoRun"); location.reload();');
+      console.log('3. Or manually: localStorage.removeItem("hasDemoRun_v3"); location.reload();');
     }
   }, [hasDemoRun, isDemoModalOpen, demoStage]);
   

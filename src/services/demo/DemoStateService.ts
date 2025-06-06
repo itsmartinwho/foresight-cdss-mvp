@@ -53,6 +53,17 @@ export class DemoStateService {
   }
 
   static resetDemo(): void {
-    this.setDemoRun(false);
+    if (typeof window === 'undefined') return;
+    
+    // Remove the localStorage item completely (more thorough than setDemoRun(false))
+    localStorage.removeItem(this.DEMO_STORAGE_KEY);
+    
+    // Trigger storage event to notify other components
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: this.DEMO_STORAGE_KEY,
+      newValue: null,
+      oldValue: 'true',
+      storageArea: localStorage
+    }));
   }
 } 
