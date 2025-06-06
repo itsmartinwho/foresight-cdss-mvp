@@ -376,8 +376,20 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           </TabsList>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto pr-96">
+        {/* Main Content Area with glass background */}
+        <div className="relative flex-1 overflow-y-auto pr-96 bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6 overflow-hidden">
+          {/* Background Image with transparency for main content */}
+          <div 
+            className="absolute inset-0 rounded-xl"
+            style={{
+              backgroundImage: `url(${SIDE_PANEL_CONFIG.backgroundImage})`,
+              backgroundSize: SIDE_PANEL_CONFIG.backgroundSize,
+              backgroundPosition: SIDE_PANEL_CONFIG.backgroundPosition,
+              backgroundRepeat: SIDE_PANEL_CONFIG.backgroundRepeat,
+              opacity: SIDE_PANEL_CONFIG.opacity * 0.7, // Slightly less opaque than side panel
+              zIndex: -1,
+            }}
+          />
           {/* Main Content - Tables */}
           <TabsContent value="allPatients" className="mt-0 h-full">
             {renderAllPatientsTable()}
@@ -391,7 +403,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         {/* Fixed Right Side Panel - New Consultation */}
         <div className="fixed top-32 right-6 bottom-6 w-80 z-10">
           <div 
-            className="relative h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors overflow-hidden"
+            className="relative h-full bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors overflow-hidden"
             onClick={() => setShowNewConsultModal(true)}
           >
             {/* Background Image with transparency */}
