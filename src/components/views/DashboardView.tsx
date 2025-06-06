@@ -97,6 +97,11 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto pr-96">
+        {/* Section Header for alignment with patients tab */}
+        <div className="mb-4">
+          <h2 className="text-lg font-medium text-foreground">Today's Schedule</h2>
+        </div>
+        
         {/* Main Content - Table */}
         {upcomingAppointments.length > 0 ? (
           <Table className="mobile-card:block sm:table text-step-0">
