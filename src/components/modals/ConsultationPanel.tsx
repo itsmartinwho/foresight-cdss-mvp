@@ -91,6 +91,13 @@ export default function ConsultationPanel({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   
+  // New state for confirmation dialog
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+  const [pendingCloseAction, setPendingCloseAction] = useState<'save' | 'discard' | null>(null);
+  
+  // Track when user makes edits during pause to append new transcription at bottom
+  const [editedWhilePaused, setEditedWhilePaused] = useState(false);
+  
   // Refs
   const transcriptEditorRef = useRef<RichTextEditorRef>(null);
   const diagnosisEditorRef = useRef<RichTextEditorRef>(null);
@@ -247,6 +254,9 @@ export default function ConsultationPanel({
       setDiagnosisText('');
       setTreatmentText('');
       setPlanGenerated(false);
+      setShowConfirmationDialog(false);
+      setPendingCloseAction(null);
+      setEditedWhilePaused(false);
       
       // Reset the creation flag
       shouldCreateEncounterRef.current = !isDemoMode;
@@ -270,6 +280,7 @@ export default function ConsultationPanel({
         
         // DO NOT call createEncounter in demo mode
       } else {
+        // For non-demo mode, start automatically
         setStarted(true);
       }
     } else {
@@ -286,6 +297,17 @@ export default function ConsultationPanel({
       createEncounter();
     }
   }, [isDemoMode, shouldCreateEncounterRef, encounter, isCreating, createEncounter]);
+
+  // Auto-start transcription when encounter is created (non-demo mode)
+  useEffect(() => {
+    if (!isDemoMode && encounter && started && !isTranscribing && !isPaused) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        startVoiceInput();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [encounter, started, isTranscribing, isPaused, isDemoMode]);
 
   // Demo mode: Watch for animated transcript updates during demo
   useEffect(() => {
@@ -369,6 +391,43 @@ export default function ConsultationPanel({
     onClose();
   }, [isDemoMode, encounter, patient.id, onClose]);
 
+  // Enhanced close handler with confirmation dialog
+  const handleCloseRequest = useCallback(() => {
+    if (isDemoMode) {
+      onClose();
+      return;
+    }
+
+    // Check if there's transcript content that would be lost
+    if (transcriptText && transcriptText.trim()) {
+      setShowConfirmationDialog(true);
+      setPendingCloseAction(null); // User needs to choose
+    } else {
+      // No content to lose, proceed with discard
+      handleDiscard();
+    }
+  }, [isDemoMode, transcriptText, onClose, handleDiscard]);
+
+  const handleConfirmSave = useCallback(async () => {
+    setShowConfirmationDialog(false);
+    setPendingCloseAction('save');
+    await handleClose();
+  }, [handleClose]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    setShowConfirmationDialog(false);
+    setPendingCloseAction('discard');
+    handleDiscard();
+  }, [handleDiscard]);
+
+  // Track transcript changes to detect edits while paused
+  const handleTranscriptChange = useCallback((newText: string) => {
+    setTranscriptText(newText);
+    if (isPaused) {
+      setEditedWhilePaused(true);
+    }
+  }, [isPaused]);
+
   // Handle escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -421,7 +480,7 @@ export default function ConsultationPanel({
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
       const ws = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=false',
+        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
         ['token', apiKey]
       );
       socketRef.current = ws;
@@ -430,16 +489,48 @@ export default function ConsultationPanel({
           const data = JSON.parse(e.data);
           if (data.channel && data.is_final && data.channel.alternatives?.[0]?.transcript) {
             const chunk = data.channel.alternatives[0].transcript;
+            const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
+            
             if (chunk.trim()) {
+              let textToAdd = chunk;
+              
+              // Add speaker label if available
+              if (speaker !== null && speaker !== undefined) {
+                const speakerLabel = `Speaker ${speaker}: `;
+                // Check if this is a new speaker or we need to add a speaker label
+                const currentContent = transcriptEditorRef.current?.getContent() || transcriptText;
+                const lines = currentContent.split('\n');
+                const lastLine = lines[lines.length - 1] || '';
+                
+                // Add speaker label if starting fresh or speaker changed
+                if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
+                  textToAdd = (currentContent ? '\n' : '') + speakerLabel + chunk;
+                } else {
+                  textToAdd = ' ' + chunk;
+                }
+              } else {
+                // No speaker info, just add appropriate spacing
+                textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
+              }
+              
               // Use RichTextEditor's insertText method for better integration
               if (transcriptEditorRef.current) {
-                const textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
-                transcriptEditorRef.current.insertText(textToAdd);
+                if (editedWhilePaused) {
+                  // Append at the end regardless of cursor position
+                  transcriptEditorRef.current.setContent(transcriptText + (transcriptText ? '\n' : '') + textToAdd);
+                  setEditedWhilePaused(false);
+                } else {
+                  transcriptEditorRef.current.insertText(textToAdd);
+                }
               } else {
                 // Fallback to state update if ref not available
                 setTranscriptText(prev => {
                   const current = prev || '';
-                  return current + (current.length > 0 && !current.endsWith(' ') && !chunk.startsWith(' ') ? ' ' : '') + chunk;
+                  if (editedWhilePaused) {
+                    setEditedWhilePaused(false);
+                    return current + (current ? '\n' : '') + textToAdd;
+                  }
+                  return current + (current.length > 0 && !current.endsWith(' ') && !textToAdd.startsWith(' ') ? ' ' : '') + textToAdd;
                 });
               }
             }
@@ -478,7 +569,21 @@ export default function ConsultationPanel({
     } catch (err) {
       toast({ title: "Error", description: `Transcription error: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
     }
-  }, [isDemoMode, isTranscribing, isPaused, started, toast]);
+  }, [isDemoMode, isTranscribing, isPaused, started, toast, transcriptText, editedWhilePaused]);
+
+  // Stop transcription (new function for manual stop)
+  const stopTranscription = useCallback(() => {
+    if (isDemoMode) return;
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.close();
+    }
+    setIsTranscribing(false);
+    setIsPaused(false);
+  }, [isDemoMode]);
 
   // Don't render anything if not mounted (SSR safety) or not open
   if (!mounted || !isOpen) return null;
@@ -487,13 +592,9 @@ export default function ConsultationPanel({
     <div 
       className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center p-4"
       onClick={(e) => {
-        // Discard when clicking the backdrop (outside the modal)
+        // Handle close request when clicking the backdrop (outside the modal)
         if (e.target === e.currentTarget) {
-          if (isDemoMode) {
-            onClose();
-          } else {
-            handleDiscard();
-          }
+          handleCloseRequest();
         }
       }}
     >
@@ -503,7 +604,7 @@ export default function ConsultationPanel({
           variant="ghost" 
           size="icon"
           className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20 z-10"
-          onClick={handleDiscard}
+          onClick={handleCloseRequest}
           disabled={isSaving}
         >
           <X className="h-4 w-4" />
@@ -571,23 +672,7 @@ export default function ConsultationPanel({
 
               {/* Content Area */}
               <div className="flex-1 overflow-hidden p-4">
-                {!started ? (
-                  // Initial state - show start button
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center space-y-4">
-                      <p className="text-muted-foreground">Ready to begin consultation</p>
-                      <Button 
-                        variant="default" 
-                        size="lg"
-                        onClick={startVoiceInput}
-                        className="flex items-center gap-2"
-                      >
-                        <Mic className="h-5 w-5" />
-                        Start Consultation
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
+                {started ? (
                   // Content based on active tab
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (
@@ -595,26 +680,38 @@ export default function ConsultationPanel({
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={startVoiceInput}
-                              disabled={isDemoMode || isGeneratingPlan || isSaving || isTranscribing}
-                              className="flex items-center gap-2"
-                            >
-                              <Mic className="h-4 w-4" />
-                              Transcribe
-                            </Button>
-                            {isTranscribing && !isDemoMode && (
+                            {!isTranscribing && !isDemoMode && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={isPaused ? resumeTranscription : pauseTranscription}
+                                onClick={startVoiceInput}
+                                disabled={isGeneratingPlan || isSaving}
                                 className="flex items-center gap-2"
                               >
-                                {isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
-                                {isPaused ? "Resume" : "Pause"}
+                                <Mic className="h-4 w-4" />
+                                Start Recording
                               </Button>
+                            )}
+                            {isTranscribing && !isDemoMode && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={isPaused ? resumeTranscription : pauseTranscription}
+                                  className="flex items-center gap-2"
+                                >
+                                  {isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                                  {isPaused ? "Resume" : "Pause"}
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={stopTranscription}
+                                  className="flex items-center gap-2"
+                                >
+                                  Stop Recording
+                                </Button>
+                              </>
                             )}
                             {/* Hide Clinical Plan button in demo mode after plan is generated */}
                             {!(isDemoMode && planGenerated) && (
@@ -648,10 +745,10 @@ export default function ConsultationPanel({
                         <RichTextEditor
                           ref={transcriptEditorRef}
                           content={transcriptText}
-                          onContentChange={setTranscriptText}
-                          placeholder={isDemoMode ? "Demo transcript loaded." : "Type or dictate the consultation notes here..."}
-                          disabled={isDemoMode}
-                          showToolbar={!isDemoMode}
+                          onContentChange={handleTranscriptChange}
+                          placeholder={isDemoMode ? "Demo transcript loaded." : "Transcription will appear here automatically when recording starts..."}
+                          disabled={isDemoMode || isTranscribing}
+                          showToolbar={!isDemoMode && !isTranscribing}
                           minHeight="300px"
                           className="flex-1"
                         />
@@ -666,8 +763,8 @@ export default function ConsultationPanel({
                           content={diagnosisText}
                           onContentChange={setDiagnosisText}
                           placeholder={isDemoMode ? "Demo diagnosis loaded." : "Enter or edit the diagnosis..."}
-                          disabled={isDemoMode}
-                          showToolbar={!isDemoMode}
+                          disabled={isDemoMode || isTranscribing}
+                          showToolbar={!isDemoMode && !isTranscribing}
                           minHeight="300px"
                           className="flex-1"
                         />
@@ -682,21 +779,28 @@ export default function ConsultationPanel({
                           content={treatmentText}
                           onContentChange={setTreatmentText}
                           placeholder={isDemoMode ? "Demo treatment plan loaded." : "Enter or edit the treatment plan..."}
-                          disabled={isDemoMode}
-                          showToolbar={!isDemoMode}
+                          disabled={isDemoMode || isTranscribing}
+                          showToolbar={!isDemoMode && !isTranscribing}
                           minHeight="300px"
                           className="flex-1"
                         />
                       </div>
                     )}
                   </>
+                ) : (
+                  // Loading/creating state
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center space-y-4">
+                      <p className="text-muted-foreground">Setting up consultation...</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
               {/* Footer Actions */}
               {started && (
                 <div className="border-t border-border/50 pt-4 flex justify-end gap-2">
-                  <Button variant="secondary" onClick={handleDiscard} disabled={isSaving && !isDemoMode}>
+                  <Button variant="secondary" onClick={handleCloseRequest} disabled={isSaving && !isDemoMode}>
                     Close
                   </Button>
                   <Button 
@@ -712,6 +816,26 @@ export default function ConsultationPanel({
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmationDialog && (
+        <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Save transcript content?</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              You have transcript content that will be lost if you don't save it. What would you like to do?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="destructive" onClick={handleConfirmDiscard}>
+                Delete
+              </Button>
+              <Button variant="default" onClick={handleConfirmSave}>
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

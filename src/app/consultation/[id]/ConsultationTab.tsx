@@ -291,7 +291,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const wsInstance = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=false',
+        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
         ['token', apiKey]
       );
       socketRef.current = wsInstance;
@@ -302,17 +302,40 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           const data = JSON.parse(e.data);
           if (data && data.channel && data.is_final && data.channel.alternatives[0].transcript) {
             const newTextChunk = data.channel.alternatives[0].transcript;
+            const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
+            
             if (newTextChunk.trim() !== '') {
+              let textToAdd = newTextChunk;
+              
+              // Add speaker label if available
+              if (speaker !== null && speaker !== undefined) {
+                const speakerLabel = `Speaker ${speaker}: `;
+                // Check if this is a new speaker or we need to add a speaker label
+                const currentContent = richTextEditorRef.current?.getContent() || editableTranscript;
+                const lines = currentContent.split('\n');
+                const lastLine = lines[lines.length - 1] || '';
+                
+                // Add speaker label if starting fresh or speaker changed
+                if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
+                  textToAdd = (currentContent ? '\n' : '') + speakerLabel + newTextChunk;
+                } else {
+                  textToAdd = ' ' + newTextChunk;
+                }
+              } else {
+                // No speaker info, just add appropriate spacing
+                textToAdd = newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ');
+              }
+              
               // Use RichTextEditor's insertText method for better integration
               if (richTextEditorRef.current) {
+                // Always append at the end during active transcription
                 const currentContent = richTextEditorRef.current.getContent();
-                const textToAdd = newTextChunk + (newTextChunk.endsWith(' ') ? '' : ' ');
-                richTextEditorRef.current.insertText(textToAdd);
+                richTextEditorRef.current.setContent(currentContent + textToAdd);
               } else {
                 // Fallback to state update if ref not available
                 setEditableTranscript((prevText) => {
                   const currentText = prevText || '';
-                  return currentText + (currentText.length > 0 && !currentText.endsWith(' ') && !newTextChunk.startsWith(' ') ? ' ' : '') + newTextChunk;
+                  return currentText + textToAdd;
                 });
               }
             }
@@ -482,6 +505,17 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   
   const handleManualSave = handleSaveTranscript; // Alias for JSX
 
+  // Auto-start transcription for new consultations
+  useEffect(() => {
+    if (isStartingNewConsultation && !isTranscribing && !selectedEncounter) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        startTranscription();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isStartingNewConsultation, isTranscribing, selectedEncounter]);
+
   // JSX for rendering will be added here
   return (
     <div className="space-y-4">
@@ -572,7 +606,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
             ref={richTextEditorRef}
             content={editableTranscript}
             onContentChange={handleTranscriptChange}
-            placeholder="Start typing your consultation notes or click the microphone to begin transcription..."
+            placeholder="Start typing your consultation notes or transcription will appear here automatically..."
             disabled={isTranscribing}
             showToolbar={!isTranscribing}
             minHeight="300px"
