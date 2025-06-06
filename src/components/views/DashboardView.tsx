@@ -170,7 +170,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           
           {/* Content on top of background */}
           <div className="relative text-center space-y-4 z-10">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 bg-white/60 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto shadow-lg">
               <PlusCircle className="w-8 h-8 text-primary" />
             </div>
             <div>
