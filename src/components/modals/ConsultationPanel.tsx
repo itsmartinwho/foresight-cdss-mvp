@@ -356,7 +356,6 @@ export default function ConsultationPanel({
 
   useEffect(() => {
     if (isOpen) {
-      console.log('[ConsultationPanel] Panel opened, isDemoMode:', isDemoMode);
       // Reset state on open
       setEncounter(null);
       setReason('');
@@ -374,19 +373,20 @@ export default function ConsultationPanel({
       setEditedWhilePaused(false);
       
       if (isDemoMode) {
-        console.log('[ConsultationPanel] Demo mode - setting started to true');
         setStarted(true);
-      } else {
-        console.log('[ConsultationPanel] Non-demo mode - creating encounter');
-        // For non-demo mode, we'll create encounter and start transcription in sequence
-        createEncounter();
       }
 
     } else if (mounted) {
-      console.log('[ConsultationPanel] Panel closed - stopping transcription');
       stopTranscription();
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription, createEncounter]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription]);
+  
+  // Separate effect for encounter creation to avoid dependency cycles
+  useEffect(() => {
+    if (!isDemoMode && isOpen && !encounter && !isCreating) {
+      createEncounter();
+    }
+  }, [isDemoMode, isOpen, encounter, isCreating, createEncounter]);
   
   // Single effect to handle encounter creation -> start transcription sequence
   useEffect(() => {
@@ -394,7 +394,6 @@ export default function ConsultationPanel({
       setStarted(true);
       // Auto-start transcription after encounter is created
       const timer = setTimeout(() => {
-        console.log('[ConsultationPanel] Auto-starting transcription for new encounter');
         startVoiceInput();
       }, 300);
       return () => clearTimeout(timer);

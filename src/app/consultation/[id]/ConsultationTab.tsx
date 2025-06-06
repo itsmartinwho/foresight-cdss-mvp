@@ -488,7 +488,6 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   // Auto-start transcription for new consultations
   useEffect(() => {
     if (isStartingNewConsultation && !isTranscribing && !selectedEncounter) {
-      console.log('[ConsultationTab] Auto-starting transcription for new consultation');
       // Small delay to ensure UI is ready
       const timer = setTimeout(() => {
         startTranscription();
