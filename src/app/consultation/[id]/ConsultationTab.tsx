@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea'; // Assuming Textarea was used, or a contentEditable div
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
 import { Microphone as Mic, FloppyDisk as Save, PauseCircle, PlayCircle } from '@phosphor-icons/react';
+import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { getSupabaseClient } from '@/lib/supabaseClient'; // Corrected import path
 import { Encounter, Patient, ClinicalOutputPackage, DifferentialDiagnosis } from '@/lib/types'; // Renamed Admission to Encounter
 import { supabaseDataService } from '@/lib/supabaseDataService'; // Import supabaseDataService
@@ -560,22 +561,15 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         </CardTitle>
         
         {isTranscribing && (
-          <div className="mt-2 p-2 border-b border-border flex items-center gap-2">
-            {!isPaused ? (
-              <Button variant="secondary" size="sm" onClick={pauseTranscription} title="Pause Transcription">
-                <PauseCircle className="h-4 w-4 mr-2" /> Pause
-              </Button>
-            ) : (
-              <Button variant="secondary" size="sm" onClick={startTranscription} title="Resume Transcription">
-                <PlayCircle className="h-4 w-4 mr-2" /> Resume
-              </Button>
-            )}
-            <Button variant="destructive" size="sm" onClick={stopTranscriptionAndSave} title="Stop Transcription & Save">
-              Stop & Save
-            </Button>
-            <span className="ml-auto text-xs text-muted-foreground">
-              {isPaused ? "Paused" : "Transcribing..."}
-            </span>
+          <div className="mt-2 p-2 border-b border-border flex items-center justify-center">
+            <AudioWaveform
+              isRecording={isTranscribing}
+              isPaused={isPaused}
+              onPause={pauseTranscription}
+              onResume={startTranscription}
+              onStop={stopTranscriptionAndSave}
+              className="mx-auto"
+            />
           </div>
         )}
 

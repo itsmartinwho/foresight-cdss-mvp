@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
 import { X, Microphone as Mic, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
+import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { format } from 'date-fns';
 import type { Patient, Encounter, Treatment } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
@@ -573,12 +574,6 @@ export default function ConsultationPanel({
                             {!isDemoMode && !isTranscribing && (
                               <Button variant="outline" size="sm" onClick={startVoiceInput} disabled={isGeneratingPlan || isSaving} className="gap-2"><Mic className="h-4 w-4" /> Start Recording</Button>
                             )}
-                            {!isDemoMode && isTranscribing && (
-                              <>
-                                <Button variant="outline" size="sm" onClick={isPaused ? resumeTranscription : pauseTranscription} className="gap-2">{isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}{isPaused ? "Resume" : "Pause"}</Button>
-                                <Button variant="destructive" size="sm" onClick={stopTranscription} className="gap-2">Stop Recording</Button>
-                              </>
-                            )}
                             {!(isDemoMode && planGenerated) && (
                               <Button
                                 variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
@@ -591,6 +586,17 @@ export default function ConsultationPanel({
                             )}
                           </div>
                         </div>
+                        {!isDemoMode && isTranscribing && (
+                          <div className="flex justify-center py-2">
+                            <AudioWaveform
+                              isRecording={isTranscribing}
+                              isPaused={isPaused}
+                              onPause={pauseTranscription}
+                              onResume={resumeTranscription}
+                              onStop={stopTranscription}
+                            />
+                          </div>
+                        )}
                         <RichTextEditor
                           ref={transcriptEditorRef}
                           content={transcriptText}
