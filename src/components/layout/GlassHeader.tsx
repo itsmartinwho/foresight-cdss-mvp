@@ -23,9 +23,9 @@ export default function GlassHeader() {
           <Image
             src="/images/word-logo.png"
             alt="Foresight Logo"
-            width={120}
-            height={32}
-            className="h-8 w-auto"
+            width={90}
+            height={24}
+            className="h-6 w-auto"
           />
         </Link>
       </div>
