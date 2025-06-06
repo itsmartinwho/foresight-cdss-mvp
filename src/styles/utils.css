@@ -95,8 +95,8 @@
 .glass-backdrop {
   position: fixed;
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(18px) saturate(120%);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(100%);
+  -webkit-backdrop-filter: blur(14px) saturate(100%);
 }
 
 .glass-backdrop::before {
