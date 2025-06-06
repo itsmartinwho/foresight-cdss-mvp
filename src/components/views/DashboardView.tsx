@@ -29,6 +29,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+// Import side panel configuration
+import { SIDE_PANEL_CONFIG } from '@/lib/side-panel-config';
 
 // Type for upcoming appointments, specific to this view
 type UpcomingEntry = { patient: Patient; encounter: Encounter };
@@ -150,10 +152,24 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       {/* Fixed Right Side Panel - New Consultation */}
       <div className="fixed top-32 right-6 bottom-6 w-80 z-10">
         <div 
-          className="h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
+          className="relative h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors overflow-hidden"
           onClick={() => setShowNewConsultModal(true)}
         >
-          <div className="text-center space-y-4">
+          {/* Background Image with transparency */}
+          <div 
+            className="absolute inset-0 rounded-xl"
+            style={{
+              backgroundImage: `url(${SIDE_PANEL_CONFIG.backgroundImage})`,
+              backgroundSize: SIDE_PANEL_CONFIG.backgroundSize,
+              backgroundPosition: SIDE_PANEL_CONFIG.backgroundPosition,
+              backgroundRepeat: SIDE_PANEL_CONFIG.backgroundRepeat,
+              opacity: SIDE_PANEL_CONFIG.opacity,
+              zIndex: -1,
+            }}
+          />
+          
+          {/* Content on top of background */}
+          <div className="relative text-center space-y-4 z-10">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
               <PlusCircle className="w-8 h-8 text-primary" />
             </div>
