@@ -64,11 +64,6 @@ export default function ConsultationPanel({
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false, // Default to false
 }: ConsultationPanelProps) {
-  // Debug demo state changes only
-  if (isDemoMode && isOpen) {
-    console.log('Demo panel state:', { started, planGenerated, activeTab, hasTranscript: !!initialDemoTranscript });
-  }
-
   const { toast } = useToast();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -107,6 +102,13 @@ export default function ConsultationPanel({
     setMounted(true);
   }, []);
 
+  // Debug demo state changes only
+  useEffect(() => {
+    if (isDemoMode && isOpen) {
+      console.log('Demo panel state:', { started, planGenerated, activeTab, hasTranscript: !!initialDemoTranscript });
+    }
+  }, [isDemoMode, isOpen, started, planGenerated, activeTab, initialDemoTranscript]);
+
   // Auto-focus and cursor positioning for transcript textarea
   useEffect(() => {
     if (started && transcriptEditorRef.current) {
@@ -114,15 +116,12 @@ export default function ConsultationPanel({
     }
   }, [started]);
 
-  // Log transcript length and Clinical Plan button enablement status
+  // Log transcript length only for demo mode for debugging animation
   useEffect(() => {
-    console.log(`Transcript length: ${transcriptText.length}, Clinical Plan button enabled: ${transcriptText.length >= 10}`);
-  }, [transcriptText]);
-
-  // Log active tab changes
-  useEffect(() => {
-    console.log('Active tab is now:', activeTab);
-  }, [activeTab]);
+    if (isDemoMode && transcriptText.length > 0) {
+      console.log(`Demo transcript length: ${transcriptText.length}`);
+    }
+  }, [isDemoMode, transcriptText]);
 
   // Effect to make tab bar visible with a delay for transition
   useEffect(() => {
@@ -138,10 +137,8 @@ export default function ConsultationPanel({
 
   const handleClinicalPlan = useCallback(async () => {
     setIsGeneratingPlan(true);
-    console.log('handleClinicalPlan started, isGeneratingPlan: true');
 
     try {
-      console.log('Calling clinical engine API...');
       
       // Call the clinical engine API
       const response = await fetch('/api/clinical-engine', {
@@ -173,7 +170,6 @@ export default function ConsultationPanel({
       setTreatmentText(treatment);
       setPlanGenerated(true);
       setActiveTab('diagnosis'); // Switch to diagnosis tab on success
-      console.log('Clinical engine call complete.', { diagnosis, treatment });
 
     } catch (error) {
       console.error("Error during clinical plan generation:", error);
@@ -191,7 +187,6 @@ export default function ConsultationPanel({
       });
     } finally {
       setIsGeneratingPlan(false);
-      console.log('handleClinicalPlan finished (finally), isGeneratingPlan: false');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast, patient.id, encounter?.id]); // transcriptText captured in closure for API call
@@ -287,7 +282,6 @@ export default function ConsultationPanel({
   // Create encounter for non-demo mode in a separate effect
   useEffect(() => {
     if (!isDemoMode && shouldCreateEncounterRef.current && !encounter && !isCreating) {
-      console.log('ConsultationPanel: Attempting to create REAL encounter.');
       shouldCreateEncounterRef.current = false; // Prevent multiple calls
       createEncounter();
     }
