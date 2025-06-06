@@ -1,20 +1,16 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft, Trash as Trash2, PlusCircle, X, CaretUp as ChevronUp } from '@phosphor-icons/react';
+import { Users, CaretLeft as ChevronLeft, PlusCircle, X, CaretUp as ChevronUp } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
-import { Input } from "@/components/ui/input";
 import { useSearchParams, useRouter } from 'next/navigation';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { cn } from "@/lib/utils";
 import ConsolidatedConsultationTab from "@/components/patient-workspace-tabs/ConsolidatedConsultationTab";
 import AllDataViewTab from "@/components/patient-workspace-tabs/AllDataViewTab";
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import LoadingAnimation from "@/components/LoadingAnimation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -23,7 +19,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import ContentSurface from "@/components/layout/ContentSurface";
-import Section from "@/components/ui/section";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ConsultationPanel from '@/components/modals/ConsultationPanel';
 import { useDemo } from '@/contexts/DemoContext';
@@ -79,7 +74,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const isDemoRoute = searchParams.get('demo') === 'true';
   const [demoPanelForceOpen, setDemoPanelForceOpen] = useState(false);
 
-  // Add ref to prevent race conditions in data loading
   const isLoadingDataRef = useRef(false);
   const loadedPatientIdRef = useRef<string | null>(null);
 
@@ -189,9 +183,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   // Subscribe to data changes to refresh when consultation data is saved
   useEffect(() => {
     const handleDataChange = () => {
-      // Force reload patient data when the data service signals changes
       if (patient?.id) {
-        console.log('Data change detected, forcing patient data refresh');
         loadPatientData(true); // Force refresh
       }
     };
@@ -205,27 +197,11 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     };
   }, [patient?.id, loadPatientData]);
 
-  // Advance demo stage when workspace is ready
   useEffect(() => {
-    console.log('Demo panel check:', {
-      isDemoRoute,
-      demoStage: demoState.demoStage,
-      isDemoActive: demoState.isDemoActive,
-      loading,
-      hasPatientData: !!patient?.name,
-      demoPanelForceOpen,
-      patientName: patient?.name,
-      demoPatientName: demoState.demoPatient?.name
-    });
-    
-    // Force open demo panel immediately when on demo route, don't wait for loading
     if (isDemoRoute && demoState.isDemoActive) {
       if (!demoPanelForceOpen) {
-        console.log('Force opening demo consultation panel immediately');
         setDemoPanelForceOpen(true);
-        // Also advance the demo stage if needed
         if (demoState.demoStage === 'navigatingToWorkspace') {
-          console.log('Advancing stage from navigatingToWorkspace to consultationPanelReady');
           demoState.advanceDemoStage('consultationPanelReady');
         }
       }
@@ -236,10 +212,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     <Button
       variant={activeTab === k ? "default" : "ghost"}
       size="default"
-      onClick={() => {
-        console.log(`Tab clicked: ${k}, current activeTab: ${activeTab}`);
-        setActiveTab(k);
-      }}
+      onClick={() => setActiveTab(k)}
       className={cn(
         "whitespace-nowrap transition-all duration-200 font-semibold px-6 py-3 h-auto",
         activeTab === k 
