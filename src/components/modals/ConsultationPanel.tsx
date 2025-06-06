@@ -248,85 +248,111 @@ export default function ConsultationPanel({
   }, [isDemoMode]);
 
   const startVoiceInput = useCallback(async () => {
-    if (isDemoMode || isTranscribing) return;
+    if (isDemoMode) return; // Disable in demo mode
 
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
     if (!apiKey) {
       toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
       return;
     }
-    if (!started) setStarted(true);
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-
-      const ws = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
-        ['token', apiKey]
-      );
-      socketRef.current = ws;
-
-      ws.onmessage = (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          const chunk = data.channel?.alternatives?.[0]?.transcript;
-          if (chunk?.trim()) {
-            const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
-            let textToAdd = chunk;
-            if (speaker !== null) {
-              const speakerLabel = `Speaker ${speaker}: `;
-              const currentContent = transcriptEditorRef.current?.getContent() || transcriptText;
-              const lines = currentContent.split('\n');
-              const lastLine = lines[lines.length - 1] || '';
-              if (!lastLine.startsWith(speakerLabel)) {
-                textToAdd = (currentContent ? '\n' : '') + speakerLabel + chunk;
-              } else {
-                textToAdd = ' ' + chunk;
-              }
-            } else {
-              textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
-            }
-            if (transcriptEditorRef.current) {
-              if (editedWhilePaused) {
-                transcriptEditorRef.current.setContent(transcriptText + (transcriptText ? '\n' : '') + textToAdd);
-                setEditedWhilePaused(false);
-              } else {
-                transcriptEditorRef.current.insertText(textToAdd);
-              }
-            } else {
-              setTranscriptText(prev => prev + textToAdd);
-            }
-          }
-        } catch {}
-      };
-
-      ws.onopen = () => {
-        mediaRecorder.addEventListener('dataavailable', (event) => {
-          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            ws.send(event.data);
-          }
-        });
-        mediaRecorder.start(250);
-        setIsTranscribing(true);
-        setIsPaused(false);
-      };
-
-      ws.onclose = () => {
-        // The stopTranscription function will handle cleanup
-        if (socketRef.current) { // Check if it's an intentional close
-          stopTranscription();
-        }
-      };
-      ws.onerror = () => {
-        toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
-        stopTranscription();
-      };
-    } catch (err) {
-      toast({ title: "Error", description: `Transcription error: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
+    if (isTranscribing && !isPaused) {
+      return; // Already transcribing
     }
-  }, [isDemoMode, isTranscribing, started, toast, transcriptText, editedWhilePaused, stopTranscription]);
+
+    // Start conversation if not already started
+    if (!started) setStarted(true);
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      toast({ title: "Microphone Error", description: "Could not access microphone. Please check your browser settings.", variant: "destructive" });
+      console.error('[Transcription] getUserMedia error:', err);
+      return;
+    }
+
+    // If modal was closed during async getUserMedia, abort
+    if (!isOpen) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+
+    let mediaRecorder;
+    try {
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    } catch (err) {
+      stream.getTracks().forEach(track => track.stop());
+      toast({ title: "Recorder Error", description: "Could not start audio recorder. Please try again.", variant: "destructive" });
+      console.error('[Transcription] MediaRecorder creation error:', err);
+      return;
+    }
+    mediaRecorderRef.current = mediaRecorder;
+
+    const ws = new WebSocket(
+      'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
+      ['token', apiKey]
+    );
+    socketRef.current = ws;
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        const chunk = data.channel?.alternatives?.[0]?.transcript;
+        if (chunk?.trim()) {
+          const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
+          let textToAdd = chunk;
+          if (speaker !== null) {
+            const speakerLabel = `Speaker ${speaker}: `;
+            const currentContent = transcriptEditorRef.current?.getContent() || transcriptText;
+            const lines = currentContent.split('\n');
+            const lastLine = lines[lines.length - 1] || '';
+            if (!lastLine.startsWith(speakerLabel)) {
+              textToAdd = (currentContent ? '\n' : '') + speakerLabel + chunk;
+            } else {
+              textToAdd = ' ' + chunk;
+            }
+          } else {
+            textToAdd = chunk + (chunk.endsWith(' ') ? '' : ' ');
+          }
+          if (transcriptEditorRef.current) {
+            if (editedWhilePaused) {
+              transcriptEditorRef.current.setContent(transcriptText + (transcriptText ? '\n' : '') + textToAdd);
+              setEditedWhilePaused(false);
+            } else {
+              transcriptEditorRef.current.insertText(textToAdd);
+            }
+          } else {
+            setTranscriptText(prev => prev + textToAdd);
+          }
+        }
+      } catch {}
+    };
+    ws.onopen = () => {
+      mediaRecorder.addEventListener('dataavailable', (event) => {
+        if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          ws.send(event.data);
+        }
+      });
+      try {
+        mediaRecorder.start(250);
+      } catch (err) {
+        stream.getTracks().forEach(track => track.stop());
+        toast({ title: "Recorder Error", description: "Could not start audio recorder. Please try again.", variant: "destructive" });
+        console.error('[Transcription] MediaRecorder start error:', err);
+        setIsTranscribing(false);
+        setIsPaused(() => false);
+        return;
+      }
+      setIsTranscribing(true);
+      setIsPaused(() => false);
+    };
+    ws.onclose = () => {
+      stopTranscription();
+    };
+    ws.onerror = () => {
+      toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
+      stopTranscription();
+    };
+  }, [isDemoMode, isTranscribing, isPaused, started, toast, transcriptText, editedWhilePaused, isOpen, stopTranscription]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCurrentlyCreatingEncounter.current) return;
