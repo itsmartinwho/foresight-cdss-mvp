@@ -206,37 +206,43 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       {/* Demo Modal */}
       {demoStage === 'introModal' && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[500px]">
-            <DialogHeader>
-              <DialogTitle>See Foresight in Action</DialogTitle>
-            </DialogHeader>
-            <div className="flex justify-center items-center py-8">
-              <Image
-                src="/images/waves_animation.gif"
-                alt="Foresight Animation"
-                width={400}
-                height={256}
-                className="max-w-full max-h-64 object-contain"
-                unoptimized={true}
-              />
+          <DialogContent className="sm:max-w-[750px] max-h-[650px] p-8">
+            <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
+              <DialogHeader className="space-y-0">
+                <DialogTitle className="text-center text-3xl font-bold">See Foresight in Action</DialogTitle>
+              </DialogHeader>
+              <div className="flex justify-center items-center flex-1">
+                <Image
+                  src="/images/background_waves_larger.gif"
+                  alt="Foresight Animation"
+                  width={600}
+                  height={350}
+                  className="max-w-full max-h-72 object-contain rounded-lg"
+                  unoptimized={true}
+                />
+              </div>
+              <DialogFooter className="flex flex-row justify-center gap-6 mt-4">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    skipDemo();
+                  }}
+                  className="min-w-[100px]"
+                >
+                  Skip
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    startDemo();
+                  }}
+                  className="min-w-[140px]"
+                >
+                  Start Demo
+                </Button>
+              </DialogFooter>
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  skipDemo();
-                }}
-              >
-                Skip
-              </Button>
-              <Button
-                onClick={() => {
-                  startDemo();
-                }}
-              >
-                Start Demo
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
