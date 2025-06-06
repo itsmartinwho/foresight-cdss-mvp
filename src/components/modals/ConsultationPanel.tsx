@@ -386,13 +386,6 @@ export default function ConsultationPanel({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleCloseRequest, isDemoMode, demoState.isDemoModalOpen]);
   
-  // Stop transcription when component unmounts
-  useEffect(() => {
-    if (isTranscribing) {
-      stopTranscription();
-    }
-  }, [isTranscribing, stopTranscription, mounted]);
-
   // Effect to handle transcription state on visibility change
   useEffect(() => {
     if (!mounted) return;
