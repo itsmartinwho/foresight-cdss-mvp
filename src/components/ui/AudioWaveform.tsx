@@ -23,8 +23,8 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
   onResume,
   onStop,
   className = '',
-  height = 40,
-  barCount = 20,
+  height = 32,
+  barCount = 15,
   barColor = '#22c55e', // green-500
   backgroundColor = 'transparent',
   showMicIcon = true
@@ -121,14 +121,14 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 
       // Calculate bar dimensions
       const barWidth = 2;
-      const barSpacing = 3;
+      const barSpacing = 2;
       const totalBarsWidth = barCount * barWidth + (barCount - 1) * barSpacing;
       const startX = (canvas.width - totalBarsWidth) / 2;
 
       // Draw bars
       for (let i = 0; i < barCount; i++) {
         const dataIndex = Math.floor((i / barCount) * bufferLength);
-        const barHeight = Math.max(2, (dataArray[dataIndex] / 255) * canvas.height * 0.8);
+        const barHeight = Math.max(2, (dataArray[dataIndex] / 255) * canvas.height * 0.7);
         
         const x = startX + i * (barWidth + barSpacing);
         const y = (canvas.height - barHeight) / 2;
@@ -160,10 +160,10 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 
     // Draw idle bars at minimum height
     const barWidth = 2;
-    const barSpacing = 3;
+    const barSpacing = 2;
     const totalBarsWidth = barCount * barWidth + (barCount - 1) * barSpacing;
     const startX = (canvas.width - totalBarsWidth) / 2;
-    const minBarHeight = 4;
+    const minBarHeight = 3;
 
     ctx.fillStyle = isPaused ? `${barColor}80` : `${barColor}40`; // More transparent when idle
     for (let i = 0; i < barCount; i++) {
@@ -176,12 +176,12 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
   if (!isRecording) return null;
 
   return (
-    <div className={`inline-flex items-center gap-3 px-4 py-2 bg-secondary/50 backdrop-blur-sm border border-border/50 rounded-full shadow-sm ${className}`}>
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md border border-white/20 rounded-full shadow-lg ${className}`}>
       {/* Waveform */}
       <div className="relative">
         <canvas
           ref={canvasRef}
-          width={80}
+          width={60}
           height={height}
           className="block"
           style={{ backgroundColor }}
@@ -189,7 +189,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
         
         {!hasPermission && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <MicOff size={16} className="text-destructive" />
+            <MicOff size={12} className="text-destructive" />
           </div>
         )}
       </div>
@@ -197,37 +197,20 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
       {/* Microphone indicator */}
       {showMicIcon && (
         <div className={`flex items-center ${isRecording && !isPaused ? 'text-green-500' : 'text-muted-foreground'}`}>
-          <Mic size={16} />
+          <Mic size={12} />
         </div>
       )}
       
-      {/* Controls */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={isPaused ? onResume : onPause}
-          className="h-8 w-8 p-0"
-          title={isPaused ? "Resume Recording" : "Pause Recording"}
-        >
-          {isPaused ? <Play size={14} /> : <Pause size={14} />}
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onStop}
-          className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-          title="Stop Recording"
-        >
-          Stop
-        </Button>
-      </div>
-      
-      {/* Status text */}
-      <span className="text-xs text-muted-foreground whitespace-nowrap">
-        {isPaused ? "Paused" : "Recording..."}
-      </span>
+      {/* Pause/Resume button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={isPaused ? onResume : onPause}
+        className="h-6 w-6 p-0 hover:bg-white/20"
+        title={isPaused ? "Resume Recording" : "Pause Recording"}
+      >
+        {isPaused ? <Play size={10} /> : <Pause size={10} />}
+      </Button>
     </div>
   );
 }; 

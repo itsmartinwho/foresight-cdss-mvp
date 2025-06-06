@@ -304,7 +304,16 @@ export default function ConsultationPanel({
                   textToAdd = (prevText ? ' ' : '') + chunk;
                 }
                 
-                return prevText + textToAdd;
+                const updatedText = prevText + textToAdd;
+                
+                // Auto-scroll to bottom after content update
+                setTimeout(() => {
+                  if (transcriptEditorRef.current?.editor) {
+                    transcriptEditorRef.current.editor.commands.focus('end');
+                  }
+                }, 100);
+                
+                return updatedText;
               });
             }
           }
@@ -586,27 +595,29 @@ export default function ConsultationPanel({
                             )}
                           </div>
                         </div>
-                        {!isDemoMode && isTranscribing && (
-                          <div className="flex justify-center py-2">
-                            <AudioWaveform
-                              isRecording={isTranscribing}
-                              isPaused={isPaused}
-                              onPause={pauseTranscription}
-                              onResume={resumeTranscription}
-                              onStop={stopTranscription}
-                            />
-                          </div>
-                        )}
-                        <RichTextEditor
-                          ref={transcriptEditorRef}
-                          content={transcriptText}
-                          onContentChange={handleTranscriptChange}
-                          placeholder="Transcription will appear here..."
-                          disabled={isDemoMode || isTranscribing}
-                          showToolbar={!isDemoMode && !isTranscribing}
-                          minHeight="300px"
-                          className="flex-1"
-                        />
+                        <div className="relative flex-1">
+                          <RichTextEditor
+                            ref={transcriptEditorRef}
+                            content={transcriptText}
+                            onContentChange={handleTranscriptChange}
+                            placeholder="Transcription will appear here..."
+                            disabled={isDemoMode || isTranscribing}
+                            showToolbar={!isDemoMode && !isTranscribing}
+                            minHeight="300px"
+                            className="h-full"
+                          />
+                          {!isDemoMode && isTranscribing && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                              <AudioWaveform
+                                isRecording={isTranscribing}
+                                isPaused={isPaused}
+                                onPause={pauseTranscription}
+                                onResume={resumeTranscription}
+                                onStop={stopTranscription}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                     {planGenerated && activeTab === 'diagnosis' && (

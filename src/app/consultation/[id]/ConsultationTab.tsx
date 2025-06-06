@@ -339,6 +339,14 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
                 if (encounterStateForAutoSaveRef.current) {
                   encounterStateForAutoSaveRef.current.transcriptToSave = updatedText;
                 }
+                
+                // Auto-scroll to bottom after content update
+                setTimeout(() => {
+                  if (richTextEditorRef.current?.editor) {
+                    richTextEditorRef.current.editor.commands.focus('end');
+                  }
+                }, 100);
+                
                 return updatedText;
               });
             }
@@ -560,32 +568,33 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           </div>
         </CardTitle>
         
-        {isTranscribing && (
-          <div className="mt-2 p-2 border-b border-border flex items-center justify-center">
-            <AudioWaveform
-              isRecording={isTranscribing}
-              isPaused={isPaused}
-              onPause={pauseTranscription}
-              onResume={startTranscription}
-              onStop={stopTranscriptionAndSave}
-              className="mx-auto"
-            />
-          </div>
-        )}
 
       </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto">
+      <CardContent className="flex-grow overflow-y-auto relative">
         {(selectedEncounter || editableTranscript || isTranscribing || isStartingNewConsultation) ? (
-          <RichTextEditor
-            ref={richTextEditorRef}
-            content={editableTranscript}
-            onContentChange={handleTranscriptChange}
-            placeholder="Start typing your consultation notes or transcription will appear here automatically..."
-            disabled={isTranscribing}
-            showToolbar={!isTranscribing}
-            minHeight="300px"
-            className="h-full"
-          />
+          <>
+            <RichTextEditor
+              ref={richTextEditorRef}
+              content={editableTranscript}
+              onContentChange={handleTranscriptChange}
+              placeholder="Start typing your consultation notes or transcription will appear here automatically..."
+              disabled={isTranscribing}
+              showToolbar={!isTranscribing}
+              minHeight="300px"
+              className="h-full"
+            />
+            {isTranscribing && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                <AudioWaveform
+                  isRecording={isTranscribing}
+                  isPaused={isPaused}
+                  onPause={pauseTranscription}
+                  onResume={startTranscription}
+                  onStop={stopTranscriptionAndSave}
+                />
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <p>
