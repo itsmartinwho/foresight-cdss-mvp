@@ -317,6 +317,40 @@ async function findCleanupCandidates(strategy) {
     const cutoffTime = new Date(Date.now() - strategy.timeWindow).toISOString();
     query = query.gte('created_at', cutoffTime);
   }
+
+  if (strategy.startDate) {
+    query = query.gte('created_at', strategy.startDate);
+  }
+  if (strategy.endDate) {
+    query = query.lte('created_at', strategy.endDate);
+  }
+
+  if (strategy.patientName) {
+    const [firstName, lastName] = strategy.patientName.split(' ');
+    
+    const { data: patients, error: patientError } = await supabase
+      .from('patients')
+      .select('id, patient_id, first_name, last_name')
+      .eq('first_name', firstName)
+      .eq('last_name', lastName);
+    
+    if (patientError) {
+      console.error(`❌ Error finding patient ${strategy.patientName}:`, patientError);
+      return [];
+    }
+    
+    if (!patients || patients.length === 0) {
+      console.log(`⚠️  Patient not found: ${strategy.patientName}`);
+      return [];
+    }
+    
+    if (patients.length > 1) {
+      console.log(`⚠️  Multiple patients found for ${strategy.patientName}, using first match`);
+    }
+    
+    const patient = patients[0];
+    query = query.eq('patient_supabase_id', patient.id);
+  }
   
   const { data: encounters, error } = await query.limit(1000);
   
@@ -388,7 +422,7 @@ async function deleteFakeEncounters(fakeGroups, options = {}) {
         // Mark encounter as deleted (soft delete)
         const { error: encounterError } = await supabase
           .from('encounters')
-          .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+          .update({ is_deleted: true })
           .eq('id', encounterId);
         
         if (encounterError) {
@@ -543,6 +577,14 @@ const CLEANUP_STRATEGIES = {
     groupingWindow: 5 * 1000, // 5 seconds
     description: 'Conservative cleanup (last 24 hours, within 5 seconds)'
   },
+  TARGETED_MARIA_GOMEZ: {
+    name: 'Targeted Maria Gomez Cleanup',
+    patientName: 'Maria Gomez',
+    startDate: '2025-06-06T00:00:00.000Z',
+    endDate: '2025-06-07T00:00:00.000Z',
+    groupingWindow: 5000, // 5 seconds
+    description: 'Cleanup for Maria Gomez on June 6, 2025'
+  },
   TARGETED: {
     name: 'Targeted Patient Cleanup',
     timeWindow: null, // All time
@@ -583,6 +625,7 @@ CLEANUP STRATEGIES:
   VERY_RECENT     - Last 10 minutes, 1 second grouping
   RECENT          - Last 6 hours, 10 second grouping  
   CONSERVATIVE    - Last 24 hours, 5 second grouping
+  TARGETED_MARIA_GOMEZ - Cleanup for Maria Gomez on June 6, 2025
   TARGETED        - All time, 5 second grouping
 
 OPTIONS:

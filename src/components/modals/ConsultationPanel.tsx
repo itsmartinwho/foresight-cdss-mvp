@@ -103,6 +103,7 @@ export default function ConsultationPanel({
   const diagnosisEditorRef = useRef<RichTextEditorRef>(null);
   const treatmentEditorRef = useRef<RichTextEditorRef>(null);
   const demoInitializedRef = useRef<boolean>(false);
+  const startVoiceInputRef = useRef<(() => Promise<any>) | null>(null);
 
   // --- LIFECYCLE & SETUP ---
 
@@ -267,27 +268,28 @@ export default function ConsultationPanel({
             const chunk = data.channel.alternatives[0].transcript.trim();
             if (chunk) {
               const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
-              let textToAdd = chunk;
               
-              // Add speaker label if available and appropriate
-              if (speaker !== null && speaker !== undefined) {
-                const currentContent = transcriptText;
-                const lines = currentContent.split('\n');
-                const lastLine = lines[lines.length - 1] || '';
+              setTranscriptText(prevText => {
+                let textToAdd = chunk;
                 
-                // Add speaker label if starting fresh or speaker changed
-                if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
-                  textToAdd = (currentContent ? '\n' : '') + `Speaker ${speaker}: ` + chunk;
+                // Add speaker label if available and appropriate
+                if (speaker !== null && speaker !== undefined) {
+                  const lines = prevText.split('\n');
+                  const lastLine = lines[lines.length - 1] || '';
+                  
+                  // Add speaker label if starting fresh or speaker changed
+                  if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
+                    textToAdd = (prevText ? '\n' : '') + `Speaker ${speaker}: ` + chunk;
+                  } else {
+                    textToAdd = ' ' + chunk;
+                  }
                 } else {
-                  textToAdd = ' ' + chunk;
+                  // No speaker info, just add appropriate spacing
+                  textToAdd = (prevText ? ' ' : '') + chunk;
                 }
-              } else {
-                // No speaker info, just add appropriate spacing
-                textToAdd = (transcriptText ? ' ' : '') + chunk;
-              }
-              
-              // Only update via state to avoid double updates
-              setTranscriptText(prev => prev + textToAdd);
+                
+                return prevText + textToAdd;
+              });
             }
           }
         } catch (error) {
@@ -304,6 +306,11 @@ export default function ConsultationPanel({
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
   }, [isTranscribing, isOpen, stopTranscription, toast]);
+
+  // Update ref whenever startVoiceInput changes
+  useEffect(() => {
+    startVoiceInputRef.current = startVoiceInput;
+  }, [startVoiceInput]);
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCurrentlyCreatingEncounter.current) return;
@@ -391,14 +398,17 @@ export default function ConsultationPanel({
   // Single effect to handle encounter creation -> start transcription sequence
   useEffect(() => {
     if (!isDemoMode && encounter && !started && !isTranscribing && isOpen) {
+      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounter.id);
       setStarted(true);
       // Auto-start transcription after encounter is created
       const timer = setTimeout(() => {
-        startVoiceInput();
+        if (!isTranscribing && startVoiceInputRef.current) {
+          startVoiceInputRef.current();
+        }
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isDemoMode, encounter, started, isTranscribing, isOpen, startVoiceInput]);
+  }, [isDemoMode, encounter, started, isTranscribing, isOpen]);
   
   useEffect(() => {
     if (!isOpen) return;
