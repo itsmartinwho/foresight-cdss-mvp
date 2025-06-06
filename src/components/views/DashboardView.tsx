@@ -93,74 +93,72 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         <h1 className="text-step-1 font-semibold">Upcoming Consultations</h1>
       </div>
 
-      {/* Main Content Area with Side Panel Layout */}
-      <div className="flex-1 flex gap-6 min-h-0">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto pr-96">
         {/* Main Content - Table */}
-        <div className="flex-1 overflow-y-auto">
-          {upcomingAppointments.length > 0 ? (
-            <Table className="mobile-card:block sm:table text-step-0">
-              <TableHeader className="mobile-card:hidden sm:table-header-group">
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead></TableHead>
+        {upcomingAppointments.length > 0 ? (
+          <Table className="mobile-card:block sm:table text-step-0">
+            <TableHeader className="mobile-card:hidden sm:table-header-group">
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>Patient</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="mobile-card:block sm:table-row-group">
+              {upcomingAppointments.map(({ patient: p, encounter }) => (
+                <TableRow
+                  key={`upcoming_dashboard_${p.id}_${encounter.id}`}
+                  className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
+                >
+                  <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                    <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
+                    {encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
+                  </TableCell>
+                  <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
+                    <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
+                    {p.photo && (
+                      <Image src={p.photo} alt={p.name || "Patient photo"} width={24} height={24} className="rounded-full inline-block mr-2 mobile-card:hidden" />
+                    )}
+                    {p.name}
+                  </TableCell>
+                  <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
+                    <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
+                    {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
+                  </TableCell>
+                  <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
+                    <Button
+                      variant="secondary"
+                      iconLeft={<PlayCircle />}
+                      size="sm"
+                      onClick={() => onStartConsult(p)}
+                      className="gap-1 w-full mobile-card:w-full"
+                    >
+                      Start
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="mobile-card:block sm:table-row-group">
-                {upcomingAppointments.map(({ patient: p, encounter }) => (
-                  <TableRow
-                    key={`upcoming_dashboard_${p.id}_${encounter.id}`}
-                    className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row"
-                  >
-                    <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
-                      {encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
-                    </TableCell>
-                    <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
-                      {p.photo && (
-                        <Image src={p.photo} alt={p.name || "Patient photo"} width={24} height={24} className="rounded-full inline-block mr-2 mobile-card:hidden" />
-                      )}
-                      {p.name}
-                    </TableCell>
-                    <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
-                      <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                      {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
-                    </TableCell>
-                    <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
-                      <Button
-                        variant="secondary"
-                        iconLeft={<PlayCircle />}
-                        size="sm"
-                        onClick={() => onStartConsult(p)}
-                        className="gap-1 w-full mobile-card:w-full"
-                      >
-                        Start
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-muted-foreground">No upcoming consultations scheduled.</p>
-          )}
-        </div>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-sm text-muted-foreground">No upcoming consultations scheduled.</p>
+        )}
+      </div>
 
-        {/* Right Side Panel - New Consultation */}
-        <div className="w-80 flex-shrink-0">
-          <div 
-            className="h-64 bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
-            onClick={() => setShowNewConsultModal(true)}
-          >
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <PlusCircle className="w-8 h-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
-              </div>
+      {/* Fixed Right Side Panel - New Consultation */}
+      <div className="fixed top-32 right-6 bottom-6 w-80 z-10">
+        <div 
+          className="h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
+          onClick={() => setShowNewConsultModal(true)}
+        >
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+              <PlusCircle className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
             </div>
           </div>
         </div>

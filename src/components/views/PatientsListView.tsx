@@ -373,32 +373,30 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           </TabsList>
         </div>
 
-        {/* Main Content Area with Side Panel Layout */}
-        <div className="flex-1 flex gap-6 min-h-0">
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto pr-96">
           {/* Main Content - Tables */}
-          <div className="flex-1 overflow-y-auto">
-            <TabsContent value="allPatients" className="mt-0 h-full">
-              {renderAllPatientsTable()}
-            </TabsContent>
-            <TabsContent value="allConsultations" className="mt-0 h-full space-y-6">
-              {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
-              {renderTable("Past Consultations", sortedRows.past, 'past')}
-            </TabsContent>
-          </div>
+          <TabsContent value="allPatients" className="mt-0 h-full">
+            {renderAllPatientsTable()}
+          </TabsContent>
+          <TabsContent value="allConsultations" className="mt-0 h-full space-y-6">
+            {renderTable("Upcoming Consultations", sortedRows.upcoming, 'upcoming')}
+            {renderTable("Past Consultations", sortedRows.past, 'past')}
+          </TabsContent>
+        </div>
 
-          {/* Right Side Panel - New Consultation */}
-          <div className="w-80 flex-shrink-0">
-            <div 
-              className="h-64 bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
-              onClick={() => setShowNewConsultModal(true)}
-            >
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <PlusCircle className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
-                </div>
+        {/* Fixed Right Side Panel - New Consultation */}
+        <div className="fixed top-32 right-6 bottom-6 w-80 z-10">
+          <div 
+            className="h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
+            onClick={() => setShowNewConsultModal(true)}
+          >
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <PlusCircle className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
               </div>
             </div>
           </div>
