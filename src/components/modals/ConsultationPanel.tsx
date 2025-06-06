@@ -443,6 +443,7 @@ export default function ConsultationPanel({
       }
       
       // Auto-start transcription after encounter is created
+      console.log('[ConsultationPanel] Setting setTimeout for auto-start...');
       autoStartTimeoutRef.current = setTimeout(async () => {
         try {
           console.log('[ConsultationPanel] TIMEOUT CALLBACK EXECUTING - Auto-start transcription callback fired');
@@ -496,12 +497,13 @@ export default function ConsultationPanel({
       
       return () => {
         if (autoStartTimeoutRef.current) {
+          console.log('[ConsultationPanel] Cleaning up auto-start timeout...');
           clearTimeout(autoStartTimeoutRef.current);
           autoStartTimeoutRef.current = null;
         }
       };
     }
-  }, [isDemoMode, encounter, started, isTranscribing, isOpen, toast, startVoiceInput]);
+  }, [isDemoMode, encounter, started, isTranscribing, isOpen, toast]);
   
   useEffect(() => {
     if (!isOpen) return;
