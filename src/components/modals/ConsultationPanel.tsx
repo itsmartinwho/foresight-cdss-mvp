@@ -107,6 +107,7 @@ export default function ConsultationPanel({
   const transcriptEditorRef = useRef<RichTextEditorRef>(null);
   const diagnosisEditorRef = useRef<RichTextEditorRef>(null);
   const treatmentEditorRef = useRef<RichTextEditorRef>(null);
+  const demoInitializedRef = useRef<boolean>(false);
 
   // Ensure we only render on client side
   useEffect(() => {
@@ -251,7 +252,10 @@ export default function ConsultationPanel({
       setTabBarVisible(false);
       setIsGeneratingPlan(false);
       setStarted(false);
-      setTranscriptText('');
+      // Only reset transcript text if not in demo mode or if transcript is empty
+      if (!isDemoMode || !transcriptText) {
+        setTranscriptText('');
+      }
       setDiagnosisText('');
       setTreatmentText('');
       setPlanGenerated(false);
@@ -260,24 +264,33 @@ export default function ConsultationPanel({
       shouldCreateEncounterRef.current = !isDemoMode;
       
       if (isDemoMode) {
-        // In demo mode, transcript is managed by animation - don't override it
-        // Only set it if we're not in the animation stage
+        // Only initialize demo state once per session
+        if (!demoInitializedRef.current) {
+          demoInitializedRef.current = true;
+          setStarted(true);
+          setActiveTab('transcript');
+          setPlanGenerated(false);
+        }
+        
+        // Always update the content when it changes
         if (initialDemoTranscript && (!transcriptText || transcriptText.length === 0)) {
           setTranscriptText(initialDemoTranscript);
         }
-        setDiagnosisText(demoDiagnosis || '');
-        setTreatmentText(demoTreatment || '');
-        setStarted(true);
+        
+        // Update diagnosis and treatment when they become available
+        if (demoDiagnosis) {
+          setDiagnosisText(demoDiagnosis);
+        }
+        if (demoTreatment) {
+          setTreatmentText(demoTreatment);
+        }
 
         // If demo provides diagnosis or treatment, assume plan is "generated"
         if (demoDiagnosis || demoTreatment) {
           setPlanGenerated(true);
-          if (demoDiagnosis) setActiveTab('diagnosis');
-          else if (demoTreatment) setActiveTab('treatment');
-          else setActiveTab('transcript');
-        } else {
-          setPlanGenerated(false);
-          setActiveTab('transcript');
+          if (demoDiagnosis && !demoTreatment) setActiveTab('diagnosis');
+          else if (demoTreatment && !demoDiagnosis) setActiveTab('treatment');
+          // If both are available, stay on current tab
         }
         // DO NOT call createEncounter in demo mode
       } else {
@@ -286,8 +299,9 @@ export default function ConsultationPanel({
     } else {
       // Reset creation flag when panel closes
       shouldCreateEncounterRef.current = false;
+      demoInitializedRef.current = false;
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, transcriptText]);
 
   // Create encounter for non-demo mode in a separate effect
   useEffect(() => {
