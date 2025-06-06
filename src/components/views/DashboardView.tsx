@@ -212,13 +212,11 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                 <DialogTitle className="text-center text-3xl font-bold">See Foresight in Action</DialogTitle>
               </DialogHeader>
               <div className="flex justify-center items-center flex-1">
-                <Image
+                <img
                   src="/images/background_waves_larger.gif"
                   alt="Foresight Animation"
-                  width={600}
-                  height={350}
-                  className="max-w-full max-h-72 object-contain rounded-lg"
-                  unoptimized={true}
+                  className="max-w-full max-h-72 w-auto h-auto object-contain rounded-lg"
+                  style={{ maxWidth: '600px', maxHeight: '350px' }}
                 />
               </div>
               <DialogFooter className="flex flex-row justify-center gap-6 mt-4">
