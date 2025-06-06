@@ -96,7 +96,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto pr-96">
+      <div className="flex-1 overflow-y-auto pr-96 pt-4">
         {/* Main Content - Table */}
         {upcomingAppointments.length > 0 ? (
           <Table className="mobile-card:block sm:table text-step-0">
