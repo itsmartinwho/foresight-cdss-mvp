@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useChat } from "ai/react";
 import { DataTable } from "@/components/ui/data-table"; // Added
 import type { ColumnDef } from "@tanstack/react-table"; // Added
+import Image from 'next/image';
 // Removed old Pyodide-based chart and table renderers - now using OpenAI Code Interpreter
 
 // Local types for Web Speech API to avoid 'any'
@@ -46,6 +47,46 @@ interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
   readonly results: SpeechRecognitionResultList;
 }
+
+// NOTE: This component was created to fix a Next.js build warning (`@next/next/no-img-element`)
+// It replaces the native `<img>` tag with Next's `<Image>` component, providing optimizations
+// and proper error handling for dynamically generated charts.
+const AssistantGeneratedImage = ({ imageId }: { imageId: string }) => {
+  const [hasError, setHasError] = useState(false);
+
+  const handleError = () => {
+    console.error('Failed to load assistant image:', imageId);
+    setHasError(true);
+  };
+
+  if (hasError) {
+    return (
+      <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded">
+        <h4 className="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">Chart Loading Error</h4>
+        <p className="text-sm text-red-700 dark:text-red-300">
+          Failed to load image: <code>{imageId}</code>
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded">
+      <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">Generated Chart/Visualization:</h4>
+      {/* Using aspect-video as a sensible default for chart visualizations */}
+      <div className="relative aspect-video w-full mt-1"> 
+        <Image 
+          src={`/api/advisor/image/${imageId}`}
+          alt="Assistant generated chart or visualization"
+          fill
+          className="rounded border"
+          style={{ objectFit: 'contain' }}
+          onError={handleError}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default function AdvisorView() {
   const [messages, setMessages] = useState<ChatMessage[]>([{ id: uuidv4(), role: "system", content: "Ask Foresight" }]);
@@ -828,24 +869,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         </div>
       )}
       {assistantMessage.codeInterpreterImageId && (
-        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded">
-          <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">Generated Chart/Visualization:</h4>
-          <img 
-            src={`/api/advisor/image/${assistantMessage.codeInterpreterImageId}`}
-            alt="Assistant generated chart or visualization"
-            className="max-w-full h-auto rounded border"
-            onError={(e) => {
-              console.error('Failed to load assistant image:', assistantMessage.codeInterpreterImageId);
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.parentElement!.innerHTML = `
-                <p class="text-sm text-red-700 dark:text-red-300">
-                  Failed to load image: <code>${assistantMessage.codeInterpreterImageId}</code>
-                </p>
-              `;
-            }}
-          />
-        </div>
+        <AssistantGeneratedImage imageId={assistantMessage.codeInterpreterImageId} />
       )}
     </>
   );

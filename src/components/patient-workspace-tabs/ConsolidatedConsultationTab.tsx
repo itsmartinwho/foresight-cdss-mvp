@@ -288,7 +288,7 @@ export default function ConsolidatedConsultationTab({
                 Delete This Consultation
               </h3>
               <p className="text-sm text-muted-foreground">
-                This will mark the consultation as deleted. It can be restored later from the "All Data" tab.
+                This will mark the consultation as deleted. It can be restored later from the &quot;All Data&quot; tab.
               </p>
             </div>
             <Button 
