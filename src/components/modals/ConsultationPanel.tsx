@@ -128,7 +128,7 @@ export default function ConsultationPanel({
     setMounted(true);
   }, []);
 
-  const stopTranscription = useCallback(() => {
+  const stopTranscription = useCallback((resetPaused: boolean = true) => {
     if (isDemoMode) return;
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
@@ -144,11 +144,13 @@ export default function ConsultationPanel({
       socketRef.current = null;
     }
     setIsTranscribing(false);
-    setIsPaused(false);
+    if (resetPaused) {
+      setIsPaused(false);
+    }
   }, [isDemoMode]);
 
   const handleSaveAndClose = useCallback(async () => {
-    stopTranscription();
+    stopTranscription(true); // Reset paused state when saving and closing
     if (isDemoMode || !encounter) {
       onClose();
       return;
@@ -203,7 +205,7 @@ export default function ConsultationPanel({
   }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving, stopTranscription]);
 
   const handleDiscard = useCallback(async () => {
-    stopTranscription();
+    stopTranscription(true); // Reset paused state when discarding
     if (isDemoMode) {
       onClose();
       return;
@@ -280,7 +282,7 @@ export default function ConsultationPanel({
         });
         mediaRecorder.start(250);
         setIsTranscribing(true);
-        setIsPaused(false);
+        setIsPaused(false); // Always reset paused state when starting new transcription
       };
 
       ws.onmessage = (e) => {
@@ -328,10 +330,10 @@ export default function ConsultationPanel({
         }
       };
 
-      ws.onclose = stopTranscription;
+      ws.onclose = () => stopTranscription(false); // Don't reset paused state on connection issues
       ws.onerror = () => {
         toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
-        stopTranscription();
+        stopTranscription(false); // Don't reset paused state on connection issues
       };
     } catch (err) {
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
@@ -416,7 +418,7 @@ export default function ConsultationPanel({
       }
 
     } else if (mounted) {
-      stopTranscription();
+      stopTranscription(true); // Reset paused state when closing the panel
     }
   }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription]);
   
@@ -523,7 +525,7 @@ export default function ConsultationPanel({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (isTranscribing) {
-        stopTranscription();
+        stopTranscription(true); // Reset paused state when component unmounts
       }
     };
   }, [isTranscribing, isPaused, pauseTranscription, stopTranscription, mounted]);
@@ -609,7 +611,8 @@ export default function ConsultationPanel({
                             minHeight="300px"
                             className="h-full"
                           />
-                          {!isDemoMode && (isTranscribing || isPaused) && (
+                          {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
+                          {!isDemoMode && (
                             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                               <AudioWaveform
                                 isRecording={isTranscribing}

@@ -102,7 +102,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [priorAuthDetails, setPriorAuthDetails] = useState<any>(null);
 
-  const stopTranscription = useCallback(() => {
+  const stopTranscription = useCallback((resetPaused: boolean = true) => {
     let stopped = false;
     if (mediaRecorderRef.current) {
       try {
@@ -138,7 +138,9 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       socketRef.current = null;
     }
     setIsTranscribing(false);
-    setIsPaused(false);
+    if (resetPaused) {
+      setIsPaused(false);
+    }
     if (stopped) {
       console.log('[Transcription] Cleaned up media recorder and tracks.');
     }
@@ -374,24 +376,24 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         });
         mediaRecorder.start(250);
         setIsTranscribing(true);
-        setIsPaused(false);
+        setIsPaused(false); // Always reset paused state when starting new transcription
         console.log("Transcription started via WebSocket.");
       };
 
       wsInstance.onclose = (event) => {
         console.log("WebSocket closed", event.reason, event.code);
-        stopTranscription();
+        stopTranscription(false); // Don't reset paused state on connection issues
       };
 
       wsInstance.onerror = (error) => {
         console.error("WebSocket error:", error);
-        stopTranscription();
+        stopTranscription(false); // Don't reset paused state on connection issues
       }
 
     } catch (err: unknown) {
       console.error('Error starting transcription system', err);
       alert(`Error starting transcription system: ${err instanceof Error ? err.message : String(err)}`);
-      stopTranscription();
+      stopTranscription(true); // Reset paused state on startup errors
     }
   };
 
@@ -405,7 +407,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
   const stopTranscriptionAndSave = () => {
     console.log("Stop & Save initiated.");
-    stopTranscription();
+    stopTranscription(true); // Reset paused state when explicitly stopping
     
     setTimeout(() => {
       handleSaveTranscript();
@@ -588,18 +590,17 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
               minHeight="300px"
               className="h-full"
             />
-            {(isTranscribing || isPaused) && (
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                <AudioWaveform
-                  isRecording={isTranscribing}
-                  isPaused={isPaused}
-                  mediaStream={audioStreamRef.current}
-                  onPause={pauseTranscription}
-                  onResume={startTranscription}
-                  onStop={stopTranscriptionAndSave}
-                />
-              </div>
-            )}
+            {/* Always render pillbox container; AudioWaveform will render its content when active or paused */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+              <AudioWaveform
+                isRecording={isTranscribing}
+                isPaused={isPaused}
+                mediaStream={audioStreamRef.current}
+                onPause={pauseTranscription}
+                onResume={startTranscription}
+                onStop={stopTranscriptionAndSave}
+              />
+            </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground">
