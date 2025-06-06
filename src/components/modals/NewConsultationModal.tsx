@@ -30,7 +30,7 @@ const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ value, onClick, on
   // The input's own text (the selected date) should use text-step--1.
   // The placeholder text will be styled by global ::placeholder rules.
   const inputClassName = cn(
-    "w-full px-3 py-2 border rounded-md bg-background text-step--1 font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+    "w-full px-3 py-2 border rounded-md bg-transparent text-step--1 font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm",
     className // Allow overriding via prop
   );
 
@@ -291,7 +291,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
                   value={duration || ''}
                   onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
                   className={cn(
-                    "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+                    "w-full mt-1 px-3 py-2 border rounded-md bg-transparent text-step--1 font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm",
                     !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                   )}
                 >
@@ -337,7 +337,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     className={cn(
-                      "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+                      "w-full mt-1 px-3 py-2 border rounded-md bg-transparent text-step--1 font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm",
                       !gender ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                     )}
                   >
@@ -401,7 +401,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
                   value={duration || ''}
                   onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : null)}
                   className={cn(
-                    "w-full mt-1 px-3 py-2 border rounded-md bg-background text-step--1 font-sans",
+                    "w-full mt-1 px-3 py-2 border rounded-md bg-transparent text-step--1 font-sans focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shadow-sm",
                     !duration ? "text-[var(--placeholder-color)] opacity-[var(--placeholder-opacity)]" : "text-foreground opacity-100"
                   )}
                 >
