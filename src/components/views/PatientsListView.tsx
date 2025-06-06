@@ -289,65 +289,61 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   ) => {
     const currentSortConfig = tableType === 'upcoming' ? upcomingSortConfig : pastSortConfig;
     return (
-      <Card className="mb-6 bg-glass-sidebar backdrop-blur-lg border-slate-700/20 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-slate-900">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.length > 0 ? (
-            <Table className="text-slate-200 text-step-0">
-              <TableHeader>
-                <TableRow className="border-slate-700/50">
-                  <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                  <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                  <TableHead onClick={() => requestSort('reason', tableType)} className="cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                  <TableHead className="w-[15%]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map(({ patient, encounter }) => (
-                  <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${encounter.id}`} onClick={() => {
-                    if (onSelect && patient) {
-                      onSelect(patient);
-                    } else if (patient?.id && encounter.id) {
-                      router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
-                    }
-                  }} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <TableCell>
-                    <div className="flex items-center">
-                      <Avatar className="h-8 w-8 mr-3">
-                        <AvatarImage src={patient?.photo || "/images/default-avatar.png"} alt={patient?.name || 'Patient'} />
-                        <AvatarFallback>{patient?.firstName?.charAt(0)}{patient?.lastName?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      {patient?.name || `${patient?.firstName} ${patient?.lastName}`.trim()}
-                    </div>
-                  </TableCell>
-                  <TableCell>{encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                  <TableCell>{(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click
-                        if (patient?.id && encounter.id) {
-                          router.push(`/patients/${patient?.id}?tab=consultation&encounterId=${encounter.id}`);
-                        }
-                      }}
-                      title="Go to Consultation"
-                    >
-                      <PlayCircle size={20} className="mr-1" /> Go to Consult
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-slate-400">No {title.toLowerCase()} scheduled.</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-4">{title}</h3>
+        {data.length > 0 ? (
+          <Table className="text-step-0">
+            <TableHeader>
+              <TableRow>
+                <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('reason', tableType)} className="cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead className="w-[15%]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map(({ patient, encounter }) => (
+                <TableRow key={`${title.startsWith('Upcoming') ? 'upcoming' : 'past'}_${patient?.id}_${encounter.id}`} onClick={() => {
+                  if (onSelect && patient) {
+                    onSelect(patient);
+                  } else if (patient?.id && encounter.id) {
+                    router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
+                  }
+                }} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <TableCell>
+                  <div className="flex items-center">
+                    <Avatar className="h-8 w-8 mr-3">
+                      <AvatarImage src={patient?.photo || "/images/default-avatar.png"} alt={patient?.name || 'Patient'} />
+                      <AvatarFallback>{patient?.firstName?.charAt(0)}{patient?.lastName?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    {patient?.name || `${patient?.firstName} ${patient?.lastName}`.trim()}
+                  </div>
+                </TableCell>
+                <TableCell>{encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}</TableCell>
+                <TableCell>{(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}</TableCell>
+                <TableCell className="text-right">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent row click
+                      if (patient?.id && encounter.id) {
+                        router.push(`/patients/${patient?.id}?tab=consultation&encounterId=${encounter.id}`);
+                      }
+                    }}
+                    title="Go to Consultation"
+                  >
+                    <PlayCircle size={20} className="mr-1" /> Go to Consult
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-sm text-muted-foreground">No {title.toLowerCase()} scheduled.</p>
+        )}
+      </div>
     );
   };
 
