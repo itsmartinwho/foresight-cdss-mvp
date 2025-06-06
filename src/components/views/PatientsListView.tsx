@@ -388,26 +388,20 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
 
           {/* Right Side Panel - New Consultation */}
           <div className="w-80 flex-shrink-0">
-            <div className="h-full bg-glass-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 flex flex-col items-center justify-center">
+            <div 
+              className="h-full bg-glass-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-glass-sidebar/80 transition-colors"
+              onClick={() => setShowNewConsultModal(true)}
+            >
               <div className="text-center space-y-4">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                   <PlusCircle className="w-8 h-8 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted-foreground">
                     Schedule a consultation for any patient
                   </p>
                 </div>
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={() => setShowNewConsultModal(true)}
-                  className="w-full"
-                >
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  New Consultation
-                </Button>
               </div>
             </div>
           </div>
