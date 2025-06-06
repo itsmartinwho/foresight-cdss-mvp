@@ -219,7 +219,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
               <label className="font-semibold text-step--1 flex items-center">
                 Select patient <span className="text-destructive">*</span>{errors.selectedPatient && <span className="text-destructive text-xs ml-2">Required field</span>}
               </label>
-              <div className="min-h-[180px]">
+              <div className="transition-all duration-200 ease-in-out">
                 {selectedPatient ? (
                   <div className="border rounded-md px-3 py-2 flex justify-between items-center bg-muted/20">
                     <span className="text-step--1">{selectedPatient.name || `${selectedPatient.firstName ?? ''} ${selectedPatient.lastName ?? ''}`.trim() || selectedPatient.id}</span>
