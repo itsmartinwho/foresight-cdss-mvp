@@ -49,20 +49,34 @@ export function useDemoConsultation({
   
   // Demo transcript progression based on stage - use real enriched data
   const getDemoTranscript = () => {
-    if (!isDemoMode) return undefined;
+    if (!isDemoMode) {
+      console.log('getDemoTranscript: not in demo mode');
+      return undefined;
+    }
+    
+    console.log('getDemoTranscript:', { demoStage, hasAnimatedTranscript: !!animatedTranscript, animatedLength: animatedTranscript?.length || 0 });
     
     // During animation stage, use the animated transcript
     if (demoStage === 'animatingTranscript' && animatedTranscript) {
+      console.log('getDemoTranscript: returning animated transcript');
       return animatedTranscript;
     }
     
     // After animation completes, use the full transcript
     if (demoStage === 'simulatingPlanGeneration' || demoStage === 'showingPlan' || demoStage === 'finished') {
       const encounterData = DemoDataService.getEncounterData();
+      console.log('Demo consultation getting full transcript:', {
+        demoStage,
+        hasEncounterData: !!encounterData,
+        hasTranscript: !!encounterData.transcript,
+        transcriptLength: encounterData.transcript?.length || 0,
+        transcriptPreview: encounterData.transcript?.substring(0, 100) + '...'
+      });
       return encounterData.transcript || undefined;
     }
     
     // Before animation starts, return empty or undefined
+    console.log('getDemoTranscript: returning undefined (before animation)');
     return undefined;
   };
   
