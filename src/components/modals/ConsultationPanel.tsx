@@ -533,40 +533,34 @@ export default function ConsultationPanel({
                 )}>
                   <div className="flex space-x-4 px-1 py-2">
                     <button
-                      onClick={() => !isDemoMode && setActiveTab('transcript')}
-                      disabled={isDemoMode}
+                      onClick={() => setActiveTab('transcript')}
                       className={cn(
                         "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         activeTab === 'transcript'
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                        isDemoMode && "cursor-not-allowed opacity-75"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                     >
                       Transcript
                     </button>
                     <button
-                      onClick={() => !isDemoMode && setActiveTab('diagnosis')}
-                      disabled={isDemoMode}
+                      onClick={() => setActiveTab('diagnosis')}
                       className={cn(
                         "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         activeTab === 'diagnosis'
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                        isDemoMode && "cursor-not-allowed opacity-75"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                     >
                       Diagnosis
                     </button>
                     <button
-                      onClick={() => !isDemoMode && setActiveTab('treatment')}
-                      disabled={isDemoMode}
+                      onClick={() => setActiveTab('treatment')}
                       className={cn(
                         "px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
                         activeTab === 'treatment'
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                        isDemoMode && "cursor-not-allowed opacity-75"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                     >
                       Treatment
