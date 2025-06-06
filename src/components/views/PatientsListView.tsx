@@ -19,6 +19,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { columns as patientColumns } from "./patient-columns";
 
+// Import side panel configuration
+import { SIDE_PANEL_CONFIG } from '@/lib/side-panel-config';
+
 // Define SortableKey and SortConfig types
 type SortableKey = 'patientName' | 'scheduledDate' | 'reason';
 interface SortConfig {
@@ -155,14 +158,14 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       { key: "firstName", header: "First Name", sortable: true, className: "w-[180px] truncate" },
       { key: "lastName", header: "Last Name", sortable: true, className: "w-[140px] truncate" },
       { key: "gender", header: "Gender", sortable: true, className: "w-[100px]" },
-      { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[170px]" },
+      { key: "dateOfBirth", header: "Date of Birth", sortable: true, className: "w-[180px]" },
     ];
 
     const additionalColumns: { key: keyof Patient; header: string; sortable?: boolean; className?: string }[] = [
       { key: "race", header: "Race", sortable: true, className: "w-[110px] truncate" },
       { key: "maritalStatus", header: "Marital Status", sortable: true, className: "w-[140px] truncate" },
       { key: "language", header: "Language", sortable: true, className: "w-[110px] truncate" },
-      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[130px]" },
+      { key: "povertyPercentage", header: "Poverty %", sortable: true, className: "w-[140px]" },
       { key: "nextAppointment", header: "Next Appointment", sortable: true, className: "w-[180px] truncate" },
       { key: "reason", header: "General Reason", sortable: true, className: "w-[220px] truncate" },
     ];
@@ -388,10 +391,24 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         {/* Fixed Right Side Panel - New Consultation */}
         <div className="fixed top-32 right-6 bottom-6 w-80 z-10">
           <div 
-            className="h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors"
+            className="relative h-full bg-sidebar backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors overflow-hidden"
             onClick={() => setShowNewConsultModal(true)}
           >
-            <div className="text-center space-y-4">
+            {/* Background Image with transparency */}
+            <div 
+              className="absolute inset-0 rounded-xl"
+              style={{
+                backgroundImage: `url(${SIDE_PANEL_CONFIG.backgroundImage})`,
+                backgroundSize: SIDE_PANEL_CONFIG.backgroundSize,
+                backgroundPosition: SIDE_PANEL_CONFIG.backgroundPosition,
+                backgroundRepeat: SIDE_PANEL_CONFIG.backgroundRepeat,
+                opacity: SIDE_PANEL_CONFIG.opacity,
+                zIndex: -1,
+              }}
+            />
+            
+            {/* Content on top of background */}
+            <div className="relative text-center space-y-4 z-10">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                 <PlusCircle className="w-8 h-8 text-primary" />
               </div>
