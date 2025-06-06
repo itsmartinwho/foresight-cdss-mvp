@@ -64,17 +64,10 @@ export default function ConsultationPanel({
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false, // Default to false
 }: ConsultationPanelProps) {
-  console.log('ConsultationPanel render:', {
-    isOpen,
-    isDemoMode,
-    hasPatient: !!patient,
-    patientName: patient?.name,
-    initialDemoTranscript: initialDemoTranscript || 'undefined',
-    initialDemoTranscriptLength: initialDemoTranscript?.length || 0,
-    demoDiagnosis: demoDiagnosis || 'undefined',
-    demoTreatment: demoTreatment || 'undefined',
-    hasOnDemoClinicalPlanClick: !!onDemoClinicalPlanClick
-  });
+  // Debug demo state changes only
+  if (isDemoMode && isOpen) {
+    console.log('Demo panel state:', { started, planGenerated, activeTab, hasTranscript: !!initialDemoTranscript });
+  }
 
   const { toast } = useToast();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
@@ -264,34 +257,22 @@ export default function ConsultationPanel({
       shouldCreateEncounterRef.current = !isDemoMode;
       
       if (isDemoMode) {
-        // Only initialize demo state once per session
-        if (!demoInitializedRef.current) {
-          demoInitializedRef.current = true;
-          setStarted(true);
-          setActiveTab('transcript');
-          setPlanGenerated(false);
-        }
+        // Always initialize demo to started state
+        setStarted(true);
+        setActiveTab('transcript');
         
-        // Always update the content when it changes
-        if (initialDemoTranscript && (!transcriptText || transcriptText.length === 0)) {
+        // Set transcript content if available
+        if (initialDemoTranscript) {
           setTranscriptText(initialDemoTranscript);
         }
         
-        // Update diagnosis and treatment when they become available
-        if (demoDiagnosis) {
-          setDiagnosisText(demoDiagnosis);
-        }
-        if (demoTreatment) {
-          setTreatmentText(demoTreatment);
-        }
+        // Set diagnosis and treatment when available
+        setDiagnosisText(demoDiagnosis || '');
+        setTreatmentText(demoTreatment || '');
 
-        // If demo provides diagnosis or treatment, assume plan is "generated"
-        if (demoDiagnosis || demoTreatment) {
-          setPlanGenerated(true);
-          if (demoDiagnosis && !demoTreatment) setActiveTab('diagnosis');
-          else if (demoTreatment && !demoDiagnosis) setActiveTab('treatment');
-          // If both are available, stay on current tab
-        }
+        // Show plan tabs if diagnosis or treatment is available
+        setPlanGenerated(!!(demoDiagnosis || demoTreatment));
+        
         // DO NOT call createEncounter in demo mode
       } else {
         setStarted(true);
@@ -312,12 +293,7 @@ export default function ConsultationPanel({
     }
   }, [isDemoMode, shouldCreateEncounterRef, encounter, isCreating, createEncounter]);
 
-  // Update transcript text during demo animation
-  useEffect(() => {
-    if (isDemoMode && initialDemoTranscript) {
-      setTranscriptText(initialDemoTranscript);
-    }
-  }, [isDemoMode, initialDemoTranscript]);
+
 
   const handleClose = useCallback(async () => {
     if (isDemoMode) {

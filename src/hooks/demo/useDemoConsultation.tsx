@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Patient } from '@/lib/types';
 import { DEMO_PATIENT_ID, DemoDataService } from '@/services/demo/DemoDataService';
@@ -30,22 +30,19 @@ export function useDemoConsultation({
 }): DemoConsultationBehavior {
   const searchParams = useSearchParams();
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const prevDemoStage = useRef<DemoStage | null>(null);
+  const prevTranscriptLength = useRef<number>(0);
   
   // Check if this is the demo patient and demo is active
   // Also check URL parameter for demo mode
   const isDemoRoute = searchParams.get('demo') === 'true';
   const isDemoMode = isDemoActive && (patient?.id === DEMO_PATIENT_ID || isDemoRoute);
   
-  console.log('useDemoConsultation:', {
-    isDemoActive,
-    patientId: patient?.id,
-    DEMO_PATIENT_ID,
-    isDemoRoute,
-    isDemoMode,
-    demoStage,
-    hasAnimatedTranscript: !!animatedTranscript,
-    animatedTranscriptLength: animatedTranscript?.length || 0
-  });
+  // Debug only on stage changes
+  if (demoStage !== prevDemoStage.current) {
+    console.log('Demo stage changed:', { from: prevDemoStage.current, to: demoStage, isDemoMode });
+    prevDemoStage.current = demoStage;
+  }
   
   // Demo transcript progression based on stage - use real enriched data
   const getDemoTranscript = () => {
@@ -54,38 +51,27 @@ export function useDemoConsultation({
       return undefined;
     }
     
-    console.log('getDemoTranscript:', { demoStage, hasAnimatedTranscript: !!animatedTranscript, animatedLength: animatedTranscript?.length || 0 });
-    
     // During animation stage, use the animated transcript
     if (demoStage === 'animatingTranscript' && animatedTranscript) {
-      console.log('getDemoTranscript: returning animated transcript');
       return animatedTranscript;
     }
     
     // After animation completes, use the full transcript
     if (demoStage === 'simulatingPlanGeneration' || demoStage === 'showingPlan' || demoStage === 'finished') {
       const encounterData = DemoDataService.getEncounterData();
-      console.log('Demo consultation getting full transcript:', {
-        demoStage,
-        hasEncounterData: !!encounterData,
-        hasTranscript: !!encounterData.transcript,
-        transcriptLength: encounterData.transcript?.length || 0,
-        transcriptPreview: encounterData.transcript?.substring(0, 100) + '...'
-      });
       return encounterData.transcript || undefined;
     }
     
     // Before animation starts, return empty or undefined
-    console.log('getDemoTranscript: returning undefined (before animation)');
     return undefined;
   };
   
-  // Additional debug logging after functions are declared
-  console.log('useDemoConsultation transcript debug:', {
-    hasTranscript: !!getDemoTranscript(),
-    transcriptLength: getDemoTranscript()?.length || 0,
-    transcriptPreview: getDemoTranscript()?.substring(0, 50) + '...'
-  });
+  // Only log if transcript content changes significantly
+  const currentTranscriptLength = getDemoTranscript()?.length || 0;
+  if (Math.abs(currentTranscriptLength - (prevTranscriptLength.current || 0)) > 100) {
+    console.log('Transcript updated:', { length: currentTranscriptLength, stage: demoStage });
+    prevTranscriptLength.current = currentTranscriptLength;
+  }
   
   // Demo diagnosis based on stage - use real enriched data
   const getDemoDiagnosis = () => {
