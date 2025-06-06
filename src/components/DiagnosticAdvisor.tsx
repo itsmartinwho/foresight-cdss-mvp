@@ -23,6 +23,7 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
   const [planExecuting, setPlanExecuting] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('plan');
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
     }
     
     setError(null);
+    setSuccess(null);
     setLoading(true);
     
     try {
@@ -73,6 +75,7 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
     if (!diagnosticPlan) return;
     
     setError(null);
+    setSuccess(null);
     setPlanExecuting(true);
     setCurrentStep(0);
     
@@ -154,7 +157,8 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
         );
         
         // In a real application, this would open a modal or navigate to a form
-        setError('Prior authorization generated successfully.');
+        setError(null);
+        setSuccess('Prior authorization generated successfully.');
       }
     } catch (err) {
       console.error('Error generating prior authorization:', err);
@@ -181,7 +185,8 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
       );
       
       // In a real application, this would open a modal or navigate to a form
-      setError('Specialist referral generated successfully.');
+      setError(null);
+      setSuccess('Specialist referral generated successfully.');
     } catch (err) {
       console.error('Error generating specialist referral:', err);
       setError('Failed to generate specialist referral');
@@ -253,6 +258,12 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
           {error && (
             <div className="mt-2 text-sm text-red-600">
               {error}
+            </div>
+          )}
+          
+          {success && (
+            <div className="mt-2 text-sm text-green-600">
+              {success}
             </div>
           )}
           

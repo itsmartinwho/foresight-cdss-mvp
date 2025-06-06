@@ -1,37 +1,129 @@
 .glass {
-  background: hsla(var(--surface-1) / .08);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid hsla(var(--surface-1) / .35);
-  box-shadow: 0 6px 12px -3px hsla(var(--shadow) / .35);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    600px circle at 50% 0%,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .glass-soft {
-  background: hsla(var(--surface-1) / .50);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid hsla(var(--surface-1) / .25);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 6px 24px rgba(0, 0, 0, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.glass-soft::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    400px circle at 50% 0%,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 80%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* More opaque glass for inner surfaces */
 .glass-dense {
-  background: hsla(var(--surface-1) / .18);
-  backdrop-filter: blur(18px) saturate(200%);
-  -webkit-backdrop-filter: blur(18px) saturate(200%);
-  border: 1px solid hsla(var(--surface-1) / .45);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    inset 0 2px 0 rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.glass-dense::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    800px circle at 50% 0%,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.08) 30%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Modal overlay with light glassmorphic background */
+.glass-backdrop {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  position: relative;
+}
+
+.glass-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 1200px 800px at 50% 20%,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 80%
+  );
+  pointer-events: none;
 }
 
 /* Convenience alias used in existing code */
 .bg-glass {
-  background: hsla(var(--surface-1) / .08);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Prevent nested glass surfaces picking up double opacity */
 .glass .glass {
   background: transparent !important;
+}
+
+.glass .glass::before {
+  display: none !important;
 }
 
 .row-hover:hover {

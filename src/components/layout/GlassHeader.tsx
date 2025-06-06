@@ -48,7 +48,7 @@ export default function GlassHeader() {
               className="rounded-full cursor-pointer"
             />
           </PopoverTrigger>
-          <PopoverContent className="bg-glass backdrop-blur-xl border border-[rgba(255,255,255,0.084)] rounded-md p-2 flex flex-col">
+          <PopoverContent className="glass rounded-md p-2 flex flex-col">
             <Link href="/analytics" className="px-4 py-2 rounded hover:bg-white/10">
               Analytics
             </Link>
