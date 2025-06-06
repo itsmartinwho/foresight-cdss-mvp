@@ -244,19 +244,6 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Demo FAB (Persistent Teaser Bubble) */}
-      {demoStage === 'fabVisible' && !hasDemoRun && !isDemoActive && (
-        <div
-          onClick={() => {
-            startDemo();
-          }}
-          className="fixed right-8 bottom-24 w-16 h-16 rounded-full bg-gradient-to-tr from-teal-300 to-yellow-300 animate-pulse shadow-lg cursor-pointer flex items-center justify-center z-50"
-          // Placed bottom-24 to avoid overlap with NotificationBell, can be adjusted
-        >
-          <PlayCircle className="text-white w-8 h-8" />
-        </div>
-      )}
     </ContentSurface>
   );
 }
