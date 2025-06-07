@@ -131,7 +131,7 @@ export default function ConsultationPanel({
   useEffect(()=>{isPausedRef.current=isPaused;},[isPaused]);
 
   // Update setIsTranscribing and setIsPaused to update the ref
-  const setIsTranscribingAndRef = (val) => {
+  const setIsTranscribingAndRef = (val: boolean) => {
     setIsTranscribing(val);
     transcriptionActiveRef.current = val;
   };
@@ -148,12 +148,34 @@ export default function ConsultationPanel({
     if(mediaRecorderRef.current){try{if(mediaRecorderRef.current.state!=='inactive'){mediaRecorderRef.current.stop();}}catch{} mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());mediaRecorderRef.current=null;}
     audioStreamRef.current?.getTracks().forEach(t=>t.stop());audioStreamRef.current=null;
     if(socketRef.current){try{socketRef.current.close();}catch{} socketRef.current=null;}
-    setIsTranscribing(false);
+    setIsTranscribingAndRef(false);
     if(resetPaused) setIsPaused(false);
   },[isDemoMode]);
 
   const handleSaveAndClose = useCallback(async () => {
-    stopTranscription(true); // Reset paused state when saving and closing
+    // Call stopTranscription directly without it being in dependencies
+    if (!isDemoMode && transcriptionActiveRef.current) {
+      if(mediaRecorderRef.current){
+        try{
+          if(mediaRecorderRef.current.state!=='inactive'){
+            mediaRecorderRef.current.stop();
+          }
+        }catch{} 
+        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+        mediaRecorderRef.current=null;
+      }
+      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+      audioStreamRef.current=null;
+      if(socketRef.current){
+        try{
+          socketRef.current.close();
+        }catch{} 
+        socketRef.current=null;
+      }
+      setIsTranscribingAndRef(false);
+      setIsPaused(false);
+    }
+    
     if (isDemoMode || !encounter) {
       onClose();
       return;
@@ -205,10 +227,32 @@ export default function ConsultationPanel({
     } finally {
       setIsSaving(false);
     }
-  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving, stopTranscription]);
+  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving]);
 
   const handleDiscard = useCallback(async () => {
-    stopTranscription(true); // Reset paused state when discarding
+    // Call stopTranscription directly without it being in dependencies
+    if (!isDemoMode && transcriptionActiveRef.current) {
+      if(mediaRecorderRef.current){
+        try{
+          if(mediaRecorderRef.current.state!=='inactive'){
+            mediaRecorderRef.current.stop();
+          }
+        }catch{} 
+        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+        mediaRecorderRef.current=null;
+      }
+      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+      audioStreamRef.current=null;
+      if(socketRef.current){
+        try{
+          socketRef.current.close();
+        }catch{} 
+        socketRef.current=null;
+      }
+      setIsTranscribingAndRef(false);
+      setIsPaused(false);
+    }
+    
     if (isDemoMode) {
       onClose();
       return;
@@ -217,7 +261,7 @@ export default function ConsultationPanel({
       await supabaseDataService.permanentlyDeleteEncounter(patient.id, encounter.id);
     }
     onClose();
-  }, [isDemoMode, encounter, patient.id, onClose, stopTranscription]);
+  }, [isDemoMode, encounter, patient.id, onClose]);
   
   const handleCloseRequest = useCallback(() => {
     if (isDemoMode) {
@@ -271,6 +315,29 @@ export default function ConsultationPanel({
       console.log("ConsultationPanel resumeTranscription: mediaRecorder not in paused state:", mediaRecorderRef.current?.state);
     }
   }, [isTranscribing, isPaused]);
+
+  // Create a stable callback for AudioWaveform that won't trigger re-renders
+  const handleAudioWaveformStop = useCallback(() => {
+    if(mediaRecorderRef.current){
+      try{
+        if(mediaRecorderRef.current.state!=='inactive'){
+          mediaRecorderRef.current.stop();
+        }
+      }catch{} 
+      mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+      mediaRecorderRef.current=null;
+    }
+    audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+    audioStreamRef.current=null;
+    if(socketRef.current){
+      try{
+        socketRef.current.close();
+      }catch{} 
+      socketRef.current=null;
+    }
+    setIsTranscribingAndRef(false);
+    setIsPaused(false);
+  }, []); // No dependencies - uses refs only
 
   const startVoiceInput = useCallback(async () => {
     console.log("ConsultationPanel startVoiceInput called - current states:", { isTranscribing, isPaused });
@@ -351,15 +418,55 @@ export default function ConsultationPanel({
         }
       };
 
-      ws.onclose = () => stopTranscription(false); // Don't reset paused state on connection issues
+      ws.onclose = () => {
+        // Call cleanup directly without using stopTranscription
+        if(mediaRecorderRef.current){
+          try{
+            if(mediaRecorderRef.current.state!=='inactive'){
+              mediaRecorderRef.current.stop();
+            }
+          }catch{} 
+          mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+          mediaRecorderRef.current=null;
+        }
+        audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+        audioStreamRef.current=null;
+        if(socketRef.current){
+          try{
+            socketRef.current.close();
+          }catch{} 
+          socketRef.current=null;
+        }
+        setIsTranscribingAndRef(false);
+        // Don't reset paused state on connection issues
+      };
       ws.onerror = () => {
         toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
-        stopTranscription(false); // Don't reset paused state on connection issues
+        // Call cleanup directly without using stopTranscription
+        if(mediaRecorderRef.current){
+          try{
+            if(mediaRecorderRef.current.state!=='inactive'){
+              mediaRecorderRef.current.stop();
+            }
+          }catch{} 
+          mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+          mediaRecorderRef.current=null;
+        }
+        audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+        audioStreamRef.current=null;
+        if(socketRef.current){
+          try{
+            socketRef.current.close();
+          }catch{} 
+          socketRef.current=null;
+        }
+        setIsTranscribingAndRef(false);
+        // Don't reset paused state on connection issues
       };
     } catch (err) {
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
-  }, [isTranscribing, isOpen, stopTranscription, toast]);
+  }, [isTranscribing, isOpen, toast]);
 
   // Update ref whenever startVoiceInput changes
   useEffect(() => {
@@ -438,12 +545,11 @@ export default function ConsultationPanel({
         setStarted(true);
       }
     } else if (mounted) {
-      stopTranscription(true);
       setStarted(false);
       autoStartSessionRef.current = false;
       console.log('[ConsultationPanel] Modal closed, autoStartSessionRef reset');
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted]);
   
   useEffect(() => {
     if (!isDemoMode && isOpen && !encounter && !isCreating) {
@@ -524,25 +630,40 @@ export default function ConsultationPanel({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (transcriptionActiveRef.current) {
-        stopTranscription(true);
-      }
     };
-  }, [mounted, pauseTranscription, stopTranscription]);
+  }, [mounted, pauseTranscription]);
 
   // Refactor the effect that calls stopTranscription in its cleanup
   useEffect(() => {
-    if (!isOpen) return;
-    return () => {
-      // Only call stopTranscription if transcription is actually running
-      if (transcriptionActiveRef.current) {
-        console.log('[ConsultationPanel] Cleanup: Stopping transcription on true close/unmount');
-        stopTranscription(true);
-      } else {
-        console.log('[ConsultationPanel] Cleanup: No active transcription to stop');
+    // Only set up cleanup when modal is truly closing (isOpen becomes false)
+    if (isOpen) return;
+    
+    // When modal closes, ensure transcription is stopped
+    if (transcriptionActiveRef.current) {
+      console.log('[ConsultationPanel] Modal closing: Stopping active transcription');
+      // Direct cleanup without using the callback to avoid dependency issues
+      if(mediaRecorderRef.current){
+        try{
+          if(mediaRecorderRef.current.state!=='inactive'){
+            mediaRecorderRef.current.stop();
+          }
+        }catch{} 
+        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+        mediaRecorderRef.current=null;
       }
-    };
-  }, [isOpen, stopTranscription]);
+      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+      audioStreamRef.current=null;
+      if(socketRef.current){
+        try{
+          socketRef.current.close();
+        }catch{} 
+        socketRef.current=null;
+      }
+      setIsTranscribing(false);
+      setIsPaused(false);
+      transcriptionActiveRef.current = false;
+    }
+  }, [isOpen]); // Only depend on isOpen
 
   if (!mounted || !isOpen) return null;
 
@@ -634,7 +755,7 @@ export default function ConsultationPanel({
                                 mediaStream={audioStreamRef.current}
                                 onPause={pauseTranscription}
                                 onResume={resumeTranscription}
-                                onStop={stopTranscription}
+                                onStop={handleAudioWaveformStop}
                               />
                             </div>
                           )}
