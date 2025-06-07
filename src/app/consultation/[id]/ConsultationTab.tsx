@@ -102,6 +102,9 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [priorAuthDetails, setPriorAuthDetails] = useState<any>(null);
 
+  const autoStartSessionRef = useRef(false);
+  const startedRef = useRef(false);
+
   const stopTranscription = useCallback((resetPaused: boolean = true) => {
     console.log("stopTranscription called with resetPaused:", resetPaused, "current states:", { isTranscribing, isPaused });
     let stopped = false;
@@ -160,51 +163,44 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   }, [isTranscribing, isPaused]);
 
   useEffect(() => {
-    // Stop any active transcription when the selected encounter changes or is cleared
-    // Only stop if actually transcribing
-    if (isTranscribing || isPaused) {
-      console.log("Encounter changed, stopping active transcription");
-      stopTranscription();
-    }
-    
-    if (selectedEncounter && patient) { 
+    if (selectedEncounter && patient) {
       const currentTranscript = selectedEncounter.transcript || '';
       setEditableTranscript(currentTranscript);
       setLastSavedTranscript(currentTranscript);
       setTranscriptChanged(false);
-      // Set content in the RichTextEditor
       if (richTextEditorRef.current) {
         richTextEditorRef.current.setContent(currentTranscript);
       }
-      
       setAiOutput(null);
       encounterStateForAutoSaveRef.current = {
-        patientBusinessId: selectedEncounter.patientId, 
-        encounterSupabaseId: selectedEncounter.id, // Using the UUID for this ref state
+        patientBusinessId: selectedEncounter.patientId,
+        encounterSupabaseId: selectedEncounter.id,
         transcriptToSave: currentTranscript,
         lastSaved: currentTranscript,
       };
+      autoStartSessionRef.current = false;
+      startedRef.current = false;
+      console.log('[ConsultationTab] Encounter opened, autoStartSessionRef reset');
     } else {
       setEditableTranscript("");
       setLastSavedTranscript("");
       setTranscriptChanged(false);
-      // Clear content in the RichTextEditor
       if (richTextEditorRef.current) {
         richTextEditorRef.current.setContent("");
       }
-      
       setAiOutput(null);
       encounterStateForAutoSaveRef.current = null;
+      autoStartSessionRef.current = false;
+      startedRef.current = false;
+      console.log('[ConsultationTab] Encounter closed, autoStartSessionRef reset');
+      stopTranscription(true);
     }
-    
-    // Cleanup function
     return () => {
-      // Final cleanup on unmount - only if actively transcribing
       if (isTranscribing || isPaused) {
-        stopTranscription();
+        stopTranscription(true);
       }
     };
-  }, [selectedEncounter, patient, stopTranscription, isTranscribing, isPaused]);
+  }, [selectedEncounter, patient, stopTranscription]);
 
   const getCursorPosition = (): number | null => {
     // Note: With Tiptap, cursor position management is handled internally
@@ -537,12 +533,13 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
   // Auto-start transcription for new consultations
   useEffect(() => {
-    if (isStartingNewConsultation && !isTranscribing && !selectedEncounter) {
-      console.log("Auto-start: Conditions met for new consultation transcription");
-      // Small delay to ensure UI is ready
+    if (isStartingNewConsultation && !isTranscribing && !selectedEncounter && !autoStartSessionRef.current) {
+      console.log('[ConsultationTab] Auto-start: Conditions met for new consultation transcription');
+      autoStartSessionRef.current = true;
       const timer = setTimeout(() => {
-        console.log("Auto-start: Calling startTranscription after delay");
+        console.log('[ConsultationTab] Auto-start: Calling startTranscription after delay');
         startTranscription();
+        startedRef.current = true;
       }, 500);
       return () => clearTimeout(timer);
     }

@@ -121,6 +121,7 @@ export default function ConsultationPanel({
   const startVoiceInputRef = useRef<(() => Promise<any>) | null>(null);
   const autoStartAttemptedRef = useRef<Set<string>>(new Set());
   const autoStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoStartSessionRef = useRef(false);
 
   // --- LIFECYCLE & SETUP ---
 
@@ -435,7 +436,6 @@ export default function ConsultationPanel({
 
   useEffect(() => {
     if (isOpen) {
-      // Reset state on open
       setEncounter(null);
       setReason('');
       setScheduledDate(new Date());
@@ -450,90 +450,69 @@ export default function ConsultationPanel({
       setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment)));
       setShowConfirmationDialog(false);
       setEditedWhilePaused(false);
-      
+      autoStartSessionRef.current = false;
+      console.log('[ConsultationPanel] Modal opened, autoStartSessionRef reset');
       if (isDemoMode) {
         setStarted(true);
       }
-
     } else if (mounted) {
-      stopTranscription(true); // Reset paused state when closing the panel
+      stopTranscription(true);
+      setStarted(false);
+      autoStartSessionRef.current = false;
+      console.log('[ConsultationPanel] Modal closed, autoStartSessionRef reset');
     }
   }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted, stopTranscription]);
   
-  // Separate effect for encounter creation to avoid dependency cycles
   useEffect(() => {
     if (!isDemoMode && isOpen && !encounter && !isCreating) {
       createEncounter();
     }
   }, [isDemoMode, isOpen, encounter, isCreating, createEncounter]);
   
-    // Single effect to handle encounter creation -> start transcription sequence
   useEffect(() => {
-    if (!isDemoMode && encounter && !started && !isTranscribing && isOpen) {
+    if (!isDemoMode && isOpen && encounter && !started && !isTranscribing && !autoStartSessionRef.current) {
       const encounterId = encounter.id;
-      
-      // Check if we've already attempted auto-start for this encounter
       if (autoStartAttemptedRef.current.has(encounterId)) {
         console.log('[ConsultationPanel] Auto-start already attempted for encounter:', encounterId);
         setStarted(true);
         return;
       }
-      
-      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounterId, {
-        isDemoMode,
-        encounter: !!encounter,
-        started,
-        isTranscribing,
-        isOpen,
-        hasVoiceInputRef: !!startVoiceInputRef.current,
-        apiKey: !!process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY
-      });
-      
-      // Mark this encounter as attempted
+      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounterId, { isDemoMode, encounter: !!encounter, started, isTranscribing, isOpen });
       autoStartAttemptedRef.current.add(encounterId);
-      // Don't set started here - wait until transcription actually starts
-      
-      // Attempt to start transcription immediately
+      autoStartSessionRef.current = true;
       (async () => {
         console.log('[ConsultationPanel] Attempting immediate auto-start of transcription');
         try {
           if (isTranscribing) {
             console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
-            setStarted(true); // Only set started if already transcribing
+            setStarted(true);
             return;
           }
-
           if (!startVoiceInputRef.current) {
             console.warn('[ConsultationPanel] startVoiceInputRef.current is null, cannot auto-start');
             toast({ title: "Auto-start Warning", description: "Transcription function not ready. Transcription will start automatically when ready.", variant: "destructive" });
-            // Don't set started if we can't start
             return;
           }
-
           const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
           if (!apiKey) {
             console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
             toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
-            // Don't set started if we can't start
             return;
           }
-
           console.log('[ConsultationPanel] All checks passed, calling startVoiceInput via ref...');
           await startVoiceInputRef.current();
-          setStarted(true); // Only set started after successful start
+          setStarted(true);
           console.log('[ConsultationPanel] Auto-start transcription successful');
         } catch (error) {
           console.error('[ConsultationPanel] Auto-start transcription failed via ref:', error);
-          // Fallback to direct function call
           try {
             console.log('[ConsultationPanel] Attempting fallback to direct function call...');
             await startVoiceInput();
-            setStarted(true); // Only set started after successful start
+            setStarted(true);
             console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
           } catch (fallbackError) {
             console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
             toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Transcription will retry automatically.", variant: "destructive" });
-            // Don't set started if auto-start fails
           }
         }
       })();
@@ -553,7 +532,6 @@ export default function ConsultationPanel({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, handleCloseRequest, isDemoMode, demoState.isDemoModalOpen]);
   
-  // Effect to handle transcription state on visibility change
   useEffect(() => {
     if (!mounted) return;
     
@@ -565,11 +543,10 @@ export default function ConsultationPanel({
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Cleanup if transcription is running when component unmounts
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (isTranscribing) {
-        stopTranscription(true); // Reset paused state when component unmounts
+        stopTranscription(true);
       }
     };
   }, [isTranscribing, isPaused, pauseTranscription, stopTranscription, mounted]);
