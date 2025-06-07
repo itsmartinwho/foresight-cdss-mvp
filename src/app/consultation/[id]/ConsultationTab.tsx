@@ -161,7 +161,11 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
   useEffect(() => {
     // Stop any active transcription when the selected encounter changes or is cleared
-    stopTranscription();
+    // Only stop if actually transcribing
+    if (isTranscribing || isPaused) {
+      console.log("Encounter changed, stopping active transcription");
+      stopTranscription();
+    }
     
     if (selectedEncounter && patient) { 
       const currentTranscript = selectedEncounter.transcript || '';
@@ -195,10 +199,12 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
     
     // Cleanup function
     return () => {
-      // Final cleanup on unmount
-      stopTranscription();
+      // Final cleanup on unmount - only if actively transcribing
+      if (isTranscribing || isPaused) {
+        stopTranscription();
+      }
     };
-  }, [selectedEncounter, patient, stopTranscription]);
+  }, [selectedEncounter, patient, stopTranscription, isTranscribing, isPaused]);
 
   const getCursorPosition = (): number | null => {
     // Note: With Tiptap, cursor position management is handled internally
@@ -265,7 +271,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
     // Intentionally left blank - Tiptap handles cursor position internally
   };
 
-  const startTranscription = async () => {
+  const startTranscription = useCallback(async () => {
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
     if (!apiKey) {
       alert('Deepgram API key not configured');
@@ -287,17 +293,15 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
         }
         
         try {
-          setIsTranscribing(true); // Set early to prevent race conditions
+          // Don't set isTranscribing here - let it be set when transcription actually starts
           encounterToUse = await onStartTranscriptionForNewConsult();
           if (!encounterToUse) {
             alert("Failed to create new consultation. Cannot start transcription.");
-            setIsTranscribing(false);
             return;
           }
         } catch (error) {
           console.error("Error creating new consultation:", error);
           alert("Failed to create new consultation. Cannot start transcription.");
-          setIsTranscribing(false);
           return;
         }
     }
@@ -308,7 +312,8 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
     }
     
     // Don't handle resume here - that's handled by resumeTranscription function
-    if (isPaused || isTranscribing) {
+    // Only check isTranscribing if we're not auto-starting a new consultation
+    if (!isStartingNewConsultation && (isPaused || isTranscribing)) {
       console.log("startTranscription: Already transcribing or paused, ignoring start request");
       return;
     }
@@ -404,7 +409,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       alert(`Error starting transcription system: ${err instanceof Error ? err.message : String(err)}`);
       stopTranscription(true); // Reset paused state on startup errors
     }
-  };
+  }, [isTranscribing, isPaused, selectedEncounter, isStartingNewConsultation, onStartTranscriptionForNewConsult, editableTranscript, stopTranscription, toast]);
 
   const pauseTranscription = () => {
     console.log("pauseTranscription called - current states:", { isTranscribing, isPaused });
@@ -533,13 +538,15 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   // Auto-start transcription for new consultations
   useEffect(() => {
     if (isStartingNewConsultation && !isTranscribing && !selectedEncounter) {
+      console.log("Auto-start: Conditions met for new consultation transcription");
       // Small delay to ensure UI is ready
       const timer = setTimeout(() => {
+        console.log("Auto-start: Calling startTranscription after delay");
         startTranscription();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isStartingNewConsultation, isTranscribing, selectedEncounter]);
+  }, [isStartingNewConsultation, isTranscribing, selectedEncounter, startTranscription]);
 
   // JSX for rendering will be added here
   return (

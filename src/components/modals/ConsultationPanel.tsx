@@ -290,9 +290,16 @@ export default function ConsultationPanel({
   }, [isTranscribing, isPaused]);
 
   const startVoiceInput = useCallback(async () => {
+    console.log("ConsultationPanel startVoiceInput called - current states:", { isTranscribing, isPaused });
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-    if (!apiKey) return toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
-    if (isTranscribing) return;
+    if (!apiKey) {
+      console.error("ConsultationPanel startVoiceInput: No API key");
+      return toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+    }
+    if (isTranscribing) {
+      console.log("ConsultationPanel startVoiceInput: Already transcribing, returning early");
+      return;
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -306,12 +313,14 @@ export default function ConsultationPanel({
       socketRef.current = ws;
 
       ws.onopen = () => {
+        console.log("ConsultationPanel: WebSocket opened successfully");
         mediaRecorder.addEventListener('dataavailable', event => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
         });
         mediaRecorder.start(250);
         setIsTranscribing(true);
         setIsPaused(false); // Always reset paused state when starting new transcription
+        console.log("ConsultationPanel: Transcription started - isTranscribing set to true, isPaused set to false");
       };
 
       ws.onmessage = (e) => {
@@ -482,7 +491,7 @@ export default function ConsultationPanel({
       
       // Mark this encounter as attempted
       autoStartAttemptedRef.current.add(encounterId);
-      setStarted(true);
+      // Don't set started here - wait until transcription actually starts
       
       // Attempt to start transcription immediately
       (async () => {
@@ -490,12 +499,14 @@ export default function ConsultationPanel({
         try {
           if (isTranscribing) {
             console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
+            setStarted(true); // Only set started if already transcribing
             return;
           }
 
           if (!startVoiceInputRef.current) {
             console.warn('[ConsultationPanel] startVoiceInputRef.current is null, cannot auto-start');
             toast({ title: "Auto-start Warning", description: "Transcription function not ready. Transcription will start automatically when ready.", variant: "destructive" });
+            // Don't set started if we can't start
             return;
           }
 
@@ -503,11 +514,13 @@ export default function ConsultationPanel({
           if (!apiKey) {
             console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
             toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+            // Don't set started if we can't start
             return;
           }
 
           console.log('[ConsultationPanel] All checks passed, calling startVoiceInput via ref...');
           await startVoiceInputRef.current();
+          setStarted(true); // Only set started after successful start
           console.log('[ConsultationPanel] Auto-start transcription successful');
         } catch (error) {
           console.error('[ConsultationPanel] Auto-start transcription failed via ref:', error);
@@ -515,15 +528,17 @@ export default function ConsultationPanel({
           try {
             console.log('[ConsultationPanel] Attempting fallback to direct function call...');
             await startVoiceInput();
+            setStarted(true); // Only set started after successful start
             console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
           } catch (fallbackError) {
             console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
             toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Transcription will retry automatically.", variant: "destructive" });
+            // Don't set started if auto-start fails
           }
         }
       })();
     }
-  }, [isDemoMode, encounter, isOpen, toast]);
+  }, [isDemoMode, encounter, isOpen, toast, startVoiceInput, isTranscribing, started]);
   
   useEffect(() => {
     if (!isOpen) return;
