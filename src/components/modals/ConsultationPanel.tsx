@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
 import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk } from '@phosphor-icons/react';
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
+import { DemoAudioWaveform } from '@/components/ui/DemoAudioWaveform';
 import { format } from 'date-fns';
 import type { Patient, Encounter, Treatment } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
@@ -779,6 +780,11 @@ export default function ConsultationPanel({
                                 onResume={resumeTranscription}
                                 onStop={handleAudioWaveformStop}
                               />
+                            </div>
+                          )}
+                          {isDemoMode && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                              <DemoAudioWaveform />
                             </div>
                           )}
                         </div>
