@@ -124,6 +124,12 @@ export default function ConsultationPanel({
   const autoStartSessionRef = useRef(false);
   const transcriptionActiveRef = useRef(false);
 
+  // add refs
+  const isTranscribingRef = useRef(false);
+  const isPausedRef = useRef(false);
+  useEffect(()=>{isTranscribingRef.current=isTranscribing;},[isTranscribing]);
+  useEffect(()=>{isPausedRef.current=isPaused;},[isPaused]);
+
   // Update setIsTranscribing and setIsPaused to update the ref
   const setIsTranscribingAndRef = (val) => {
     setIsTranscribing(val);
@@ -136,46 +142,15 @@ export default function ConsultationPanel({
     setMounted(true);
   }, []);
 
-  const stopTranscription = useCallback((resetPaused: boolean = true) => {
-    console.log("ConsultationPanel stopTranscription called with resetPaused:", resetPaused, "current states:", { isTranscribing, isPaused });
-    if (isDemoMode) {
-      console.log("ConsultationPanel stopTranscription: Skipping in demo mode");
-      return;
-    }
-    if (mediaRecorderRef.current) {
-      if (mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        console.log("ConsultationPanel: MediaRecorder stopped");
-      }
-      mediaRecorderRef.current.stream?.getTracks().forEach(track => {
-        track.stop();
-        console.log("ConsultationPanel: Media stream track stopped");
-      });
-      mediaRecorderRef.current = null;
-    }
-    if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-        console.log("ConsultationPanel: Audio stream track stopped");
-      });
-      audioStreamRef.current = null;
-    }
-    if (socketRef.current) {
-      if (socketRef.current.readyState === WebSocket.OPEN) {
-        socketRef.current.close();
-        console.log("ConsultationPanel: WebSocket closed");
-      }
-      socketRef.current = null;
-    }
-    setIsTranscribingAndRef(false);
-    console.log("ConsultationPanel: setIsTranscribing(false) called");
-    if (resetPaused) {
-      setIsPaused(false);
-      console.log("ConsultationPanel: setIsPaused(false) called because resetPaused is true");
-    } else {
-      console.log("ConsultationPanel: isPaused state preserved because resetPaused is false");
-    }
-  }, [isDemoMode, isTranscribing, isPaused]);
+  const stopTranscription = useCallback((resetPaused: boolean = true)=>{
+    console.log("ConsultationPanel stopTranscription called",{resetPaused,isTranscribing:isTranscribingRef.current,isPaused:isPausedRef.current});
+    if(isDemoMode) return;
+    if(mediaRecorderRef.current){try{if(mediaRecorderRef.current.state!=='inactive'){mediaRecorderRef.current.stop();}}catch{} mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());mediaRecorderRef.current=null;}
+    audioStreamRef.current?.getTracks().forEach(t=>t.stop());audioStreamRef.current=null;
+    if(socketRef.current){try{socketRef.current.close();}catch{} socketRef.current=null;}
+    setIsTranscribing(false);
+    if(resetPaused) setIsPaused(false);
+  },[isDemoMode]);
 
   const handleSaveAndClose = useCallback(async () => {
     stopTranscription(true); // Reset paused state when saving and closing
@@ -541,22 +516,19 @@ export default function ConsultationPanel({
   
   useEffect(() => {
     if (!mounted) return;
-    
     const handleVisibilityChange = () => {
-      if (document.hidden && isTranscribing && !isPaused) {
+      if (document.hidden && isTranscribingRef.current && !isPausedRef.current) {
         pauseTranscription();
       }
     };
-    
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (isTranscribing) {
+      if (transcriptionActiveRef.current) {
         stopTranscription(true);
       }
     };
-  }, [isTranscribing, isPaused, pauseTranscription, stopTranscription, mounted]);
+  }, [mounted, pauseTranscription, stopTranscription]);
 
   // Refactor the effect that calls stopTranscription in its cleanup
   useEffect(() => {
