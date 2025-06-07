@@ -135,24 +135,29 @@ P:
 • Dar de alta cuando pase 2 movimientos intestinales y tolera dieta.`,
   treatments: [
     { 
-      drug: "Polyethylene glycol 3350 17g q6h until BM, then 17g nightly × 14 days", 
+      drug: "Polyethylene glycol 3350 17g every 6 hours until bowel movement, then 17g nightly for 14 days", 
       status: "Prescribed", 
-      rationale: "Osmotic laxative for severe constipation and maintenance therapy." 
+      rationale: "Osmotic laxative for severe fecal impaction with maintenance therapy to prevent recurrence" 
     },
     { 
-      drug: "Docusate sodium 200mg PO BID", 
+      drug: "Docusate sodium 200mg twice daily", 
       status: "Prescribed", 
-      rationale: "Stool softener to facilitate easier bowel movements." 
+      rationale: "Stool softener to facilitate easier bowel movements and reduce straining" 
     },
     { 
-      drug: "Glycerin suppository PR q12h PRN", 
+      drug: "Glycerin suppository every 12 hours as needed", 
       status: "As needed", 
-      rationale: "Rectal stimulant if no bowel movement within 12 hours." 
+      rationale: "Rectal stimulant if no bowel movement occurs within 12 hours" 
     },
     { 
-      drug: "High-fiber diet counseling with 25-30g fiber daily", 
+      drug: "High-fiber diet with 25-30g fiber daily", 
       status: "Patient education", 
-      rationale: "Prevention of future constipation episodes through dietary modification." 
+      rationale: "Dietary modification to prevent future constipation episodes and promote regular bowel function" 
+    },
+    { 
+      drug: "Increased fluid intake to 8-10 glasses of water daily", 
+      status: "Patient education", 
+      rationale: "Adequate hydration essential for preventing constipation and supporting treatment effectiveness" 
     }
   ]
 };
@@ -160,8 +165,8 @@ P:
 const dorothyRobinsonDiagnosisJSON: DemoDiagnosisData = {
   patientId: DEMO_PATIENT_ID,
   encounterId: DEMO_ENCOUNTER_ID,
-  code: "K59.00",
-  description: "Functional constipation, likely opioid-induced with contributing low-fiber diet"
+  code: "K56.41",
+  description: "Fecal impaction with severe constipation requiring aggressive bowel regimen and medical intervention"
 };
 
 export const demoEncounterData: DemoEncounterData = {

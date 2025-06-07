@@ -2,15 +2,17 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Patient } from '@/lib/types';
+import { Patient, DifferentialDiagnosis } from '@/lib/types';
 import { DEMO_PATIENT_ID, DemoDataService } from '@/services/demo/DemoDataService';
 import { DemoStage } from '@/services/demo/DemoStateService';
+import { getDemoDifferentialDiagnoses } from '@/data/demoClinicalResults';
 
 export interface DemoConsultationBehavior {
   isDemoMode: boolean;
   initialDemoTranscript?: string;
   demoDiagnosis?: string;
   demoTreatment?: string;
+  demoDifferentialDiagnoses?: DifferentialDiagnosis[];
   isDemoGeneratingPlan?: boolean;
   onDemoClinicalPlanClick?: () => void;
 }
@@ -84,6 +86,20 @@ export function useDemoConsultation({
         return undefined;
     }
   };
+
+  // Demo differential diagnoses based on stage - use fresh clinical results
+  const getDemoDifferentialDiagnosesForStage = (): DifferentialDiagnosis[] | undefined => {
+    if (!isDemoMode) return undefined;
+    
+    switch (demoStage) {
+      case 'showingPlan':
+      case 'finished':
+        // Use the imported function to get differential diagnoses
+        return getDemoDifferentialDiagnoses();
+      default:
+        return undefined;
+    }
+  };
   
   // Handle demo clinical plan generation
   const handleDemoClinicalPlan = () => {
@@ -111,6 +127,7 @@ export function useDemoConsultation({
     initialDemoTranscript: getDemoTranscript(),
     demoDiagnosis: getDemoDiagnosis(),
     demoTreatment: getDemoTreatment(),
+    demoDifferentialDiagnoses: getDemoDifferentialDiagnosesForStage(),
     isDemoGeneratingPlan: isGeneratingPlan,
     onDemoClinicalPlanClick: isDemoMode ? handleDemoClinicalPlan : undefined,
   };

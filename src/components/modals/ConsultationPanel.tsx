@@ -37,6 +37,8 @@ interface ConsultationPanelProps {
   demoDiagnosis?: string;
   /** Initial treatment content for demo mode */
   demoTreatment?: string;
+  /** Initial differential diagnoses for demo mode */
+  demoDifferentialDiagnoses?: DifferentialDiagnosis[];
   /** Callback for when "Clinical Plan" is clicked in demo mode */
   onDemoClinicalPlanClick?: () => void;
   /** Controls loading state of Clinical Plan button externally for demo */
@@ -65,6 +67,7 @@ export default function ConsultationPanel({
   initialDemoTranscript,
   demoDiagnosis,
   demoTreatment,
+  demoDifferentialDiagnoses,
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false,
 }: ConsultationPanelProps) {
@@ -577,9 +580,9 @@ export default function ConsultationPanel({
       setTranscriptText(isDemoMode ? initialDemoTranscript || '' : '');
       setDiagnosisText(isDemoMode ? demoDiagnosis || '' : '');
       setTreatmentText(isDemoMode ? demoTreatment || '' : '');
-      setDifferentialDiagnoses([]);
+      setDifferentialDiagnoses(isDemoMode ? demoDifferentialDiagnoses || [] : []);
       setIsLoadingDifferentials(false);
-      setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment)));
+      setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment || demoDifferentialDiagnoses)));
       setShowConfirmationDialog(false);
       setEditedWhilePaused(false);
       autoStartSessionRef.current = false;
@@ -592,7 +595,7 @@ export default function ConsultationPanel({
       autoStartSessionRef.current = false;
       console.log('[ConsultationPanel] Modal closed, autoStartSessionRef reset');
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, mounted]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, mounted]);
   
   useEffect(() => {
     if (!isDemoMode && isOpen && !encounter && !isCreating) {
