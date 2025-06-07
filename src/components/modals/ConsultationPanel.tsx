@@ -130,7 +130,8 @@ export default function ConsultationPanel({
   useEffect(()=>{isTranscribingRef.current=isTranscribing;},[isTranscribing]);
   useEffect(()=>{isPausedRef.current=isPaused;},[isPaused]);
 
-  // Update setIsTranscribing and setIsPaused to update the ref
+  // CRITICAL: Update both state and ref when transcription status changes
+  // This ref is essential for cleanup functions that need current transcription state
   const setIsTranscribingAndRef = (val: boolean) => {
     setIsTranscribing(val);
     transcriptionActiveRef.current = val;
@@ -142,15 +143,18 @@ export default function ConsultationPanel({
     setMounted(true);
   }, []);
 
+  // CRITICAL PATTERN: stopTranscription is NOT in any dependency arrays
+  // Including it would cause immediate start/stop cycles due to React re-renders
   const stopTranscription = useCallback((resetPaused: boolean = true)=>{
     console.log("ConsultationPanel stopTranscription called",{resetPaused,isTranscribing:isTranscribingRef.current,isPaused:isPausedRef.current});
     if(isDemoMode) return;
+    // Direct resource cleanup in exact order:
     if(mediaRecorderRef.current){try{if(mediaRecorderRef.current.state!=='inactive'){mediaRecorderRef.current.stop();}}catch{} mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());mediaRecorderRef.current=null;}
     audioStreamRef.current?.getTracks().forEach(t=>t.stop());audioStreamRef.current=null;
     if(socketRef.current){try{socketRef.current.close();}catch{} socketRef.current=null;}
-    setIsTranscribingAndRef(false);
+    setIsTranscribingAndRef(false); // Use the ref-updating function
     if(resetPaused) setIsPaused(false);
-  },[isDemoMode]);
+  },[isDemoMode]); // ONLY isDemoMode in dependencies
 
   const handleSaveAndClose = useCallback(async () => {
     // Call stopTranscription directly without it being in dependencies
@@ -316,8 +320,10 @@ export default function ConsultationPanel({
     }
   }, [isTranscribing, isPaused]);
 
-  // Create a stable callback for AudioWaveform that won't trigger re-renders
+  // CRITICAL PATTERN: Stable callback for child components
+  // No dependencies prevents re-renders that could break transcription
   const handleAudioWaveformStop = useCallback(() => {
+    // Direct cleanup using refs - no callback dependencies
     if(mediaRecorderRef.current){
       try{
         if(mediaRecorderRef.current.state!=='inactive'){
@@ -337,7 +343,7 @@ export default function ConsultationPanel({
     }
     setIsTranscribingAndRef(false);
     setIsPaused(false);
-  }, []); // No dependencies - uses refs only
+  }, []); // CRITICAL: No dependencies - uses refs only
 
   const startVoiceInput = useCallback(async () => {
     console.log("ConsultationPanel startVoiceInput called - current states:", { isTranscribing, isPaused });
@@ -633,7 +639,8 @@ export default function ConsultationPanel({
     };
   }, [mounted, pauseTranscription]);
 
-  // Refactor the effect that calls stopTranscription in its cleanup
+  // CRITICAL CLEANUP EFFECT: Only depends on isOpen to prevent race conditions
+  // This was the key fix - dependency on stopTranscription was causing immediate cleanup
   useEffect(() => {
     // Only set up cleanup when modal is truly closing (isOpen becomes false)
     if (isOpen) return;
@@ -641,7 +648,7 @@ export default function ConsultationPanel({
     // When modal closes, ensure transcription is stopped
     if (transcriptionActiveRef.current) {
       console.log('[ConsultationPanel] Modal closing: Stopping active transcription');
-      // Direct cleanup without using the callback to avoid dependency issues
+      // CRITICAL: Direct cleanup without using the callback to avoid dependency issues
       if(mediaRecorderRef.current){
         try{
           if(mediaRecorderRef.current.state!=='inactive'){
@@ -663,7 +670,7 @@ export default function ConsultationPanel({
       setIsPaused(false);
       transcriptionActiveRef.current = false;
     }
-  }, [isOpen]); // Only depend on isOpen
+  }, [isOpen]); // CRITICAL: Only depend on isOpen - NO OTHER DEPENDENCIES
 
   if (!mounted || !isOpen) return null;
 
