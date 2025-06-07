@@ -11,13 +11,14 @@ import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk } from '@pho
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { DemoAudioWaveform } from '@/components/ui/DemoAudioWaveform';
 import { format } from 'date-fns';
-import type { Patient, Encounter, Treatment } from '@/lib/types';
+import type { Patient, Encounter, Treatment, DifferentialDiagnosis } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useDemo } from '@/contexts/DemoContext';
+import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagnosesList';
 
 interface ConsultationPanelProps {
   /** Controls open state from parent */
@@ -97,6 +98,8 @@ export default function ConsultationPanel({
   const [transcriptText, setTranscriptText] = useState('');
   const [diagnosisText, setDiagnosisText] = useState('');
   const [treatmentText, setTreatmentText] = useState('');
+  const [differentialDiagnoses, setDifferentialDiagnoses] = useState<DifferentialDiagnosis[]>([]);
+  const [isLoadingDifferentials, setIsLoadingDifferentials] = useState(false);
   const [activeTab, setActiveTab] = useState('transcript');
   const [planGenerated, setPlanGenerated] = useState(false);
   const [tabBarVisible, setTabBarVisible] = useState(false);
@@ -500,20 +503,51 @@ export default function ConsultationPanel({
 
   const handleClinicalPlan = useCallback(async () => {
     setIsGeneratingPlan(true);
+    setIsLoadingDifferentials(true);
+    
     try {
+      // Step 1: Generate differential diagnoses first
+      const differentialsResponse = await fetch('/api/clinical-engine/differential-diagnoses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          patientId: patient.id, 
+          encounterId: encounter?.id, 
+          transcript: transcriptText 
+        }),
+      });
+      
+      if (differentialsResponse.ok) {
+        const differentialsResult = await differentialsResponse.json();
+        setDifferentialDiagnoses(differentialsResult.differentialDiagnoses || []);
+        setIsLoadingDifferentials(false);
+        setPlanGenerated(true);
+        setActiveTab('differentials');
+      }
+
+      // Step 2: Generate full clinical plan (including final diagnosis)
       const response = await fetch('/api/clinical-engine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientId: patient.id, encounterId: encounter?.id, transcript: transcriptText }),
       });
+      
       if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
       const result = await response.json();
+      
+      // Update differential diagnoses from full result if available
+      if (result.diagnosticResult?.differentialDiagnoses) {
+        setDifferentialDiagnoses(result.diagnosticResult.differentialDiagnoses);
+      }
+      
       setDiagnosisText(result.diagnosticResult?.diagnosisName || '');
       setTreatmentText(result.diagnosticResult?.recommendedTreatments?.join('\n') || '');
-      setPlanGenerated(true);
+      
+      // Switch to diagnosis tab once everything is complete
       setActiveTab('diagnosis');
     } catch (error) {
       toast({ title: "Plan Generation Failed", variant: "destructive" });
+      setIsLoadingDifferentials(false);
     } finally {
       setIsGeneratingPlan(false);
     }
@@ -543,6 +577,8 @@ export default function ConsultationPanel({
       setTranscriptText(isDemoMode ? initialDemoTranscript || '' : '');
       setDiagnosisText(isDemoMode ? demoDiagnosis || '' : '');
       setTreatmentText(isDemoMode ? demoTreatment || '' : '');
+      setDifferentialDiagnoses([]);
+      setIsLoadingDifferentials(false);
       setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment)));
       setShowConfirmationDialog(false);
       setEditedWhilePaused(false);
@@ -706,7 +742,7 @@ export default function ConsultationPanel({
               {planGenerated && (
                 <div className={cn("border-b border-border/50 transition-all", tabBarVisible ? "opacity-100" : "opacity-0")}>
                   <div className="flex space-x-4 px-1 py-2">
-                    {['transcript', 'diagnosis', 'treatment'].map(tab => (
+                    {['transcript', 'differentials', 'diagnosis', 'treatment'].map(tab => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -717,7 +753,7 @@ export default function ConsultationPanel({
                             : "text-muted-foreground hover:bg-muted/50"
                         )}
                       >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        {tab === 'differentials' ? 'Differentials' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                       </button>
                     ))}
                   </div>
@@ -788,6 +824,16 @@ export default function ConsultationPanel({
                             </div>
                           )}
                         </div>
+                      </div>
+                    )}
+                    {planGenerated && activeTab === 'differentials' && (
+                      <div className="h-full flex flex-col space-y-4">
+                        <DifferentialDiagnosesList
+                          diagnoses={differentialDiagnoses}
+                          isLoading={isLoadingDifferentials}
+                          isEditable={!isDemoMode}
+                          className="flex-1 overflow-y-auto"
+                        />
                       </div>
                     )}
                     {planGenerated && activeTab === 'diagnosis' && (

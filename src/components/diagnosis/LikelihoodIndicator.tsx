@@ -1,0 +1,101 @@
+'use client';
+
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+interface LikelihoodIndicatorProps {
+  likelihood: string;
+  percentage?: number;
+  size?: 'sm' | 'md' | 'lg';
+  showPercentage?: boolean;
+  showProgressBar?: boolean;
+  className?: string;
+}
+
+export default function LikelihoodIndicator({
+  likelihood,
+  percentage,
+  size = 'md',
+  showPercentage = true,
+  showProgressBar = true,
+  className = '',
+}: LikelihoodIndicatorProps) {
+  const getLikelihoodColor = (likelihood: string, percentage?: number) => {
+    const likelihoodLower = likelihood.toLowerCase();
+    if (likelihoodLower === 'high' || (percentage && percentage >= 70)) {
+      return {
+        badge: 'destructive' as const,
+        bar: 'bg-red-500',
+        text: 'text-red-600',
+      };
+    } else if (likelihoodLower === 'medium' || (percentage && percentage >= 40)) {
+      return {
+        badge: 'default' as const,
+        bar: 'bg-yellow-500',
+        text: 'text-yellow-600',
+      };
+    } else {
+      return {
+        badge: 'secondary' as const,
+        bar: 'bg-green-500',
+        text: 'text-green-600',
+      };
+    }
+  };
+
+  const getSizeClasses = (size: string) => {
+    switch (size) {
+      case 'sm':
+        return {
+          container: 'space-y-1',
+          badge: 'text-xs px-2 py-0.5',
+          progress: 'h-1',
+          text: 'text-xs',
+        };
+      case 'lg':
+        return {
+          container: 'space-y-3',
+          badge: 'text-sm px-3 py-1',
+          progress: 'h-3',
+          text: 'text-sm',
+        };
+      default: // md
+        return {
+          container: 'space-y-2',
+          badge: 'text-sm px-2.5 py-0.5',
+          progress: 'h-2',
+          text: 'text-sm',
+        };
+    }
+  };
+
+  const colors = getLikelihoodColor(likelihood, percentage);
+  const sizeClasses = getSizeClasses(size);
+
+  return (
+    <div className={cn(sizeClasses.container, className)}>
+      {/* Badge with likelihood */}
+      <div className="flex items-center justify-between">
+        <Badge variant={colors.badge} className={sizeClasses.badge}>
+          {likelihood}
+        </Badge>
+        {showPercentage && percentage !== undefined && (
+          <span className={cn(sizeClasses.text, 'font-medium', colors.text)}>
+            {percentage}%
+          </span>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      {showProgressBar && percentage !== undefined && (
+        <div className={cn('relative w-full rounded-full bg-primary/20 overflow-hidden', sizeClasses.progress)}>
+          <div 
+            className={cn('h-full transition-all rounded-full', colors.bar)}
+            style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+} 

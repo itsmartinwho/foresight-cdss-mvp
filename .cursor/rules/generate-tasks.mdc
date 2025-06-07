@@ -1,5 +1,5 @@
 ---
-description: This rule takes an existing PRD and generates a detailed, step-by-step task list in Markdown format.
+description: 
 globs: 
 alwaysApply: false
 ---

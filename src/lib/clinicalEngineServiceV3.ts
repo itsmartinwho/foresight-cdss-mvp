@@ -326,11 +326,20 @@ Return your response as a JSON array with this exact structure:
   {
     "name": "Diagnosis Name",
     "likelihood": "High|Medium|Low",
-    "keyFactors": "Brief explanation of key supporting factors"
+    "likelihoodPercentage": 85,
+    "keyFactors": "Brief explanation of key supporting factors",
+    "explanation": "Detailed clinical explanation of why this diagnosis is being considered",
+    "supportingEvidence": ["Evidence 1", "Evidence 2", "Evidence 3"],
+    "icdCodes": [
+      {
+        "code": "M05.79",
+        "description": "Rheumatoid arthritis with rheumatoid factor, multiple sites"
+      }
+    ]
   }
 ]
 
-Please provide 3-5 differential diagnoses ranked by likelihood.`;
+Please provide up to 5 differential diagnoses ranked by likelihood from highest to lowest. Include accurate ICD-10 codes for each diagnosis.`;
 
       const userPrompt = `Patient Data: ${JSON.stringify(patientData, null, 2)}
 
@@ -366,7 +375,16 @@ Please generate differential diagnoses based on this information.`;
         {
           name: "Clinical evaluation needed",
           likelihood: "Medium",
-          keyFactors: "Unable to generate differential diagnoses automatically"
+          likelihoodPercentage: 50,
+          keyFactors: "Unable to generate differential diagnoses automatically",
+          explanation: "Clinical data requires further analysis to determine accurate differential diagnoses",
+          supportingEvidence: ["Automated analysis failed"],
+          icdCodes: [
+            {
+              code: "Z00.00",
+              description: "Encounter for general adult medical examination without abnormal findings"
+            }
+          ]
         }
       ];
     }
@@ -381,7 +399,9 @@ Please generate differential diagnoses based on this information.`;
     differentialDiagnoses: DifferentialDiagnosis[]
   ): Promise<DiagnosticResult> {
     try {
-      const systemPrompt = `You are a US-based doctor tasked to create a diagnosis and treatment plan based on the provided patient information, data from the latest encounter, and differential diagnosis provided by another doctor.
+      const systemPrompt = `You are a US-based doctor tasked to create a final diagnosis and treatment plan based on the provided patient information, data from the latest encounter, and differential diagnoses provided by another doctor.
+
+You must carefully consider all differential diagnoses and synthesize a final diagnosis. If your final diagnosis differs from the top differential diagnosis, you must explain why. If you combine multiple differential diagnoses, explain your reasoning.
 
 Return your response as JSON with this exact structure:
 {
@@ -389,6 +409,7 @@ Return your response as JSON with this exact structure:
   "diagnosisCode": "ICD-10 code",
   "confidence": 0.85,
   "supportingEvidence": ["Evidence 1", "Evidence 2", "Evidence 3"],
+  "reasoningExplanation": "Detailed explanation of why this final diagnosis was chosen, especially if it differs from or combines the differential diagnoses",
   "recommendedTests": ["Test 1", "Test 2"],
   "recommendedTreatments": ["Treatment 1 with dosage and rationale", "Treatment 2 with dosage and rationale"],
   "clinicalTrialMatches": []

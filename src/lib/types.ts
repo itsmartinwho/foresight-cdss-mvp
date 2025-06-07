@@ -105,8 +105,15 @@ export interface DiagnosticPlan {
 
 export interface DifferentialDiagnosis {
   name: string;
-  likelihood: string;
+  likelihood: string; // "High" | "Medium" | "Low"
+  likelihoodPercentage?: number; // 0-100 for visual indicators
   keyFactors: string;
+  explanation?: string; // Clinical explanation
+  supportingEvidence?: string[]; // Supporting evidence
+  icdCodes?: Array<{
+    code: string;
+    description: string;
+  }>; // ICD-10 codes with descriptions
 }
 
 // Database record for differential diagnoses
@@ -136,6 +143,7 @@ export interface DiagnosticResult {
   diagnosisCode?: string;
   confidence: number;
   supportingEvidence: string[];
+  reasoningExplanation?: string; // Explanation of final diagnosis reasoning
   differentialDiagnoses: DifferentialDiagnosis[];
   recommendedTests: string[];
   recommendedTreatments: string[];
