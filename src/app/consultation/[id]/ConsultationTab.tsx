@@ -105,6 +105,13 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
   const autoStartSessionRef = useRef(false);
   const startedRef = useRef(false);
 
+  const transcriptionActiveRef = useRef(false);
+
+  const setIsTranscribingAndRef = (val) => {
+    setIsTranscribing(val);
+    transcriptionActiveRef.current = val;
+  };
+
   const stopTranscription = useCallback((resetPaused: boolean = true) => {
     console.log("stopTranscription called with resetPaused:", resetPaused, "current states:", { isTranscribing, isPaused });
     let stopped = false;
@@ -149,7 +156,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       }
       socketRef.current = null;
     }
-    setIsTranscribing(false);
+    setIsTranscribingAndRef(false);
     console.log("setIsTranscribing(false) called");
     if (resetPaused) {
       setIsPaused(false);
@@ -196,8 +203,11 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       stopTranscription(true);
     }
     return () => {
-      if (isTranscribing || isPaused) {
+      if (transcriptionActiveRef.current) {
+        console.log('[ConsultationTab] Cleanup: Stopping transcription on true close/unmount');
         stopTranscription(true);
+      } else {
+        console.log('[ConsultationTab] Cleanup: No active transcription to stop');
       }
     };
   }, [selectedEncounter, patient, stopTranscription]);
@@ -385,7 +395,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
           }
         });
         mediaRecorder.start(250);
-        setIsTranscribing(true);
+        setIsTranscribingAndRef(true);
         setIsPaused(false); // Always reset paused state when starting new transcription
         console.log("Transcription started via WebSocket.");
       };
@@ -423,7 +433,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "paused") {
       mediaRecorderRef.current.resume();
       setIsPaused(false);
-      setIsTranscribing(true); // Ensure we're in transcribing state
+      setIsTranscribingAndRef(true); // Ensure we're in transcribing state
       console.log("Transcription resumed - mediaRecorder resumed, isPaused set to false, isTranscribing set to true");
     } else {
       console.log("resumeTranscription: mediaRecorder not in paused state:", mediaRecorderRef.current?.state);

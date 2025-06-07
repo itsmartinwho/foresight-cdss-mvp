@@ -122,6 +122,13 @@ export default function ConsultationPanel({
   const autoStartAttemptedRef = useRef<Set<string>>(new Set());
   const autoStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartSessionRef = useRef(false);
+  const transcriptionActiveRef = useRef(false);
+
+  // Update setIsTranscribing and setIsPaused to update the ref
+  const setIsTranscribingAndRef = (val) => {
+    setIsTranscribing(val);
+    transcriptionActiveRef.current = val;
+  };
 
   // --- LIFECYCLE & SETUP ---
 
@@ -160,7 +167,7 @@ export default function ConsultationPanel({
       }
       socketRef.current = null;
     }
-    setIsTranscribing(false);
+    setIsTranscribingAndRef(false);
     console.log("ConsultationPanel: setIsTranscribing(false) called");
     if (resetPaused) {
       setIsPaused(false);
@@ -319,7 +326,7 @@ export default function ConsultationPanel({
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
         });
         mediaRecorder.start(250);
-        setIsTranscribing(true);
+        setIsTranscribingAndRef(true);
         setIsPaused(false); // Always reset paused state when starting new transcription
         console.log("ConsultationPanel: Transcription started - isTranscribing set to true, isPaused set to false");
       };
@@ -550,6 +557,20 @@ export default function ConsultationPanel({
       }
     };
   }, [isTranscribing, isPaused, pauseTranscription, stopTranscription, mounted]);
+
+  // Refactor the effect that calls stopTranscription in its cleanup
+  useEffect(() => {
+    if (!isOpen) return;
+    return () => {
+      // Only call stopTranscription if transcription is actually running
+      if (transcriptionActiveRef.current) {
+        console.log('[ConsultationPanel] Cleanup: Stopping transcription on true close/unmount');
+        stopTranscription(true);
+      } else {
+        console.log('[ConsultationPanel] Cleanup: No active transcription to stop');
+      }
+    };
+  }, [isOpen, stopTranscription]);
 
   if (!mounted || !isOpen) return null;
 
