@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
-import { X, Brain, CircleNotch, PauseCircle, PlayCircle } from '@phosphor-icons/react';
+import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk } from '@phosphor-icons/react';
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { format } from 'date-fns';
 import type { Patient, Encounter, Treatment } from '@/lib/types';
@@ -723,6 +723,21 @@ export default function ConsultationPanel({
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
                           <div className="flex items-center gap-2">
+                            {/* Save Icon Button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={handleSaveAndClose}
+                              disabled={isSaving}
+                              className="h-8 w-8 hover:bg-muted transition-all"
+                              title="Save consultation"
+                            >
+                              {isSaving ? (
+                                <CircleNotch className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FloppyDisk className="h-4 w-4" />
+                              )}
+                            </Button>
                             {!(isDemoMode && planGenerated) && (
                               <Button
                                 variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
@@ -779,12 +794,6 @@ export default function ConsultationPanel({
                   <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Setting up consultation...</p></div>
                 )}
               </div>
-              {started && (
-                <div className="border-t border-border/50 pt-4 flex justify-end gap-2">
-                  <Button variant="secondary" onClick={handleCloseRequest} disabled={isSaving}>Close</Button>
-                  <Button onClick={handleSaveAndClose} disabled={isSaving}>{(isSaving && !isDemoMode) ? "Saving..." : "Save & Close"}</Button>
-                </div>
-              )}
             </>
           )}
         </div>
