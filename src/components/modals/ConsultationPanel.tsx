@@ -762,7 +762,7 @@ export default function ConsultationPanel({
                   </div>
                 </div>
               )}
-              <div className="flex-1 overflow-hidden p-4">
+              <div className="flex-1 overflow-hidden p-4 flex flex-col">
                 {started ? (
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (
@@ -834,7 +834,7 @@ export default function ConsultationPanel({
                         diagnoses={differentialDiagnoses}
                         isLoading={isLoadingDifferentials}
                         isEditable={!isDemoMode}
-                        className="h-full"
+                        className="flex-1 min-h-0"
                       />
                     )}
                     {planGenerated && activeTab === 'diagnosis' && (
