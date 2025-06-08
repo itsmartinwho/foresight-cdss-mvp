@@ -53,7 +53,7 @@ export default function DifferentialDiagnosesList({
   const displayedDiagnoses = diagnoses.slice(0, maxCount);
 
   return (
-    <div className={`w-full h-full flex flex-col ${className}`}>
+    <div className={`w-full flex flex-col ${className}`}>
       {/* Header - Fixed at top */}
       <div className="flex-shrink-0 flex items-center justify-between mb-4">
         <div>

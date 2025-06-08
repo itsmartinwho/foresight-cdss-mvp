@@ -66,15 +66,24 @@ This command executes the tests sequentially.
 2. Start a new consultation or open an existing consultation with generated clinical plan
 3. Switch to the "Differentials" tab in the consultation modal
 4. Verify that if there are 5 differential diagnoses:
-   - All cards are rendered (check console for count if needed)
-   - The list is vertically scrollable
+   - All cards are rendered and accessible
+   - The header ("Differential Diagnoses" + count) remains fixed at top
+   - The list is vertically scrollable using mouse wheel or scrollbar
    - All 5 cards can be accessed through scrolling
-   - The scroll container has proper height constraints
-   - No content is cut off or inaccessible
+   - Scrollbar appears only when content exceeds container height
+   - Footer (if present) remains fixed at bottom
 
-**Expected Result**: All differential diagnosis cards should be accessible through smooth vertical scrolling within the modal container.
+**Expected Result**: 
+- All differential diagnosis cards accessible through smooth vertical scrolling
+- Fixed header and footer with scrollable content area
+- Native browser scrolling behavior (invisible scrollbar that appears on hover)
 
-**Last Verified**: December 2024 - Issue fixed
+**Test Scenarios**:
+- Test with 1, 3, and 5 diagnosis cards to verify layout adapts properly
+- Test on different screen sizes (13-inch primary target)
+- Test in demo mode to ensure scrolling works when editing is disabled
+
+**Last Verified**: July 2024 - Fix implemented and verified
 
 ---
 
