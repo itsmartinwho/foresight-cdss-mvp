@@ -24,8 +24,8 @@ export default function DifferentialDiagnosesList({
 }: DifferentialDiagnosesListProps) {
   if (isLoading) {
     return (
-      <div className={`w-full ${className}`}>
-        <div className="flex items-center justify-center py-8 space-x-2">
+      <div className={`w-full h-full flex items-center justify-center ${className}`}>
+        <div className="flex items-center space-x-2">
           <CircleNotch className="h-5 w-5 animate-spin text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Generating differential diagnoses...</span>
         </div>
@@ -35,8 +35,8 @@ export default function DifferentialDiagnosesList({
 
   if (!diagnoses || diagnoses.length === 0) {
     return (
-      <div className={`w-full ${className}`}>
-        <div className="flex flex-col items-center justify-center py-8 space-y-3">
+      <div className={`w-full h-full flex items-center justify-center ${className}`}>
+        <div className="flex flex-col items-center space-y-3">
           <Stethoscope className="h-8 w-8 text-muted-foreground" />
           <div className="text-center">
             <p className="text-sm font-medium text-muted-foreground">No differential diagnoses available</p>
@@ -53,9 +53,9 @@ export default function DifferentialDiagnosesList({
   const displayedDiagnoses = diagnoses.slice(0, maxCount);
 
   return (
-    <div className={`w-full space-y-4 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className={`w-full h-full flex flex-col ${className}`}>
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Differential Diagnoses</h3>
           <p className="text-sm text-muted-foreground">
@@ -69,22 +69,24 @@ export default function DifferentialDiagnosesList({
         )}
       </div>
 
-      {/* Diagnoses Grid */}
-      <div className="grid gap-4">
-        {displayedDiagnoses.map((diagnosis, index) => (
-          <DifferentialDiagnosisCard
-            key={`${diagnosis.name}-${index}`}
-            diagnosis={diagnosis}
-            rank={index + 1}
-            isEditable={isEditable}
-            onEdit={onEditDiagnosis ? (d) => onEditDiagnosis(d, index) : undefined}
-          />
-        ))}
+      {/* Diagnoses Grid - Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid gap-4 pr-2">
+          {displayedDiagnoses.map((diagnosis, index) => (
+            <DifferentialDiagnosisCard
+              key={`${diagnosis.name}-${index}`}
+              diagnosis={diagnosis}
+              rank={index + 1}
+              isEditable={isEditable}
+              onEdit={onEditDiagnosis ? (d) => onEditDiagnosis(d, index) : undefined}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Footer info for truncated list */}
+      {/* Footer info for truncated list - Fixed at bottom */}
       {diagnoses.length > maxCount && (
-        <div className="text-center pt-2 border-t border-border/50">
+        <div className="flex-shrink-0 text-center pt-4 mt-2 border-t border-border/50">
           <p className="text-xs text-muted-foreground">
             {diagnoses.length - maxCount} additional diagnos{diagnoses.length - maxCount === 1 ? 'is' : 'es'} not shown
           </p>
