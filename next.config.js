@@ -21,16 +21,6 @@ const nextConfig = {
       },
     ],
   },
-
-  webpack: (config, { isServer }) => {
-    // Exclude scripts directory from TypeScript compilation
-    config.module.rules.push({
-      test: /\.tsx?$/,
-      exclude: /scripts/,
-    });
-    
-    return config;
-  },
 };
 
 module.exports = nextConfig; 
