@@ -735,7 +735,7 @@ export default function ConsultationPanel({
             Patient: {patient.firstName} {patient.lastName} • {encounter?.id ? `ID: ${encounter.id}` : 'Creating...'}
           </p>
         </div>
-        <div className="flex-1 flex flex-col" style={{overflow: activeTab === 'differentials' ? 'visible' : 'hidden'}}>
+        <div className={cn("flex-1 flex flex-col", activeTab === 'differentials' ? "overflow-visible" : "overflow-hidden")}>
           {(!encounter && !isCreating && !isDemoMode) ? (
             <div className="flex items-center justify-center flex-1">
               <p className="text-muted-foreground">Failed to create consultation</p>
@@ -762,7 +762,7 @@ export default function ConsultationPanel({
                   </div>
                 </div>
               )}
-              <div className="flex-1 p-4" style={{overflow: activeTab === 'differentials' ? 'visible' : 'hidden'}}>
+              <div className={cn("flex-1 p-4", activeTab === 'differentials' ? "overflow-visible" : "overflow-hidden")}>
                 {started ? (
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (

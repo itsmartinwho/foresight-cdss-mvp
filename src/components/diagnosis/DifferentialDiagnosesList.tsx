@@ -78,7 +78,7 @@ export default function DifferentialDiagnosesList({
       </div>
 
       {/* Diagnoses Grid - Scrollable content */}
-      <div className="flex-1 overflow-y-scroll min-h-0 border-2 border-red-500 border-dashed">
+      <div className="flex-1 overflow-y-auto min-h-0 border-2 border-red-500 border-dashed" style={{maxHeight: 'calc(100% - 120px)'}}>
         <div className="space-y-4 pr-2">
           {displayedDiagnoses.map((diagnosis, index) => (
             <DifferentialDiagnosisCard
@@ -91,7 +91,7 @@ export default function DifferentialDiagnosesList({
           ))}
           {/* Debug: Show total count */}
           <div className="bg-yellow-200 p-2 text-xs">
-            DEBUG: Showing {displayedDiagnoses.length} of {diagnoses.length} diagnoses
+            DEBUG: Showing {displayedDiagnoses.length} of {diagnoses.length} diagnoses - Should be scrollable now!
           </div>
         </div>
       </div>

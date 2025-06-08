@@ -44,7 +44,7 @@ Important Considerations:
   existing clinical records beyond what the engine does.
 */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import *dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 // Initialize dotenv to load environment variables from .env.local
 // Ensure this path is correct for your project structure.
@@ -230,8 +230,7 @@ async function main() {
   const totalEncounters = encountersToProcess.length;
   for (let i = 0; i < totalEncounters; i++) {
     const encounter = encountersToProcess[i];
-    console.log(`
-Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.patient_id}, Encounter UUID ${encounter.encounter_uuid}`);
+    console.log(`Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.patient_id}, Encounter UUID ${encounter.encounter_uuid}`);
 
     // Validate transcript length
     if (!encounter.transcript || encounter.transcript.length <= 100) {
@@ -283,8 +282,7 @@ Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.pati
     }
   }
 
-  console.log('
---- Batch Processing Summary ---');
+  console.log('\n--- Batch Processing Summary ---');
   console.log(`Total encounters matching initial criteria: ${totalEncounters}`);
   console.log(`Encounters skipped (short/missing transcript): ${skippedTranscriptLengthCount}`);
   const attemptedProcessingCount = totalEncounters - skippedTranscriptLengthCount;
@@ -295,8 +293,7 @@ Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.pati
   console.log(`  Verified differential diagnoses items created: ${verifiedDifferentialDiagnosesCount}`);
   // Add more summary items as needed
 
-  console.log('
-Batch processing finished.');
+  console.log('\nBatch processing finished.');
 }
 
 if (require.main === module) {
