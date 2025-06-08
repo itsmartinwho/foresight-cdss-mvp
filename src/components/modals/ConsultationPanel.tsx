@@ -830,14 +830,12 @@ export default function ConsultationPanel({
                       </div>
                     )}
                     {planGenerated && activeTab === 'differentials' && (
-                      <div className="h-full flex flex-col space-y-4">
-                        <DifferentialDiagnosesList
-                          diagnoses={differentialDiagnoses}
-                          isLoading={isLoadingDifferentials}
-                          isEditable={!isDemoMode}
-                          className="flex-1 overflow-y-auto"
-                        />
-                      </div>
+                      <DifferentialDiagnosesList
+                        diagnoses={differentialDiagnoses}
+                        isLoading={isLoadingDifferentials}
+                        isEditable={!isDemoMode}
+                        className="h-full"
+                      />
                     )}
                     {planGenerated && activeTab === 'diagnosis' && (
                       <div className="h-full flex flex-col space-y-4">
