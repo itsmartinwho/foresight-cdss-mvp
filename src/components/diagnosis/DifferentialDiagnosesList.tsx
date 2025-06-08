@@ -51,6 +51,14 @@ export default function DifferentialDiagnosesList({
 
   // Limit the number of diagnoses displayed
   const displayedDiagnoses = diagnoses.slice(0, maxCount);
+  
+  // Debug logging
+  console.log('DifferentialDiagnosesList debug:', {
+    totalDiagnoses: diagnoses.length,
+    maxCount,
+    displayedCount: displayedDiagnoses.length,
+    diagnoses: diagnoses.map(d => d.name)
+  });
 
   return (
     <div className={`w-full h-full flex flex-col border-4 border-blue-500 ${className}`}>
@@ -70,8 +78,8 @@ export default function DifferentialDiagnosesList({
       </div>
 
       {/* Diagnoses Grid - Scrollable content */}
-      <div className="flex-1 overflow-y-auto min-h-0 border-2 border-red-500 border-dashed">
-        <div className="grid gap-4 pr-2">
+      <div className="flex-1 overflow-y-scroll min-h-0 border-2 border-red-500 border-dashed">
+        <div className="space-y-4 pr-2">
           {displayedDiagnoses.map((diagnosis, index) => (
             <DifferentialDiagnosisCard
               key={`${diagnosis.name}-${index}`}
@@ -81,6 +89,10 @@ export default function DifferentialDiagnosesList({
               onEdit={onEditDiagnosis ? (d) => onEditDiagnosis(d, index) : undefined}
             />
           ))}
+          {/* Debug: Show total count */}
+          <div className="bg-yellow-200 p-2 text-xs">
+            DEBUG: Showing {displayedDiagnoses.length} of {diagnoses.length} diagnoses
+          </div>
         </div>
       </div>
 
