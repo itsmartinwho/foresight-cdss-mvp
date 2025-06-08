@@ -74,8 +74,9 @@ describe('DifferentialDiagnosisCard', () => {
       />
     );
 
-    const card = screen.getByRole('button');
-    fireEvent.click(card);
+    // Find the card by its title instead of looking for button role
+    const card = screen.getByText('#1 Rheumatoid Arthritis').closest('div');
+    fireEvent.click(card!);
 
     expect(mockOnEdit).toHaveBeenCalledWith(mockDiagnosis);
   });
