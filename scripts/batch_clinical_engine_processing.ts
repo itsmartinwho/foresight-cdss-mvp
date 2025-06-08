@@ -44,7 +44,7 @@ Important Considerations:
   existing clinical records beyond what the engine does.
 */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import *dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 // Initialize dotenv to load environment variables from .env.local
 // Ensure this path is correct for your project structure.
@@ -179,7 +179,7 @@ async function callClinicalEngineAPI(
 
 async function getEncountersToProcess(supabaseClient: SupabaseClient): Promise<EncounterToProcess[]> {
   console.log('Fetching encounters to process using RPC call...');
-  const { data, error } = await supabaseClient.rpc<EncounterToProcess>('get_patients_for_clinical_engine');
+  const { data, error } = await supabaseClient.rpc('get_patients_for_clinical_engine');
 
   if (error) {
     console.error('Error calling get_patients_for_clinical_engine RPC:', error);
@@ -195,6 +195,59 @@ async function getEncountersToProcess(supabaseClient: SupabaseClient): Promise<E
   return data;
 }
 
+async function verifyClinicalResults(
+  supabaseClient: SupabaseClient, 
+  encounterUuid: string, 
+  patientId: string
+): Promise<void> {
+  console.log(`Verifying clinical results for encounter ${encounterUuid}...`);
+  
+  try {
+    // Check for primary diagnoses in conditions table
+    const { data: conditionsData, error: conditionsError } = await supabaseClient
+      .from('conditions')
+      .select('*')
+      .eq('encounter_id', encounterUuid)
+      .eq('category', 'encounter-diagnosis');
+
+    if (conditionsError) {
+      console.error(`Error verifying conditions for encounter ${encounterUuid}:`, conditionsError);
+      return;
+    }
+
+    // Check for differential diagnoses
+    const { data: diffDxData, error: diffDxError } = await supabaseClient
+      .from('differential_diagnoses')
+      .select('*')
+      .eq('encounter_id', encounterUuid);
+
+    if (diffDxError) {
+      console.error(`Error verifying differential diagnoses for encounter ${encounterUuid}:`, diffDxError);
+      return;
+    }
+
+    const primaryDiagnosesCount = conditionsData?.length || 0;
+    const differentialDiagnosesCount = diffDxData?.length || 0;
+
+    console.log(`  - Primary diagnoses created: ${primaryDiagnosesCount}`);
+    console.log(`  - Differential diagnoses created: ${differentialDiagnosesCount}`);
+
+    // Update global counters (we'll need to pass these by reference or return them)
+    // For now, just log the results
+    if (primaryDiagnosesCount > 0) {
+      console.log(`  ✓ Successfully verified primary diagnosis creation for encounter ${encounterUuid}`);
+    }
+    if (differentialDiagnosesCount > 0) {
+      console.log(`  ✓ Successfully verified differential diagnoses creation for encounter ${encounterUuid}`);
+    }
+    if (primaryDiagnosesCount === 0 && differentialDiagnosesCount === 0) {
+      console.warn(`  ⚠ No clinical results found after API call for encounter ${encounterUuid}`);
+    }
+
+  } catch (error) {
+    console.error(`Error during verification for encounter ${encounterUuid}:`, error);
+  }
+}
 
 async function main() {
   console.log('Starting batch clinical engine processing...');
@@ -230,8 +283,7 @@ async function main() {
   const totalEncounters = encountersToProcess.length;
   for (let i = 0; i < totalEncounters; i++) {
     const encounter = encountersToProcess[i];
-    console.log(`
-Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.patient_id}, Encounter UUID ${encounter.encounter_uuid}`);
+    console.log(`Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.patient_id}, Encounter UUID ${encounter.encounter_uuid}`);
 
     // Validate transcript length
     if (!encounter.transcript || encounter.transcript.length <= 100) {
@@ -247,12 +299,6 @@ Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.pati
     }
 
     encountersProcessedCount++;
-
-    // Rate limiting: 1 second delay between API calls
-    if (i > 0) { // No delay before the first call
-      console.log('Waiting 1 second for rate limiting...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
 
     let attemptApiCallSuccessful = false; // Renamed for clarity within the attempt loop
     const maxRetries = 3;
@@ -283,8 +329,7 @@ Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.pati
     }
   }
 
-  console.log('
---- Batch Processing Summary ---');
+  console.log('\n--- Batch Processing Summary ---');
   console.log(`Total encounters matching initial criteria: ${totalEncounters}`);
   console.log(`Encounters skipped (short/missing transcript): ${skippedTranscriptLengthCount}`);
   const attemptedProcessingCount = totalEncounters - skippedTranscriptLengthCount;
@@ -295,8 +340,7 @@ Processing encounter ${i + 1} of ${totalEncounters}: Patient ID ${encounter.pati
   console.log(`  Verified differential diagnoses items created: ${verifiedDifferentialDiagnosesCount}`);
   // Add more summary items as needed
 
-  console.log('
-Batch processing finished.');
+  console.log('\nBatch processing finished.');
 }
 
 if (require.main === module) {
