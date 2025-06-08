@@ -26,6 +26,20 @@ export default function ConsolidatedConsultationTab({
 }: ConsolidatedConsultationTabProps) {
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
 
+  // Call hooks before any early returns to follow Rules of Hooks
+  const {
+    differentialDiagnoses,
+    isLoading: isLoadingDifferentials,
+    error: differentialDiagnosesError,
+    addDifferentialDiagnosis,
+    updateDifferentialDiagnosis,
+    deleteDifferentialDiagnosis,
+  } = useDifferentialDiagnoses({
+    patientId: patient?.id || '',
+    encounterId: selectedEncounter?.encounterIdentifier || '',
+    autoLoad: true,
+  });
+
   if (!patient) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -48,19 +62,6 @@ export default function ConsolidatedConsultationTab({
   // Find the encounter details for the selected encounter
   const encounterDetails = allEncounters?.find(ew => ew.encounter.id === selectedEncounter.id);
   const { diagnoses = [], labResults = [] } = encounterDetails || {};
-
-  const {
-    differentialDiagnoses,
-    isLoading: isLoadingDifferentials,
-    error: differentialDiagnosesError,
-    addDifferentialDiagnosis,
-    updateDifferentialDiagnosis,
-    deleteDifferentialDiagnosis,
-  } = useDifferentialDiagnoses({
-    patientId: patient?.id || '',
-    encounterId: selectedEncounter?.encounterIdentifier || '',
-    autoLoad: true,
-  });
 
   // Mock trials data - same as TrialsTab
   const MOCK_TRIALS_DATA: Record<string, { id: string; title: string; distance: string; fit: number }[]> = {
