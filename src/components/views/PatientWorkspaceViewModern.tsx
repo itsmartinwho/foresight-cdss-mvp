@@ -9,7 +9,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import ConsolidatedConsultationTab from "@/components/patient-workspace-tabs/ConsolidatedConsultationTab";
 import AllDataViewTab from "@/components/patient-workspace-tabs/AllDataViewTab";
-import DiagnosisTab from "@/components/patient-workspace-tabs/DiagnosisTab";
 import ErrorDisplay from "@/components/ui/ErrorDisplay";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -454,9 +453,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
           {/* Right Side: All Data Tab and New Consultation Button */}
           <div className="flex items-center gap-3">
-            <TabBtn k="diagnosis">
-              Diagnosis
-            </TabBtn>
             <TabBtn k="allData">
               All Data
             </TabBtn>
@@ -485,10 +481,6 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               allEncounters={activeEncounterDetails}
               onDeleteEncounter={openDeleteConfirmation}
             />
-          )}
-          
-          {activeTab === "diagnosis" && (
-            <DiagnosisTab patient={patient} allEncounters={activeEncounterDetails} />
           )}
           
           {activeTab === "allData" && (

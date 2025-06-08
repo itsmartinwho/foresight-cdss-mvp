@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDifferentialDiagnoses } from '@/hooks/useDifferentialDiagnoses';
+import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagnosesList';
 
 interface ConsolidatedConsultationTabProps {
   patient: Patient | null;
@@ -46,6 +48,19 @@ export default function ConsolidatedConsultationTab({
   // Find the encounter details for the selected encounter
   const encounterDetails = allEncounters?.find(ew => ew.encounter.id === selectedEncounter.id);
   const { diagnoses = [], labResults = [] } = encounterDetails || {};
+
+  const {
+    differentialDiagnoses,
+    isLoading: isLoadingDifferentials,
+    error: differentialDiagnosesError,
+    addDifferentialDiagnosis,
+    updateDifferentialDiagnosis,
+    deleteDifferentialDiagnosis,
+  } = useDifferentialDiagnoses({
+    patientId: patient?.id || '',
+    encounterId: selectedEncounter?.encounterIdentifier || '',
+    autoLoad: true,
+  });
 
   // Mock trials data - same as TrialsTab
   const MOCK_TRIALS_DATA: Record<string, { id: string; title: string; distance: string; fit: number }[]> = {
@@ -130,8 +145,21 @@ export default function ConsolidatedConsultationTab({
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground italic">No diagnoses recorded for this consultation.</p>
+            <p className="text-muted-foreground italic">No final diagnosis recorded for this consultation.</p>
           )}
+          
+          <div className="mt-6 pt-6 border-t border-border/50">
+             <h3 className="text-base font-semibold text-foreground mb-4">Differential Diagnoses</h3>
+             <DifferentialDiagnosesList
+                diagnoses={differentialDiagnoses}
+                isLoading={isLoadingDifferentials}
+                isEditable={true}
+                onAddDiagnosis={addDifferentialDiagnosis}
+                onSaveDiagnosis={(diagnosis, index) => updateDifferentialDiagnosis(index, diagnosis)}
+                onDeleteDiagnosis={deleteDifferentialDiagnosis}
+                className="w-full"
+              />
+          </div>
         </CardContent>
       </Card>
 
