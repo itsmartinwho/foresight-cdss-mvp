@@ -70,9 +70,11 @@ export function useDifferentialDiagnoses({
   // Refresh differential diagnoses from database
   const refreshDifferentialDiagnoses = useCallback(async () => {
     if (!patientId || !encounterId) {
+      console.log('useDifferentialDiagnoses: Missing patientId or encounterId', { patientId, encounterId });
       return;
     }
 
+    console.log('useDifferentialDiagnoses: Fetching differential diagnoses', { patientId, encounterId });
     setIsLoading(true);
     setError(null);
 
@@ -81,6 +83,7 @@ export function useDifferentialDiagnoses({
       
       if (response.ok) {
         const result = await response.json();
+        console.log('useDifferentialDiagnoses: API response', result);
         // Convert database records to DifferentialDiagnosis format
         const convertedDiagnoses = (result.differentialDiagnoses || []).map((record: any) => ({
           name: record.diagnosis_name,
@@ -94,9 +97,11 @@ export function useDifferentialDiagnoses({
           _databaseId: record.id,
           _rankOrder: record.rank_order
         }));
+        console.log('useDifferentialDiagnoses: Converted diagnoses', convertedDiagnoses);
         setDifferentialDiagnoses(convertedDiagnoses);
       } else {
         const errorData = await response.json();
+        console.error('useDifferentialDiagnoses: API error', errorData);
         setError(errorData.error || 'Failed to fetch differential diagnoses');
       }
     } catch (err) {

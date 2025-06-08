@@ -35,6 +35,17 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
     autoLoad: true
   });
 
+  // Debug logging
+  useEffect(() => {
+    console.log('DiagnosisTab Debug:', {
+      patientId: patient?.id,
+      encounterId: mostRecentEncounter?.encounter.encounterIdentifier,
+      differentialDiagnoses,
+      isLoadingDifferentials,
+      error: differentialDiagnosesError
+    });
+  }, [patient?.id, mostRecentEncounter?.encounter.encounterIdentifier, differentialDiagnoses, isLoadingDifferentials, differentialDiagnosesError]);
+
   // Handle any errors
   useEffect(() => {
     if (differentialDiagnosesError) {
