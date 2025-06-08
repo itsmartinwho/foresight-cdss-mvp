@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import type { Patient, Encounter, Diagnosis, LabResult, DifferentialDiagnosis } from "@/lib/types";
 import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagnosesList';
 import EditableDiagnosis from '@/components/diagnosis/EditableDiagnosis';
+import { useDifferentialDiagnoses } from '@/hooks/useDifferentialDiagnoses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -12,36 +13,34 @@ interface DiagnosisTabProps {
 }
 
 export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabProps) {
-  const [differentialDiagnoses, setDifferentialDiagnoses] = useState<DifferentialDiagnosis[]>([]);
-  const [isLoadingDifferentials, setIsLoadingDifferentials] = useState(false);
-
-  // Load differential diagnoses for the most recent encounter
-  useEffect(() => {
-    const loadDifferentialDiagnoses = async () => {
-      if (!allEncounters || allEncounters.length === 0) return;
-      
-      // Get the most recent encounter
-      const sortedEncounters = [...allEncounters].sort((a, b) => 
+  // Get the most recent encounter
+  const mostRecentEncounter = allEncounters && allEncounters.length > 0 
+    ? [...allEncounters].sort((a, b) => 
         new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime()
-      );
-      const mostRecentEncounter = sortedEncounters[0];
-      
-      setIsLoadingDifferentials(true);
-      try {
-        // Try to fetch differential diagnoses from the database
-        // This would be implemented when we have the database query
-        // For now, we'll use mock data or empty array
-        setDifferentialDiagnoses([]);
-      } catch (error) {
-        console.error('Error loading differential diagnoses:', error);
-        setDifferentialDiagnoses([]);
-      } finally {
-        setIsLoadingDifferentials(false);
-      }
-    };
+      )[0]
+    : null;
 
-    loadDifferentialDiagnoses();
-  }, [allEncounters]);
+  // Use the differential diagnoses hook
+  const {
+    differentialDiagnoses,
+    isLoading: isLoadingDifferentials,
+    error: differentialDiagnosesError,
+    refreshDifferentialDiagnoses,
+    updateDifferentialDiagnosis,
+    addDifferentialDiagnosis,
+    deleteDifferentialDiagnosis
+  } = useDifferentialDiagnoses({
+    patientId: patient?.id || '',
+    encounterId: mostRecentEncounter?.encounter.encounterIdentifier || '',
+    autoLoad: true
+  });
+
+  // Handle any errors
+  useEffect(() => {
+    if (differentialDiagnosesError) {
+      console.error('Error with differential diagnoses:', differentialDiagnosesError);
+    }
+  }, [differentialDiagnosesError]);
 
   if (!patient) {
     return (
@@ -60,9 +59,6 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
   }
 
   const encountersWithDiagnoses = allEncounters.filter(encWrapper => encWrapper.diagnoses && encWrapper.diagnoses.length > 0);
-  const mostRecentEncounter = [...allEncounters].sort((a, b) => 
-    new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime()
-  )[0];
 
   const handleSaveFinalDiagnosis = async (newDiagnosis: string) => {
     // TODO: Implement saving final diagnosis to database
@@ -98,6 +94,9 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
                 diagnoses={differentialDiagnoses}
                 isLoading={isLoadingDifferentials}
                 isEditable={true}
+                onSaveDiagnosis={(diagnosis, index) => updateDifferentialDiagnosis(index, diagnosis)}
+                onDeleteDiagnosis={deleteDifferentialDiagnosis}
+                onAddDiagnosis={addDifferentialDiagnosis}
                 className="w-full"
               />
             </CardContent>

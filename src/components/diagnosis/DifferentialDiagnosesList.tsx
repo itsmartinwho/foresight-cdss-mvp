@@ -1,15 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DifferentialDiagnosis } from '@/lib/types';
 import DifferentialDiagnosisCard from './DifferentialDiagnosisCard';
-import { CircleNotch, Stethoscope } from '@phosphor-icons/react';
+import EditableDifferentialDiagnosisCard from './EditableDifferentialDiagnosisCard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CircleNotch, Stethoscope, Plus, Check, X } from '@phosphor-icons/react';
 
 interface DifferentialDiagnosesListProps {
   diagnoses: DifferentialDiagnosis[];
   isLoading?: boolean;
   isEditable?: boolean;
   onEditDiagnosis?: (diagnosis: DifferentialDiagnosis, index: number) => void;
+  onSaveDiagnosis?: (diagnosis: DifferentialDiagnosis, index: number) => Promise<void>;
+  onDeleteDiagnosis?: (index: number) => Promise<void>;
+  onAddDiagnosis?: (diagnosis: Omit<DifferentialDiagnosis, 'likelihoodPercentage'>) => Promise<void>;
   maxCount?: number;
   className?: string;
 }
@@ -19,9 +28,50 @@ export default function DifferentialDiagnosesList({
   isLoading = false,
   isEditable = false,
   onEditDiagnosis,
+  onSaveDiagnosis,
+  onDeleteDiagnosis,
+  onAddDiagnosis,
   maxCount = 5,
   className = '',
 }: DifferentialDiagnosesListProps) {
+  // State for adding new diagnosis
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newDiagnosisName, setNewDiagnosisName] = useState('');
+  const [newDiagnosisLikelihood, setNewDiagnosisLikelihood] = useState('Medium');
+  const [newDiagnosisKeyFactors, setNewDiagnosisKeyFactors] = useState('');
+
+  // Handler for adding new diagnosis
+  const handleAddNew = async () => {
+    if (!newDiagnosisName.trim() || !onAddDiagnosis) return;
+
+    const newDiagnosis = {
+      name: newDiagnosisName.trim(),
+      likelihood: newDiagnosisLikelihood,
+      keyFactors: newDiagnosisKeyFactors.trim(),
+      explanation: '',
+      supportingEvidence: [],
+      icdCodes: []
+    };
+
+    try {
+      await onAddDiagnosis(newDiagnosis);
+      // Reset form
+      setNewDiagnosisName('');
+      setNewDiagnosisLikelihood('Medium');
+      setNewDiagnosisKeyFactors('');
+      setIsAddingNew(false);
+    } catch (error) {
+      console.error('Error adding new diagnosis:', error);
+    }
+  };
+
+  const handleCancelAdd = () => {
+    setNewDiagnosisName('');
+    setNewDiagnosisLikelihood('Medium');
+    setNewDiagnosisKeyFactors('');
+    setIsAddingNew(false);
+  };
+
   if (isLoading) {
     return (
       <div className={`w-full h-full flex items-center justify-center ${className}`}>
@@ -39,11 +89,21 @@ export default function DifferentialDiagnosesList({
         <div className="flex flex-col items-center space-y-3">
           <Stethoscope className="h-8 w-8 text-muted-foreground" />
           <div className="text-center">
-            <p className="text-sm font-medium text-muted-foreground">No differential diagnoses available</p>
+            <p className="text-sm font-medium text-muted-foreground">No differential diagnoses recorded for this consultation</p>
             <p className="text-xs text-muted-foreground mt-1">
               Differential diagnoses will appear here once the clinical engine processes the consultation
             </p>
           </div>
+          {isEditable && onAddDiagnosis && (
+            <Button
+              onClick={() => setIsAddingNew(true)}
+              variant="outline"
+              className="mt-4"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Diagnosis
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -62,25 +122,129 @@ export default function DifferentialDiagnosesList({
             {diagnoses.length} diagnos{diagnoses.length === 1 ? 'is' : 'es'} ranked by likelihood
           </p>
         </div>
-        {diagnoses.length > maxCount && (
-          <span className="text-xs text-muted-foreground">
-            Showing top {maxCount} of {diagnoses.length}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isEditable && onAddDiagnosis && !isAddingNew && (
+            <Button
+              onClick={() => setIsAddingNew(true)}
+              variant="outline"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Diagnosis
+            </Button>
+          )}
+          {diagnoses.length > maxCount && (
+            <span className="text-xs text-muted-foreground">
+              Showing top {maxCount} of {diagnoses.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Diagnoses Grid - Scrollable content */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="space-y-4 pr-2">
-          {displayedDiagnoses.map((diagnosis, index) => (
-            <DifferentialDiagnosisCard
-              key={`${diagnosis.name}-${index}`}
-              diagnosis={diagnosis}
-              rank={index + 1}
-              isEditable={isEditable}
-              onEdit={onEditDiagnosis ? (d) => onEditDiagnosis(d, index) : undefined}
-            />
-          ))}
+          {/* Add new diagnosis form */}
+          {isAddingNew && (
+            <Card className="w-full border-l-4 border-l-green-500 bg-green-50/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                    +
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900">New Differential Diagnosis</h4>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">
+                    Diagnosis Name
+                  </label>
+                  <Input
+                    value={newDiagnosisName}
+                    onChange={(e) => setNewDiagnosisName(e.target.value)}
+                    placeholder="Enter diagnosis name"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">
+                    Likelihood
+                  </label>
+                  <Select
+                    value={newDiagnosisLikelihood}
+                    onValueChange={setNewDiagnosisLikelihood}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select likelihood" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">
+                    Key Factors
+                  </label>
+                  <Textarea
+                    value={newDiagnosisKeyFactors}
+                    onChange={(e) => setNewDiagnosisKeyFactors(e.target.value)}
+                    placeholder="Key factors supporting this diagnosis"
+                    rows={2}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={handleAddNew}
+                    disabled={!newDiagnosisName.trim()}
+                    size="sm"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Add Diagnosis
+                  </Button>
+                  <Button
+                    onClick={handleCancelAdd}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Existing diagnoses */}
+          {displayedDiagnoses.map((diagnosis, index) => {
+            // Use editable cards if we have the new editing props, otherwise fall back to original cards
+            if (isEditable && onSaveDiagnosis && onDeleteDiagnosis) {
+              return (
+                <EditableDifferentialDiagnosisCard
+                  key={`${diagnosis.name}-${index}`}
+                  diagnosis={diagnosis}
+                  rank={index + 1}
+                  onSave={(updatedDiagnosis) => onSaveDiagnosis(updatedDiagnosis, index)}
+                  onDelete={() => onDeleteDiagnosis(index)}
+                />
+              );
+            } else {
+              // Fall back to original component for backward compatibility
+              return (
+                <DifferentialDiagnosisCard
+                  key={`${diagnosis.name}-${index}`}
+                  diagnosis={diagnosis}
+                  rank={index + 1}
+                  isEditable={isEditable}
+                  onEdit={onEditDiagnosis ? (d) => onEditDiagnosis(d, index) : undefined}
+                />
+              );
+            }
+          })}
         </div>
       </div>
 
