@@ -44,14 +44,22 @@ Important Considerations:
   existing clinical records beyond what the engine does.
 */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// Initialize dotenv to load environment variables from .env.local
-// Ensure this path is correct for your project structure.
-// If .env.local is at the root, and scripts is a subdirectory, this might need adjustment
-// or rely on the script being run from the root directory.
-// For now, assuming '.env.local' is discoverable from where the script is run.
-dotenv.config({ path: process.cwd() + '/.env.local' }); // More robust path
+function loadEnv() {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envPath)) {
+    const envFile = fs.readFileSync(envPath, 'utf-8');
+    const envVars = envFile.split('\n');
+    for (const v of envVars) {
+      const parts = v.split('=');
+      if (parts.length === 2) {
+        process.env[parts[0].trim()] = parts[1].trim();
+      }
+    }
+  }
+}
 
 // Define a type for our Supabase client instance
 let supabase: SupabaseClient;
@@ -253,8 +261,8 @@ async function main() {
   console.log('Starting batch clinical engine processing...');
 
   // Initialize Supabase client
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env.local');
@@ -344,6 +352,7 @@ async function main() {
 }
 
 if (require.main === module) {
+  loadEnv();
   main()
     .then(() => {
       console.log('Script completed successfully.');
