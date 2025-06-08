@@ -46,7 +46,7 @@ Create a `.env.local` file in the project root with:
 ```env
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
-API_BASE_URL=your_api_base_url  # e.g., http://localhost:3000 or https://your-domain.com
+API_BASE_URL=your_production_vercel_url # IMPORTANT: Use your live deployment URL, not localhost
 ```
 
 ### 3. Dependencies

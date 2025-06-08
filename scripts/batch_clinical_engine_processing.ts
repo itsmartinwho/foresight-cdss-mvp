@@ -180,6 +180,15 @@ async function callClinicalEngineAPI(
     console.log(`Successfully received API response for patient ${patientId}, encounter ${encounterUuid}.`);
     return result as ClinicalEngineResult;
   } catch (error) {
+    if (error.cause?.code === 'ECONNREFUSED' && API_BASE_URL.includes('localhost')) {
+        console.error('\n---');
+        console.error('API Connection Error: Could not connect to the API at http://localhost:3000.');
+        console.error('This usually means your local development server is not running.');
+        console.error('\nPlease choose one of the following solutions:');
+        console.error('1. (For local testing) Start your local server in a separate terminal with: npm run dev');
+        console.error('2. (For production data) Open your .env.local file and change API_BASE_URL to your production Vercel URL.');
+        console.error('---\n');
+    }
     console.error(`Error in callClinicalEngineAPI for patient ${patientId}, encounter ${encounterUuid}:`, error);
     throw error; // Rethrow to be handled by the caller's retry logic
   }
