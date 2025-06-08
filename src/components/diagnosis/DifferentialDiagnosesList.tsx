@@ -53,7 +53,7 @@ export default function DifferentialDiagnosesList({
   const displayedDiagnoses = diagnoses.slice(0, maxCount);
 
   return (
-    <div className={`w-full h-full flex flex-col ${className}`}>
+    <div className={`w-full h-full flex flex-col border-4 border-blue-500 ${className}`}>
       {/* Header - Fixed at top */}
       <div className="flex-shrink-0 flex items-center justify-between mb-4">
         <div>
@@ -70,7 +70,7 @@ export default function DifferentialDiagnosesList({
       </div>
 
       {/* Diagnoses Grid - Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0 border-2 border-red-500 border-dashed">
         <div className="grid gap-4 pr-2">
           {displayedDiagnoses.map((diagnosis, index) => (
             <DifferentialDiagnosisCard
