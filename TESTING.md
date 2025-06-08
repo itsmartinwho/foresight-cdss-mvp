@@ -55,6 +55,27 @@ This command executes the tests sequentially.
     npm run storybook
     ```
 
+## Manual Testing Guidelines
+
+### Differential Diagnoses Scrollability Test
+
+**Purpose**: Verify that the differential diagnoses list is properly scrollable within the ConsultationPanel modal.
+
+**Test Steps**:
+1. Open the application and navigate to a patient
+2. Start a new consultation or open an existing consultation with generated clinical plan
+3. Switch to the "Differentials" tab in the consultation modal
+4. Verify that if there are 5 differential diagnoses:
+   - All cards are rendered (check console for count if needed)
+   - The list is vertically scrollable
+   - All 5 cards can be accessed through scrolling
+   - The scroll container has proper height constraints
+   - No content is cut off or inaccessible
+
+**Expected Result**: All differential diagnosis cards should be accessible through smooth vertical scrolling within the modal container.
+
+**Last Verified**: December 2024 - Issue fixed
+
 ---
 
 Regularly running these tests helps maintain code quality and ensures the stability of the application.
