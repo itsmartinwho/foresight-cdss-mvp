@@ -11,8 +11,14 @@ export function getSupabaseClient(): SupabaseClient {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase env vars missing:', { url: !!supabaseUrl, key: !!supabaseAnonKey });
-    throw new Error('Supabase environment variables are not set when creating client');
+    console.error('Supabase env vars missing:', { 
+      url: !!supabaseUrl, 
+      key: !!supabaseAnonKey,
+      NODE_ENV: process.env.NODE_ENV,
+      urlValue: supabaseUrl,
+      keyValue: supabaseAnonKey ? '[REDACTED]' : 'undefined'
+    });
+    throw new Error(`Supabase environment variables are not set. URL: ${!!supabaseUrl}, Key: ${!!supabaseAnonKey}`);
   }
 
   supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);

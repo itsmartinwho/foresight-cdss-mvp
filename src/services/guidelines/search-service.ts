@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabaseClient';
 import { EmbeddingService } from './embedding-service';
 import { 
   GuidelineSearchResult, 
@@ -18,10 +18,7 @@ export class GuidelineSearchService {
   private embeddingService: EmbeddingService;
 
   constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    this.supabase = getSupabaseClient();
     this.embeddingService = new EmbeddingService();
   }
 

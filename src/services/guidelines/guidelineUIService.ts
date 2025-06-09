@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabaseClient';
 import { GuidelineSearchService } from './search-service';
 import {
   GuidelineCard,
@@ -22,10 +22,7 @@ export class GuidelineUIService {
   private searchService: GuidelineSearchService;
 
   constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    this.supabase = getSupabaseClient();
     this.searchService = new GuidelineSearchService();
   }
 
