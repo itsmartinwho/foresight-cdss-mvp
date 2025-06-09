@@ -105,8 +105,15 @@ export interface DiagnosticPlan {
 
 export interface DifferentialDiagnosis {
   name: string;
+  /** @deprecated Use probabilityDecimal and derive qualitativeRisk from it. */
   likelihood: string; // "High" | "Medium" | "Low"
   likelihoodPercentage?: number; // 0-100 for visual indicators
+
+  // FHIR-aligned fields
+  qualitativeRisk: "Negligible" | "Low" | "Moderate" | "High" | "Certain"; // FHIR qualitativeRisk
+  probabilityDecimal: number; // 0-100, FHIR probabilityDecimal. Canonical numeric value.
+  rank: number; // UI sort order
+
   keyFactors: string;
   explanation?: string; // Clinical explanation
   supportingEvidence?: string[]; // Supporting evidence
@@ -114,6 +121,11 @@ export interface DifferentialDiagnosis {
     code: string;
     description: string;
   }>; // ICD-10 codes with descriptions
+
+  // Audit and safety flags
+  dontMiss?: boolean; // "don't-miss" flag to force display
+  confidenceWarning?: boolean; // Flag for calibration drift
+  missingAlternativeAlert?: boolean; // Flag for high probability of excluded diagnoses
 }
 
 // Database record for differential diagnoses
@@ -122,7 +134,7 @@ export interface DifferentialDiagnosisRecord {
   patient_id: string;
   encounter_id: string;
   diagnosis_name: string;
-  likelihood: string;
+  likelihood: number; // Stored as NUMERIC in DB. Represents probabilityDecimal.
   key_factors?: string;
   rank_order: number;
   created_at: string;

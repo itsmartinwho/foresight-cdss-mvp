@@ -2,22 +2,16 @@
 
 This directory contains comprehensive documentation for the Foresight Clinical Decision Support System.
 
-## Transcription System Documentation
+## Documentation Index
 
-### 🚨 For Developers Working on Transcription
-- **[Transcription Development Guide](./transcription-development-guide.md)** - **START HERE** - Essential patterns and warnings for developers making changes to the transcription system
-- **[Transcription System Documentation](./transcription-system-documentation.md)** - Complete technical documentation of the transcription architecture
-- **[Transcription Fix Notes](./transcription-fix-notes.md)** - Historical context about the critical race condition fix
-
-### Key Points for Any Developer:
-1. **Never include `stopTranscription` in useEffect dependency arrays** - this breaks the system
-2. **Always use the ref-state pattern** for transcription state that needs cleanup access
-3. **Test pause/resume functionality** after any changes to transcription-related code
-4. **Follow the exact cleanup order** when modifying resource management
-
-## Other Documentation
-
-*Additional documentation files will be listed here as they are created.*
+- **[`architecture.md`](./architecture.md)**: The high-level overview of the system architecture, including the tech stack, user flows, and the different AI tools.
+- **[`development_guide.md`](./development_guide.md)**: The main guide for the development process, including coding standards, version control, and testing.
+- **[`frontend_guide.md`](./frontend_guide.md)**: The main guide for frontend development, including styling conventions, component documentation, and state management.
+- **[`clinical_engine.md`](./clinical-engine.md)**: A detailed document about the clinical engine, including its architecture and batch processing capabilities.
+- **[`advisor.md`](./advisor.md)**: A guide to the Advisor feature, including its integration with OpenAI's Code Interpreter.
+- **[`transcription.md`](./transcription.md)**: A comprehensive document about the transcription system, including its architecture and development best practices.
+- **[`demo_system.md`](./demo_system.md)**: A guide to the demo system, including its architecture and testing procedures.
+- **[`history.md`](./history.md)**: A log of notable incidents, bug fixes, and data recovery operations.
 
 ## Getting Help
 

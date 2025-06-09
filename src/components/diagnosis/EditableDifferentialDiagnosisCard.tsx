@@ -16,10 +16,11 @@ import {
   PencilSimple 
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { getDecimalForCategory, LikelihoodCategory } from '@/lib/likelihood';
+import LikelihoodIndicator from './LikelihoodIndicator';
 
 interface EditableDifferentialDiagnosisCardProps {
   diagnosis: DifferentialDiagnosis;
-  rank: number;
   onSave?: (updatedDiagnosis: DifferentialDiagnosis) => Promise<void>;
   onDelete?: () => Promise<void>;
   className?: string;
@@ -39,7 +40,6 @@ const createFieldHistory = (initialValue: string): FieldHistory => ({
 
 export default function EditableDifferentialDiagnosisCard({
   diagnosis,
-  rank,
   onSave,
   onDelete,
   className = '',
@@ -50,15 +50,15 @@ export default function EditableDifferentialDiagnosisCard({
   
   // Field histories for undo/redo functionality
   const [nameHistory, setNameHistory] = useState(() => createFieldHistory(diagnosis.name));
-  const [likelihoodHistory, setLikelihoodHistory] = useState(() => createFieldHistory(diagnosis.likelihood));
+  const [likelihoodHistory, setLikelihoodHistory] = useState(() => createFieldHistory(diagnosis.qualitativeRisk));
   const [keyFactorsHistory, setKeyFactorsHistory] = useState(() => createFieldHistory(diagnosis.keyFactors));
 
   // Update histories when diagnosis changes
   useEffect(() => {
     setNameHistory(createFieldHistory(diagnosis.name));
-    setLikelihoodHistory(createFieldHistory(diagnosis.likelihood));
+    setLikelihoodHistory(createFieldHistory(diagnosis.qualitativeRisk));
     setKeyFactorsHistory(createFieldHistory(diagnosis.keyFactors));
-  }, [diagnosis.name, diagnosis.likelihood, diagnosis.keyFactors]);
+  }, [diagnosis.name, diagnosis.qualitativeRisk, diagnosis.keyFactors]);
 
   // Helper functions for history management
   const updateHistory = (
@@ -109,11 +109,19 @@ export default function EditableDifferentialDiagnosisCard({
     
     setIsSaving(true);
     try {
+      const qualitativeRisk =
+        likelihoodHistory.present as LikelihoodCategory;
+      const probabilityDecimal = getDecimalForCategory(qualitativeRisk);
+
       const updatedDiagnosis: DifferentialDiagnosis = {
         ...diagnosis,
         name: nameHistory.present,
-        likelihood: likelihoodHistory.present,
+        qualitativeRisk,
+        probabilityDecimal,
         keyFactors: keyFactorsHistory.present,
+        // For backward compatibility
+        likelihood: qualitativeRisk,
+        likelihoodPercentage: probabilityDecimal,
       };
       
       await onSave(updatedDiagnosis);
@@ -135,20 +143,6 @@ export default function EditableDifferentialDiagnosisCard({
       } catch (error) {
         console.error('Error deleting diagnosis:', error);
       }
-    }
-  };
-
-  // Get likelihood color
-  const getLikelihoodColor = (likelihood: string) => {
-    switch (likelihood.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -210,9 +204,11 @@ export default function EditableDifferentialDiagnosisCard({
             <SelectValue placeholder="Select likelihood" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="Certain">Certain</SelectItem>
             <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
+            <SelectItem value="Moderate">Moderate</SelectItem>
             <SelectItem value="Low">Low</SelectItem>
+            <SelectItem value="Negligible">Negligible</SelectItem>
           </SelectContent>
         </Select>
       )}
@@ -246,7 +242,7 @@ export default function EditableDifferentialDiagnosisCard({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-              #{rank}
+              #{diagnosis.rank}
             </div>
             
             {isEditing ? (
@@ -321,9 +317,11 @@ export default function EditableDifferentialDiagnosisCard({
               type="select"
             />
           ) : (
-            <Badge className={getLikelihoodColor(diagnosis.likelihood)}>
-              {diagnosis.likelihood}
-            </Badge>
+            <LikelihoodIndicator
+              probabilityDecimal={diagnosis.probabilityDecimal}
+              size="sm"
+              showProgressBar={false}
+            />
           )}
         </div>
 

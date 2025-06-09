@@ -7,48 +7,26 @@ import { Badge } from '@/components/ui/badge';
 import { DifferentialDiagnosis } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Info, TrendUp, BookOpen, TestTube } from '@phosphor-icons/react';
+import LikelihoodIndicator from './LikelihoodIndicator';
 
 interface DifferentialDiagnosisCardProps {
   diagnosis: DifferentialDiagnosis;
-  rank: number;
   isEditable?: boolean;
   onEdit?: (diagnosis: DifferentialDiagnosis) => void;
 }
 
 export default function DifferentialDiagnosisCard({
   diagnosis,
-  rank,
   isEditable = false,
   onEdit,
 }: DifferentialDiagnosisCardProps) {
-  const getLikelihoodColor = (likelihood: string, percentage?: number) => {
-    const likelihoodLower = likelihood.toLowerCase();
-    if (likelihoodLower === 'high' || (percentage && percentage >= 70)) {
-      return 'bg-red-500';
-    } else if (likelihoodLower === 'medium' || (percentage && percentage >= 40)) {
-      return 'bg-yellow-500';
-    } else {
-      return 'bg-green-500';
-    }
-  };
-
-  const getLikelihoodBadgeVariant = (likelihood: string) => {
-    const likelihoodLower = likelihood.toLowerCase();
-    if (likelihoodLower === 'high') {
-      return 'destructive';
-    } else if (likelihoodLower === 'medium') {
-      return 'default';
-    } else {
-      return 'secondary';
-    }
-  };
 
   return (
     <Card 
       className={cn(
         "w-full transition-all duration-200",
         isEditable && "hover:shadow-md cursor-pointer",
-        rank === 1 && "ring-2 ring-primary/50"
+        diagnosis.rank === 1 && "ring-2 ring-primary/50"
       )}
       onClick={isEditable ? () => onEdit?.(diagnosis) : undefined}
     >
@@ -56,7 +34,7 @@ export default function DifferentialDiagnosisCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <CardTitle className="text-base font-semibold text-foreground">
-              #{rank} {diagnosis.name}
+              #{diagnosis.rank} {diagnosis.name}
             </CardTitle>
             {diagnosis.icdCodes && diagnosis.icdCodes.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
@@ -68,29 +46,15 @@ export default function DifferentialDiagnosisCard({
               </div>
             )}
           </div>
-          <Badge 
-            variant={getLikelihoodBadgeVariant(diagnosis.likelihood)}
-            className="shrink-0"
-          >
-            {diagnosis.likelihood}
-          </Badge>
         </div>
         
-        {/* Likelihood Progress Bar */}
-        {diagnosis.likelihoodPercentage !== undefined && (
-          <div className="mt-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-muted-foreground">Likelihood</span>
-              <span className="text-xs font-medium">{diagnosis.likelihoodPercentage}%</span>
-            </div>
-            <div className="relative w-full h-2 rounded-full bg-primary/20 overflow-hidden">
-              <div 
-                className={cn("h-full transition-all rounded-full", getLikelihoodColor(diagnosis.likelihood, diagnosis.likelihoodPercentage))}
-                style={{ width: `${diagnosis.likelihoodPercentage}%` }}
-              />
-            </div>
-          </div>
-        )}
+        <LikelihoodIndicator 
+          probabilityDecimal={diagnosis.probabilityDecimal}
+          showPercentage={true}
+          showProgressBar={true}
+          size="md"
+        />
+
       </CardHeader>
 
       <CardContent className="pt-0 space-y-3">

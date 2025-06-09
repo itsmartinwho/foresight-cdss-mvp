@@ -3,10 +3,10 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getLikelihoodCategory, LikelihoodCategory } from '@/lib/likelihood';
 
 interface LikelihoodIndicatorProps {
-  likelihood: string;
-  percentage?: number;
+  probabilityDecimal: number;
   size?: 'sm' | 'md' | 'lg';
   showPercentage?: boolean;
   showProgressBar?: boolean;
@@ -14,28 +14,29 @@ interface LikelihoodIndicatorProps {
 }
 
 export default function LikelihoodIndicator({
-  likelihood,
-  percentage,
+  probabilityDecimal,
   size = 'md',
   showPercentage = true,
   showProgressBar = true,
   className = '',
 }: LikelihoodIndicatorProps) {
-  const getLikelihoodColor = (likelihood: string, percentage?: number) => {
-    const likelihoodLower = likelihood.toLowerCase();
-    if (likelihoodLower === 'high' || (percentage && percentage >= 70)) {
+  const category = getLikelihoodCategory(probabilityDecimal);
+
+  const getLikelihoodColor = (category: LikelihoodCategory) => {
+    const categoryLower = category.toLowerCase();
+    if (categoryLower === 'high' || categoryLower === 'certain') {
       return {
         badge: 'destructive' as const,
         bar: 'bg-red-500',
         text: 'text-red-600',
       };
-    } else if (likelihoodLower === 'medium' || (percentage && percentage >= 40)) {
+    } else if (categoryLower === 'moderate') {
       return {
         badge: 'default' as const,
         bar: 'bg-yellow-500',
         text: 'text-yellow-600',
       };
-    } else {
+    } else { // Low and Negligible
       return {
         badge: 'secondary' as const,
         bar: 'bg-green-500',
@@ -70,7 +71,7 @@ export default function LikelihoodIndicator({
     }
   };
 
-  const colors = getLikelihoodColor(likelihood, percentage);
+  const colors = getLikelihoodColor(category);
   const sizeClasses = getSizeClasses(size);
 
   return (
@@ -78,21 +79,21 @@ export default function LikelihoodIndicator({
       {/* Badge with likelihood */}
       <div className="flex items-center justify-between">
         <Badge variant={colors.badge} className={sizeClasses.badge}>
-          {likelihood}
+          {category}
         </Badge>
-        {showPercentage && percentage !== undefined && (
+        {showPercentage && (
           <span className={cn(sizeClasses.text, 'font-medium', colors.text)}>
-            {percentage}%
+            {probabilityDecimal.toFixed(0)}%
           </span>
         )}
       </div>
 
       {/* Progress bar */}
-      {showProgressBar && percentage !== undefined && (
+      {showProgressBar && (
         <div className={cn('relative w-full rounded-full bg-primary/20 overflow-hidden', sizeClasses.progress)}>
           <div 
             className={cn('h-full transition-all rounded-full', colors.bar)}
-            style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+            style={{ width: `${Math.min(100, Math.max(0, probabilityDecimal))}%` }}
           />
         </div>
       )}

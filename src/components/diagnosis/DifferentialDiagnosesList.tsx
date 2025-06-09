@@ -10,15 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CircleNotch, Stethoscope, Plus, Check, X } from '@phosphor-icons/react';
+import { getDecimalForCategory, LikelihoodCategory } from '@/lib/likelihood';
 
 interface DifferentialDiagnosesListProps {
   diagnoses: DifferentialDiagnosis[];
   isLoading?: boolean;
   isEditable?: boolean;
   onEditDiagnosis?: (diagnosis: DifferentialDiagnosis, index: number) => void;
-  onSaveDiagnosis?: (diagnosis: DifferentialDiagnosis, index: number) => Promise<void>;
+  onSaveDiagnosis?: (
+    diagnosis: DifferentialDiagnosis,
+    index: number,
+  ) => Promise<void>;
   onDeleteDiagnosis?: (index: number) => Promise<void>;
-  onAddDiagnosis?: (diagnosis: Omit<DifferentialDiagnosis, 'likelihoodPercentage'>) => Promise<void>;
+  onAddDiagnosis?: (
+    diagnosis: Omit<DifferentialDiagnosis, 'rank'>,
+  ) => Promise<void>;
   maxCount?: number;
   className?: string;
 }
@@ -37,27 +43,34 @@ export default function DifferentialDiagnosesList({
   // State for adding new diagnosis
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newDiagnosisName, setNewDiagnosisName] = useState('');
-  const [newDiagnosisLikelihood, setNewDiagnosisLikelihood] = useState('Medium');
+  const [newDiagnosisLikelihood, setNewDiagnosisLikelihood] =
+    useState<LikelihoodCategory>('Moderate');
   const [newDiagnosisKeyFactors, setNewDiagnosisKeyFactors] = useState('');
 
   // Handler for adding new diagnosis
   const handleAddNew = async () => {
     if (!newDiagnosisName.trim() || !onAddDiagnosis) return;
 
-    const newDiagnosis = {
+    const probabilityDecimal = getDecimalForCategory(newDiagnosisLikelihood);
+
+    const newDiagnosis: Omit<DifferentialDiagnosis, 'rank'> = {
       name: newDiagnosisName.trim(),
-      likelihood: newDiagnosisLikelihood,
+      qualitativeRisk: newDiagnosisLikelihood,
+      probabilityDecimal,
       keyFactors: newDiagnosisKeyFactors.trim(),
       explanation: '',
       supportingEvidence: [],
-      icdCodes: []
+      icdCodes: [],
+      // For backward compatibility
+      likelihood: newDiagnosisLikelihood,
+      likelihoodPercentage: probabilityDecimal,
     };
 
     try {
       await onAddDiagnosis(newDiagnosis);
       // Reset form
       setNewDiagnosisName('');
-      setNewDiagnosisLikelihood('Medium');
+      setNewDiagnosisLikelihood('Moderate');
       setNewDiagnosisKeyFactors('');
       setIsAddingNew(false);
     } catch (error) {
@@ -67,7 +80,7 @@ export default function DifferentialDiagnosesList({
 
   const handleCancelAdd = () => {
     setNewDiagnosisName('');
-    setNewDiagnosisLikelihood('Medium');
+    setNewDiagnosisLikelihood('Moderate');
     setNewDiagnosisKeyFactors('');
     setIsAddingNew(false);
   };
@@ -173,15 +186,19 @@ export default function DifferentialDiagnosesList({
                   </label>
                   <Select
                     value={newDiagnosisLikelihood}
-                    onValueChange={setNewDiagnosisLikelihood}
+                    onValueChange={(value) =>
+                      setNewDiagnosisLikelihood(value as LikelihoodCategory)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select likelihood" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Certain">Certain</SelectItem>
                       <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Moderate">Moderate</SelectItem>
                       <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Negligible">Negligible</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -227,8 +244,9 @@ export default function DifferentialDiagnosesList({
                 <EditableDifferentialDiagnosisCard
                   key={`${diagnosis.name}-${index}`}
                   diagnosis={diagnosis}
-                  rank={index + 1}
-                  onSave={(updatedDiagnosis) => onSaveDiagnosis(updatedDiagnosis, index)}
+                  onSave={(updatedDiagnosis) =>
+                    onSaveDiagnosis(updatedDiagnosis, index)
+                  }
                   onDelete={() => onDeleteDiagnosis(index)}
                 />
               );
@@ -238,9 +256,12 @@ export default function DifferentialDiagnosesList({
                 <DifferentialDiagnosisCard
                   key={`${diagnosis.name}-${index}`}
                   diagnosis={diagnosis}
-                  rank={index + 1}
                   isEditable={isEditable}
-                  onEdit={onEditDiagnosis ? (d) => onEditDiagnosis(d, index) : undefined}
+                  onEdit={
+                    onEditDiagnosis
+                      ? (d) => onEditDiagnosis(d, index)
+                      : undefined
+                  }
                 />
               );
             }

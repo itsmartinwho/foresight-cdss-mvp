@@ -14,8 +14,8 @@ The vision includes additional advanced AI tools (C, D, F) that are planned for 
 *   **[System Architecture](./docs/architecture.md):** The primary source of truth for system design, AI tools, data layer, application flow, and tech stack.
 *   **[Frontend Guide](./docs/frontend_guide.md):** Detailed frontend development guidelines, styling conventions, component structure, and UI patterns.
 *   **[Development Guide](./docs/development_guide.md):** Rules for development process, coding standards, version control, testing strategy, and more.
-*   **[Python Clinical Engine (Tool B Prototype)](./docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b):** Specific details on the Tool B prototype. (Code located in `src/clinical_engine_prototype/`)
-*   **[Plasma Background Effect](./docs/PLASMA_EFFECT.md):** Explanation of the animated background effect.
+*   **[Clinical Engine Guide](./docs/clinical-engine.md):** Detailed documentation of the Clinical Engine (Tool B), including its V3 architecture and batch processing capabilities.
+*   **[Plasma Background Effect](./docs/frontend_guide.md#plasma-background-effect):** Explanation of the animated background effect.
 
 ## Features (Current Prototype Highlights)
 
@@ -38,7 +38,7 @@ The vision includes additional advanced AI tools (C, D, F) that are planned for 
 
 ## Target State Features (Vision)
 
-_The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed in **[docs/architecture.md#target-state-considerations--ai-tool-roadmap](./docs/architecture.md#target-state-considerations--ai-tool-roadmap)**._
+_The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed in **[docs/architecture.md#ai-tool-roadmap](./docs/architecture.md#ai-tool-roadmap)**._
 
 ## Getting Started
 
@@ -70,7 +70,7 @@ _The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed i
     *   Install dependencies: `pip install -r prototype_requirements.txt`
     *   You can then run the API server: `uvicorn api:app --reload` (from within `src/clinical_engine_prototype/`)
     *   Or run the engine directly: `python engine.py` (from within `src/clinical_engine_prototype/`)
-    *   Refer to details in **[docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b](./docs/architecture.md#python-component-clinical_enginepy--prototype-for-tool-b)** and comments in the Python files for more context.
+    *   Refer to details in **[docs/clinical-engine.md](./docs/clinical-engine.md)** and comments in the Python files for more context.
 
 ### Common Commands
 
@@ -97,9 +97,12 @@ Navigate to `http://localhost:3000` for the dev server.
 
 For a comprehensive understanding of the project, please refer to the following documents in the `/docs` directory:
 
-*   **[System Architecture](./docs/architecture.md):** The primary source of truth for system design, AI tools (current and aspirational), data layer, application flow, tech stack, and backend details. This includes detailed information on the **`clinical_engine.py` (Tool B prototype)**.
+*   **[System Architecture](./docs/architecture.md):** The primary source of truth for system design, AI tools (current and aspirational), data layer, application flow, tech stack, and backend details.
 *   **[Frontend Guide](./docs/frontend_guide.md):** Covers all aspects of frontend development, including component structure, styling conventions (Tailwind CSS, Shadcn/UI, glassmorphism, input styling), state management, accessibility, and performance for the Next.js/React application.
-*   **[Development Guide](./docs/development_guide.md):** Provides guidelines for the development process, including coding standards, version control (Git workflow, conventional commits), AI-assisted development with Cursor, comprehensive testing strategy (unit, integration, E2E with Playwright, Storybook), code review process, and deployment practices.
-*   **[Plasma Background Effect](./docs/PLASMA_EFFECT.md):** Explains the implementation of the animated background effect visible throughout the application.
+*   **[Development Guide](./docs/development_guide.md):** Provides guidelines for the development process, including coding standards, version control (Git workflow, conventional commits), comprehensive testing strategy (unit, integration, E2E with Playwright, Storybook), code review process, and deployment practices.
+*   **[Clinical Engine Guide](./docs/clinical-engine.md):** Detailed documentation of the Clinical Engine (Tool B), including its V3 architecture and batch processing capabilities.
+*   **[Advisor Guide](./docs/advisor.md):** Guide to the Advisor feature (Tool A), including its integration with OpenAI's Code Interpreter.
+*   **[Transcription System](./docs/transcription.md):** Comprehensive documentation of the transcription system, including its architecture and development best practices.
+*   **[Demo System](./docs/demo_system.md):** Guide to the demo system, including its architecture and testing procedures.
 
 The `README.md` provides a high-level overview and setup instructions. For in-depth information, consult the specialized documents above.

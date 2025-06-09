@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DifferentialDiagnosis } from '@/lib/types';
+import { DifferentialDiagnosis, DifferentialDiagnosisRecord } from '@/lib/types';
+import { mapDiagnosisRecordToDifferentialDiagnosis } from '@/lib/likelihood';
 
 interface UseDifferentialDiagnosesProps {
   patientId: string;
@@ -14,7 +15,7 @@ interface UseDifferentialDiagnosesReturn {
   generateDifferentialDiagnoses: (transcript?: string, patientData?: any) => Promise<void>;
   refreshDifferentialDiagnoses: () => Promise<void>;
   updateDifferentialDiagnosis: (index: number, updatedDiagnosis: DifferentialDiagnosis) => Promise<void>;
-  addDifferentialDiagnosis: (newDiagnosis: Omit<DifferentialDiagnosis, 'likelihoodPercentage'>) => Promise<void>;
+  addDifferentialDiagnosis: (newDiagnosis: Omit<DifferentialDiagnosis, 'rank'>) => Promise<void>;
   deleteDifferentialDiagnosis: (index: number) => Promise<void>;
   clearDifferentialDiagnoses: () => void;
 }
@@ -85,18 +86,9 @@ export function useDifferentialDiagnoses({
         const result = await response.json();
         console.log('useDifferentialDiagnoses: API response', result);
         // Convert database records to DifferentialDiagnosis format
-        const convertedDiagnoses = (result.differentialDiagnoses || []).map((record: any) => ({
-          name: record.diagnosis_name,
-          likelihood: record.likelihood,
-          keyFactors: record.key_factors || '',
-          // These fields aren't in the current database schema but are part of the interface
-          explanation: '',
-          supportingEvidence: [],
-          icdCodes: [],
-          // Add database ID for editing purposes
-          _databaseId: record.id,
-          _rankOrder: record.rank_order
-        }));
+        const convertedDiagnoses = (result.differentialDiagnoses || []).map((record: DifferentialDiagnosisRecord) => 
+          mapDiagnosisRecordToDifferentialDiagnosis(record)
+        );
         console.log('useDifferentialDiagnoses: Converted diagnoses', convertedDiagnoses);
         setDifferentialDiagnoses(convertedDiagnoses);
       } else {
@@ -134,7 +126,7 @@ export function useDifferentialDiagnoses({
         body: JSON.stringify({
           id: databaseId,
           diagnosisName: updatedDiagnosis.name,
-          likelihood: updatedDiagnosis.likelihood,
+          probabilityDecimal: updatedDiagnosis.probabilityDecimal,
           keyFactors: updatedDiagnosis.keyFactors,
         }),
       });
@@ -158,7 +150,7 @@ export function useDifferentialDiagnoses({
   }, [differentialDiagnoses]);
 
   // Add a new differential diagnosis
-  const addDifferentialDiagnosis = useCallback(async (newDiagnosis: Omit<DifferentialDiagnosis, 'likelihoodPercentage'>) => {
+  const addDifferentialDiagnosis = useCallback(async (newDiagnosis: Omit<DifferentialDiagnosis, 'rank'>) => {
     if (!patientId || !encounterId) {
       setError('Patient ID and Encounter ID are required');
       return;
@@ -174,23 +166,14 @@ export function useDifferentialDiagnoses({
           patientId,
           encounterId,
           diagnosisName: newDiagnosis.name,
-          likelihood: newDiagnosis.likelihood,
+          probabilityDecimal: newDiagnosis.probabilityDecimal,
           keyFactors: newDiagnosis.keyFactors,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        const convertedDiagnosis = {
-          name: result.differentialDiagnosis.diagnosis_name,
-          likelihood: result.differentialDiagnosis.likelihood,
-          keyFactors: result.differentialDiagnosis.key_factors || '',
-          explanation: '',
-          supportingEvidence: [],
-          icdCodes: [],
-          _databaseId: result.differentialDiagnosis.id,
-          _rankOrder: result.differentialDiagnosis.rank_order
-        };
+        const convertedDiagnosis = mapDiagnosisRecordToDifferentialDiagnosis(result.differentialDiagnosis);
         
         setDifferentialDiagnoses(prev => [...prev, convertedDiagnosis]);
       } else {

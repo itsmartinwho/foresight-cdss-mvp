@@ -325,8 +325,7 @@ Return your response as a JSON array with this exact structure:
 [
   {
     "name": "Diagnosis Name",
-    "likelihood": "High|Medium|Low",
-    "likelihoodPercentage": 85,
+    "probabilityDecimal": 85,
     "keyFactors": "Brief explanation of key supporting factors",
     "explanation": "Detailed clinical explanation of why this diagnosis is being considered",
     "supportingEvidence": ["Evidence 1", "Evidence 2", "Evidence 3"],
@@ -339,7 +338,7 @@ Return your response as a JSON array with this exact structure:
   }
 ]
 
-Please provide up to 5 differential diagnoses ranked by likelihood from highest to lowest. Include accurate ICD-10 codes for each diagnosis.`;
+Please provide up to 5 differential diagnoses ranked by likelihood from highest to lowest. Include accurate ICD-10 codes for each diagnosis. The 'probabilityDecimal' field should be a number between 0 and 100.`;
 
       const userPrompt = `Patient Data: ${JSON.stringify(patientData, null, 2)}
 
@@ -364,7 +363,22 @@ Please generate differential diagnoses based on this information.`;
       }
 
       // Parse JSON response
-      const differentials = JSON.parse(response) as DifferentialDiagnosis[];
+      const rawDifferentials = JSON.parse(response) as any[];
+
+      const differentials: DifferentialDiagnosis[] = rawDifferentials.map((rawDiff, index) => {
+        const probabilityDecimal = rawDiff.probabilityDecimal || 0;
+        const qualitativeRisk = this.getLikelihoodCategory(probabilityDecimal);
+        
+        return {
+          ...rawDiff,
+          rank: index + 1,
+          probabilityDecimal,
+          qualitativeRisk,
+          // For backward compatibility
+          likelihood: qualitativeRisk,
+          likelihoodPercentage: probabilityDecimal
+        };
+      });
       
       return differentials;
       
@@ -374,6 +388,9 @@ Please generate differential diagnoses based on this information.`;
       return [
         {
           name: "Clinical evaluation needed",
+          rank: 1,
+          qualitativeRisk: "Moderate",
+          probabilityDecimal: 50,
           likelihood: "Medium",
           likelihoodPercentage: 50,
           keyFactors: "Unable to generate differential diagnoses automatically",
@@ -385,7 +402,7 @@ Please generate differential diagnoses based on this information.`;
               description: "Encounter for general adult medical examination without abnormal findings"
             }
           ]
-        }
+        } as DifferentialDiagnosis
       ];
     }
   }
@@ -750,7 +767,7 @@ Please extract the requested information.`
           patient_id: patientUuid,
           encounter_id: actualEncounterUuid,
           diagnosis_name: diff.name,
-          likelihood: diff.likelihood,
+          likelihood: diff.probabilityDecimal,
           key_factors: diff.keyFactors,
           rank_order: index + 1
         }));
@@ -832,6 +849,14 @@ Please extract the requested information.`
     });
     
     return sources;
+  }
+
+  private getLikelihoodCategory(probabilityDecimal: number): "Negligible" | "Low" | "Moderate" | "High" | "Certain" {
+    if (probabilityDecimal < 1) return "Negligible";
+    if (probabilityDecimal < 10) return "Low";
+    if (probabilityDecimal < 40) return "Moderate";
+    if (probabilityDecimal < 70) return "High";
+    return "Certain";
   }
 }
 

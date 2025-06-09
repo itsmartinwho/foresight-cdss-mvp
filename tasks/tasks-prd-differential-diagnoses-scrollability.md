@@ -10,7 +10,7 @@ This task list implements the requirements to fix the scrollability issue in the
 - `src/components/diagnosis/DifferentialDiagnosesList.tsx` - Component containing the diagnosis cards that need scrolling
 - `src/components/diagnosis/DifferentialDiagnosisCard.tsx` - Individual diagnosis card component (may need minor adjustments)
 - `TESTING.md` - Documentation for manual testing procedures
-- `docs/DEVELOPMENT_NOTES.md` - Development documentation for the fix
+- `docs/history.md` - Development documentation for the fix (see "Differential Diagnoses Scrollability Fix" section)
 
 ## Tasks
 

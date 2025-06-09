@@ -1,271 +1,66 @@
-# Foresight CDSS System Architecture
+# System Architecture
 
-> **Cross-reference:**
-> - This document is the primary source of truth for the Foresight CDSS architecture, including AI tools, data layer, application flow, and tech stack.
-> - For detailed frontend conventions and styling, see [./frontend_guide.md](./frontend_guide.md).
-> - For development process, coding standards, and testing strategy, see [./development_guide.md](./development_guide.md).
-> - This file and [../src/clinical_engine_prototype/engine.py](../src/clinical_engine_prototype/engine.py) must be kept in sync regarding the vision, status, and integration plans for Tool B (Diagnosis and Treatment Engine).
+> **Note:** This document is the primary source of truth for the Foresight CDSS architecture.
 
 ## Overview
 
-This document outlines the comprehensive architecture of the Foresight CDSS MVP prototype. The system is designed with modularity, clear separation of concerns, and maintainability in mind, supporting both current functionality and future aspirations. It reflects the state of the system after several significant refactoring phases aimed at FHIR alignment and enhanced clinical engine capabilities.
+The Foresight CDSS is a modular, AI-powered clinical decision support system. It is designed with a clear separation of concerns to support both current functionality and future aspirations.
 
 The application features several AI-powered clinical tools:
-*   **Tool A (Advisor):** Currently implemented as an AI-powered chatbot in the "Advisor" tab, using OpenAI via the `/api/advisor` route. It provides general medical information, and allows user to ask questions based on attached files and attached data for patients in the database. 
-*   **Tool B (Diagnosis and Treatment Engine):** Aims to ingest patient data and consultation transcripts to produce diagnoses and treatment plans, and generate related documents (referrals, prior authorizations). The `src/clinical_engine_prototype/engine.py` script is an early prototype for this engine's logic. It's integrated but still needs improvement.
-*   **Tool C (Medical Co-pilot):** An aspirational, real-time AI assistant to provide nudges to physicians during consultations. Does not yet exist.
-*   **Tool D (Complex Conditions Alerts):** An aspirational tool to scan diagnostic outputs (from the future Tool B) and alert physicians to potential complex conditions. Placeholder UI for alerts exists, currently populated by mock data from the `patients.alerts` field in Supabase.
-*   **Tool F (Clinical Trial Matching):** An aspirational tool to find clinical trials for eligible patients. Placeholder UI for clinical trials exists, currently populated by mock data.
+*   **Tool A (Advisor):** An AI-powered chatbot for general medical information.
+*   **Tool B (Diagnosis and Treatment Engine):** A tool to produce diagnoses and treatment plans from patient data and consultation transcripts.
+*   **Other Tools (Aspirational):** The architecture is designed to support future tools like a real-time AI co-pilot and a complex conditions alert system.
 
 ## User Roles & Application Flow
 
-### User Roles
-- **Clinicians**: Primary users who consult the system for AI-powered advice (Tool A), patient management, and in the future, for advanced decision support (Tools B, C, D, F).
-- **Administrators**: (Aspirational) Users who manage system settings and user accounts.
-- **Support Staff**: (Aspirational) Users who assist with patient information and administrative tasks.
-
-### Core Workflows & Screen Flows
-
-_The application flow centers around clinician interaction with patient data and AI tools._
-
-1.  **Authentication Flow (Standard)**
-    `Login Screen → Authentication → Dashboard`
-    - Does not exist yet. User enters credentials, system validates, redirects to dashboard or shows error.
-
-2.  **Patient Management Flow (Current)**
-    `Dashboard → Patient List → Patient Search → Patient Details → Edit Patient / Add New Patient`
-    - Browse, search, view, and manage patient records.
-
-3.  **Consultation Data Entry/Review Flow (Current - Basic; Aspirational - Detailed for Tool B)**
-    `Patient Details → New Consultation (Modal) → Input Basic Encounter Information → Save`
-    - Current: Input basic encounter information.
-    - Users should be able to edit any fields related to a patient.
-
-4.  **Tool A: Advisor (AI Chatbot - Current)**
-    `Select "Advisor" Tab → Type Question / Use Voice Input / Upload File → Receive AI-Generated Answer (Streamed)`
-    - User interacts with AI chatbot in `AdvisorView.tsx` via `/api/advisor`.
-    - Optional features: model switching, paper search (may be buggy, users can attach specific patient context. Voice mode and dictation might be buggy.
-    - Future: rendering charts and tables nicely within answers is still buggy.
-
-5.  **Tool B: Diagnosis and Treatment Engine**
-    `Consultation Ends → Trigger Tool B Analysis → Physician Reviews/Amends AI Output → Accept Plan → Optionally Generate Documents like prior authorization forms and referral forms (placeholder forms for now)`
-    - `src/clinical_engine_prototype/engine.py` implements this logic.
-
-6.  **Tool C: Medical Co-pilot (Aspirational - No UI Exists)**
-    `During Live Consultation → AI Co-pilot Monitors → Delivers Discrete Nudges/Notifications`
-
-7.  **Tool D: Complex Conditions Alerts (Aspirational - Placeholder UI & Mock Data Exist)**
-    `Tool B Completes Diagnosis (Aspirational) → Tool D Scans Output → Alert Appears (Dashboard, Patient Profile, Alerts Screen - replacing current mock alerts)`
-
-8.  **Tool F: Clinical Trial Matching (Aspirational - Placeholder UI & Mock Data Exist)**
-    `Diagnosis Finalized → Tool F Scans for Trials (Aspirational) → Matching Trials Displayed (replacing mock data)`
-
-9.  **Reporting/Analytics Flow (Current - Mock up; Aspirational - basic analytics)**
-    `Dashboard → Analytics Screen (AnalyticsScreenView.tsx) → View Basic Charts/Metrics`
-
-### Screen-by-Screen AI Tool Relevance
-*   **Dashboard (`DashboardView.tsx`):** Placeholder for Tool D alerts.
-*   **Patient Management (`PatientsListView.tsx`, `PatientWorkspaceViewModern.tsx`):**
-    *   `PatientWorkspaceViewModern.tsx`: Tool B (Diagnosis/Treatment, placeholder for documents), placeholders for Tool F (Clinical Trials), Tool D (Alerts).
-*   **Consultation Screens:** Forms capture data (Aspirational: detailed transcript for Tool B).
-*   **Advisor Screen (`AdvisorView.tsx`):** Tool A interface.
-*   **Alerts Screen (`AlertsScreenView.tsx`):** Placeholder for Tool D alerts.
+The application is designed for clinicians, with aspirational roles for administrators and support staff. The core workflows center around patient management, consultations, and interaction with the AI tools.
 
 ## Tech Stack
 
-_This section outlines technologies for current and aspirational components._
+### Frontend
+- **Core:** React, TypeScript, Next.js
+- **UI:** Tailwind CSS, Shadcn/UI
+- **State Management:** React Context, `useState`, `useReducer`
 
-### Frontend Stack (Current & Aspirational)
-*   **Core (Current):** React, TypeScript, Next.js (App Router).
-*   **UI & Styling (Current):** Tailwind CSS, Shadcn/UI, Custom Components.
-*   **State Management (Current):** React Context API / `useState` / `useReducer` (e.g., in `ForesightApp.tsx`). Aspirational: SWR/React Query, Zustand.
-*   **Visualization (Aspirational):** Recharts, D3.js.
-*   **Testing (Current):** Playwright (E2E for Tool A), Storybook (UI components). Aspirational: Jest & React Testing Library, MSW.
-
-### Backend Stack
-
-#### Current Implemented Backend
-*   **Primary Platform:** Supabase (PostgreSQL) - provides database, auto-generated REST/GraphQL APIs, authentication, storage.
-*   **Custom Logic:** Next.js API Routes (e.g., `/api/advisor` for Tool A, proxies to OpenAI).
-
-#### AI Tools - Specific Technologies
-*   **Tool A (Advisor) - Current:**
-    *   Next.js API route (`/api/advisor`).
-    *   Integrates with OpenAI API (GPT-4.1, GPT-3.5).
-*   **Tool B (Diagnosis and Treatment Engine) - Aspirational (Python Prototype Exists):**
-    *   **Prototype:** `src/clinical_engine_prototype/engine.py` (Python, Pydantic). See dedicated section below.
-    *   **Potential Future Stack:** Evolve Python prototype (FastAPI/Flask containerized service), or TypeScript/Node.js rewrite. May incorporate ML models, NLP libraries.
-*   **Tool C (Medical Co-pilot) - Aspirational:** Real-time audio processing, Speech-to-Text, fast AI models, WebSockets.
-*   **Tool D (Complex Conditions Alerts) - Aspirational:** Processes Tool B outputs, may use ML models.
-*   **Tool F (Clinical Trial Matching) - Aspirational:** Web scraping/API integration with clinical trial databases.
-
-#### Aspirational Custom Backend (If Supabase/Next.js APIs are outgrown)
-*   **Node.js with Express.js/NestJS:** For custom microservices.
-*   **Database:** PostgreSQL (as with Supabase), potentially Prisma ORM.
-*   **Caching:** Redis.
-
-### DevOps & Infrastructure
-*   **Development (Current):** pnpm, ESLint, Prettier.
-*   **CI/CD (Current):** GitHub Actions.
-*   **Deployment & Hosting (Current):** Vercel/Netlify (frontend), Supabase (backend).
-*   **Aspirational:** Docker, Kubernetes/Serverless for AI services, Terraform.
-*   **Monitoring (Current):** Vercel Analytics, Supabase Console. Aspirational: Sentry, Prometheus/Grafana.
-
-### Security & Compliance
-*   HTTPS (Current). OWASP Best Practices, HIPAA/GDPR Considerations (Goals).
-*   Audit logging (Supabase offers some; more detailed needed for AI clinical decisions).
-
-### Third-Party Integrations
-*   **Current:** OpenAI API.
-*   **Aspirational:** Medical terminology/drug databases, clinical guidelines, trial registries, EHRs (FHIR/HL7).
+### Backend
+- **Platform:** Supabase (PostgreSQL) for the database, authentication, and storage.
+- **Custom Logic:** Next.js API Routes for custom endpoints (e.g., `/api/advisor`).
+- **AI Tools:**
+    - **Advisor:** Integrates with the OpenAI API.
+    - **Diagnosis and Treatment Engine:** A Python-based prototype (`src/clinical_engine_prototype/engine.py`) is integrated and accessible via a Next.js API route.
 
 ## Frontend Architecture
 
-_Refer to [./frontend_guide.md](./frontend_guide.md) for detailed frontend guidelines, component organization, styling, and UI patterns._
-
 ### Core Principles
-*   **Component-Based Design.**
-*   **Centralized Routing Logic (`ForesightApp.tsx`):** Manages view display based on URL.
-*   **Global Layout (`layout.tsx`, `ContentSurface`):** Consistent UI structure.
-*   **Logging Strategy:** Concise `Prod Debug` logs in `SupabaseDataService` and `/api/advisor`.
+- Component-based design.
+- Centralized routing logic.
+- Global layout for a consistent UI structure.
 
-### Directory Structure Highlights
-*   `src/app/`: Next.js App Router files (pages, global layout).
-*   `src/components/`: React components (`ForesightApp.tsx`, `views/`, `ui/`, `layout/`).
-*   `src/lib/`: Utilities (`supabaseClient.ts`, `supabaseDataService.ts`, `clinicalEngineService.ts` - MOCK for Tools B/F).
+### Directory Structure
+- `src/app/`: Next.js App Router files.
+- `src/components/`: Reusable React components.
+- `src/lib/`: Utilities and services.
 
-### Component Architecture
-*   **Global Layout (`src/app/layout.tsx`):** Renders `GlassHeader`, `GlassSidebar`, main content area with `ContentSurface`.
-*   **View Router (`src/components/ForesightApp.tsx`):** Client component using `usePathname()` to render appropriate view from `src/components/views/`. Manages global states (e.g., `activePatient`, mock alerts for Tool D).
-*   **View Components (`src/components/views/`):** Main content for sections (Dashboard, Patients, Advisor for Tool A, placeholders for Tools B/D/F).
-*   **UI Components (`src/components/ui/`, `src/components/layout/`):** Reusable elements.
-
-### Routing Strategy
-*   Next.js App Router. Directory structure defines routes. `page.tsx` files delegate to `ForesightApp.tsx` for view rendering.
-
-## Backend Architecture and Data Layer (Current Post-Refactor State)
-
-The Foresight CDSS now operates on a FHIR-aligned database schema and a robust (though partially mock for some tools) clinical engine concept.
+## Backend Architecture and Data Layer
 
 ### Data Source (Supabase)
-*   **Primary Database:** PostgreSQL hosted on Supabase.
-*   **Schema Management:** While `scripts/schema.sql` might exist, the authoritative definition of the schema is reflected by the tables and their structures described here, which are the result of several refactoring phases. `COMMENT` documentation exists on core tables in the database clarifying purpose and FHIR alignment.
-*   **Key Tables (Post-Refactor):**
-    1.  **`patients`**: Stores patient demographic information.
-        *   Key fields: `id` (UUID), `patient_id` (text, unique), `first_name`, `last_name`, `gender`, `birth_date`, `race`, `ethnicity`, `extra_data` (JSONB for extensibility).
-        *   No longer contains direct diagnosis fields (these were deprecated and removed).
-    2.  **`encounters`**: Stores information about patient encounters (visits, consultations). Formerly `visits`/`admissions`.
-        *   Key fields: `id` (UUID), `encounter_id` (text), `patient_supabase_id` (FK to `patients`), `encounter_type`, `reason_code` (coded reason, e.g., SNOMED CT), `reason_display_text` (human-readable reason), `transcript`, `soap_note`, `treatments` (JSONB), `status` (e.g., 'finished', 'planned'), `is_deleted` (for soft deletes), `extra_data` (JSONB for referral/prior auth documents etc.).
-    3.  **`conditions`**: Stores diagnoses, problems, and health concerns, aligning with FHIR Condition resource.
-        *   Key fields: `id` (UUID), `patient_id` (FK to `patients`), `encounter_id` (FK to `encounters`), `code` (e.g., ICD-10, SNOMED), `description` (text), `category` (e.g., 'problem-list', 'encounter-diagnosis'), `onset_date`, `note`.
-    4.  **`lab_results`**: Stores laboratory and observation data, aligning with FHIR Observation resource.
-        *   Key fields: `id` (UUID), `patient_id` (FK to `patients`), `encounter_id` (FK to `encounters`), `name`, `value`, `units`, `date_time`, `reference_range`, `flag`.
-    5.  **`differential_diagnoses`**: Stores differential diagnoses generated by the clinical engine.
-        *   Key fields: `id` (UUID), `patient_id` (FK to `patients`), `encounter_id` (FK to `encounters`), `diagnosis_name`, `likelihood`, `key_factors`, `rank_order`.
-*   **Data Interaction:** `supabaseClient.ts`, `supabaseDataService.ts`. `SupabaseDataService` has been updated to use new field names and fetch from these FHIR-aligned tables (e.g., `getPatientEncounters` is primary, `getDiagnosesForEncounter`, `getLabResultsForEncounter`).
-*   **No Local Mock Data Files for Primary Data:** All live data from Supabase.
+The system uses a PostgreSQL database hosted on Supabase with a FHIR-aligned schema.
+
+#### Key Tables
+- `patients`: Patient demographic information.
+- `encounters`: Patient encounters (visits, consultations).
+- `conditions`: Diagnoses, problems, and health concerns.
+- `lab_results`: Laboratory and observation data.
+- `differential_diagnoses`: Differential diagnoses generated by the clinical engine.
 
 ### API Layer
-*   **Supabase Auto-generated APIs.**
-*   **Custom Next.js API Routes (`src/app/api/`):**
-    *   `/api/advisor`: Serves Tool A (Advisor), proxies to OpenAI.
-    *   `/api/clinical-engine` (Conceptual/Mock): Endpoint intended for the refactored clinical engine (Tool B). `src/lib/clinicalEngineServiceV2.ts` (potentially renamed or evolved) outlines the intended multi-stage pipeline for this, which includes loading FHIR-like patient context, symptom extraction, diagnosis, treatment planning, and saving results to the database.
-*   **`src/clinical_engine_prototype/engine.py` (Standalone Prototype for Tool B):** See dedicated section below. This prototype is NOT currently integrated.
-*   **`src/lib/clinicalEngineService.ts` (Mock Service):** Original mock service for frontend development of Tools B & F; its functionalities are conceptually part of the `ClinicalEngineServiceV2` vision. **Not connected to any live AI backend for Tool B/F.**
+- **Supabase APIs**: Auto-generated REST and GraphQL APIs.
+- **Next.js API Routes**: Custom endpoints for features like the Advisor and the Clinical Engine.
+- **Python Component**: The prototype for the Diagnosis and Treatment Engine is a Python script that is called by a Next.js API route.
 
-### Historical Refactoring Context
-The system has undergone several refactoring phases that achieved the following, leading to the current schema:
-*   **Phase 1 (FHIR-Compatible Migration):** Standardized patient demographics, renamed `visits` to `encounters`, introduced `conditions` and `lab_results` tables. Migrated `patients.primary_diagnosis_description` to `conditions`. Deprecated patient-level diagnosis fields.
-*   **Phase 2 (Clinical Engine Refactoring):** Introduced concepts like `PatientContextLoader` (to assemble FHIR-like context from new tables) and `ClinicalEngineServiceV2` (to process this context and save structured outputs like primary diagnosis to `conditions`, SOAP notes to `encounters`).
-*   **Phase 3 (Frontend UI Updates):** Adapted UI to display data from new tables and integrate with the conceptual `ClinicalEngineServiceV2` outputs via the `/api/clinical-engine` endpoint.
-*   **Database Cleanup & Finalization:** Removed deprecated fields (e.g., `patients.primary_diagnosis_description`, `patients.general_diagnosis_details`), removed old views like `admissions` view, and added the `differential_diagnoses` table. Corrected SQL scripts and ensured schema consistency.
+## AI Tool Roadmap
 
-This historical work provides the foundation for the current data layer.
-
-## Python Component (`src/clinical_engine_prototype/engine.py`) – Prototype for Tool B
-
-_This section details the standalone Python script `src/clinical_engine_prototype/engine.py`, an early-stage prototype for the aspirational **Tool B (Diagnosis and Treatment Engine)**._
-
-**Important Current Status:**
-*   **Not Integrated:** `src/clinical_engine_prototype/engine.py` is **NOT currently integrated** into the live Next.js web application.
-*   **Not Used by Tool A:** It does **NOT** power the current Advisor (Tool A).
-*   **Standalone Prototype:** Can only be run independently for conceptual testing.
-
-### Tool B Vision (Diagnosis and Treatment Engine)
-*   **Inputs:** Pre-existing patient information, consultation transcript.
-*   **Process:** Create diagnostic plan, execute workstreams, synthesize results.
-*   **Outputs:** Physician-amendable diagnosis & treatment plan, potential for document generation (referrals, prior auth).
-*   **Future:** Parse novel clinical research.
-
-### `engine.py` Prototype Details
-*   **Runtime & Dependencies:** Python 3.9+, Pydantic 1.10+.
-*   **Structure:** `ClinicalEngine` class with methods like `generate_diagnostic_plan`, `execute_diagnostic_plan`, `generate_diagnostic_result`.
-*   **Clinical Engine Pipeline (Refactored Logic):**
-    1.  **Input Processing (Symptom Extraction):** `extract_symptoms_from_transcript()`.
-    2.  **Plan Creation (`generate_diagnostic_plan`):** Creates `DiagnosticPlan`.
-    3.  **Plan Execution (`execute_diagnostic_plan` via `PlanExecutor`):** Asynchronous, populates `findings`.
-    4.  **Diagnosis Synthesis (`generate_diagnostic_result`):** Produces `DiagnosticResult`.
-    5.  **Output Document Generation (Optional Utilities):** `generate_prior_authorization`, etc.
-*   **Data Input for Prototype:** Expects patient data via Pydantic `Patient` model (populated from EMR/Supabase by calling service).
-*   **Integration Entry Point (Conceptual):** `run_full_diagnostic()` coroutine for API call.
-*   **Current API Data Handling (MVP v0 - FastAPI `/run-dx` in `main.py`):**
-    *   `/run-dx` expects `patient_id`, `transcript`, `patient_data_dict` (JSON).
-    *   Frontend gathers this data (reusing Supabase loading logic).
-    *   Output is `DiagnosticResult` JSON. Frontend populates editable UI; saving is separate.
-*   **Future Integration:** Could be containerized (FastAPI/Flask) or re-implemented in TypeScript.
-
-## Target State Considerations & AI Tool Roadmap
-
-The architecture aims to support the following future capabilities:
-
-*   **Tool A (Advisor) Enhancements:** Patient context awareness, UI reliability.
-*   **Tool B (Diagnosis and Treatment Engine):** Full implementation as described above, integrating `src/clinical_engine_prototype/engine.py` concepts. UI placeholders exist.
-*   **Tool C (Medical Co-pilot):** Real-time nudges during consultations.
-*   **Tool D (Complex Conditions Alerts):** Intelligent alerts from Tool B outputs. Mock data currently shown via `patients.alerts`.
-*   **Tool F (Clinical Trial Matching):** Automated trial matching. Mock data currently shown.
-*   **Data Fetching & Real-time Updates:** May require WebSockets for advanced tools.
-
-## Testing and Component Documentation
-
-_Refer to [./development_guide.md#testing-standards](./development_guide.md#testing-standards) for the comprehensive testing strategy._
-
-*   **E2E Tests:** Playwright for critical flows (Tool A, navigation, sidebar).
-*   **Storybook Stories:** For UI components (`SeverityBadge`, `LikelihoodBadge`, etc.).
-
-## Build, Performance, and Deployment Considerations
-
-*   **Dependency Management:** `pnpm`. `node_modules` can be large due to dev dependencies (Next.js SWC, Cloudflare tooling).
-*   **Build Scripts:** `pnpm run build` (Next.js), `pnpm run build:worker` (Cloudflare).
-*   **Performance Optimizations:** Dependency caching, selective builds. Future: lazy loading (e.g., Recharts), icon optimization (using `@phosphor-icons/react` which is tree-shakeable).
-*   **ESLint Version:** Pinned to v8.57.1.
-
-## Advisor Tab: Model Selection & Rendering Pipeline
-
-*   **Model Selection:** Defaults to `gpt-4.1-mini`. "Think" mode switches to `o3`.
-*   **Rendering Pipeline (JSON-based):**
-    *   **Backend (`/api/advisor`):** Requests JSON from OpenAI (schema for paragraphs, lists, tables, refs). Streams JSON to frontend.
-    *   **Frontend (`AdvisorView.tsx`):** Buffers tokens to form valid JSON. Parses JSON and renders using React components for each content type.
-    *   **Benefits:** Robust, secure (no `dangerouslySetInnerHTML`), extensible.
-
-## Plasma Background Effect
-_For details on the Three.js + GLSL plasma background, see [./PLASMA_EFFECT.md](./PLASMA_EFFECT.md). It runs outside the React tree for stability._
-
-#### Physician Experience (PX) and Data Flow (Post-Refactor)
-
--   **AI Chat & Advisor (Tool A):**
-    -   Interface: Chat panel, potentially integrated within patient workspace tabs.
-    -   Input: Text queries, voice commands, clicks on suggested follow-ups.
-    -   Output: Text responses, citations, suggested actions.
--   **Clinical Workup & Plan (Tool B - Aspirational, based on `ClinicalEngineServiceV2` concepts):
-    -   Interface: Structured input forms (e.g., via `ConsultationPanel`), review panels for AI suggestions (e.g., `AIAnalysisPanel`).
-    -   Input: Basic encounter information, symptoms/observations from transcripts, patient history from FHIR-aligned tables (`conditions`, `lab_results`).
-    -   Output: Differential diagnoses (to `differential_diagnoses` table), primary diagnosis (to `conditions` table as 'encounter-diagnosis'), recommended tests/treatments (to `encounters.treatments`), draft SOAP notes (to `encounters.soap_note`), referral/prior auth documents (to `encounters.extra_data`).
-
-### Data Flow (Post-Refactor)
-*   **Patient Workspace Backend (Conceptual - combination of Supabase direct calls and Next.js API routes):**
-    *   Manages CRUD for patient core data, encounters, conditions, labs etc. using the FHIR-aligned tables.
-    *   Handles saving of AI-generated content from Tool B (aspirational) to appropriate records as described above.
-*   **Schema Management:** The current, authoritative schema is as described under "Key Tables (Post-Refactor)".
-*   **Data Store (Supabase/Postgres):** Utilizes the `patients`, `encounters`, `conditions`, `lab_results`, and `differential_diagnoses` tables.
-*   **Data Interaction:** `supabaseClient.ts`, `supabaseDataService.ts`. `supabaseDataService` methods are aligned with the refactored schema.
-*   **No Local Mock Data Files for Primary Data:** All live data from Supabase. 
+The architecture is designed to support the following future capabilities:
+- Enhancements to the Advisor, including better patient context awareness.
+- Full implementation of the Diagnosis and Treatment Engine.
+- Development of new tools like a real-time medical co-pilot and a complex conditions alert system. 

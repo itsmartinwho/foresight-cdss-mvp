@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { patientId, encounterId, diagnosisName, likelihood, keyFactors, rankOrder } = body;
+    const { patientId, encounterId, diagnosisName, probabilityDecimal, keyFactors, rankOrder } = body;
 
     if (!patientId || !encounterId || !diagnosisName) {
       return NextResponse.json(
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         patient_id: patients.id,
         encounter_id: encounters.id,
         diagnosis_name: diagnosisName,
-        likelihood: likelihood || 'Medium',
+        likelihood: probabilityDecimal,
         key_factors: keyFactors || '',
         rank_order: finalRankOrder
       })
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, diagnosisName, likelihood, keyFactors, rankOrder } = body;
+    const { id, diagnosisName, probabilityDecimal, keyFactors, rankOrder } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -187,7 +187,7 @@ export async function PUT(request: NextRequest) {
 
     const updateData: any = {};
     if (diagnosisName !== undefined) updateData.diagnosis_name = diagnosisName;
-    if (likelihood !== undefined) updateData.likelihood = likelihood;
+    if (probabilityDecimal !== undefined) updateData.likelihood = probabilityDecimal;
     if (keyFactors !== undefined) updateData.key_factors = keyFactors;
     if (rankOrder !== undefined) updateData.rank_order = rankOrder;
 
