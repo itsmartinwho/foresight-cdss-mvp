@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
 import { supabaseDataService } from "@/lib/supabaseDataService";
+import { searchGuidelines } from "@/services/guidelines/search-service";
 
 // 1. Model routing (default to gpt-4.1-mini)
 // 2. Invoke chat-completions with streaming
@@ -9,8 +10,16 @@ import { supabaseDataService } from "@/lib/supabaseDataService";
 // 5. streamMarkdownOnly implementation
 // 6. Security and recovery (DOMPurify on client, discard empty tool args)
 
-// Enhanced system prompt for OpenAI Code Interpreter
+// Enhanced system prompt for OpenAI Code Interpreter with Clinical Guidelines
 const baseSystemPrompt = `You are Foresight, an AI medical advisor for US physicians. Your responses should be comprehensive, empathetic, and formatted in clear, easy-to-read GitHub-flavored Markdown. Use headings, lists, bolding, and other Markdown features appropriately to structure your answer for optimal readability. Avoid overly technical jargon where simpler terms suffice, but maintain medical accuracy.
+
+**CLINICAL GUIDELINES INTEGRATION**: You have access to evidence-based clinical guidelines from authoritative sources including USPSTF, NICE, NCI PDQ, and RxNorm. When relevant to the clinical question or patient scenario:
+
+1. **Reference Clinical Guidelines**: Cite relevant guidelines with their source, grade/strength of recommendation, and publication date
+2. **Evidence-Based Recommendations**: Provide specific recommendations based on clinical guidelines when applicable
+3. **Screening Guidelines**: Reference appropriate screening recommendations for preventive care
+4. **Drug Guidelines**: Include medication recommendations, contraindications, and interactions based on RxNorm data
+5. **Specialty Guidelines**: Reference specialty-specific guidelines when relevant to the clinical scenario
 
 When data analysis, tables, or charts would enhance your medical explanation or are explicitly requested:
 
@@ -59,6 +68,7 @@ When responding to general medical queries:
 3. Suggest appropriate next steps or follow-up care
 4. Use clear, professional language that respects both the physician's expertise and patient welfare
 5. When in doubt, recommend consultation with specialists or additional testing
+6. **Always reference relevant clinical guidelines when applicable**
 
 Remember: You are assisting qualified medical professionals, not providing direct patient care. Charts and tables you create will be automatically displayed to enhance clinical understanding.`;
 
@@ -249,6 +259,79 @@ async function createAssistantResponse(
     reqSignal.removeEventListener('abort', clientDisconnectListener);
     cleanupAndCloseController();
   }
+}
+
+async function enrichWithGuidelines(query: string, patientData?: any): Promise<string> {
+  try {
+    // Extract medical terms and conditions for guideline search
+    const searchTerms = extractMedicalTerms(query, patientData);
+    
+    if (searchTerms.length === 0) {
+      return '';
+    }
+
+    // Search for relevant guidelines
+    const guidelines = await searchGuidelines({
+      query: searchTerms.join(' '),
+      limit: 5,
+      searchType: 'combined'
+    });
+
+    if (guidelines.length === 0) {
+      return '';
+    }
+
+    // Format guidelines for inclusion in system prompt
+    const guidelinesText = guidelines.map(guideline => {
+      const metadata = guideline.metadata || {};
+      return `**${metadata.source || 'Unknown'} Guideline**: ${metadata.title || 'Untitled'}
+- **Grade/Strength**: ${metadata.grade || 'Not specified'}
+- **Specialty**: ${metadata.specialty || 'General Medicine'}
+- **Content Preview**: ${guideline.content?.substring(0, 300) + '...' || 'No content available'}
+- **Similarity Score**: ${Math.round(guideline.similarity * 100)}%
+---`;
+    }).join('\n');
+
+    return `
+
+## Relevant Clinical Guidelines
+
+The following evidence-based clinical guidelines are relevant to this query:
+
+${guidelinesText}
+
+Please incorporate these guidelines into your response where appropriate, citing the source and strength of recommendations.
+
+---
+
+`;
+  } catch (error) {
+    console.error('Error enriching with guidelines:', error);
+    return '';
+  }
+}
+
+function extractMedicalTerms(query: string, patientData?: any): string[] {
+  const terms: string[] = [];
+  
+  // Extract from query
+  const queryTerms = query.toLowerCase().match(/\b(diabetes|hypertension|cancer|screening|vaccination|cholesterol|depression|anxiety|obesity|smoking|alcohol|cardiovascular|cardiac|pulmonary|renal|hepatic|endocrine|neurological|psychiatric|dermatology|oncology|pediatric|geriatric|emergency|surgery|anesthesia|radiology|pathology|laboratory|pharmacy|medication|drug|treatment|therapy|diagnosis|prevention|guidelines|recommendations)\b/g);
+  if (queryTerms) {
+    terms.push(...queryTerms);
+  }
+
+  // Extract from patient data if available
+  if (patientData) {
+    // Look for conditions, medications, etc.
+    const patientStr = JSON.stringify(patientData).toLowerCase();
+    const patientTerms = patientStr.match(/\b(diabetes|hypertension|cancer|cholesterol|depression|anxiety|obesity|cardiovascular|cardiac|pulmonary|renal|hepatic|endocrine|neurological|psychiatric)\b/g);
+    if (patientTerms) {
+      terms.push(...patientTerms);
+    }
+  }
+
+  // Remove duplicates
+  return [...new Set(terms)];
 }
 
 export async function GET(req: NextRequest) {
@@ -458,6 +541,27 @@ export async function GET(req: NextRequest) {
         // Filter out system messages since assistant instructions are set at creation
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
         
+        // Enrich the latest user message with relevant clinical guidelines
+        if (filteredMessages.length > 0) {
+          const latestUserMessage = filteredMessages[filteredMessages.length - 1];
+          if (latestUserMessage.role === "user") {
+            // Extract patient data for guidelines search
+            let patientData = null;
+            try {
+              if (patientSummaryBlock) {
+                patientData = { summary: patientSummaryBlock };
+              }
+            } catch (e) {
+              console.warn("Could not extract patient data for guidelines search:", e);
+            }
+
+            // Enrich query with relevant guidelines
+            const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData);
+            if (guidelinesEnrichment) {
+              latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
+            }
+          }
+        }
   
         await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, isControllerClosedRef);
         requestAbortController.signal.removeEventListener('abort', mainAbortListener);

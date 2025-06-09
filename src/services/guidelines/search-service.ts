@@ -227,4 +227,54 @@ export class GuidelineSearchService {
       return [];
     }
   }
-} 
+}
+
+// Convenience function for direct import
+const searchService = new GuidelineSearchService();
+
+export async function searchGuidelines(params: {
+  query: string;
+  specialty?: Specialty;
+  limit?: number;
+  searchType?: 'semantic' | 'text' | 'combined';
+}): Promise<GuidelineSearchResult[]> {
+  const { query, specialty, limit = 5, searchType = 'semantic' } = params;
+  
+  if (searchType === 'semantic') {
+    return await searchService.semanticSearch(query, specialty, limit);
+  } else if (searchType === 'text') {
+    const textResults = await searchService.textSearch(query, specialty, limit);
+    // Convert text results to search results format
+    return textResults.map(result => ({
+      id: result.id,
+      content: result.content,
+      metadata: {
+        title: result.title,
+        source: result.source,
+        specialty: result.specialty,
+      },
+      similarity: result.similarity
+    }));
+  } else { // combined
+    const combined = await searchService.combinedSearch(query, specialty, Math.ceil(limit / 2), Math.ceil(limit / 2));
+    // Merge and deduplicate results
+    const allResults = [...combined.semanticResults];
+    
+    // Add text results that aren't already in semantic results
+    const semanticIds = new Set(combined.semanticResults.map(r => r.id));
+    const additionalTextResults = combined.textResults
+      .filter(result => !semanticIds.has(result.id))
+      .map(result => ({
+        id: result.id,
+        content: result.content,
+        metadata: {
+          title: result.title,
+          source: result.source,
+          specialty: result.specialty,
+        },
+        similarity: result.similarity
+      }));
+    
+    return [...allResults, ...additionalTextResults].slice(0, limit);
+  }
+}
