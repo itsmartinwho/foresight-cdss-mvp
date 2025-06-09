@@ -84,7 +84,7 @@ A critical bug was identified and resolved where the "New Consultation" modal co
 *   **Testing:** Specifically test for race conditions and double-clicking on critical action buttons.
 *   **Data Impact:** This bug caused significant data pollution (e.g., hundreds of empty encounters for specific patients), as documented in the "Data Recovery and Synthetic Data Management" section. This highlights the importance of fixing UI bugs promptly to prevent backend data issues.
 
-## Differential Diagnoses Scrollability Fix (July 2024)
+## Differential Diagnoses Scrollability Fix (June 2025)
 
 **Problem**: The differential diagnoses list in the `ConsultationPanel` modal was not vertically scrollable. The root cause was that the flexbox height constraint from the modal's top-level container was not being correctly propagated down to the list component, preventing `overflow-y-auto` from activating.
 

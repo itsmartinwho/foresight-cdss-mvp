@@ -41,7 +41,7 @@ export function SOAPNotesPanel({
   };
 
   return (
-    <Card className={cn("glass-dense flex flex-col h-full", className)}>
+    <Card className={cn("glass-dense flex flex-col", className)}>
       <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Brain className="h-5 w-5 text-primary" />
@@ -49,7 +49,7 @@ export function SOAPNotesPanel({
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="flex-1 overflow-y-auto space-y-4">
+      <CardContent className="flex-1 overflow-y-auto space-y-4 min-h-0">
         {isGenerating ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">

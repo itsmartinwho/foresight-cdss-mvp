@@ -528,6 +528,7 @@ export default function ConsultationPanel({
   const handleClinicalPlan = useCallback(async () => {
     setIsGeneratingPlan(true);
     setIsLoadingDifferentials(true);
+    setIsGeneratingSoap(true);
     
     try {
       // Step 1: Generate differential diagnoses first
@@ -570,6 +571,7 @@ export default function ConsultationPanel({
       // Set SOAP note from the result if available
       if (result.soapNote) {
         setSoapNote(result.soapNote);
+        setIsGeneratingSoap(false);
       }
       
       // Switch to diagnosis tab once everything is complete
@@ -577,6 +579,7 @@ export default function ConsultationPanel({
     } catch (error) {
       toast({ title: "Plan Generation Failed", variant: "destructive" });
       setIsLoadingDifferentials(false);
+      setIsGeneratingSoap(false);
     } finally {
       setIsGeneratingPlan(false);
     }
@@ -640,7 +643,7 @@ export default function ConsultationPanel({
       autoStartSessionRef.current = false;
       console.log('[ConsultationPanel] Modal closed, autoStartSessionRef reset');
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, mounted]);
+  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, demoSoapNote, mounted]);
   
   useEffect(() => {
     if (!isDemoMode && isOpen && !encounter && !isCreating) {
@@ -882,9 +885,9 @@ export default function ConsultationPanel({
                             soapNote={soapNote}
                             isDemoMode={isDemoMode}
                             isGenerating={isGeneratingSoap}
-                            isVisible={started}
+                            isVisible={isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote}
                             onSoapNoteChange={handleSoapNoteChange}
-                            className="h-full"
+                            className="flex-1 min-h-0"
                           />
                         </div>
                       </div>
