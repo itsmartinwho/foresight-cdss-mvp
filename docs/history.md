@@ -104,6 +104,37 @@ A critical bug was identified and resolved where the "New Consultation" modal co
 - `src/components/modals/ConsultationPanel.tsx`: Added `flex-col` to the tab content wrapper and changed the prop passed to the list component to `flex-1 min-h-0`.
 - `src/components/diagnosis/DifferentialDiagnosesList.tsx`: Removed the redundant `h-full` class from the root element.
 
+## Deprecated Code Cleanup (December 2024)
+
+Several deprecated files and services were identified and cleaned up to maintain code quality and reduce confusion about which systems are currently active.
+
+### Files Removed or Deprecated
+
+**Removed Files:**
+- `src/lib/clinicalEngineService.ts`: Original clinical engine using keyword matching. Replaced by `ClinicalEngineServiceV3` which uses GPT-based reasoning.
+- `src/lib/symptomExtractor.ts`: Basic keyword-based symptom extraction. Functionality moved to `ClinicalEngineServiceV3`.
+- `src/components/DiagnosticAdvisor.tsx`: Old diagnostic workflow component. Not used - replaced by `AdvisorView` component.
+
+**Files Remaining (still deprecated):**
+- All deprecated files have been removed from the codebase to reduce confusion and maintenance burden.
+
+### Current Active Systems
+
+**Clinical Engine:**
+- Uses `ClinicalEngineServiceV3` for all clinical reasoning
+- GPT-based multi-step diagnostic process
+- API endpoints: `/api/clinical-engine` and `/api/clinical-engine/differential-diagnoses`
+
+**Advisor Feature:**
+- Uses `AdvisorView` component (accessible at `/advisor`)
+- Chat-based AI advisor with OpenAI Code Interpreter integration
+- No relation to the deprecated `DiagnosticAdvisor` component
+
+**Migration Notes:**
+- All references to `clinicalEngineService` (non-V3) have been removed from active code
+- Documentation updated to reference only current services
+- Deprecated files contain clear migration guidance
+
 ## Transcription UI Functionality Validation (October 2023)
 
 An investigation into an apparent issue with the transcript UI in patient consultation tabs confirmed that the functionality is working as designed. Key findings include:
