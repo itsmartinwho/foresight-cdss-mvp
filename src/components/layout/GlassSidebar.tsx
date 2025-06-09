@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House as Home, Users, BellRinging as BellRing, ArrowSquareLeft as PanelLeftClose, ArrowSquareRight as PanelLeftOpen, Lightning as Zap } from '@phosphor-icons/react';
+import { House as Home, Users, BellRinging as BellRing, ArrowSquareLeft as PanelLeftClose, ArrowSquareRight as PanelLeftOpen, Lightning as Zap, BookOpen } from '@phosphor-icons/react';
 import React, { useEffect } from "react";
 import {
   Tooltip,
@@ -66,6 +66,7 @@ export default function GlassSidebar() {
   const items = [
     { key: "dashboard", label: "Dashboard", icon: Home },
     { key: "patients", label: "Patients", icon: Users },
+    { key: "guidelines", label: "Guidelines", icon: BookOpen },
     { key: "alerts", label: "Alerts", icon: BellRing },
   ];
   return (

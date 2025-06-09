@@ -3,10 +3,10 @@
 Based on PRD: `prd-clinical-guidelines-interface.md`
 
 ## Relevant Files
-- `src/components/layout/Sidebar.tsx` - Main sidebar navigation component that needs Guidelines tab
-- `src/app/guidelines/page.tsx` - New Guidelines page component
+- `src/components/layout/GlassSidebar.tsx` - Main sidebar navigation component that needs Guidelines tab (✓ Added Guidelines item)
+- `src/app/guidelines/page.tsx` - New Guidelines page component (✓ Created)
 - `src/components/guidelines/GuidelinesTab.tsx` - Main guidelines interface component
-- `src/components/guidelines/SpecialtyFilter.tsx` - Specialty organization and filtering component
+- `src/components/guidelines/SpecialtyFilter.tsx` - Specialty organization and filtering component (✓ Created with glassmorphic panels)
 - `src/components/guidelines/SourceFilter.tsx` - Multi-select source filtering dropdown
 - `src/components/guidelines/GuidelineCard.tsx` - Individual guideline display card
 - `src/components/guidelines/GuidelineModal.tsx` - Modal for viewing full guideline content
@@ -32,9 +32,9 @@ Based on PRD: `prd-clinical-guidelines-interface.md`
   - [x] 1.5 Implement enhanced search API with categorization support
 
 - [ ] 2.0 Guidelines Tab Implementation  
-  - [ ] 2.1 Add Guidelines navigation item to sidebar with medical icon
-  - [ ] 2.2 Create main Guidelines page route and layout
-  - [ ] 2.3 Implement specialty organization with glassmorphic panels and large icons
+  - [x] 2.1 Add Guidelines navigation item to sidebar with medical icon
+  - [x] 2.2 Create main Guidelines page route and layout
+  - [x] 2.3 Implement specialty organization with glassmorphic panels and large icons
   - [ ] 2.4 Build multi-select source filtering dropdown with tickbox functionality
   - [ ] 2.5 Create side-by-side panels for multiple source comparison
   - [ ] 2.6 Implement guidelines-specific search with fuzzy matching and autocomplete
