@@ -1,6 +1,8 @@
 import { BaseGuidelineIngester, IngestionResult } from './base-ingester';
 import { USPSTFIngester } from './uspstf-ingester';
 import { RxNormIngester } from './rxnorm-ingester';
+import { NICEIngester } from './nice-ingester';
+import { NCIPDQIngester } from './nci-pdq-ingester';
 import { GuidelineSource } from '@/types/guidelines';
 
 export interface OverallIngestionResult {
@@ -18,7 +20,8 @@ export class IngestionOrchestrator {
     this.ingesters = new Map();
     this.ingesters.set('USPSTF', new USPSTFIngester());
     this.ingesters.set('RxNorm', new RxNormIngester());
-    // Note: NICE and NCI_PDQ ingesters would be added here when implemented
+    this.ingesters.set('NICE', new NICEIngester());
+    this.ingesters.set('NCI_PDQ', new NCIPDQIngester());
   }
 
   /**
