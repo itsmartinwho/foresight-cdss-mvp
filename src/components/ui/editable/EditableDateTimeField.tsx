@@ -163,6 +163,7 @@ export default function EditableDateTimeField({
   };
 
   const { date: currentDate, time: currentTime } = getDateTimeValues(history.present);
+  const hasUnsavedChanges = history.present !== value;
 
   return (
     <EditableSection
@@ -177,6 +178,8 @@ export default function EditableDateTimeField({
       isSaving={isSaving}
       disabled={disabled}
       className={className}
+      hasUnsavedChanges={hasUnsavedChanges}
+      onRequestClose={handleCancel}
     >
       {isEditing ? (
         <div className="space-y-4">

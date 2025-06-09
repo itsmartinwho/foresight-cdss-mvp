@@ -121,6 +121,7 @@ export default function EditableTextField({
 
   const displayValue = value || placeholder;
   const hasValue = Boolean(value);
+  const hasUnsavedChanges = history.present !== value;
 
   return (
     <EditableSection
@@ -135,6 +136,8 @@ export default function EditableTextField({
       isSaving={isSaving}
       disabled={disabled}
       className={className}
+      hasUnsavedChanges={hasUnsavedChanges}
+      onRequestClose={handleCancel}
     >
       {isEditing ? (
         <div className="space-y-2">

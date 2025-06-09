@@ -32,6 +32,8 @@ interface EditableSectionProps {
   editClassName?: string;
   disabled?: boolean;
   showEditButton?: boolean;
+  hasUnsavedChanges?: boolean;
+  onRequestClose?: () => void; // Called when user clicks outside
 }
 
 export default function EditableSection({
@@ -49,6 +51,8 @@ export default function EditableSection({
   editClassName = '',
   disabled = false,
   showEditButton = true,
+  hasUnsavedChanges = false,
+  onRequestClose,
 }: EditableSectionProps) {
   const [isHovered, setIsHovered] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -79,6 +83,35 @@ export default function EditableSection({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isEditing, onSave, onCancel, onUndo, onRedo]);
+
+  // Handle click outside to close editing
+  useEffect(() => {
+    if (!isEditing || !onRequestClose) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sectionRef.current && !sectionRef.current.contains(e.target as Node)) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (hasUnsavedChanges) {
+          const shouldSave = window.confirm(
+            'You have unsaved changes. Would you like to save them before closing?'
+          );
+          if (shouldSave) {
+            onSave();
+          } else {
+            onCancel();
+          }
+        } else {
+          onRequestClose();
+        }
+      }
+    };
+
+    // Use capture phase to handle this before other click handlers
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => document.removeEventListener('mousedown', handleClickOutside, true);
+  }, [isEditing, onRequestClose, hasUnsavedChanges, onSave, onCancel]);
 
   return (
     <div

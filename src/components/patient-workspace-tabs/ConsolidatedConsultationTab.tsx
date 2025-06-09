@@ -13,7 +13,7 @@ import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagno
 import { 
   EditableTextField, 
   EditableDateTimeField, 
-  EditableJSONField, 
+  EditableTable, 
   EditableArrayField, 
   SOAPNoteEditor, 
   TranscriptEditorModal 
@@ -261,20 +261,11 @@ export default function ConsolidatedConsultationTab({
       </Card>
 
       {/* Treatment */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Treatment</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <EditableJSONField
-            label="Treatment Plans"
-            value={selectedEncounter.treatments}
-            onSave={(value) => updateField('treatments', value)}
-            placeholder="Enter treatment data in JSON format..."
-            maxHeight="300px"
-          />
-        </CardContent>
-      </Card>
+      <EditableTable
+        label="Treatment Plans"
+        treatments={selectedEncounter.treatments}
+        onSave={(value) => updateField('treatments', value)}
+      />
 
       {/* Labs */}
       <Card>
