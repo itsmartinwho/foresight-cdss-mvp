@@ -888,7 +888,7 @@ export default function ConsultationPanel({
                               isGenerating={isGeneratingSoap}
                               isVisible={true}
                               onSoapNoteChange={handleSoapNoteChange}
-                              className="flex-1 min-h-0"
+                              className="h-full"
                             />
                           </div>
                         )}
