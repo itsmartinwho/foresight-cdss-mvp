@@ -54,14 +54,24 @@ export default function HistoryTab({ patient, allEncounters }: HistoryTabProps) 
               {diagnoses && diagnoses.length > 0 && (
                 <div className="glass-dense rounded-md p-3">
                   <p className="text-xs font-semibold text-muted-foreground/80 mb-2">Diagnoses</p>
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-1 gap-3">
                     {diagnoses.map((dx, i) => (
-                      <div key={`dx-${dx.code || i}`} className="text-sm">
-                        <span className="text-foreground">{dx.description || "No description"}</span>
+                      <div key={`dx-${dx.code || i}`} className="bg-white/5 border border-white/10 rounded-md p-3 space-y-2">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-foreground leading-relaxed">
+                            {dx.description || "No description available"}
+                          </p>
+                        </div>
+                        
                         {dx.code && (
-                          <span className="ml-2 text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-                            {dx.code}
-                          </span>
+                          <div className="pt-1 border-t border-border/20">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground uppercase tracking-wide">ICD:</span>
+                              <span className="text-xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
+                                {dx.code}
+                              </span>
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))}

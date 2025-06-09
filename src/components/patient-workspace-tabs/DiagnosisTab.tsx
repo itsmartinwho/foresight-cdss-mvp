@@ -149,12 +149,23 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
                   {diagnoses.length > 0 ? (
                     <div className="space-y-2">
                       {diagnoses.map((dx, index) => (
-                        <div key={`${encounter.id}-dx-${index}-${dx.code || 'unknown'}`} className="bg-white/5 border border-white/10 rounded-md p-3 space-y-1">
-                          <p className="font-semibold text-foreground">{dx.description || "No description"}</p>
-                          {dx.code && (
-                            <p className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded w-fit">
-                              Code: {dx.code}
+                        <div key={`${encounter.id}-dx-${index}-${dx.code || 'unknown'}`} className="bg-white/5 border border-white/10 rounded-md p-4 space-y-3">
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Diagnosis</h4>
+                            <p className="text-lg font-semibold text-foreground leading-relaxed">
+                              {dx.description || "No description available"}
                             </p>
+                          </div>
+                          
+                          {dx.code && (
+                            <div className="pt-2 border-t border-border/30">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">ICD Code:</span>
+                                <span className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
+                                  {dx.code}
+                                </span>
+                              </div>
+                            </div>
                           )}
                         </div>
                       ))}

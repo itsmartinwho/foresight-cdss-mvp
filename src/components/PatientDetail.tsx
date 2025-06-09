@@ -279,14 +279,31 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                 <div className="bg-white p-5 shadow-md rounded-lg border border-gray-200">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Diagnoses for this Encounter</h3>
                   {ewDetail.diagnoses && ewDetail.diagnoses.length > 0 ? (
-                    <ul className="divide-y divide-gray-200">
+                    <div className="space-y-3">
                       {ewDetail.diagnoses.map((dx: Diagnosis) => (
-                        <li key={dx.code} className="py-3 flex justify-between items-center">
-                          <span className="text-gray-800 text-sm md:text-base">{dx.description}</span>
-                          <span className="font-mono text-xs md:text-sm bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 tracking-tight">{dx.code}</span>
-                        </li>
+                        <div key={dx.code} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                          {/* Full Diagnosis Description - prominently displayed */}
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Diagnosis</h4>
+                            <p className="text-lg font-semibold text-gray-900 leading-relaxed">
+                              {dx.description || "No description available"}
+                            </p>
+                          </div>
+                          
+                          {/* ICD Code - displayed below */}
+                          {dx.code && (
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">ICD Code:</span>
+                                <span className="text-sm text-gray-700 font-mono bg-gray-100 px-2 py-1 rounded">
+                                  {dx.code}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   ) : (
                     <p className="text-center text-gray-500 py-4">No diagnoses recorded for this encounter.</p>
                   )}
