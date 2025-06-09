@@ -26,7 +26,7 @@ interface Props {
 }
 
 // Custom DatePicker wrapper component
-const StyledDatePicker = forwardRef<HTMLInputElement, any>(({ value, onClick, onChange, placeholderText, className, selected, ...props }, ref) => {
+const StyledDatePicker = forwardRef<DatePicker, any>(({ value, onClick, onChange, placeholderText, className, selected, ...props }, ref) => {
   // The input's own text (the selected date) should use text-step--1.
   // The placeholder text will be styled by global ::placeholder rules.
   const inputClassName = cn(

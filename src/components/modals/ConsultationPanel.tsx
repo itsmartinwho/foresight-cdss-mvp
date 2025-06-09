@@ -46,9 +46,11 @@ interface ConsultationPanelProps {
 }
 
 // Styled DatePicker component to match the design
-const StyledDatePicker = React.forwardRef<any, any>(({ className, ...props }, ref) => (
+const StyledDatePicker = React.forwardRef<any, any>(({ className, onChange, selected, ...props }, ref) => (
   <DatePicker
     ref={ref}
+    selected={selected}
+    onChange={onChange}
     className={cn(
       "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
       className
@@ -479,7 +481,7 @@ export default function ConsultationPanel({
     } catch (err) {
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
-  }, [isTranscribing, isOpen, toast]);
+  }, [isTranscribing, isPaused, isOpen, toast]);
 
   // Update ref whenever startVoiceInput changes
   useEffect(() => {
