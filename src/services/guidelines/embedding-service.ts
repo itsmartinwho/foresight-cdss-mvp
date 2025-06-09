@@ -29,16 +29,10 @@ export class EmbeddingService {
     const result = { processed: 0, errors: [] as string[] };
 
     try {
-      // Get all guidelines that haven't been vectorized yet
+      // Get all guidelines to process (we'll handle duplicates in processDocument)
       const { data: docs, error } = await this.supabase
         .from('guidelines_docs')
-        .select('*')
-        .not('id', 'in', 
-          // Subquery to exclude docs that already have vectors
-          this.supabase
-            .from('guideline_vectors')
-            .select('doc_id')
-        );
+        .select('*');
 
       if (error) {
         throw new Error(`Failed to fetch guidelines: ${error.message}`);
@@ -230,8 +224,8 @@ export class EmbeddingService {
       // Get embedding for query
       const queryEmbedding = await this.getEmbeddings([query]);
       
-      // Build filter
-      const filter = specialty && specialty !== 'All' ? { specialty } : {};
+      // Build filter (empty object means no filter)
+      const filter = {};
       
       // Call the database function
       const { data, error } = await this.supabase.rpc('match_guidelines', {

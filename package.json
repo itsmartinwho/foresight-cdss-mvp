@@ -22,6 +22,7 @@
     "build-storybook": "storybook build -c tests/.storybook",
     "resize:icons": "tsx scripts/favicon-resizing/resize-icons.ts",
     "setup:guidelines": "tsx scripts/clinical-guidelines/setup-guidelines.ts",
+    "test:guidelines": "tsx scripts/clinical-guidelines/test-guidelines.ts",
     "clean": "rm -rf .next node_modules/.cache .turbo",
     "optimize": "node scripts/optimize-dev.js"
   },
