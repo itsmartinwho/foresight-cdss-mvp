@@ -137,11 +137,24 @@ A critical bug was identified and resolved where the "New Consultation" modal co
 - Assessment: Added detailed clinical reasoning for each differential diagnosis
 - Plan: Added immediate management, medications, monitoring, consultations, patient education, and long-term care plans
 
+**Final Resolution**:
+- **Issue**: Changed SOAPNotesPanel className from `flex-1 min-h-0` to `h-full` in ConsultationPanel.tsx  
+- **Root Cause**: The wrapper div already had `flex-1 min-h-0`, creating conflicting flexbox behavior that prevented proper height calculation
+- **Solution**: SOAPNotesPanel's internal Card structure now properly handles scrolling with its native `flex-1 overflow-y-auto min-h-0` classes
+- **Detection**: Issue was identified through live browser testing using Playwright MCP tools
+
+**Root Cause Analysis**:
+- The problem was **className conflict** not flexbox hierarchy 
+- SOAPNotesPanel wrapper div: `className="flex-1 min-h-0"` ✓
+- SOAPNotesPanel component: `className="flex-1 min-h-0"` ❌ (conflicted with Card's internal structure)
+- Fix: SOAPNotesPanel component: `className="h-full"` ✓
+
 **Testing Results**:
-- SOAP notes content is now scrollable independently from the transcript area.
-- The fix works correctly in both side-by-side layout (desktop) and stacked layout (mobile).
-- All SOAP sections (S, O, A, P) are accessible through vertical scrolling when content exceeds the available height.
-- Enhanced demo data ensures consistent testing of scrollability across all environments.
+- SOAP notes content is now scrollable independently from the transcript area
+- Enhanced demo content with comprehensive clinical details for thorough testing
+- The fix works correctly in both side-by-side layout (desktop) and stacked layout (mobile)  
+- All SOAP sections (S, O, A, P) are accessible through vertical scrolling when content exceeds the available height
+- Verified functionality through live browser testing in demo mode
 
 ---
 
