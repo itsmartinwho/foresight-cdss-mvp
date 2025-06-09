@@ -1,5 +1,5 @@
 // Demo Data Service - Contains all demo-specific data and logic
-import { Patient, ComplexCaseAlert } from '@/lib/types';
+import { Patient, ComplexCaseAlert, SoapNote } from '@/lib/types';
 
 export interface DemoTreatmentData {
   drug: string;
@@ -202,5 +202,22 @@ export class DemoDataService {
     }
     console.warn("Demo transcript is missing or empty. Returning empty array.");
     return [];
+  }
+
+  /**
+   * Get SOAP notes for the demo encounter (Dorothy Robinson)
+   */
+  static getSoapNotes(): SoapNote {
+    return {
+      subjective: "46-year-old Hispanic female presents with a 6-day history of severe constipation and mild diffuse abdominal discomfort. Patient reports her last bowel movement was 6 days ago despite trying senna and glycerin suppositories at home. She experiences some nausea after eating but denies vomiting or rectal bleeding. Recent history of hydrocodone use following dental surgery 2 weeks ago. Patient admits to poor dietary habits with frequent fast food consumption and minimal water intake (approximately 1 glass per day). No fever, no hematochezia, no significant weight loss.",
+      
+      objective: "Vital signs: Temperature 37.0°C, Blood pressure 116/74 mmHg, Heart rate 80 bpm, Respiratory rate 16/min. Physical examination reveals a soft, distended abdomen with mild left lower quadrant tenderness, no rebound tenderness or rigidity. Hypoactive bowel sounds present. Rectal examination shows hard stool in vault, brown in color, guaiac-negative. Abdominal X-ray demonstrates diffuse colonic fecal retention without signs of small bowel obstruction or perforation. Laboratory results: Sodium 137 mmol/L, TSH 2.1 µIU/mL within normal limits.",
+      
+      assessment: "1. K59.00 Functional constipation, likely opioid-induced combined with low-fiber diet - High likelihood\n2. Z85.6 Personal history of leukemia - Established\n3. E86.0 Mild dehydration secondary to poor fluid intake - Moderate likelihood\n4. K56.41 Fecal impaction - High likelihood",
+      
+      plan: "Treatment:\n• Admit for aggressive bowel regimen and hydration\n• NPO for 6 hours, then advance to clear liquids and high-fiber diet when bowel movement occurs\n• Polyethylene glycol 3350 17g PO every 6 hours until bowel movement, then 17g nightly for 14 days\n• Docusate sodium 200mg PO twice daily\n• Glycerin suppository every 12 hours as needed if no bowel movement\n• IV 0.9% normal saline 1000mL over 8 hours, then reassess hydration status\n• Discontinue hydrocodone; manage pain with acetaminophen\n\nDiagnostic workup:\n• Monitor for successful bowel movement within 24-48 hours\n• Consider enema if no response to current regimen\n\nConsultations:\n• Nutrition consultation for fiber intake plan (25-30g daily)\n• Physical therapy for mobility promotion\n\nFollow-up as clinically indicated. Discharge when patient has 2 bowel movements and tolerates regular diet.",
+      
+      rawTranscriptSnippet: "Hace seis días. He intentado usar senna y supositorios de glicerina en casa..."
+    };
   }
 } 

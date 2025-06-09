@@ -11,7 +11,7 @@ import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk } from '@pho
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { DemoAudioWaveform } from '@/components/ui/DemoAudioWaveform';
 import { format } from 'date-fns';
-import type { Patient, Encounter, Treatment, DifferentialDiagnosis } from '@/lib/types';
+import type { Patient, Encounter, Treatment, DifferentialDiagnosis, SoapNote } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useDemo } from '@/contexts/DemoContext';
 import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagnosesList';
+import { SOAPNotesPanel } from '@/components/soap/SOAPNotesPanel';
 
 interface ConsultationPanelProps {
   /** Controls open state from parent */
@@ -39,6 +40,8 @@ interface ConsultationPanelProps {
   demoTreatment?: string;
   /** Initial differential diagnoses for demo mode */
   demoDifferentialDiagnoses?: DifferentialDiagnosis[];
+  /** Initial SOAP notes for demo mode */
+  demoSoapNote?: SoapNote;
   /** Callback for when "Clinical Plan" is clicked in demo mode */
   onDemoClinicalPlanClick?: () => void;
   /** Controls loading state of Clinical Plan button externally for demo */
@@ -70,6 +73,7 @@ export default function ConsultationPanel({
   demoDiagnosis,
   demoTreatment,
   demoDifferentialDiagnoses,
+  demoSoapNote,
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false,
 }: ConsultationPanelProps) {
@@ -110,6 +114,10 @@ export default function ConsultationPanel({
   const [tabBarVisible, setTabBarVisible] = useState(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // SOAP Notes state
+  const [soapNote, setSoapNote] = useState<SoapNote | null>(null);
+  const [isGeneratingSoap, setIsGeneratingSoap] = useState(false);
   
   // Transcription state and refs
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -305,6 +313,17 @@ export default function ConsultationPanel({
       setEditedWhilePaused(true);
     }
   }, [isPaused]);
+
+  const handleTreatmentTextChange = useCallback((newText: string) => {
+    setTreatmentText(newText);
+    
+    // Sync treatment changes back to SOAP plan (debounced)
+    const timeoutId = setTimeout(() => {
+      setSoapNote(prev => prev ? { ...prev, plan: newText } : null);
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const pauseTranscription = useCallback(() => {
     console.log("ConsultationPanel pauseTranscription called - current states:", { isTranscribing, isPaused });
@@ -548,6 +567,11 @@ export default function ConsultationPanel({
       setDiagnosisText(result.diagnosticResult?.diagnosisName || '');
       setTreatmentText(result.diagnosticResult?.recommendedTreatments?.join('\n') || '');
       
+      // Set SOAP note from the result if available
+      if (result.soapNote) {
+        setSoapNote(result.soapNote);
+      }
+      
       // Switch to diagnosis tab once everything is complete
       setActiveTab('diagnosis');
     } catch (error) {
@@ -557,6 +581,23 @@ export default function ConsultationPanel({
       setIsGeneratingPlan(false);
     }
   }, [toast, patient.id, encounter?.id, transcriptText]);
+
+  const handleSoapNoteChange = useCallback((section: keyof SoapNote, content: string) => {
+    setSoapNote(prev => prev ? { ...prev, [section]: content } : null);
+    
+    // Debounced synchronization with other tabs
+    const timeoutId = setTimeout(() => {
+      if (section === 'assessment') {
+        // Note: Bi-directional sync with differentials would be implemented here
+        // For now, SOAP assessment is considered the source of truth when edited
+      } else if (section === 'plan') {
+        // Sync plan changes to treatment tab
+        setTreatmentText(content);
+      }
+    }, 500); // 500ms debounce to prevent excessive updates
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   // --- EFFECT HOOKS ---
 
@@ -583,6 +624,8 @@ export default function ConsultationPanel({
       setDiagnosisText(isDemoMode ? demoDiagnosis || '' : '');
       setTreatmentText(isDemoMode ? demoTreatment || '' : '');
       setDifferentialDiagnoses(isDemoMode ? demoDifferentialDiagnoses || [] : []);
+      setSoapNote(isDemoMode ? demoSoapNote || null : null);
+      setIsGeneratingSoap(false);
       setIsLoadingDifferentials(false);
       setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment || demoDifferentialDiagnoses)));
       setShowConfirmationDialog(false);
@@ -721,7 +764,7 @@ export default function ConsultationPanel({
       className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center"
       onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
     >
-      <div className="glass-dense rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="glass-dense rounded-2xl shadow-2xl relative w-[95%] max-w-6xl p-6 max-h-[95vh] overflow-hidden flex flex-col">
         <Button 
           variant="ghost" 
           size="icon"
@@ -768,66 +811,81 @@ export default function ConsultationPanel({
                 {started ? (
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (
-                      <div className="h-full flex flex-col space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium">Consultation Transcript</h3>
-                          <div className="flex items-center gap-2">
-                            {/* Save Icon Button */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={handleSaveAndClose}
-                              disabled={isSaving}
-                              className="h-8 w-8 hover:bg-muted transition-all"
-                              title="Save consultation"
-                            >
-                              {isSaving ? (
-                                <CircleNotch className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <FloppyDisk className="h-4 w-4" />
-                              )}
-                            </Button>
-                            {!(isDemoMode && planGenerated) && (
+                      <div className="h-full flex flex-col lg:flex-row gap-4">
+                        {/* Transcript Panel */}
+                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-medium">Consultation Transcript</h3>
+                            <div className="flex items-center gap-2">
+                              {/* Save Icon Button */}
                               <Button
-                                variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
-                                onClick={isDemoMode ? onDemoClinicalPlanClick : handleClinicalPlan}
-                                disabled={isGeneratingPlan || isDemoGeneratingPlan || transcriptText.length < 10}
-                                className="gap-2"
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleSaveAndClose}
+                                disabled={isSaving}
+                                className="h-8 w-8 hover:bg-muted transition-all"
+                                title="Save consultation"
                               >
-                                {(isGeneratingPlan || isDemoGeneratingPlan) ? <><CircleNotch className="h-4 w-4 animate-spin" /> Analyzing...</> : <><Brain className="h-4 w-4" /> Clinical Plan</>}
+                                {isSaving ? (
+                                  <CircleNotch className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <FloppyDisk className="h-4 w-4" />
+                                )}
                               </Button>
+                              {!(isDemoMode && planGenerated) && (
+                                <Button
+                                  variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
+                                  onClick={isDemoMode ? onDemoClinicalPlanClick : handleClinicalPlan}
+                                  disabled={isGeneratingPlan || isDemoGeneratingPlan || transcriptText.length < 10}
+                                  className="gap-2"
+                                >
+                                  {(isGeneratingPlan || isDemoGeneratingPlan) ? <><CircleNotch className="h-4 w-4 animate-spin" /> Analyzing...</> : <><Brain className="h-4 w-4" /> Clinical Plan</>}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="relative flex-1">
+                            <RichTextEditor
+                              ref={transcriptEditorRef}
+                              content={transcriptText}
+                              onContentChange={handleTranscriptChange}
+                              placeholder="Transcription will appear here..."
+                              disabled={isDemoMode || isTranscribing}
+                              showToolbar={!isDemoMode && !isTranscribing}
+                              minHeight="300px"
+                              className="h-full"
+                            />
+                            {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
+                            {!isDemoMode && (
+                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                                <AudioWaveform
+                                  isRecording={isTranscribing}
+                                  isPaused={isPaused}
+                                  mediaStream={audioStreamRef.current}
+                                  onPause={pauseTranscription}
+                                  onResume={resumeTranscription}
+                                  onStop={handleAudioWaveformStop}
+                                />
+                              </div>
+                            )}
+                            {isDemoMode && (
+                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                                <DemoAudioWaveform />
+                              </div>
                             )}
                           </div>
                         </div>
-                        <div className="relative flex-1">
-                          <RichTextEditor
-                            ref={transcriptEditorRef}
-                            content={transcriptText}
-                            onContentChange={handleTranscriptChange}
-                            placeholder="Transcription will appear here..."
-                            disabled={isDemoMode || isTranscribing}
-                            showToolbar={!isDemoMode && !isTranscribing}
-                            minHeight="300px"
+                        
+                        {/* SOAP Notes Panel */}
+                        <div className="flex-1 min-h-0">
+                          <SOAPNotesPanel
+                            soapNote={soapNote}
+                            isDemoMode={isDemoMode}
+                            isGenerating={isGeneratingSoap}
+                            isVisible={started}
+                            onSoapNoteChange={handleSoapNoteChange}
                             className="h-full"
                           />
-                          {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
-                          {!isDemoMode && (
-                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                              <AudioWaveform
-                                isRecording={isTranscribing}
-                                isPaused={isPaused}
-                                mediaStream={audioStreamRef.current}
-                                onPause={pauseTranscription}
-                                onResume={resumeTranscription}
-                                onStop={handleAudioWaveformStop}
-                              />
-                            </div>
-                          )}
-                          {isDemoMode && (
-                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                              <DemoAudioWaveform />
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
@@ -848,7 +906,7 @@ export default function ConsultationPanel({
                     {planGenerated && activeTab === 'treatment' && (
                       <div className="h-full flex flex-col space-y-4">
                         <h3 className="text-lg font-medium">Treatment Plan</h3>
-                        <RichTextEditor content={treatmentText} onContentChange={setTreatmentText} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
+                        <RichTextEditor content={treatmentText} onContentChange={handleTreatmentTextChange} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
                       </div>
                     )}
                   </>

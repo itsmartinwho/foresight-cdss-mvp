@@ -274,7 +274,7 @@ Please:
       await this.generateAdditionalFields(patientData, finalTranscript, diagnosticResult, actualEncounterId);
       
       // Stage 5: Generate SOAP note
-      const soapNote = await this.generateSoapNote(patientData, finalTranscript, diagnosticResult);
+      const soapNote = await this.generateSoapNote(patientData, finalTranscript, diagnosticResult, differentialDiagnoses);
       
       // Stage 6: Generate optional documents
       const referralDoc = await this.generateReferralIfNeeded(diagnosticResult, patientData);
@@ -590,30 +590,26 @@ Please extract the requested information.`
   }
 
   /**
-   * Generate SOAP note
+   * Generate SOAP note - Now focuses only on S/O sections with AI-generated content
+   * Assessment and Plan are mirrored from differentials and treatments
    */
   private async generateSoapNote(
     patientData: any,
     transcript: string,
-    diagnosticResult: DiagnosticResult
+    diagnosticResult: DiagnosticResult,
+    differentialDiagnoses: DifferentialDiagnosis[]
   ): Promise<SoapNote> {
-    const subjective = transcript 
-      ? transcript.slice(0, 300) + (transcript.length > 300 ? '...' : '')
-      : `Patient presents with concerns leading to ${diagnosticResult.diagnosisName}.`;
-      
-    const objective = patientData.encounters?.[0]?.labResults?.length > 0
-      ? `Recent labs: ${patientData.encounters[0].labResults.slice(0, 2).map((lab: any) => 
-          `${lab.name} ${lab.value}${lab.units || ''}`
-        ).join(', ')}`
-      : "Vital signs stable. Physical exam findings as documented.";
-      
-    const assessment = `${diagnosticResult.diagnosisName} (${diagnosticResult.diagnosisCode}). ` +
-      `Confidence: ${(diagnosticResult.confidence * 100).toFixed(0)}%.`;
-        
-    const plan = diagnosticResult.recommendedTreatments.join('; ') +
-      (diagnosticResult.recommendedTests.length > 0 
-        ? `. Tests: ${diagnosticResult.recommendedTests.join(', ')}.`
-        : '');
+    // Generate Subjective section from patient's input in transcript
+    const subjective = await this.generateSubjectiveSection(transcript, patientData);
+    
+    // Generate Objective section from doctor's input in transcript
+    const objective = await this.generateObjectiveSection(transcript, patientData);
+    
+    // Mirror Assessment from differential diagnoses
+    const assessment = this.formatAssessmentFromDifferentials(differentialDiagnoses, diagnosticResult);
+    
+    // Mirror Plan from recommended treatments
+    const plan = this.formatPlanFromTreatments(diagnosticResult.recommendedTreatments, diagnosticResult.recommendedTests);
     
     return {
       subjective,
@@ -622,6 +618,171 @@ Please extract the requested information.`
       plan,
       rawTranscriptSnippet: transcript?.slice(0, 100)
     };
+  }
+
+  /**
+   * Generate Subjective section focusing on patient's narrative
+   */
+  private async generateSubjectiveSection(transcript: string, patientData: any): Promise<string> {
+    if (!transcript || transcript.trim().length < 10) {
+      return `Patient presents with concerns leading to clinical evaluation.`;
+    }
+
+    const prompt = `Extract and summarize the SUBJECTIVE information from this clinical transcript. Focus ONLY on:
+
+WHAT TO INCLUDE (Patient's perspective):
+- Chief complaint and history of present illness from patient's own words
+- Patient-reported symptoms, pain levels, timing, quality
+- Patient's description of functional impact and concerns
+- Social/contextual factors mentioned by patient
+- Medication adherence issues reported by patient
+- Review of systems responses from patient
+
+WHAT TO EXCLUDE (Doctor's perspective):
+- Physical exam findings or interpretations
+- Vital signs or lab results
+- Clinical assessments or medical opinions
+- Diagnostic impressions or medical reasoning
+- Treatment recommendations
+
+Patient Information:
+- Name: ${patientData.patient?.firstName} ${patientData.patient?.lastName}
+- Age: ${patientData.patient?.dateOfBirth ? new Date().getFullYear() - new Date(patientData.patient.dateOfBirth).getFullYear() : 'Unknown'}
+- Gender: ${patientData.patient?.gender || 'Unknown'}
+
+Transcript:
+${transcript}
+
+Generate a concise, professional Subjective section (2-4 sentences) that captures the patient's narrative and reported symptoms. Use third person and past tense.`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 300,
+        temperature: 0.3
+      });
+
+      return response.choices[0]?.message?.content?.trim() || 
+        `Patient presents with concerns documented in transcript.`;
+    } catch (error) {
+      console.error('Error generating subjective section:', error);
+      return `Patient presents with concerns documented in transcript.`;
+    }
+  }
+
+  /**
+   * Generate Objective section focusing on doctor's findings
+   */
+  private async generateObjectiveSection(transcript: string, patientData: any): Promise<string> {
+    if (!transcript || transcript.trim().length < 10) {
+      return `Clinical examination performed as documented.`;
+    }
+
+    const prompt = `Extract and summarize the OBJECTIVE information from this clinical transcript. Focus ONLY on:
+
+WHAT TO INCLUDE (Doctor's findings):
+- Vital signs and physical examination findings
+- Observable clinical signs and measurements
+- Lab values, imaging results, test results mentioned
+- Quantifiable clinical data and scores
+- External verification points mentioned by clinician
+
+WHAT TO EXCLUDE (Patient's perspective):
+- Patient-reported symptoms or complaints
+- Patient's subjective descriptions of pain/discomfort
+- Patient's narrative or concerns
+- Social factors reported by patient
+
+Patient Information:
+- Name: ${patientData.patient?.firstName} ${patientData.patient?.lastName}
+- Prior Medical History: ${patientData.patient?.alerts ? patientData.patient.alerts.map((alert: any) => alert.msg).join('; ') : 'None documented'}
+
+Transcript:
+${transcript}
+
+Generate a concise, professional Objective section (2-4 sentences) that captures the clinician's findings and measurable data. Focus on external verification and clinical observations.`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 300,
+        temperature: 0.3
+      });
+
+      return response.choices[0]?.message?.content?.trim() || 
+        `Clinical examination performed with findings documented.`;
+    } catch (error) {
+      console.error('Error generating objective section:', error);
+      return `Clinical examination performed with findings documented.`;
+    }
+  }
+
+  /**
+   * Format Assessment section from differential diagnoses
+   */
+  private formatAssessmentFromDifferentials(
+    differentialDiagnoses: DifferentialDiagnosis[],
+    diagnosticResult: DiagnosticResult
+  ): string {
+    let assessment = '';
+    
+    // Primary diagnosis first
+    if (diagnosticResult.diagnosisName && diagnosticResult.diagnosisCode) {
+      assessment += `1. ${diagnosticResult.diagnosisName} (${diagnosticResult.diagnosisCode})`;
+      if (diagnosticResult.confidence) {
+        assessment += ` - Confidence: ${(diagnosticResult.confidence * 100).toFixed(0)}%`;
+      }
+      assessment += '\n';
+    }
+    
+    // Add differential diagnoses
+    if (differentialDiagnoses.length > 0) {
+      differentialDiagnoses.forEach((diff, index) => {
+        assessment += `${index + 2}. ${diff.name} - ${diff.qualitativeRisk} likelihood`;
+        if (diff.keyFactors && diff.keyFactors.trim()) {
+          assessment += ` (${diff.keyFactors})`;
+        }
+        assessment += '\n';
+      });
+    }
+    
+    return assessment.trim() || 'Clinical assessment in progress.';
+  }
+
+  /**
+   * Format Plan section from treatments and tests
+   */
+  private formatPlanFromTreatments(
+    recommendedTreatments: string[],
+    recommendedTests: string[]
+  ): string {
+    let plan = '';
+    
+    // Add treatments
+    if (recommendedTreatments.length > 0) {
+      plan += 'Treatment:\n';
+      recommendedTreatments.forEach((treatment, index) => {
+        plan += `• ${treatment}\n`;
+      });
+    }
+    
+    // Add tests/diagnostic workup
+    if (recommendedTests.length > 0) {
+      if (plan) plan += '\n';
+      plan += 'Diagnostic workup:\n';
+      recommendedTests.forEach((test, index) => {
+        plan += `• ${test}\n`;
+      });
+    }
+    
+    // Add follow-up
+    if (plan) {
+      plan += '\nFollow-up as clinically indicated.';
+    }
+    
+    return plan.trim() || 'Treatment plan to be determined based on clinical assessment.';
   }
 
   /**

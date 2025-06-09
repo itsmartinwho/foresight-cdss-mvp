@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Patient, DifferentialDiagnosis } from '@/lib/types';
+import { Patient, DifferentialDiagnosis, SoapNote } from '@/lib/types';
 import { DEMO_PATIENT_ID, DemoDataService } from '@/services/demo/DemoDataService';
 import { DemoStage } from '@/services/demo/DemoStateService';
 import { getDemoDifferentialDiagnoses } from '@/data/demoClinicalResults';
@@ -13,6 +13,7 @@ export interface DemoConsultationBehavior {
   demoDiagnosis?: string;
   demoTreatment?: string;
   demoDifferentialDiagnoses?: DifferentialDiagnosis[];
+  demoSoapNote?: SoapNote;
   isDemoGeneratingPlan?: boolean;
   onDemoClinicalPlanClick?: () => void;
 }
@@ -100,6 +101,20 @@ export function useDemoConsultation({
         return undefined;
     }
   };
+
+  // Demo SOAP notes based on stage
+  const getDemoSoapNote = (): SoapNote | undefined => {
+    if (!isDemoMode) return undefined;
+    
+    switch (demoStage) {
+      case 'showingPlan':
+      case 'finished':
+        // Use the SOAP notes from DemoDataService
+        return DemoDataService.getSoapNotes();
+      default:
+        return undefined;
+    }
+  };
   
   // Handle demo clinical plan generation
   const handleDemoClinicalPlan = () => {
@@ -128,6 +143,7 @@ export function useDemoConsultation({
     demoDiagnosis: getDemoDiagnosis(),
     demoTreatment: getDemoTreatment(),
     demoDifferentialDiagnoses: getDemoDifferentialDiagnosesForStage(),
+    demoSoapNote: getDemoSoapNote(),
     isDemoGeneratingPlan: isGeneratingPlan,
     onDemoClinicalPlanClick: isDemoMode ? handleDemoClinicalPlan : undefined,
   };

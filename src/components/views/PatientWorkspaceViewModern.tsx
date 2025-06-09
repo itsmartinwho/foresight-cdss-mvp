@@ -540,6 +540,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           demoDiagnosis={demoConsultation.demoDiagnosis}
           demoTreatment={demoConsultation.demoTreatment}
           demoDifferentialDiagnoses={demoConsultation.demoDifferentialDiagnoses}
+          demoSoapNote={demoConsultation.demoSoapNote}
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
           onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
         />
