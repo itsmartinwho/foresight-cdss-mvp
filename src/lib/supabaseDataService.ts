@@ -383,11 +383,14 @@ class SupabaseDataService {
           reasonCode: row.reason_code,
           reasonDisplayText: row.reason_display_text,
           transcript: row.transcript,
+          observations: row.observations || undefined,
           soapNote: row.soap_note,
           treatments: row.treatments || undefined, 
           priorAuthJustification: row.prior_auth_justification,
+          insuranceStatus: row.insurance_status,
           isDeleted: !!row.is_deleted, 
           deletedAt: row.updated_at && row.is_deleted ? new Date(row.updated_at).toISOString() : undefined,
+          extra_data: row.extra_data || undefined,
         };
         this.encounters[compositeKey] = encounter;
         if (!this.encountersByPatient[patientPublicId]) {

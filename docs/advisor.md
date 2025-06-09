@@ -1,6 +1,6 @@
 # Advisor Guide
 
-This document provides a guide to the Advisor feature, including its integration with OpenAI's Code Interpreter for data analysis and visualization.
+This document provides a guide to the Advisor feature (tool A), including its integration with OpenAI's Code Interpreter for data analysis and visualization.
 
 ## Overview
 
@@ -49,7 +49,7 @@ CLINICAL_ENGINE_ASSISTANT_ID=asst_your_clinical_engine_assistant_id
 
 ## Roadmap and Future Enhancements
 
-- **Full Chart Visualization**: The current implementation generates the code for charts but does not yet render the visual images. The roadmap includes full integration with the Code Interpreter to render these charts.
+- **Full Chart Visualization**: The current implementation generates the code for charts and renders them but charts could be impproved.
 - **Interactive Charts**: Future versions may include support for interactive charts.
 - **Real-time Progress**: The system may be enhanced to show the real-time progress of chart generation.
 

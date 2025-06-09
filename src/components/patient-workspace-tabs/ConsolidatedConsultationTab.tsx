@@ -10,6 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDifferentialDiagnoses } from '@/hooks/useDifferentialDiagnoses';
 import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagnosesList';
+import { 
+  EditableTextField, 
+  EditableDateTimeField, 
+  EditableJSONField, 
+  EditableArrayField, 
+  SOAPNoteEditor, 
+  TranscriptEditorModal 
+} from '@/components/ui/editable';
+import { useEditableEncounterFields } from '@/hooks/useEditableEncounterFields';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { toast } from '@/hooks/use-toast';
 
 interface ConsolidatedConsultationTabProps {
   patient: Patient | null;
@@ -25,6 +36,29 @@ export default function ConsolidatedConsultationTab({
   onDeleteEncounter 
 }: ConsolidatedConsultationTabProps) {
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
+
+  // Initialize editable fields hook
+  const { updateField, updateFields, isSaving } = useEditableEncounterFields({
+    patientId: patient?.id || '',
+    encounterId: selectedEncounter?.id || '',
+    onSuccess: (updatedEncounter) => {
+      toast({
+        title: "Success",
+        description: "Field updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to update field: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Set up unsaved changes warning
+  useUnsavedChangesWarning({ when: isSaving });
 
   // Call hooks before any early returns to follow Rules of Hooks
   const {
@@ -81,18 +115,70 @@ export default function ConsolidatedConsultationTab({
   return (
     <div className="space-y-6">
       {/* Encounter Header */}
-      <div className="glass-dense rounded-lg p-4">
-        <div className="flex items-center justify-between mb-2">
+      <div className="glass-dense rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">
-            Consultation - {new Date(selectedEncounter.scheduledStart).toLocaleDateString()}
+            Consultation Details
           </h2>
           <span className="text-sm text-muted-foreground font-mono">
             ID: {selectedEncounter.encounterIdentifier}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium">Reason:</span> {selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode || "General encounter"}
-        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Scheduled Start</label>
+            <EditableDateTimeField
+              value={selectedEncounter.scheduledStart || ''}
+              onSave={(value) => updateField('scheduledStart', value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Scheduled End</label>
+            <EditableDateTimeField
+              value={selectedEncounter.scheduledEnd || ''}
+              onSave={(value) => updateField('scheduledEnd', value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Actual Start</label>
+            <EditableDateTimeField
+              value={selectedEncounter.actualStart || ''}
+              onSave={(value) => updateField('actualStart', value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Actual End</label>
+            <EditableDateTimeField
+              value={selectedEncounter.actualEnd || ''}
+              onSave={(value) => updateField('actualEnd', value)}
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Reason for Visit</label>
+            <EditableTextField
+              value={selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode || ''}
+              onSave={(value) => updateField('reasonDisplayText', value)}
+              placeholder="Enter reason for consultation"
+              multiline
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Insurance Status</label>
+            <EditableTextField
+              value={selectedEncounter.insuranceStatus || ''}
+              onSave={(value) => updateField('insuranceStatus', value)}
+              placeholder="Enter insurance status"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Summary Notes (SOAP Notes) */}
@@ -100,29 +186,26 @@ export default function ConsolidatedConsultationTab({
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Summary Notes
-            {selectedEncounter.transcript && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTranscriptPanel(true)}
-                className="flex items-center gap-2"
-              >
-                <Eye className="h-4 w-4" />
-                View Transcript
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {selectedEncounter.transcript && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTranscriptModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Transcript
+                </Button>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {selectedEncounter.soapNote ? (
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
-                {selectedEncounter.soapNote}
-              </pre>
-            </div>
-          ) : (
-            <p className="text-muted-foreground italic">No summary notes available for this consultation.</p>
-          )}
+          <SOAPNoteEditor
+            soapNote={selectedEncounter.soapNote || ''}
+            onSave={(value) => updateField('soapNote', value)}
+          />
         </CardContent>
       </Card>
 
@@ -183,16 +266,13 @@ export default function ConsolidatedConsultationTab({
           <CardTitle>Treatment</CardTitle>
         </CardHeader>
         <CardContent>
-          {selectedEncounter.treatments && selectedEncounter.treatments.length > 0 ? (
-            <RenderDetailTable 
-              title='' 
-              dataArray={selectedEncounter.treatments} 
-              headers={['Drug', 'Status', 'Rationale']} 
-              columnAccessors={['drug', 'status', 'rationale']} 
-            />
-          ) : (
-            <p className="text-muted-foreground italic">No treatments recorded for this consultation.</p>
-          )}
+          <EditableJSONField
+            label="Treatment Plans"
+            value={selectedEncounter.treatments}
+            onSave={(value) => updateField('treatments', value)}
+            placeholder="Enter treatment data in JSON format..."
+            maxHeight="300px"
+          />
         </CardContent>
       </Card>
 
@@ -247,9 +327,12 @@ export default function ConsolidatedConsultationTab({
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">Clinical Justification</label>
-              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                <p className="text-sm text-foreground">{justificationForAuth}</p>
-              </div>
+              <EditableTextField
+                value={selectedEncounter.priorAuthJustification || ''}
+                onSave={(value) => updateField('priorAuthJustification', value)}
+                placeholder="Enter clinical justification for prior authorization..."
+                multiline
+              />
             </div>
 
             <div className="flex gap-3">
@@ -288,37 +371,16 @@ export default function ConsolidatedConsultationTab({
         </CardContent>
       </Card>
 
-      {/* Transcript Panel - Portal-rendered to document body */}
-      {showTranscriptPanel && selectedEncounter?.transcript && 
-        createPortal(
-          <div className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center">
-            <div className="bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl relative w-[90%] max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="absolute top-4 right-4 h-8 w-8 hover:bg-destructive/20 z-10"
-                onClick={() => setShowTranscriptPanel(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <div className="pt-8 pb-4 border-b border-border/50">
-                <h2 className="text-xl font-semibold mb-2">Consultation Transcript</h2>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(selectedEncounter.scheduledStart).toLocaleDateString()} - {selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode}
-                </p>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                  <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
-                    {selectedEncounter.transcript}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      }
+      {/* Transcript Modal */}
+      {showTranscriptModal && selectedEncounter && (
+        <TranscriptEditorModal
+          isOpen={showTranscriptModal}
+          onClose={() => setShowTranscriptModal(false)}
+          transcript={selectedEncounter.transcript || ''}
+          onSave={(value) => updateField('transcript', value)}
+          patientName={patient?.name || 'Patient'}
+        />
+      )}
 
       {/* Danger Zone */}
       <div className="space-y-4 pt-6 mt-6 border-t border-destructive/20">

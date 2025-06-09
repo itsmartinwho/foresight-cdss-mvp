@@ -40,6 +40,7 @@ export interface Encounter {
   soapNote?: string;
   treatments?: Treatment[];
   priorAuthJustification?: string;
+  insuranceStatus?: string; // From database schema insurance_status
   isDeleted?: boolean;
   deletedAt?: string;
   extra_data?: any; // Added to match schema and usage
