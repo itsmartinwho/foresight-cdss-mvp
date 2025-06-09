@@ -33,8 +33,9 @@ export const getDecimalForCategory = (category: LikelihoodCategory): number => {
 // This function will help transition from the old data model to the new one.
 // It will take a diagnosis record from the DB and map it to the new frontend object.
 export const mapDiagnosisRecordToDifferentialDiagnosis = (record: DifferentialDiagnosisRecord): DifferentialDiagnosis => {
-  const probabilityDecimal = record.likelihood;
-  const qualitativeRisk = getLikelihoodCategory(probabilityDecimal);
+  // Database stores qualitative string in likelihood column
+  const qualitativeRisk = record.likelihood as LikelihoodCategory;
+  const probabilityDecimal = getDecimalForCategory(qualitativeRisk);
 
   return {
     name: record.diagnosis_name,

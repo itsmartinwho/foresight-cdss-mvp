@@ -104,10 +104,30 @@ export const demoClinicalResults: DemoClinicalData = {
  * Convert demo clinical results to DifferentialDiagnosis format for UI components
  */
 export function getDemoDifferentialDiagnoses(): DifferentialDiagnosis[] {
-  return demoClinicalResults.differentialDiagnoses.map(dx => ({
-    name: dx.name,
-    likelihood: dx.likelihood,
-    keyFactors: dx.keyFactors,
-    priority: dx.priority
-  }));
+  return demoClinicalResults.differentialDiagnoses.map((dx, index) => {
+    // Extract percentage from likelihood string like "High (90%)"
+    const percentMatch = dx.likelihood.match(/\((\d+)%\)/);
+    const probabilityDecimal = percentMatch ? parseInt(percentMatch[1]) : 50;
+    
+    // Determine qualitative risk based on percentage
+    let qualitativeRisk: "Negligible" | "Low" | "Moderate" | "High" | "Certain";
+    if (probabilityDecimal < 1) qualitativeRisk = "Negligible";
+    else if (probabilityDecimal < 10) qualitativeRisk = "Low";
+    else if (probabilityDecimal < 40) qualitativeRisk = "Moderate";
+    else if (probabilityDecimal < 70) qualitativeRisk = "High";
+    else qualitativeRisk = "Certain";
+    
+    return {
+      name: dx.name,
+      likelihood: qualitativeRisk, // For backward compatibility
+      likelihoodPercentage: probabilityDecimal, // For backward compatibility
+      qualitativeRisk,
+      probabilityDecimal,
+      rank: index + 1,
+      keyFactors: dx.keyFactors,
+      explanation: '', // Demo data doesn't have this
+      supportingEvidence: [], // Demo data doesn't have this
+      icdCodes: [], // Demo data doesn't have this
+    };
+  });
 } 

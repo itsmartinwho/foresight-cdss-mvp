@@ -767,7 +767,7 @@ Please extract the requested information.`
           patient_id: patientUuid,
           encounter_id: actualEncounterUuid,
           diagnosis_name: diff.name,
-          likelihood: diff.probabilityDecimal,
+          likelihood: diff.qualitativeRisk,
           key_factors: diff.keyFactors,
           rank_order: index + 1
         }));

@@ -126,7 +126,7 @@ export function useDifferentialDiagnoses({
         body: JSON.stringify({
           id: databaseId,
           diagnosisName: updatedDiagnosis.name,
-          probabilityDecimal: updatedDiagnosis.probabilityDecimal,
+          qualitativeRisk: updatedDiagnosis.qualitativeRisk,
           keyFactors: updatedDiagnosis.keyFactors,
         }),
       });
@@ -166,7 +166,7 @@ export function useDifferentialDiagnoses({
           patientId,
           encounterId,
           diagnosisName: newDiagnosis.name,
-          probabilityDecimal: newDiagnosis.probabilityDecimal,
+          qualitativeRisk: newDiagnosis.qualitativeRisk,
           keyFactors: newDiagnosis.keyFactors,
         }),
       });

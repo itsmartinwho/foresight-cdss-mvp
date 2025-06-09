@@ -134,7 +134,7 @@ export interface DifferentialDiagnosisRecord {
   patient_id: string;
   encounter_id: string;
   diagnosis_name: string;
-  likelihood: number; // Stored as NUMERIC in DB. Represents probabilityDecimal.
+  likelihood: string; // Stored as TEXT in DB. Contains qualitative category.
   key_factors?: string;
   rank_order: number;
   created_at: string;
