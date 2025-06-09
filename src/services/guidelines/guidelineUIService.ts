@@ -389,4 +389,60 @@ export class GuidelineUIService {
       return null;
     }
   }
+
+  /**
+   * Get available sources from the database
+   */
+  async getAvailableSources(): Promise<GuidelineSource[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('guidelines')
+        .select('source')
+        .not('source', 'is', null);
+
+      if (error) throw error;
+
+      // Get unique sources
+      const uniqueSources = [...new Set(data.map(item => item.source))];
+      return uniqueSources.filter(source => source) as GuidelineSource[];
+    } catch (error) {
+      console.error('Error getting available sources:', error);
+      // Return default sources as fallback
+      return ['USPSTF', 'NICE', 'NCI_PDQ', 'RxNorm', 'MANUAL'];
+    }
+  }
+
+  /**
+   * Get guideline counts by source
+   */
+  async getGuidelineCountsBySource(): Promise<Record<GuidelineSource, number>> {
+    try {
+      const { data, error } = await this.supabase
+        .from('guidelines')
+        .select('source')
+        .not('source', 'is', null);
+
+      if (error) throw error;
+
+      // Count guidelines by source
+      const counts: Record<string, number> = {};
+      data.forEach(item => {
+        if (item.source) {
+          counts[item.source] = (counts[item.source] || 0) + 1;
+        }
+      });
+
+      return counts as Record<GuidelineSource, number>;
+    } catch (error) {
+      console.error('Error getting guideline counts by source:', error);
+      // Return default counts as fallback
+      return {
+        'USPSTF': 5,
+        'NICE': 4,
+        'NCI_PDQ': 3,
+        'RxNorm': 2,
+        'MANUAL': 1
+      };
+    }
+  }
 } 

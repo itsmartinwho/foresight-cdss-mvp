@@ -17,6 +17,8 @@ export default function GuidelinesTab() {
     guidelines,
     specialtyCategories,
     sourceThemes,
+    availableSources,
+    guidelineCountsBySource,
     uiState,
     isLoading,
     error,
@@ -107,9 +109,10 @@ export default function GuidelinesTab() {
         
         <div className="lg:col-span-1">
           <SourceFilter
-            sourceThemes={sourceThemes}
             selectedSources={uiState.filter.sources}
-            onSourceChange={(sources) => filterGuidelines({ sources })}
+            onSourcesChange={(sources) => filterGuidelines({ sources })}
+            availableSources={availableSources}
+            guidelineCounts={guidelineCountsBySource}
           />
         </div>
         

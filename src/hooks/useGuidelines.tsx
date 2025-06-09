@@ -22,6 +22,8 @@ interface UseGuidelinesReturn {
   guidelines: GuidelineCard[];
   specialtyCategories: SpecialtyCategory[];
   sourceThemes: SourceTheme[];
+  availableSources: GuidelineSource[];
+  guidelineCountsBySource: Record<GuidelineSource, number>;
   uiState: GuidelineUIState;
   
   // Loading states
@@ -62,6 +64,8 @@ export function useGuidelines({
   const [guidelines, setGuidelines] = useState<GuidelineCard[]>([]);
   const [specialtyCategories, setSpecialtyCategories] = useState<SpecialtyCategory[]>([]);
   const [sourceThemes, setSourceThemes] = useState<SourceTheme[]>([]);
+  const [availableSources, setAvailableSources] = useState<GuidelineSource[]>([]);
+  const [guidelineCountsBySource, setGuidelineCountsBySource] = useState<Record<GuidelineSource, number>>({} as Record<GuidelineSource, number>);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,6 +213,26 @@ export function useGuidelines({
     setSourceThemes(themes);
   }, [uiService]);
 
+  // Load available sources
+  const loadAvailableSources = useCallback(async () => {
+    try {
+      const sources = await uiService.getAvailableSources();
+      setAvailableSources(sources);
+    } catch (err) {
+      console.error('Error loading available sources:', err);
+    }
+  }, [uiService]);
+
+  // Load guideline counts by source
+  const loadGuidelineCountsBySource = useCallback(async () => {
+    try {
+      const counts = await uiService.getGuidelineCountsBySource();
+      setGuidelineCountsBySource(counts);
+    } catch (err) {
+      console.error('Error loading guideline counts by source:', err);
+    }
+  }, [uiService]);
+
   // Effect to reload guidelines when filter changes
   useEffect(() => {
     loadGuidelines();
@@ -221,13 +245,17 @@ export function useGuidelines({
     }
     loadSpecialtyCategories();
     loadSourceThemes();
-  }, [autoLoad, loadGuidelines, loadSpecialtyCategories, loadSourceThemes]);
+    loadAvailableSources();
+    loadGuidelineCountsBySource();
+  }, [autoLoad, loadGuidelines, loadSpecialtyCategories, loadSourceThemes, loadAvailableSources, loadGuidelineCountsBySource]);
 
   return {
     // State
     guidelines,
     specialtyCategories,
     sourceThemes,
+    availableSources,
+    guidelineCountsBySource,
     uiState,
     
     // Loading states
