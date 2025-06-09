@@ -9,7 +9,9 @@ The Foresight CDSS is a modular, AI-powered clinical decision support system. It
 The application features several AI-powered clinical tools:
 *   **Tool A (Advisor):** An AI-powered chatbot for general medical information.
 *   **Tool B (Diagnosis and Treatment Engine):** A tool to produce diagnoses and treatment plans from patient data and consultation transcripts.
-*   **Other Tools (Aspirational):** The architecture is designed to support future tools like a real-time AI co-pilot and a complex conditions alert system.
+*   **Tool C (Medical Co-pilot):** An aspirational, real-time AI assistant to provide nudges to physicians during consultations. Does not yet exist.
+*   **Tool D (Complex Conditions Alerts):** An aspirational tool to scan diagnostic outputs (from Tool B) and alert physicians to potential complex conditions. Placeholder UI for alerts exists, currently populated by mock data from the `patients.alerts` field in Supabase.
+*   **Tool F (Clinical Trial Matching):** An aspirational tool to find clinical trials for eligible patients. Placeholder UI for clinical trials exists, currently populated by mock data.
 
 ## User Roles & Application Flow
 
@@ -61,6 +63,8 @@ The system uses a PostgreSQL database hosted on Supabase with a FHIR-aligned sch
 ## AI Tool Roadmap
 
 The architecture is designed to support the following future capabilities:
-- Enhancements to the Advisor, including better patient context awareness.
-- Full implementation of the Diagnosis and Treatment Engine.
-- Development of new tools like a real-time medical co-pilot and a complex conditions alert system. 
+- **Tool A (Advisor) Enhancements:** Patient context awareness, UI reliability improvements.
+- **Tool B (Diagnosis and Treatment Engine):** Full implementation integrating the Python prototype concepts.
+- **Tool C (Medical Co-pilot):** Real-time AI assistant providing nudges during consultations.
+- **Tool D (Complex Conditions Alerts):** Intelligent alerts based on Tool B diagnostic outputs (currently using mock data).
+- **Tool F (Clinical Trial Matching):** Automated patient-trial matching system (currently using mock data). 

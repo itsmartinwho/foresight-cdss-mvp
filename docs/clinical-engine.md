@@ -1,6 +1,6 @@
 # Clinical Engine Guide
 
-This document provides a guide to the Clinical Engine, covering its architecture, batch processing capabilities, and future enhancements.
+This document provides a guide to the Clinical Engine (tool B), covering its architecture, batch processing capabilities, and future enhancements.
 
 ## V3 Architecture
 
@@ -30,6 +30,12 @@ The roadmap for the Clinical Engine includes:
 - Enhanced lab analysis and drug interaction checking.
 - Probabilistic reasoning and risk factor analysis.
 - Continuous learning from physician feedback.
+
+### Integration with Aspirational Tools
+
+The Clinical Engine's outputs are designed to feed into other aspirational tools in the system:
+- **Tool D (Complex Conditions Alerts):** Will scan Clinical Engine diagnostic outputs to identify potential complex conditions requiring special attention.
+- **Tool F (Clinical Trial Matching):** Will use the finalized diagnoses to identify eligible clinical trials for patients.
 
 ## Batch Processing
 
