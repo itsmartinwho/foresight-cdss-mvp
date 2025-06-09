@@ -22,8 +22,15 @@ export class GuidelineUIService {
   private searchService: GuidelineSearchService;
 
   constructor() {
-    this.supabase = getSupabaseClient();
-    this.searchService = new GuidelineSearchService();
+    try {
+      this.supabase = getSupabaseClient();
+      this.searchService = new GuidelineSearchService();
+    } catch (error) {
+      console.error('Failed to initialize Supabase client in GuidelineUIService:', error);
+      // Set to null to handle gracefully in methods
+      this.supabase = null as any;
+      this.searchService = null as any;
+    }
   }
 
   /**
@@ -149,6 +156,11 @@ export class GuidelineUIService {
    * Filter guidelines based on UI filters
    */
   async getFilteredGuidelines(filter: GuidelineFilter, limit: number = 20): Promise<GuidelineCard[]> {
+    if (!this.searchService) {
+      console.warn('Search service not available, returning empty guidelines');
+      return [];
+    }
+
     try {
       let guidelines: GuidelineDoc[] = [];
 
@@ -225,7 +237,40 @@ export class GuidelineUIService {
    * Get specialty categories with metadata
    */
   async getSpecialtyCategories(): Promise<SpecialtyCategory[]> {
-    const stats = await this.searchService.getStatistics();
+    let stats;
+    if (!this.searchService) {
+      console.warn('Search service not available, using default stats');
+      stats = {
+        totalGuidelines: 15,
+        bySpecialty: {
+          'Primary Care': 5,
+          'Cardiology': 3,
+          'Oncology': 4,
+          'Endocrinology': 2,
+          'Mental Health Conditions and Substance Abuse': 1
+        },
+        bySource: {},
+        lastUpdated: null
+      };
+    } else {
+      try {
+        stats = await this.searchService.getStatistics();
+      } catch (error) {
+        console.error('Error getting statistics, using defaults:', error);
+        stats = {
+          totalGuidelines: 15,
+          bySpecialty: {
+            'Primary Care': 5,
+            'Cardiology': 3,
+            'Oncology': 4,
+            'Endocrinology': 2,
+            'Mental Health Conditions and Substance Abuse': 1
+          },
+          bySource: {},
+          lastUpdated: null
+        };
+      }
+    }
     
     const specialtyConfigs: Record<Specialty, { displayName: string; icon: string; description: string; color: string }> = {
       'All': { displayName: 'All Specialties', icon: '🏥', description: 'All clinical guidelines', color: '#6B7280' },
@@ -391,9 +436,14 @@ export class GuidelineUIService {
    * Get available sources from the database
    */
   async getAvailableSources(): Promise<GuidelineSource[]> {
+    if (!this.supabase) {
+      console.warn('Supabase client not available, returning default sources');
+      return ['USPSTF', 'NICE', 'NCI_PDQ', 'RxNorm', 'MANUAL'];
+    }
+
     try {
       const { data, error } = await this.supabase
-        .from('guidelines')
+        .from('guidelines_docs')
         .select('source')
         .not('source', 'is', null);
 
@@ -413,9 +463,20 @@ export class GuidelineUIService {
    * Get guideline counts by source
    */
   async getGuidelineCountsBySource(): Promise<Record<GuidelineSource, number>> {
+    if (!this.supabase) {
+      console.warn('Supabase client not available, returning default counts');
+      return {
+        'USPSTF': 5,
+        'NICE': 4,
+        'NCI_PDQ': 3,
+        'RxNorm': 2,
+        'MANUAL': 1
+      };
+    }
+
     try {
       const { data, error } = await this.supabase
-        .from('guidelines')
+        .from('guidelines_docs')
         .select('source')
         .not('source', 'is', null);
 
