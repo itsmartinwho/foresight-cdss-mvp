@@ -814,7 +814,7 @@ export default function ConsultationPanel({
                 {started ? (
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (
-                      <div className="h-full flex flex-col lg:flex-row gap-4">
+                      <div className={`h-full flex flex-col gap-4 ${(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) ? 'lg:flex-row' : ''}`}>
                         {/* Transcript Panel */}
                         <div className="flex-1 flex flex-col space-y-4 min-h-0">
                           <div className="flex items-center justify-between">
@@ -879,17 +879,19 @@ export default function ConsultationPanel({
                           </div>
                         </div>
                         
-                        {/* SOAP Notes Panel */}
-                        <div className="flex-1 min-h-0">
-                          <SOAPNotesPanel
-                            soapNote={soapNote}
-                            isDemoMode={isDemoMode}
-                            isGenerating={isGeneratingSoap}
-                            isVisible={isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote}
-                            onSoapNoteChange={handleSoapNoteChange}
-                            className="flex-1 min-h-0"
-                          />
-                        </div>
+                        {/* SOAP Notes Panel - Only show when clinical engine is running */}
+                        {(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) && (
+                          <div className="flex-1 min-h-0">
+                            <SOAPNotesPanel
+                              soapNote={soapNote}
+                              isDemoMode={isDemoMode}
+                              isGenerating={isGeneratingSoap}
+                              isVisible={true}
+                              onSoapNoteChange={handleSoapNoteChange}
+                              className="flex-1 min-h-0"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                     {planGenerated && activeTab === 'differentials' && (
@@ -901,13 +903,13 @@ export default function ConsultationPanel({
                       />
                     )}
                     {planGenerated && activeTab === 'diagnosis' && (
-                      <div className="h-full flex flex-col space-y-4">
+                      <div className="flex-1 flex flex-col space-y-4 min-h-0">
                         <h3 className="text-lg font-medium">Diagnosis</h3>
                         <RichTextEditor content={diagnosisText} onContentChange={setDiagnosisText} placeholder="Enter diagnosis..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
                       </div>
                     )}
                     {planGenerated && activeTab === 'treatment' && (
-                      <div className="h-full flex flex-col space-y-4">
+                      <div className="flex-1 flex flex-col space-y-4 min-h-0">
                         <h3 className="text-lg font-medium">Treatment Plan</h3>
                         <RichTextEditor content={treatmentText} onContentChange={handleTreatmentTextChange} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
                       </div>
