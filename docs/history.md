@@ -84,6 +84,8 @@ A critical bug was identified and resolved where the "New Consultation" modal co
 *   **Testing:** Specifically test for race conditions and double-clicking on critical action buttons.
 *   **Data Impact:** This bug caused significant data pollution (e.g., hundreds of empty encounters for specific patients), as documented in the "Data Recovery and Synthetic Data Management" section. This highlights the importance of fixing UI bugs promptly to prevent backend data issues.
 
+---
+
 ## Differential Diagnoses Scrollability Fix (June 2025)
 
 **Problem**: The differential diagnoses list in the `ConsultationPanel` modal was not vertically scrollable. The root cause was that the flexbox height constraint from the modal's top-level container was not being correctly propagated down to the list component, preventing `overflow-y-auto` from activating.
@@ -104,7 +106,37 @@ A critical bug was identified and resolved where the "New Consultation" modal co
 - `src/components/modals/ConsultationPanel.tsx`: Added `flex-col` to the tab content wrapper and changed the prop passed to the list component to `flex-1 min-h-0`.
 - `src/components/diagnosis/DifferentialDiagnosesList.tsx`: Removed the redundant `h-full` class from the root element.
 
-## Deprecated Code Cleanup (December 2024)
+**Testing Results**:
+- All 5 differential diagnosis cards are now accessible through vertical scrolling.
+- The list's header remains fixed during scroll operations as intended.
+- The solution works correctly in both normal and demo modes.
+
+---
+
+## SOAP Notes Scrollability Fix (December 2025)
+
+**Problem**: The SOAP notes panel in the `ConsultationPanel` modal was not vertically scrollable. Users could not scroll within the SOAP content when it exceeded the available height, making the content inaccessible.
+
+**Root Cause**: Same flexbox hierarchy issue as the differential diagnoses fix. The transcript/SOAP container was using `h-full` instead of `flex-1 min-h-0`, breaking the flexbox height propagation chain. SOAP notes are one level deeper in the hierarchy than differential diagnoses were, requiring the same pattern to be applied to their parent container.
+
+**Solution Implemented**:
+1.  **Fixed Flexbox Chain in `ConsultationPanel.tsx`**:
+    *   Changed the transcript/SOAP container from `h-full flex flex-col gap-4` to `flex-1 min-h-0 flex flex-col gap-4`.
+    *   This ensures proper height propagation down to the `SOAPNotesPanel` component, which already had the correct internal structure (`flex-1 min-h-0` and `overflow-y-auto`).
+
+**Components Modified**:
+- `src/components/modals/ConsultationPanel.tsx`: Changed `h-full` to `flex-1 min-h-0` in the transcript/SOAP container div.
+
+**Key Learning**: This confirms the pattern from the differential diagnoses fix - **every parent in the flexbox hierarchy must correctly propagate height constraints**. When adding new scrollable content areas, ensure all parent containers maintain the flexbox chain with `flex-1 min-h-0` instead of `h-full`.
+
+**Testing Results**:
+- SOAP notes content is now scrollable independently from the transcript area.
+- The fix works correctly in both side-by-side layout (desktop) and stacked layout (mobile).
+- All SOAP sections (S, O, A, P) are accessible through vertical scrolling when content exceeds the available height.
+
+---
+
+## Deprecated Code Cleanup (June 2025)
 
 Several deprecated files and services were identified and cleaned up to maintain code quality and reduce confusion about which systems are currently active.
 
@@ -135,7 +167,9 @@ Several deprecated files and services were identified and cleaned up to maintain
 - Documentation updated to reference only current services
 - Deprecated files contain clear migration guidance
 
-## Transcription UI Functionality Validation (October 2023)
+---
+
+## Transcription UI Functionality Validation (June 2025)
 
 An investigation into an apparent issue with the transcript UI in patient consultation tabs confirmed that the functionality is working as designed. Key findings include:
 

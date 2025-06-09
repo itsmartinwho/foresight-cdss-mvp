@@ -814,7 +814,7 @@ export default function ConsultationPanel({
                 {started ? (
                   <>
                     {(!planGenerated || activeTab === 'transcript') && (
-                      <div className={`h-full flex flex-col gap-4 ${(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) ? 'lg:flex-row' : ''}`}>
+                      <div className={`flex-1 min-h-0 flex flex-col gap-4 ${(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) ? 'lg:flex-row' : ''}`}>
                         {/* Transcript Panel */}
                         <div className="flex-1 flex flex-col space-y-4 min-h-0">
                           <div className="flex items-center justify-between">
