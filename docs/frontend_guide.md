@@ -91,7 +91,7 @@ _Refer to [./development_guide.md#testing-standards](./development_guide.md#test
 
 - **Component Testing**: Storybook for UI components. React Testing Library (aspirational for wider unit/integration testing).
 - **E2E Testing**: Playwright for critical user flows.
-- **Mock Strategy**: `/api/advisor` is live in E2E. `src/lib/clinicalEngineService.ts` is a mock service.
+- **Mock Strategy**: `/api/advisor` is live in E2E. Clinical engine functionality uses `ClinicalEngineServiceV3` for GPT-based reasoning.
 
 ## Documentation
 

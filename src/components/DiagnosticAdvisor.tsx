@@ -1,8 +1,13 @@
+/**
+ * @deprecated This component is deprecated and not used in the current application.
+ * For clinical engine functionality, use ClinicalEngineServiceV3 directly or through
+ * the /api/clinical-engine endpoints. Consider using the Advisor feature instead.
+ */
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { DiagnosticPlan, DiagnosticStep, DiagnosticResult, ClinicalTrial, Patient, EncounterDetailsWrapper } from '@/lib/types';
-import { clinicalEngineService } from '@/lib/clinicalEngineService';
+import { clinicalEngineServiceV3 } from '@/lib/clinicalEngineServiceV3';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -57,12 +62,8 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
     setLoading(true);
     
     try {
-      const plan = await clinicalEngineService.generateDiagnosticPlan(observations, patientId);
-      setDiagnosticPlan(plan);
-      setDiagnosticResult(null);
-      setClinicalTrials([]);
-      setCurrentStep(0);
-      setActiveTab('plan');
+      // This component is deprecated - redirect users to the new Advisor feature
+      setError('This diagnostic advisor component is deprecated. Please use the new Advisor feature which provides enhanced clinical reasoning with GPT-based analysis.');
     } catch (err) {
       console.error('Error generating diagnostic plan:', err);
       setError('Failed to generate diagnostic plan');
@@ -72,125 +73,16 @@ export default function DiagnosticAdvisor({ patientId, initialObservations, pati
   };
 
   const handleExecutePlan = async () => {
-    if (!diagnosticPlan) return;
-    
-    setError(null);
-    setSuccess(null);
-    setPlanExecuting(true);
-    setCurrentStep(0);
-    
-    try {
-      // Reset the plan steps to their initial state
-      const resetPlan: DiagnosticPlan = {
-        ...diagnosticPlan,
-        steps: diagnosticPlan.steps.map(step => ({
-          ...step,
-          completed: false,
-          findings: '',
-          sources: []
-        }))
-      };
-      
-      setDiagnosticPlan(resetPlan);
-      
-      // Execute the plan with a callback to update progress
-      const updatedPlan = await clinicalEngineService.executeDiagnosticPlan(
-        resetPlan,
-        patientId,
-        (plan) => {
-          setDiagnosticPlan(plan);
-          setCurrentStep(plan.steps.filter(step => step.completed).length);
-        }
-      );
-      
-      setDiagnosticPlan(updatedPlan);
-      
-      // Generate diagnostic result
-      const transcript = observations.join(', ');
-      
-      let patientDataDict: Record<string, any> = {};
-      if (patientFullData && encountersData) {
-        patientDataDict = {
-          patient: patientFullData,
-          encounters: encountersData,
-        };
-      } else if (patientFullData) {
-        patientDataDict = {
-          patient: patientFullData,
-          encounters: [],
-        };
-      }
-      
-      const result = await clinicalEngineService.generateDiagnosticResult(
-        patientId || '',
-        transcript,
-        patientDataDict,
-        observations,
-        updatedPlan
-      );
-      setDiagnosticResult(result.diagnosticResult);
-      
-      // Match clinical trials if a diagnosis is available
-      if (result.diagnosticResult.diagnosisName) {
-        const trials = await clinicalEngineService.matchClinicalTrials(result.diagnosticResult.diagnosisName, patientId);
-        setClinicalTrials(trials);
-      }
-      
-      setActiveTab('result');
-    } catch (err) {
-      console.error('Error executing diagnostic plan:', err);
-      setError('Failed to execute diagnostic plan');
-    } finally {
-      setPlanExecuting(false);
-    }
+    setError('This diagnostic advisor component is deprecated. Please use the new Advisor feature.');
+    setPlanExecuting(false);
   };
 
   const handleGeneratePriorAuth = async () => {
-    if (!diagnosticResult || !patientId) return;
-    
-    try {
-      if (diagnosticResult.recommendedTreatments.length > 0) {
-        const priorAuth = await clinicalEngineService.generatePriorAuthorization(
-          diagnosticResult.diagnosisName,
-          diagnosticResult.recommendedTreatments[0],
-          patientId
-        );
-        
-        // In a real application, this would open a modal or navigate to a form
-        setError(null);
-        setSuccess('Prior authorization generated successfully.');
-      }
-    } catch (err) {
-      console.error('Error generating prior authorization:', err);
-      setError('Failed to generate prior authorization');
-    }
+    setError('This diagnostic advisor component is deprecated. Please use the new Advisor feature.');
   };
 
   const handleGenerateReferral = async () => {
-    if (!diagnosticResult || !patientId) return;
-    
-    try {
-      let specialistType = 'General';
-      
-      if (diagnosticResult.diagnosisName.includes('Rheumatoid Arthritis')) {
-        specialistType = 'Rheumatology';
-      } else if (diagnosticResult.diagnosisName.includes('Leukemia')) {
-        specialistType = 'Hematology-Oncology';
-      }
-      
-      const referral = await clinicalEngineService.generateSpecialistReferral(
-        diagnosticResult.diagnosisName,
-        specialistType,
-        patientId
-      );
-      
-      // In a real application, this would open a modal or navigate to a form
-      setError(null);
-      setSuccess('Specialist referral generated successfully.');
-    } catch (err) {
-      console.error('Error generating specialist referral:', err);
-      setError('Failed to generate specialist referral');
-    }
+    setError('This diagnostic advisor component is deprecated. Please use the new Advisor feature.');
   };
 
   return (
