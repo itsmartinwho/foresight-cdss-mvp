@@ -168,6 +168,17 @@ export default function EnhancedSearch({
     return () => clearTimeout(handler);
   }, [query, performSearch]);
 
+  // Re-sort results when sort option changes
+  useEffect(() => {
+    if (results.patients.length > 0 || results.guidelines.length > 0 || results.encounters.length > 0) {
+      setResults(prevResults => ({
+        patients: sortResults(prevResults.patients, sortBy),
+        guidelines: sortResults(prevResults.guidelines, sortBy),
+        encounters: sortResults(prevResults.encounters, sortBy)
+      }));
+    }
+  }, [sortBy, sortResults]);
+
   // Calculate portal position
   useEffect(() => {
     if (portal && containerRef.current && isOpen) {
@@ -279,7 +290,7 @@ export default function EnhancedSearch({
               {totalResults} results
             </Badge>
             {query && (
-              <span className="text-xs text-gray-500">for "{query}"</span>
+              <span className="text-xs text-gray-500">for &quot;{query}&quot;</span>
             )}
           </div>
           

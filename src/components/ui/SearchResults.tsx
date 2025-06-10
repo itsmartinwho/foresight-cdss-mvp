@@ -115,13 +115,6 @@ export default function SearchResults({
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Results Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
-        <p className="text-sm font-medium text-gray-600">
-          Found {totalResults} result{totalResults !== 1 ? 's' : ''} for &quot;{query}&quot;
-        </p>
-      </div>
-
       {/* Categories */}
       {Object.entries(results).map(([categoryKey, items]) => {
         if (items.length === 0) return null;
