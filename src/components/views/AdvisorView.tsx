@@ -13,6 +13,8 @@ import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { parser as smd_parser, default_renderer as smd_default_renderer, parser_write as smd_parser_write, parser_end as smd_parser_end } from '../advisor/streaming-markdown/smd';
 import PatientSelectionDropdown from "@/components/advisor/PatientSelectionDropdown";
+import SpecialtyDropdown from "@/components/advisor/SpecialtyDropdown";
+import { Specialty } from '@/types/guidelines';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -102,6 +104,7 @@ export default function AdvisorView() {
   const [voiceMode, setVoiceMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [selectedPatientForContext, setSelectedPatientForContext] = useState<Patient | null>(null);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty>('All');
 
   // Refs for streaming-markdown (one parser + root div per assistant message)
   const parsersRef = useRef<Record<string, any>>({});
@@ -608,6 +611,12 @@ export default function AdvisorView() {
               {/* Action row */}
               <div className="flex items-center justify-between">
                 <div className="flex gap-2 items-center">
+                  {/* Specialty Filter Dropdown */}
+                  <SpecialtyDropdown 
+                    selectedSpecialty={selectedSpecialty}
+                    onSpecialtyChange={setSelectedSpecialty}
+                    disabled={isSending}
+                  />
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

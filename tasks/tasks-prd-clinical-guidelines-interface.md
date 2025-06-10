@@ -31,14 +31,15 @@ Based on PRD: `prd-clinical-guidelines-interface.md`
   - [x] 1.4 Set up bookmarks/favorites backend API endpoints
   - [x] 1.5 Implement enhanced search API with categorization support
 
-- [ ] 2.0 Guidelines Tab Implementation  
+- [x] 2.0 Guidelines Tab Implementation  
   - [x] 2.1 Add Guidelines navigation item to sidebar with medical icon
   - [x] 2.2 Create main Guidelines page route and layout
   - [x] 2.3 Implement specialty organization with glassmorphic panels and large icons
   - [x] 2.4 Build multi-select source filtering dropdown with tickbox functionality
-  - [ ] 2.5 Create side-by-side panels for multiple source comparison
-  - [ ] 2.6 Implement guidelines-specific search with fuzzy matching and autocomplete
-  - [ ] 2.7 Add source-specific visual indicators and themes (USPSTF blue, NICE purple, NCI green, RxNorm orange)
+  - [x] 2.5 Create side-by-side panels for multiple source comparison
+  - [x] 2.6 Implement guidelines-specific search with fuzzy matching and autocomplete
+  - [x] 2.7 Add source-specific visual indicators and themes (USPSTF blue, NICE purple, NCI green, RxNorm orange)
+  - [x] 2.8 Add bookmarking functionality with modal display and persistence
 
 - [ ] 3.0 Medical Advisor Enhancement
   - [ ] 3.1 Add specialty filter dropdown to medical advisor interface
