@@ -177,9 +177,9 @@ export default function GuidelineSearch({
                       </button>
                     </div>
                     <ul className="text-xs text-blue-600 space-y-1">
-                      <li>• Try conditions like "depression" or "diabetes"</li>
-                      <li>• Search for procedures like "screening" or "treatment"</li>
-                      <li>• Use source names like "USPSTF" or "NICE" to filter by organization</li>
+                                                  <li>• Try conditions like &quot;depression&quot; or &quot;diabetes&quot;</li>
+                            <li>• Search for procedures like &quot;screening&quot; or &quot;treatment&quot;</li>
+                            <li>• Use source names like &quot;USPSTF&quot; or &quot;NICE&quot; to filter by organization</li>
                     </ul>
                   </div>
                 )}
