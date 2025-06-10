@@ -59,7 +59,14 @@ class SupabaseDataService {
           firstName: patientRow.first_name,
           lastName: patientRow.last_name,
           gender: patientRow.gender,
-          dateOfBirth: patientRow.birth_date ? new Date(patientRow.birth_date).toISOString().split('T')[0] : undefined,
+          dateOfBirth: patientRow.birth_date ? (() => {
+            try {
+              const isoString = new Date(patientRow.birth_date).toISOString();
+              return isoString ? isoString.split('T')[0] : undefined;
+            } catch {
+              return undefined;
+            }
+          })() : undefined,
           photo: patientRow.photo_url,
           race: patientRow.race,
           ethnicity: patientRow.ethnicity,
@@ -275,7 +282,14 @@ class SupabaseDataService {
           firstName: row.first_name,
           lastName: row.last_name,
           gender: row.gender,
-          dateOfBirth: row.birth_date ? new Date(row.birth_date).toISOString().split('T')[0] : undefined,
+          dateOfBirth: row.birth_date ? (() => {
+            try {
+              const isoString = new Date(row.birth_date).toISOString();
+              return isoString ? isoString.split('T')[0] : undefined;
+            } catch {
+              return undefined;
+            }
+          })() : undefined,
           photo: row.photo_url,
           race: row.race,
           ethnicity: row.ethnicity,
