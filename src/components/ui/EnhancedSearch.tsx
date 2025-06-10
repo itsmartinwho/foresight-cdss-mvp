@@ -170,14 +170,15 @@ export default function EnhancedSearch({
 
   // Re-sort results when sort option changes
   useEffect(() => {
-    if (results.patients.length > 0 || results.guidelines.length > 0 || results.encounters.length > 0) {
+    const totalResults = results.patients.length + results.guidelines.length + results.encounters.length;
+    if (totalResults > 0) {
       setResults(prevResults => ({
         patients: sortResults(prevResults.patients, sortBy),
         guidelines: sortResults(prevResults.guidelines, sortBy),
         encounters: sortResults(prevResults.encounters, sortBy)
       }));
     }
-  }, [sortBy, sortResults]);
+  }, [sortBy, sortResults, results.patients.length, results.guidelines.length, results.encounters.length]);
 
   // Calculate portal position
   useEffect(() => {
