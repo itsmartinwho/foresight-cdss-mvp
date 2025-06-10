@@ -22,7 +22,7 @@ interface EnhancedSearchProps {
 export default function EnhancedSearch({
   className,
   inputClassName,
-  placeholder = "Search patients, guidelines, conditions...",
+  placeholder = "Search patients, conditions, guidelines, notes...",
   portal = false,
   onClose
 }: EnhancedSearchProps) {
@@ -86,54 +86,136 @@ export default function EnhancedSearch({
     setIsLoading(true);
     
     try {
-      // Search patients
+      // Search patients with enhanced field matching
       await supabaseDataService.loadPatientData();
       const allPatients = supabaseDataService.getAllPatients();
       const lowerQuery = searchQuery.toLowerCase();
       
       const patientResults: SearchResultItem[] = allPatients
-        .filter(patient => {
+        .map(patient => {
           const fullName = (patient.name || '').toLowerCase();
           const firstName = (patient.firstName || '').toLowerCase();
           const lastName = (patient.lastName || '').toLowerCase();
-          return fullName.includes(lowerQuery) || 
-                 firstName.includes(lowerQuery) || 
-                 lastName.includes(lowerQuery);
+          const reason = (patient.reason || '').toLowerCase();
+          const race = (patient.race || '').toLowerCase();
+          const ethnicity = (patient.ethnicity || '').toLowerCase();
+          const language = (patient.language || '').toLowerCase();
+          const maritalStatus = (patient.maritalStatus || '').toLowerCase();
+          
+          // Get patient encounters, diagnoses, and other related data
+          const encounters = supabaseDataService.getPatientEncounters(patient.id);
+          const diagnoses = supabaseDataService.getPatientDiagnoses(patient.id);
+          const labResults = supabaseDataService.getPatientLabResults(patient.id);
+          
+          // Build searchable text from all patient data
+          const searchableText = [
+            fullName, firstName, lastName, reason, race, ethnicity, language, maritalStatus,
+            ...encounters.map(e => (e.reasonDisplayText || '').toLowerCase()),
+            ...encounters.map(e => (e.transcript || '').toLowerCase()),
+            ...encounters.map(e => (e.soapNote || '').toLowerCase()),
+            ...diagnoses.map(d => (d.description || '').toLowerCase()),
+            ...diagnoses.map(d => (d.code || '').toLowerCase()),
+            ...labResults.map(l => (l.name || '').toLowerCase())
+          ].join(' ');
+          
+          const isMatch = searchableText.includes(lowerQuery);
+          
+          if (!isMatch) return null;
+          
+          // Find the context where the match occurred
+          let matchContext = 'Patient information';
+          let contextDetail = patient.reason || 'No reason listed';
+          
+          // Check what field matched to provide context
+          if (fullName.includes(lowerQuery) || firstName.includes(lowerQuery) || lastName.includes(lowerQuery)) {
+            matchContext = 'Patient name';
+            contextDetail = patient.name || `${patient.firstName} ${patient.lastName}`.trim();
+          } else if (reason.includes(lowerQuery)) {
+            matchContext = 'Reason for visit';
+            contextDetail = patient.reason || '';
+          } else {
+            // Check encounters
+            const matchedEncounter = encounters.find(e => 
+              (e.reasonDisplayText || '').toLowerCase().includes(lowerQuery) ||
+              (e.transcript || '').toLowerCase().includes(lowerQuery) ||
+              (e.soapNote || '').toLowerCase().includes(lowerQuery)
+            );
+            if (matchedEncounter) {
+              matchContext = 'Clinical notes';
+              const text = matchedEncounter.reasonDisplayText || matchedEncounter.transcript || matchedEncounter.soapNote || '';
+              const index = text.toLowerCase().indexOf(lowerQuery);
+              if (index !== -1) {
+                const start = Math.max(0, index - 30);
+                const end = Math.min(text.length, index + lowerQuery.length + 30);
+                contextDetail = `...${text.substring(start, end)}...`;
+              }
+            }
+            
+            // Check diagnoses
+            const matchedDiagnosis = diagnoses.find(d => 
+              (d.description || '').toLowerCase().includes(lowerQuery) ||
+              (d.code || '').toLowerCase().includes(lowerQuery)
+            );
+            if (matchedDiagnosis) {
+              matchContext = 'Diagnosis';
+              contextDetail = matchedDiagnosis.description || matchedDiagnosis.code || '';
+            }
+            
+            // Check lab results
+            const matchedLab = labResults.find(l => 
+              (l.name || '').toLowerCase().includes(lowerQuery)
+            );
+            if (matchedLab) {
+              matchContext = 'Lab results';
+              contextDetail = matchedLab.name || '';
+            }
+          }
+          
+          return {
+            patient,
+            matchContext,
+            contextDetail
+          };
         })
+        .filter(result => result !== null)
         .slice(0, 5)
-        .map(patient => ({
-          id: patient.id,
-          title: patient.name || `${patient.firstName} ${patient.lastName}`.trim() || patient.id,
-          description: patient.reason || 'No reason listed',
+        .map(result => ({
+          id: result!.patient.id,
+          title: result!.patient.name || `${result!.patient.firstName} ${result!.patient.lastName}`.trim() || result!.patient.id,
+          description: `${result!.matchContext}: ${result!.contextDetail}`,
           category: 'patients' as const,
           metadata: {
-            photo: patient.photo,
-            patientId: patient.id
+            photo: result!.patient.photo,
+            patientId: result!.patient.id,
+            matchContext: result!.matchContext
           },
-          url: `/patients/${patient.id}`
+          url: `/patients/${result!.patient.id}`
         }));
 
       // Search guidelines using the enhanced search API
       let guidelineResults: SearchResultItem[] = [];
       try {
-        const guidelineResponse = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchQuery)}&categories=guidelines&limit=5`);
+        const guidelineResponse = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchQuery)}&categories=guideline&limit=5`);
         if (guidelineResponse.ok) {
           const guidelineData = await guidelineResponse.json();
           
-          guidelineResults = guidelineData.results.guidelines?.map((guideline: any) => ({
+          guidelineResults = (guidelineData.guidelines || []).map((guideline: any) => ({
             id: guideline.id,
             title: guideline.title,
-            description: guideline.description,
-            preview: guideline.summary?.substring(0, 100) + (guideline.summary?.length > 100 ? '...' : ''),
+            description: guideline.preview || guideline.description || 'No description available',
+            preview: guideline.preview,
             category: 'guidelines' as const,
             metadata: {
               source: guideline.source,
               specialty: guideline.specialty,
-              grade: guideline.grade,
-              updatedAt: guideline.updated_at ? new Date(guideline.updated_at).toLocaleDateString() : undefined
+              grade: guideline.metadata?.grade,
+              updatedAt: guideline.metadata?.updatedAt,
+              canApplyToPatient: guideline.canApplyToPatient
             },
             url: `/guidelines?id=${guideline.id}`
-          })) || [];
+          }));
+        } else {
+          console.warn('Guidelines search API response not OK:', guidelineResponse.status);
         }
       } catch (error) {
         console.error('Error searching guidelines:', error);
@@ -356,7 +438,9 @@ export default function EnhancedSearch({
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       <div className="relative">
-        <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        {!query && (
+          <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        )}
         <Input
           ref={inputRef}
           type="text"
@@ -365,7 +449,7 @@ export default function EnhancedSearch({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={handleFocus}
           className={cn(
-            "pl-10 pr-10",
+            query ? "pl-3 pr-10" : "pl-10 pr-10",
             inputClassName
           )}
         />
