@@ -39,7 +39,7 @@ export default function SpecialtyFilter({
     return (
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">Medical Specialties</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
@@ -63,7 +63,7 @@ export default function SpecialtyFilter({
         </button>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {categories.map((category) => {
           const isSelected = selectedSpecialties.includes(category.id);
           

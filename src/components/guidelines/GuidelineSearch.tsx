@@ -124,140 +124,122 @@ export default function GuidelineSearch({
   const currentSortOption = sortOptions.find(option => option.value === sortBy) || sortOptions[0];
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-        <MagnifyingGlass className="h-5 w-5 text-blue-600" />
-        Search & Sort
-      </h3>
-      
-      <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-white/20 p-4 space-y-4">
-        {/* Search Input with Autocomplete */}
-        <div className="relative" ref={searchRef}>
-          <div className="relative">
-            <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search guidelines, conditions, treatments..."
-              value={tempSearchQuery}
-              onChange={(e) => setTempSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onKeyDown={handleKeyDown}
-              className={cn(
-                "w-full pl-10 pr-10 py-3 rounded-lg border border-gray-200",
-                "focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none",
-                "bg-white/80 backdrop-blur-sm placeholder-gray-500 text-gray-900",
-                "transition-all duration-200"
+    <div className="space-y-3">
+      {/* Compact Main Row */}
+      <div className="bg-white/20 backdrop-blur-md border border-white/30 rounded-xl p-4">
+        <div className="flex items-center gap-3">
+          
+          {/* Search Input - Takes most space */}
+          <div className="flex-1 relative" ref={searchRef}>
+            <div className="relative">
+              <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search guidelines, conditions, treatments..."
+                value={tempSearchQuery}
+                onChange={(e) => setTempSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={handleKeyDown}
+                className={cn(
+                  "w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-200",
+                  "focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none",
+                  "bg-white/80 backdrop-blur-sm placeholder-gray-500 text-gray-900",
+                  "transition-all duration-200 text-sm"
+                )}
+              />
+              {tempSearchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               )}
-            />
-            {tempSearchQuery && (
-              <button
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            </div>
+
+            {/* Search Suggestions Dropdown */}
+            {isSearchFocused && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-20 max-h-80 overflow-y-auto">
+                {/* Recent Searches */}
+                {tempSearchQuery === '' && recentSearches.length > 0 && (
+                  <div className="p-3 border-b border-gray-100">
+                    <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-2">
+                      <Clock className="h-3 w-3" />
+                      Recent Searches
+                    </p>
+                    {recentSearches.map((search, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSearchSubmit(search)}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+                      >
+                        {search}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Filtered Suggestions */}
+                {filteredSuggestions.length > 0 && (
+                  <div className="p-3">
+                    <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-2">
+                      <MagnifyingGlass className="h-3 w-3" />
+                      Suggestions
+                    </p>
+                    {filteredSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSearchSubmit(suggestion)}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+                      >
+                        <span className="flex items-center gap-2">
+                          <BookOpen className="h-3 w-3 text-gray-400" />
+                          {suggestion}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* No Results */}
+                {tempSearchQuery && filteredSuggestions.length === 0 && (
+                  <div className="p-3 text-center">
+                    <p className="text-sm text-gray-500">No suggestions found</p>
+                    <button
+                      onClick={() => handleSearchSubmit(tempSearchQuery)}
+                      className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+                    >
+                      Search for &quot;{tempSearchQuery}&quot;
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Search Suggestions Dropdown */}
-          {isSearchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-20 max-h-80 overflow-y-auto">
-              {/* Recent Searches */}
-              {tempSearchQuery === '' && recentSearches.length > 0 && (
-                <div className="p-3 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-2">
-                    <Clock className="h-3 w-3" />
-                    Recent Searches
-                  </p>
-                  {recentSearches.map((search, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSearchSubmit(search)}
-                      className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                    >
-                      {search}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Filtered Suggestions */}
-              {filteredSuggestions.length > 0 && (
-                <div className="p-3">
-                  <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-2">
-                    <MagnifyingGlass className="h-3 w-3" />
-                    Suggestions
-                  </p>
-                  {filteredSuggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSearchSubmit(suggestion)}
-                      className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                    >
-                      <span className="flex items-center gap-2">
-                        <BookOpen className="h-3 w-3 text-gray-400" />
-                        {suggestion}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* No Results */}
-              {tempSearchQuery && filteredSuggestions.length === 0 && (
-                <div className="p-3 text-center">
-                  <p className="text-sm text-gray-500">No suggestions found</p>
-                  <button
-                    onClick={() => handleSearchSubmit(tempSearchQuery)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700"
-                  >
-                    Search for &quot;{tempSearchQuery}&quot;
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Current Search Query Display */}
-        {searchQuery && (
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              Searching: {searchQuery}
-            </Badge>
-            <button
-              onClick={() => onSearch('')}
-              className="text-xs text-gray-500 hover:text-gray-700"
-            >
-              Clear
-            </button>
-          </div>
-        )}
-
-        {/* Controls Row */}
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Sort Dropdown */}
+          {/* Sort Dropdown - Compact */}
           <div className="relative" ref={sortRef}>
             <button
               onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200",
+                "flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200",
                 "bg-white/80 hover:bg-white text-sm text-gray-700",
-                "transition-all duration-200",
+                "transition-all duration-200 min-w-[120px]",
                 isSortDropdownOpen && "ring-2 ring-blue-500 border-blue-500"
               )}
             >
               <currentSortOption.icon className="h-4 w-4" />
-              {currentSortOption.label}
+              <span className="hidden sm:inline">{currentSortOption.label}</span>
+              <span className="sm:hidden">Sort</span>
               <CaretDown className={cn(
-                "h-4 w-4 transition-transform duration-200",
+                "h-4 w-4 transition-transform duration-200 ml-auto",
                 isSortDropdownOpen && "rotate-180"
               )} />
             </button>
 
             {isSortDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-48">
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-48">
                 <div className="p-2">
                   {sortOptions.map((option) => (
                     <button
@@ -286,13 +268,13 @@ export default function GuidelineSearch({
             )}
           </div>
 
-          {/* Bookmarks Filter */}
+          {/* Bookmarks Filter - Compact */}
           <Button
             variant={showBookmarksOnly ? "default" : "outline"}
             size="sm"
             onClick={() => onBookmarksOnlyChange(!showBookmarksOnly)}
             className={cn(
-              "gap-2 transition-all duration-200",
+              "gap-2 transition-all duration-200 px-3 py-2.5",
               showBookmarksOnly 
                 ? "bg-yellow-500 hover:bg-yellow-600 text-white" 
                 : "border-gray-200 bg-white/80 hover:bg-white text-gray-700"
@@ -302,33 +284,33 @@ export default function GuidelineSearch({
               "h-4 w-4",
               showBookmarksOnly ? "fill-current" : ""
             )} />
-            {showBookmarksOnly ? "Bookmarked" : "All"}
-          </Button>
-
-          {/* Advanced Filters (Future Enhancement) */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-gray-200 bg-white/80 hover:bg-white text-gray-700"
-            disabled
-          >
-            <Funnel className="h-4 w-4" />
-            Filters
+            <span className="hidden sm:inline">{showBookmarksOnly ? "Bookmarked" : "All"}</span>
           </Button>
         </div>
 
-        {/* Search Tips */}
-        {isSearchFocused && !tempSearchQuery && (
-          <div className="text-xs text-gray-500 space-y-1">
-            <p className="font-medium">Search Tips:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Try searching for conditions like &quot;depression&quot; or &quot;diabetes&quot;</li>
-              <li>Search for procedures like &quot;screening&quot; or &quot;treatment&quot;</li>
-              <li>Use source names like &quot;USPSTF&quot; or &quot;NICE&quot; to filter by organization</li>
-            </ul>
+        {/* Current Search Query Display - Compact */}
+        {searchQuery && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/30">
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+              Searching: {searchQuery}
+            </Badge>
+            <button
+              onClick={() => onSearch('')}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Clear
+            </button>
           </div>
         )}
       </div>
+
+      {/* Search Tips - Only show when expanded and focused */}
+      {isSearchFocused && !tempSearchQuery && (
+        <div className="bg-blue-50/50 backdrop-blur-sm border border-blue-200/50 rounded-lg p-3 text-xs text-blue-700">
+          <p className="font-medium mb-1">Search Tips:</p>
+                     <p>Try conditions like &quot;depression&quot;, procedures like &quot;screening&quot;, or sources like &quot;USPSTF&quot;</p>
+        </div>
+      )}
     </div>
   );
 } 

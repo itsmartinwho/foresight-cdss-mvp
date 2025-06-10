@@ -29,7 +29,23 @@ export default function GuidelinesTab() {
     openGuidelineModal,
     closeGuidelineModal,
     getSourceTheme
-  } = useGuidelines({ autoLoad: true });
+  } = useGuidelines({ 
+    autoLoad: true,
+    initialFilter: {
+      // Load saved sources from localStorage
+      sources: (() => {
+        if (typeof window !== 'undefined') {
+          try {
+            const saved = localStorage.getItem('foresight-selected-sources');
+            return saved ? JSON.parse(saved) : [];
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      })()
+    }
+  });
 
   const {
     isBookmarked,
@@ -97,27 +113,22 @@ export default function GuidelinesTab() {
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1">
-          <SpecialtyFilter
-            categories={specialtyCategories}
-            selectedSpecialties={uiState.filter.specialties}
-            onSpecialtyChange={(specialties) => filterGuidelines({ specialties })}
-            isLoading={isLoading}
-          />
-        </div>
-        
-        <div className="lg:col-span-1">
+      {/* Top Row - Source and Search/Sort */}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mb-6">
+        <div className="flex-1">
           <SourceFilter
             selectedSources={uiState.filter.sources}
-            onSourcesChange={(sources) => filterGuidelines({ sources })}
+            onSourcesChange={(sources) => {
+              // Save to localStorage
+              localStorage.setItem('foresight-selected-sources', JSON.stringify(sources));
+              filterGuidelines({ sources });
+            }}
             availableSources={availableSources}
             guidelineCounts={guidelineCountsBySource}
           />
         </div>
         
-        <div className="lg:col-span-1">
+        <div className="flex-1">
           <GuidelineSearch
             searchQuery={uiState.filter.searchQuery}
             onSearch={searchGuidelines}
@@ -127,6 +138,16 @@ export default function GuidelinesTab() {
             onBookmarksOnlyChange={(showBookmarksOnly) => filterGuidelines({ showBookmarksOnly })}
           />
         </div>
+      </div>
+
+      {/* Medical Specialties - Full Width */}
+      <div className="mb-6">
+        <SpecialtyFilter
+          categories={specialtyCategories}
+          selectedSpecialties={uiState.filter.specialties}
+          onSpecialtyChange={(specialties) => filterGuidelines({ specialties })}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Guidelines Grid/List */}
