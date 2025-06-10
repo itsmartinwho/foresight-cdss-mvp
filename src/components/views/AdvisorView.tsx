@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { Patient } from '@/lib/types';
-import { Microphone as Mic, PaperPlaneTilt as Send, BookOpen, Sparkle as Sparkles, WaveSine as Waves, Plus, Upload, X } from '@phosphor-icons/react';
+import { Microphone as Mic, PaperPlaneTilt as Send, BookOpen, Sparkle as Sparkles, WaveSine as Waves, Plus, Upload, X, CheckCircle, XCircle, Stethoscope } from '@phosphor-icons/react';
 import { createPortal } from "react-dom";
 import ContentSurface from '@/components/layout/ContentSurface';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,6 +19,7 @@ import GuidelineModal from "@/components/guidelines/GuidelineModal";
 import { Specialty, GuidelineModalData } from '@/types/guidelines';
 import { GuidelineReference } from '@/components/advisor/chat-types';
 import { convertReferenceToModalData, isGuidelineBookmarked, toggleGuidelineBookmark } from '@/services/guidelines/guidelineModalService';
+import { SpecialtySuggestionService } from '@/services/guidelines/specialtySuggestionService';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -109,6 +110,11 @@ export default function AdvisorView() {
   const [mounted, setMounted] = useState(false);
   const [selectedPatientForContext, setSelectedPatientForContext] = useState<Patient | null>(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty>('All');
+  
+  // Specialty suggestion state
+  const [suggestedSpecialty, setSuggestedSpecialty] = useState<Specialty | null>(null);
+  const [suggestionReason, setSuggestionReason] = useState<string>('');
+  const [showSuggestion, setShowSuggestion] = useState(false);
   
   // Guideline modal state
   const [guidelineModalData, setGuidelineModalData] = useState<GuidelineModalData | null>(null);
@@ -485,10 +491,40 @@ export default function AdvisorView() {
     }
   };
 
-  const handlePatientSelectForContext = (patient: Patient) => {
+  const handlePatientSelectForContext = async (patient: Patient) => {
     // Set patient context attachment
     setSelectedPatientForContext(patient);
     // Close dropdown automatically handled by Radix on item click
+    
+    // Get specialty suggestion based on patient context
+    try {
+      const suggested = await SpecialtySuggestionService.suggestSpecialtyFromPatient(patient);
+      const reason = SpecialtySuggestionService.getSpecialtySuggestionReason(patient, suggested);
+      
+      // Only show suggestion if it's not the default/current selection
+      if (suggested !== 'All' && suggested !== selectedSpecialty) {
+        setSuggestedSpecialty(suggested);
+        setSuggestionReason(reason);
+        setShowSuggestion(true);
+      } else {
+        setShowSuggestion(false);
+      }
+    } catch (error) {
+      console.error('Error getting specialty suggestion:', error);
+      setShowSuggestion(false);
+    }
+  };
+
+  // Specialty suggestion handlers
+  const handleApplySuggestion = () => {
+    if (suggestedSpecialty) {
+      setSelectedSpecialty(suggestedSpecialty);
+      setShowSuggestion(false);
+    }
+  };
+
+  const handleDismissSuggestion = () => {
+    setShowSuggestion(false);
   };
 
   // Guideline modal handlers
@@ -647,6 +683,44 @@ export default function AdvisorView() {
                   }
                 }}
               />
+
+              {/* Specialty Suggestion Banner */}
+              {showSuggestion && suggestedSpecialty && (
+                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 border border-teal-200 dark:border-teal-700 rounded-lg p-3 mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-teal-900 dark:text-teal-100">
+                        Suggested specialty: <span className="font-semibold">{suggestedSpecialty}</span>
+                      </p>
+                      <p className="text-xs text-teal-700 dark:text-teal-300 mt-1 truncate">
+                        {suggestionReason}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleApplySuggestion}
+                        className="h-8 px-3 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-800"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Apply
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleDismissSuggestion}
+                        className="h-8 w-8 p-0 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-800"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Action row */}
               <div className="flex items-center justify-between">
