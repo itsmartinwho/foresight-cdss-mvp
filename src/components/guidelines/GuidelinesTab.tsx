@@ -154,60 +154,109 @@ export default function GuidelinesTab() {
             {uiState.currentView === 'comparison' && (
               <div className="space-y-6">
                 {/* Comparison View Header */}
-                <div className="flex items-center justify-between bg-blue-50/50 backdrop-blur-sm border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between bg-gradient-to-r from-blue-50/80 to-purple-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl p-4 shadow-sm">
                   <div className="flex items-center gap-3">
                     <SquaresFour className="h-5 w-5 text-blue-600" />
                     <div>
-                      <h3 className="font-semibold text-gray-900">Compare Guidelines Side-by-Side</h3>
+                      <h3 className="font-semibold text-gray-900">Source Comparison Panels</h3>
                       <p className="text-sm text-gray-600">
-                        Select guidelines from different sources to compare recommendations
+                        Guidelines organized by source for side-by-side comparison
                       </p>
                     </div>
                   </div>
+                  <Badge variant="secondary" className="bg-white/70 text-gray-800">
+                    {guidelines.length} guidelines
+                  </Badge>
                 </div>
 
-                {/* Side-by-side comparison grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {guidelines.map((guideline) => (
-                    <div key={guideline.id} className="relative">
-                      <GuidelineCard
-                        guideline={guideline}
-                        sourceTheme={getSourceTheme(guideline.source)}
-                        isBookmarked={isBookmarked(guideline.id)}
-                        viewMode="comparison"
-                        onClick={() => handleGuidelineClick(guideline.id)}
-                        onBookmarkToggle={() => handleBookmarkToggle(guideline.id)}
-                      />
-                      
-                      {/* Source Badge */}
-                      <div className="absolute top-2 right-2 z-10">
-                        <Badge 
-                          className={cn(
-                            "text-white text-xs shadow-lg",
-                            guideline.source === 'USPSTF' && "bg-blue-600",
-                            guideline.source === 'NICE' && "bg-purple-600", 
-                            guideline.source === 'NCI_PDQ' && "bg-green-600",
-                            guideline.source === 'RxNorm' && "bg-orange-600"
-                          )}
-                        >
-                          {guideline.source}
-                        </Badge>
-                      </div>
+                {/* Source-based Comparison Panels */}
+                {(() => {
+                  const groupedGuidelines = guidelines.reduce((acc, guideline) => {
+                    const source = guideline.source;
+                    if (!acc[source]) acc[source] = [];
+                    acc[source].push(guideline);
+                    return acc;
+                  }, {} as Record<string, typeof guidelines>);
 
-                      {/* Specialty Badge */}
-                      {guideline.specialty && guideline.specialty !== 'All' && (
-                        <div className="absolute bottom-2 left-2 z-10">
-                          <Badge 
-                            variant="outline" 
-                            className="bg-white/90 backdrop-blur-sm text-xs border-gray-300"
-                          >
-                            {guideline.specialty}
-                          </Badge>
+                  const getSourceDisplayName = (source: string) => {
+                    switch (source) {
+                      case 'USPSTF': return 'US Preventive Services Task Force';
+                      case 'NICE': return 'National Institute for Health and Care Excellence';
+                      case 'NCI_PDQ': return 'National Cancer Institute PDQ';
+                      case 'RxNorm': return 'RxNorm Drug Database';
+                      default: return source;
+                    }
+                  };
+
+                  const getSourceIcon = (source: string) => {
+                    switch (source) {
+                      case 'USPSTF': return '🇺🇸';
+                      case 'NICE': return '🇬🇧';
+                      case 'NCI_PDQ': return '🎗️';
+                      case 'RxNorm': return '💊';
+                      default: return '📋';
+                    }
+                  };
+
+                  return (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {Object.entries(groupedGuidelines).map(([source, sourceGuidelines]) => (
+                        <div key={source} className="space-y-4">
+                          {/* Source Panel Header */}
+                          <div className={cn(
+                            "flex items-center justify-between p-4 rounded-lg border-2 shadow-sm backdrop-blur-sm",
+                            source === 'USPSTF' && "bg-blue-50/80 border-blue-200",
+                            source === 'NICE' && "bg-purple-50/80 border-purple-200",
+                            source === 'NCI_PDQ' && "bg-green-50/80 border-green-200",
+                            source === 'RxNorm' && "bg-orange-50/80 border-orange-200"
+                          )}>
+                            <div className="flex items-center space-x-3">
+                              <span className="text-2xl">{getSourceIcon(source)}</span>
+                              <div>
+                                <h4 className={cn(
+                                  "font-semibold text-lg",
+                                  source === 'USPSTF' && "text-blue-800",
+                                  source === 'NICE' && "text-purple-800",
+                                  source === 'NCI_PDQ' && "text-green-800",
+                                  source === 'RxNorm' && "text-orange-800"
+                                )}>
+                                  {source}
+                                </h4>
+                                <p className="text-xs text-gray-600 max-w-[180px] truncate">
+                                  {getSourceDisplayName(source)}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge className={cn(
+                              "font-medium text-xs",
+                              source === 'USPSTF' && "bg-blue-100 text-blue-700 border-blue-300",
+                              source === 'NICE' && "bg-purple-100 text-purple-700 border-purple-300",
+                              source === 'NCI_PDQ' && "bg-green-100 text-green-700 border-green-300",
+                              source === 'RxNorm' && "bg-orange-100 text-orange-700 border-orange-300"
+                            )}>
+                              {sourceGuidelines.length} guidelines
+                            </Badge>
+                          </div>
+
+                          {/* Guidelines for this source */}
+                          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                            {sourceGuidelines.map((guideline) => (
+                              <GuidelineCard
+                                key={guideline.id}
+                                guideline={guideline}
+                                sourceTheme={getSourceTheme(guideline.source)}
+                                isBookmarked={isBookmarked(guideline.id)}
+                                viewMode="list"
+                                onClick={() => handleGuidelineClick(guideline.id)}
+                                onBookmarkToggle={() => handleBookmarkToggle(guideline.id)}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </div>
             )}
 

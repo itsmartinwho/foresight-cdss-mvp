@@ -186,7 +186,7 @@ export class GuidelineUIService {
       }
 
       // Apply source filtering
-      if (filter.sources.length > 0 && !filter.sources.includes('NICE' as any)) {
+      if (filter.sources.length > 0) {
         guidelines = guidelines.filter(g => filter.sources.includes(g.source));
       }
 
