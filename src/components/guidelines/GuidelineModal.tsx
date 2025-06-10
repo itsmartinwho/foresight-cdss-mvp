@@ -113,6 +113,17 @@ export default function GuidelineModal({
             </div>
             
             <div className="flex items-center gap-2">
+              {/* View Original Source Button */}
+              {modalData.metadata?.url && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(modalData.metadata?.url as string, '_blank')}
+                  className="text-xs px-3 py-1"
+                >
+                  View Original Source
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

@@ -46,18 +46,26 @@ export class GuidelineUIService {
     const now = new Date();
     const recentThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    return guidelines.map(guideline => ({
-      id: guideline.id,
-      title: guideline.title,
-      source: guideline.source,
-      specialty: guideline.specialty,
-      preview: this.generatePreview(guideline.content),
-      metadata: guideline.metadata,
-      lastUpdated: guideline.last_updated,
-      isBookmarked: bookmarkedIds.has(guideline.id),
-      isRecentlyViewed: recentViewsMap.has(guideline.id),
-      isRecentlyUpdated: new Date(guideline.last_updated) > recentThreshold
-    }));
+    return guidelines.map(guideline => {      
+      // Generate source URL if not present in metadata
+      const sourceUrl = guideline.metadata.url || this.getSourceUrl(guideline);
+      
+      return {
+        id: guideline.id,
+        title: guideline.title,
+        source: guideline.source,
+        specialty: guideline.specialty,
+        preview: this.generatePreview(guideline.content),
+        metadata: {
+          ...guideline.metadata,
+          ...(sourceUrl && { url: sourceUrl })
+        },
+        lastUpdated: guideline.last_updated,
+        isBookmarked: bookmarkedIds.has(guideline.id),
+        isRecentlyViewed: recentViewsMap.has(guideline.id),
+        isRecentlyUpdated: new Date(guideline.last_updated) > recentThreshold
+      };
+    });
   }
 
   /**
@@ -136,12 +144,18 @@ export class GuidelineUIService {
         guideline.title
       ];
 
+      // Generate source URL if not present in metadata
+      const sourceUrl = guideline.metadata.url || this.getSourceUrl(guideline);
+
       return {
         id: guideline.id,
         title: guideline.title,
         source: guideline.source,
         specialty: guideline.specialty,
-        metadata: guideline.metadata,
+        metadata: {
+          ...guideline.metadata,
+          ...(sourceUrl && { url: sourceUrl })
+        },
         sections,
         breadcrumbs,
         fullContent: guideline.content
@@ -197,6 +211,17 @@ export class GuidelineUIService {
       if (filter.showBookmarksOnly) {
         const bookmarkedIds = new Set(bookmarks.map(b => b.guidelineId));
         guidelines = guidelines.filter(g => bookmarkedIds.has(g.id));
+      }
+
+      // Log for debugging if no guidelines found
+      if (guidelines.length === 0) {
+        console.log('GuidelineUIService: No guidelines found with current filters:', filter);
+        
+        // Try to get total count to see if any guidelines exist at all
+        const allResult = await this.searchService.getGuidelinesBySpecialty('All', 1);
+        if (allResult.total === 0) {
+          console.warn('GuidelineUIService: No guidelines found in database at all');
+        }
       }
 
       // Sort results
@@ -382,6 +407,30 @@ export class GuidelineUIService {
       'MANUAL': 'Manual'
     };
     return sourceMap[source] || source;
+  }
+
+  /**
+   * Generate source URL for external access
+   */
+  getSourceUrl(guideline: GuidelineDoc): string | null {
+    // Check if URL is stored in metadata
+    if (guideline.metadata?.url) {
+      return guideline.metadata.url as string;
+    }
+    
+    // Generate fallback URLs based on source
+    switch (guideline.source) {
+      case 'USPSTF':
+        return 'https://www.uspreventiveservicestaskforce.org/uspstf/';
+      case 'NICE':
+        return 'https://www.nice.org.uk/guidance';
+      case 'NCI_PDQ':
+        return 'https://www.cancer.gov/publications/pdq';
+      case 'RxNorm':
+        return 'https://www.nlm.nih.gov/research/umls/rxnorm/';
+      default:
+        return null;
+    }
   }
 
   /**

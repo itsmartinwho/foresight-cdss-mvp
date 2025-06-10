@@ -87,6 +87,7 @@ export interface GuidelineMetadata {
   drug_names?: string[]; // For RxNorm interactions
   severity?: 'low' | 'moderate' | 'high'; // For drug interactions
   section?: string; // For document chunks
+  url?: string; // URL to original source
 }
 
 // UI-specific types for guidelines interface

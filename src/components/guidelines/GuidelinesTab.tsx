@@ -137,11 +137,25 @@ export default function GuidelinesTab() {
           </div>
         ) : guidelines.length === 0 ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-center">
+            <div className="text-center max-w-md">
               <h3 className="text-lg font-semibold text-gray-600 mb-2">No Guidelines Found</h3>
-              <p className="text-gray-500">
-                Try adjusting your filters or search terms
+              <p className="text-gray-500 mb-4">
+                {uiState.filter.searchQuery ? 
+                  `No guidelines match your search for "${uiState.filter.searchQuery}"` :
+                  'No guidelines available with current filters'
+                }
               </p>
+              {!uiState.filter.searchQuery && uiState.filter.sources.length === 0 && uiState.filter.specialties.length === 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
+                  <p className="mb-2">📚 <strong>No clinical guidelines loaded yet</strong></p>
+                  <p>Clinical guidelines need to be ingested into the database first. Contact your system administrator to load guidelines from sources like USPSTF, NICE, NCI PDQ, or RxNorm.</p>
+                </div>
+              )}
+              {(uiState.filter.sources.length > 0 || uiState.filter.specialties.length > 0) && (
+                <p className="text-sm text-gray-500">
+                  Try clearing some filters or search for specific topics
+                </p>
+              )}
             </div>
           </div>
         ) : (

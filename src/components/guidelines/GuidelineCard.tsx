@@ -136,9 +136,22 @@ export default function GuidelineCard({
           <span>Updated {new Date(guideline.lastUpdated).toLocaleDateString()}</span>
         </div>
         
-        <div className="flex items-center space-x-1">
-          <BookOpen className="h-3 w-3" />
-          <span>View Guideline</span>
+        <div className="flex items-center space-x-2">
+          {guideline.metadata?.url && (
+            <a
+              href={guideline.metadata.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Original Source
+            </a>
+          )}
+          <div className="flex items-center space-x-1">
+            <BookOpen className="h-3 w-3" />
+            <span>View Guideline</span>
+          </div>
         </div>
       </div>
 
