@@ -104,10 +104,11 @@ export default function SpecialtyDropdown({
       
       <DropdownMenuContent 
         align="start" 
-        className="w-64 p-2 bg-white/95 backdrop-blur-lg border border-white/30 shadow-lg"
+        className="w-64 max-h-[60vh] p-0 bg-white/95 backdrop-blur-lg border border-white/30 shadow-lg"
       >
-        <div className="space-y-1">
-          {specialtyCategories.map((category) => (
+        <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-hide">
+          <div className="space-y-1">
+            {specialtyCategories.map((category) => (
             <DropdownMenuItem
               key={category.id}
               onClick={() => handleSpecialtySelect(category.id)}
@@ -159,7 +160,8 @@ export default function SpecialtyDropdown({
                 <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
               )}
             </DropdownMenuItem>
-          ))}
+            ))}
+          </div>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
