@@ -292,10 +292,13 @@ export default function AdvisorView() {
     // Add the current user's new message
     apiPayloadMessages.push({ role: 'user' as const, content: queryContent });
 
-    // Build the API URL with patientId if available
+    // Build the API URL with patientId and specialty if available
     let apiUrl = `/api/advisor?payload=${encodeURIComponent(JSON.stringify({ messages: apiPayloadMessages }))}&think=${thinkMode}`;
     if (selectedPatientForContext?.id) {
       apiUrl += `&patientId=${encodeURIComponent(selectedPatientForContext.id)}`;
+    }
+    if (selectedSpecialty && selectedSpecialty !== 'All') {
+      apiUrl += `&specialty=${encodeURIComponent(selectedSpecialty)}`;
     }
     
     const eventSource = new EventSource(apiUrl);

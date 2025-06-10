@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import OpenAI from "openai";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import { searchGuidelines } from "@/services/guidelines/search-service";
+import { Specialty } from "@/types/guidelines";
 
 // 1. Model routing (default to gpt-4.1-mini)
 // 2. Invoke chat-completions with streaming
@@ -261,7 +262,7 @@ async function createAssistantResponse(
   }
 }
 
-async function enrichWithGuidelines(query: string, patientData?: any): Promise<string> {
+async function enrichWithGuidelines(query: string, patientData?: any, specialty?: Specialty): Promise<string> {
   try {
     // Extract medical terms and conditions for guideline search
     const searchTerms = extractMedicalTerms(query, patientData);
@@ -273,6 +274,7 @@ async function enrichWithGuidelines(query: string, patientData?: any): Promise<s
     // Search for relevant guidelines
     const guidelines = await searchGuidelines({
       query: searchTerms.join(' '),
+      specialty: specialty,
       limit: 5,
       searchType: 'combined'
     });
@@ -344,6 +346,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const payloadParam = url.searchParams.get("payload");
     const patientId = url.searchParams.get("patientId");
+    const specialty = url.searchParams.get("specialty");
     let messagesFromClient: Array<{ role: "user" | "assistant" | "system"; content: string }> = [];
     let patientSummaryBlock: string = ""; 
 
@@ -556,7 +559,7 @@ export async function GET(req: NextRequest) {
             }
 
             // Enrich query with relevant guidelines
-            const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData);
+            const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
             if (guidelinesEnrichment) {
               latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
             }
