@@ -415,7 +415,7 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       alert(`Error starting transcription system: ${err instanceof Error ? err.message : String(err)}`);
       stopTranscription(true); // Reset paused state on startup errors
     }
-  }, [isTranscribing, isPaused, selectedEncounter, isStartingNewConsultation, onStartTranscriptionForNewConsult, editableTranscript, stopTranscription, toast]);
+  }, [isTranscribing, isPaused, selectedEncounter, isStartingNewConsultation, onStartTranscriptionForNewConsult, editableTranscript, stopTranscription]);
 
   const pauseTranscription = () => {
     console.log("pauseTranscription called - current states:", { isTranscribing, isPaused });

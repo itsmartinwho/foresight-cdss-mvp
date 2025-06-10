@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -41,7 +41,7 @@ export function EditableTable({
   const [error, setError] = useState<string | null>(null);
 
   // Convert treatments to array format for editing
-  const normalizedTreatments = Array.isArray(treatments) ? treatments : [];
+  const normalizedTreatments = useMemo(() => Array.isArray(treatments) ? treatments : [], [treatments]);
 
   // Initialize editing state when entering edit mode
   useEffect(() => {
@@ -56,7 +56,7 @@ export function EditableTable({
     setError(null);
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     // Validate treatments
     const validTreatments = editingTreatments.filter(
       treatment => treatment.drug.trim() || treatment.status.trim() || treatment.rationale.trim()
@@ -73,13 +73,13 @@ export function EditableTable({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [editingTreatments, onSave]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingTreatments([...normalizedTreatments]);
     setIsEditing(false);
     setError(null);
-  };
+  }, [normalizedTreatments]);
 
   const addTreatment = () => {
     setEditingTreatments(prev => [...prev, { drug: '', status: '', rationale: '' }]);
@@ -137,7 +137,7 @@ export function EditableTable({
 
     document.addEventListener('mousedown', handleClickOutside, true);
     return () => document.removeEventListener('mousedown', handleClickOutside, true);
-  }, [isEditing, hasUnsavedChanges]);
+  }, [isEditing, hasUnsavedChanges, handleSave, handleCancel]);
 
   return (
     <Card className={className}>

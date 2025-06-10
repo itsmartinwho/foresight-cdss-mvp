@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -59,7 +59,7 @@ export default function TranscriptEditorModal({
     setHistory(currentHistory => updateFieldHistory(currentHistory, newContent));
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!hasChanges) {
       onClose();
       return;
@@ -76,9 +76,9 @@ export default function TranscriptEditorModal({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [hasChanges, onClose, onSave, history.present]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (hasChanges) {
       const confirmDiscard = window.confirm(
         'You have unsaved changes. Are you sure you want to discard them?'
@@ -89,7 +89,7 @@ export default function TranscriptEditorModal({
     setHistory(createFieldHistory(transcript));
     setHasChanges(false);
     onClose();
-  };
+  }, [hasChanges, transcript, onClose]);
 
   const handleUndo = () => {
     setHistory(currentHistory => undoFieldHistory(currentHistory));
@@ -127,7 +127,7 @@ export default function TranscriptEditorModal({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, hasChanges]);
+  }, [isOpen, hasChanges, handleCancel, handleSave]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>

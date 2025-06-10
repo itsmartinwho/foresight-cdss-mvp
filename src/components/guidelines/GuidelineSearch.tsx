@@ -212,7 +212,7 @@ export default function GuidelineSearch({
                     onClick={() => handleSearchSubmit(tempSearchQuery)}
                     className="mt-2 text-xs text-blue-600 hover:text-blue-700"
                   >
-                    Search for "{tempSearchQuery}"
+                    Search for &quot;{tempSearchQuery}&quot;
                   </button>
                 </div>
               )}
@@ -322,9 +322,9 @@ export default function GuidelineSearch({
           <div className="text-xs text-gray-500 space-y-1">
             <p className="font-medium">Search Tips:</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Try searching for conditions like "depression" or "diabetes"</li>
-              <li>Search for procedures like "screening" or "treatment"</li>
-              <li>Use source names like "USPSTF" or "NICE" to filter by organization</li>
+              <li>Try searching for conditions like &quot;depression&quot; or &quot;diabetes&quot;</li>
+              <li>Search for procedures like &quot;screening&quot; or &quot;treatment&quot;</li>
+              <li>Use source names like &quot;USPSTF&quot; or &quot;NICE&quot; to filter by organization</li>
             </ul>
           </div>
         )}

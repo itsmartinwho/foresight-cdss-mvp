@@ -30,13 +30,12 @@ export default function SpecialtyDropdown({
   const [specialtyCategories, setSpecialtyCategories] = useState<SpecialtyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  
-  const uiService = new GuidelineUIService();
 
   useEffect(() => {
     const loadSpecialties = async () => {
       try {
         setIsLoading(true);
+        const uiService = new GuidelineUIService();
         const categories = await uiService.getSpecialtyCategories();
         setSpecialtyCategories(categories);
       } catch (error) {
