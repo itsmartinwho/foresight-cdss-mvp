@@ -43,7 +43,7 @@ Based on PRD: `prd-clinical-guidelines-interface.md`
 
 - [ ] 3.0 Medical Advisor Enhancement
   - [x] 3.1 Add specialty filter dropdown to medical advisor interface
-  - [ ] 3.2 Implement guideline references display in advisor responses with source badges
+  - [x] 3.2 Implement guideline references display in advisor responses with source badges
   - [ ] 3.3 Create linking functionality from advisor references to full guideline view
   - [ ] 3.4 Integrate patient context for automatic specialty suggestion
   - [ ] 3.5 Update advisor API to filter guidelines by selected specialty

@@ -76,7 +76,7 @@ export const VALID_ELEMENT_TYPES = [
 export interface GuidelineReference {
   id: string;
   title: string;
-  source: 'USPSTF' | 'NICE' | 'NCI' | 'RxNorm';
+  source: 'USPSTF' | 'NICE' | 'NCI_PDQ' | 'RxNorm';
   url?: string;
   summary?: string;
   grade?: string;

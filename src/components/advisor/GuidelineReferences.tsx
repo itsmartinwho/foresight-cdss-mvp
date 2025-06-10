@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 interface GuidelineReference {
   id: string;
   title: string;
-  source: 'USPSTF' | 'NICE' | 'NCI' | 'RxNorm';
+  source: 'USPSTF' | 'NICE' | 'NCI_PDQ' | 'RxNorm';
   url?: string;
   summary?: string;
   grade?: string;
@@ -18,6 +18,7 @@ interface GuidelineReference {
 interface GuidelineReferencesProps {
   references: GuidelineReference[];
   className?: string;
+  onReferenceClick?: (reference: GuidelineReference) => void;
 }
 
 const sourceConfig = {
@@ -37,7 +38,7 @@ const sourceConfig = {
     icon: Shield,
     description: 'National Institute for Health and Care Excellence'
   },
-  NCI: {
+  NCI_PDQ: {
     name: 'NCI',
     color: '#059669', // Green
     bgColor: '#ECFDF5',
@@ -55,13 +56,17 @@ const sourceConfig = {
   }
 };
 
-export default function GuidelineReferences({ references, className }: GuidelineReferencesProps) {
+export default function GuidelineReferences({ references, className, onReferenceClick }: GuidelineReferencesProps) {
   if (!references || references.length === 0) {
     return null;
   }
 
   const handleReferenceClick = (reference: GuidelineReference) => {
-    if (reference.url) {
+    if (onReferenceClick) {
+      // Use custom click handler (for modal opening)
+      onReferenceClick(reference);
+    } else if (reference.url) {
+      // Fallback to opening external URL
       window.open(reference.url, '_blank', 'noopener,noreferrer');
     }
   };

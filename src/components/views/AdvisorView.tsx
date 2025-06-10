@@ -15,7 +15,10 @@ import { parser as smd_parser, default_renderer as smd_default_renderer, parser_
 import PatientSelectionDropdown from "@/components/advisor/PatientSelectionDropdown";
 import SpecialtyDropdown from "@/components/advisor/SpecialtyDropdown";
 import GuidelineReferences from "@/components/advisor/GuidelineReferences";
-import { Specialty } from '@/types/guidelines';
+import GuidelineModal from "@/components/guidelines/GuidelineModal";
+import { Specialty, GuidelineModalData } from '@/types/guidelines';
+import { GuidelineReference } from '@/components/advisor/chat-types';
+import { convertReferenceToModalData, isGuidelineBookmarked, toggleGuidelineBookmark } from '@/services/guidelines/guidelineModalService';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -106,6 +109,11 @@ export default function AdvisorView() {
   const [mounted, setMounted] = useState(false);
   const [selectedPatientForContext, setSelectedPatientForContext] = useState<Patient | null>(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty>('All');
+  
+  // Guideline modal state
+  const [guidelineModalData, setGuidelineModalData] = useState<GuidelineModalData | null>(null);
+  const [isGuidelineModalOpen, setIsGuidelineModalOpen] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   // Refs for streaming-markdown (one parser + root div per assistant message)
   const parsersRef = useRef<Record<string, any>>({});
@@ -483,6 +491,36 @@ export default function AdvisorView() {
     // Close dropdown automatically handled by Radix on item click
   };
 
+  // Guideline modal handlers
+  const handleGuidelineReferenceClick = async (reference: GuidelineReference) => {
+    try {
+      const modalData = await convertReferenceToModalData(reference);
+      const bookmarkStatus = await isGuidelineBookmarked(reference.id);
+      
+      setGuidelineModalData(modalData);
+      setIsBookmarked(bookmarkStatus);
+      setIsGuidelineModalOpen(true);
+    } catch (error) {
+      console.error('Error opening guideline modal:', error);
+    }
+  };
+
+  const handleCloseGuidelineModal = () => {
+    setIsGuidelineModalOpen(false);
+    setGuidelineModalData(null);
+  };
+
+  const handleBookmarkToggle = async () => {
+    if (!guidelineModalData) return;
+    
+    try {
+      const newBookmarkStatus = await toggleGuidelineBookmark(guidelineModalData.id.toString());
+      setIsBookmarked(newBookmarkStatus);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
+  };
+
   return (
     <>
       <ContentSurface fullBleed className="">
@@ -532,7 +570,8 @@ export default function AdvisorView() {
                     <AssistantMessageRenderer 
                       assistantMessage={msg.content as AssistantMessageContent} 
                       isStreaming={msg.isStreaming} 
-                      markdownRootDiv={markdownRootsRef.current[msg.id]} 
+                      markdownRootDiv={markdownRootsRef.current[msg.id]}
+                      onGuidelineReferenceClick={handleGuidelineReferenceClick}
                     />
                   )}
                   {/* Loading indicators */}
@@ -783,11 +822,27 @@ export default function AdvisorView() {
         </>,
         document.body
       )}
+
+      {/* Guideline Modal */}
+      {guidelineModalData && (
+        <GuidelineModal
+          modalData={guidelineModalData}
+          isOpen={isGuidelineModalOpen}
+          onClose={handleCloseGuidelineModal}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={handleBookmarkToggle}
+        />
+      )}
     </>
   );
 }
 
-const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageContent, isStreaming?: boolean, markdownRootDiv?: HTMLDivElement }> = ({ assistantMessage, isStreaming, markdownRootDiv }) => {
+const AssistantMessageRenderer: React.FC<{ 
+  assistantMessage: AssistantMessageContent, 
+  isStreaming?: boolean, 
+  markdownRootDiv?: HTMLDivElement,
+  onGuidelineReferenceClick?: (reference: GuidelineReference) => void
+}> = ({ assistantMessage, isStreaming, markdownRootDiv, onGuidelineReferenceClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
 
@@ -873,7 +928,10 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
   // Render guideline references if available
   const renderGuidelineReferences = () => (
     assistantMessage.guidelineReferences && assistantMessage.guidelineReferences.length > 0 ? (
-      <GuidelineReferences references={assistantMessage.guidelineReferences} />
+      <GuidelineReferences 
+        references={assistantMessage.guidelineReferences}
+        onReferenceClick={onGuidelineReferenceClick}
+      />
     ) : null
   );
 
