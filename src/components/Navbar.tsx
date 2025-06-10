@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MagnifyingGlass as Search, UserCircle as UserIcon } from '@phosphor-icons/react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
 import { Button } from "@/components/ui/button";
+import EnhancedSearch from '@/components/ui/EnhancedSearch';
 
 interface NavbarProps {
   currentPath: string;
@@ -77,11 +77,10 @@ export default function Navbar({ currentPath }: NavbarProps) {
           <div className="w-full max-w-5xl">
             {/* Desktop Search Input - hidden on small screens */} 
             <div className="hidden md:block w-full">
-              <Input
-                id="navbar-desktop-search"
-                type="text"
-                placeholder="Search…"
-                className="unified-search-input h-8 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3"
+              <EnhancedSearch
+                portal
+                inputClassName="h-8 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3 unified-search-input"
+                placeholder="Search patients, guidelines, conditions..."
               />
             </div>
             {/* Mobile Search Button - visible only on small screens, positioned within the search area */}
@@ -120,12 +119,10 @@ export default function Navbar({ currentPath }: NavbarProps) {
         {/* Mobile Search Sheet - Full width for mobile */}
         <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
           <SheetContent side="top" className="pt-8 pb-4 backdrop-blur-lg bg-[rgba(255,255,255,0.1)] border-b border-[rgba(255,255,255,0.12)]">
-            <Input
-              id="navbar-mobile-search"
-              autoFocus
-              type="text"
-              placeholder="Search…"
-              className="unified-search-input h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4"
+            <EnhancedSearch
+              inputClassName="h-9 w-full bg-[rgba(255,255,255,0.06)] backdrop-blur-sm text-step-0 focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-4 unified-search-input"
+              placeholder="Search patients, guidelines, conditions..."
+              onClose={() => setSearchOpen(false)}
             />
           </SheetContent>
         </Sheet>

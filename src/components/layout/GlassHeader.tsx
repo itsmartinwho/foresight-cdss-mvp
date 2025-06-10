@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import QuickSearch from "@/components/ui/QuickSearch";
+import EnhancedSearch from "@/components/ui/EnhancedSearch";
 import { useDemo } from "@/contexts/DemoContext";
 import { ArrowClockwise } from '@phosphor-icons/react';
 
@@ -31,9 +31,10 @@ export default function GlassHeader() {
       </div>
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-5xl">
-          <QuickSearch
+          <EnhancedSearch
             portal
             inputClassName="h-8 bg-[rgba(255,255,255,0.06)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-[rgba(95,243,255,0.4)] focus:outline-none rounded-full px-3 unified-search-input placeholder:text-[#F0F0F0] placeholder:opacity-75 w-full"
+            placeholder="Search patients, guidelines, conditions..."
           />
         </div>
       </div>
