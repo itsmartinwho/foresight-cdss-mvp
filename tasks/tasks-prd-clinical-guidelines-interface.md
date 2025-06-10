@@ -35,7 +35,7 @@ Based on PRD: `prd-clinical-guidelines-interface.md`
   - [x] 2.1 Add Guidelines navigation item to sidebar with medical icon
   - [x] 2.2 Create main Guidelines page route and layout
   - [x] 2.3 Implement specialty organization with glassmorphic panels and large icons
-  - [ ] 2.4 Build multi-select source filtering dropdown with tickbox functionality
+  - [x] 2.4 Build multi-select source filtering dropdown with tickbox functionality
   - [ ] 2.5 Create side-by-side panels for multiple source comparison
   - [ ] 2.6 Implement guidelines-specific search with fuzzy matching and autocomplete
   - [ ] 2.7 Add source-specific visual indicators and themes (USPSTF blue, NICE purple, NCI green, RxNorm orange)

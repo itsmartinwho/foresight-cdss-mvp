@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabaseClient';
 import OpenAI from 'openai';
 import { GuidelineSearchResult } from '@/types/guidelines';
 
@@ -12,14 +12,17 @@ export class EmbeddingService {
   private openai: OpenAI;
 
   constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY!
-    });
+    try {
+      this.supabase = getSupabaseClient();
+      
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY!
+      });
+    } catch (error) {
+      console.error('Failed to initialize EmbeddingService:', error);
+      this.supabase = null as any;
+      this.openai = null as any;
+    }
   }
 
   /**
@@ -220,6 +223,11 @@ export class EmbeddingService {
     specialty?: string, 
     matchCount: number = 5
   ): Promise<GuidelineSearchResult[]> {
+    if (!this.supabase || !this.openai) {
+      console.warn('EmbeddingService not properly initialized, returning empty results');
+      return [];
+    }
+
     try {
       // Get embedding for query
       const queryEmbedding = await this.getEmbeddings([query]);
@@ -241,7 +249,7 @@ export class EmbeddingService {
       return data || [];
     } catch (error) {
       console.error('Similarity search error:', error);
-      throw error;
+      return [];
     }
   }
 
