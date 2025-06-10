@@ -161,6 +161,29 @@ export default function GuidelineSearch({
             {/* Search Suggestions Dropdown */}
             {isSearchFocused && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-20 max-h-80 overflow-y-auto">
+                {/* Search Tips - Only show when no search query */}
+                {tempSearchQuery === '' && (
+                  <div className="p-3 border-b border-gray-100 bg-blue-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-blue-700 flex items-center gap-2">
+                        <BookOpen className="h-3 w-3" />
+                        Search Tips
+                      </p>
+                      <button
+                        onClick={() => setIsSearchFocused(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <ul className="text-xs text-blue-600 space-y-1">
+                      <li>• Try conditions like "depression" or "diabetes"</li>
+                      <li>• Search for procedures like "screening" or "treatment"</li>
+                      <li>• Use source names like "USPSTF" or "NICE" to filter by organization</li>
+                    </ul>
+                  </div>
+                )}
+
                 {/* Recent Searches */}
                 {tempSearchQuery === '' && recentSearches.length > 0 && (
                   <div className="p-3 border-b border-gray-100">
@@ -304,13 +327,7 @@ export default function GuidelineSearch({
         )}
       </div>
 
-      {/* Search Tips - Only show when expanded and focused */}
-      {isSearchFocused && !tempSearchQuery && (
-        <div className="bg-blue-50/50 backdrop-blur-sm border border-blue-200/50 rounded-lg p-3 text-xs text-blue-700">
-          <p className="font-medium mb-1">Search Tips:</p>
-                     <p>Try conditions like &quot;depression&quot;, procedures like &quot;screening&quot;, or sources like &quot;USPSTF&quot;</p>
-        </div>
-      )}
+
     </div>
   );
 } 

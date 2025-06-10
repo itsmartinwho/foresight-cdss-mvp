@@ -63,7 +63,7 @@ export default function SpecialtyFilter({
         </button>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div className="space-y-2">
         {categories.map((category) => {
           const isSelected = selectedSpecialties.includes(category.id);
           
@@ -72,17 +72,17 @@ export default function SpecialtyFilter({
               key={category.id}
               onClick={() => handleSpecialtyToggle(category.id)}
               className={cn(
-                "group relative cursor-pointer transition-all duration-200 hover:scale-[1.02]",
-                "bg-white/60 backdrop-blur-sm rounded-xl border border-white/20",
-                "hover:bg-white/80 hover:shadow-lg hover:border-white/40",
-                isSelected && "bg-white/90 border-blue-200 shadow-md ring-2 ring-blue-100"
+                "group relative cursor-pointer transition-all duration-200",
+                "bg-white/60 backdrop-blur-sm rounded-lg border border-white/20 p-3",
+                "hover:bg-white/80 hover:shadow-sm hover:border-white/40",
+                isSelected && "bg-white/90 border-blue-200 shadow-sm ring-1 ring-blue-100"
               )}
             >
-              <div className="p-4 flex items-center space-x-4">
-                {/* Large Icon */}
+              <div className="flex items-center space-x-3">
+                {/* Compact Icon */}
                 <div 
                   className={cn(
-                    "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-2xl",
+                    "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-lg",
                     "transition-colors duration-200",
                     isSelected 
                       ? "bg-blue-100 text-blue-600" 
@@ -100,7 +100,7 @@ export default function SpecialtyFilter({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h4 className={cn(
-                      "font-semibold text-sm truncate",
+                      "font-medium text-sm",
                       isSelected ? "text-gray-900" : "text-gray-700"
                     )}>
                       {category.displayName}
@@ -108,34 +108,25 @@ export default function SpecialtyFilter({
                     <Badge 
                       variant="secondary" 
                       className={cn(
-                        "ml-2 text-xs",
+                        "text-xs",
                         isSelected && "bg-blue-100 text-blue-700"
                       )}
                     >
                       {category.guidelineCount}
                     </Badge>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 truncate">
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
                     {category.description}
                   </p>
                 </div>
                 
                 {/* Selection Indicator */}
                 {isSelected && (
-                  <div className="absolute top-2 right-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                    </div>
+                  <div className="flex-shrink-0">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
                   </div>
                 )}
               </div>
-              
-              {/* Glassmorphic Overlay Effect */}
-              <div className={cn(
-                "absolute inset-0 rounded-xl transition-opacity duration-200",
-                "bg-gradient-to-br from-white/10 to-transparent",
-                "opacity-0 group-hover:opacity-100"
-              )} />
             </div>
           );
         })}

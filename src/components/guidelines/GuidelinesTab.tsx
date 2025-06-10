@@ -140,18 +140,23 @@ export default function GuidelinesTab() {
         </div>
       </div>
 
-      {/* Medical Specialties - Full Width */}
-      <div className="mb-6">
-        <SpecialtyFilter
-          categories={specialtyCategories}
-          selectedSpecialties={uiState.filter.specialties}
-          onSpecialtyChange={(specialties) => filterGuidelines({ specialties })}
-          isLoading={isLoading}
-        />
-      </div>
+      {/* Main Content Area - Sidebar + Guidelines */}
+      <div className="flex gap-6">
+        {/* Left Sidebar - Medical Specialties */}
+        <div className="w-80 flex-shrink-0">
+          <div className="sticky top-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
+            <SpecialtyFilter
+              categories={specialtyCategories}
+              selectedSpecialties={uiState.filter.specialties}
+              onSpecialtyChange={(specialties) => filterGuidelines({ specialties })}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
 
-      {/* Guidelines Grid/List */}
-      <div className="min-h-[400px]">
+        {/* Right Side - Guidelines Grid/List */}
+        <div className="flex-1 min-w-0">
+          <div className="min-h-[400px]">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -312,6 +317,8 @@ export default function GuidelinesTab() {
             )}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* Modal */}

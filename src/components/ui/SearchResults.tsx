@@ -66,7 +66,7 @@ const sourceColors = {
 };
 
 function highlightText(text: string, query: string): React.ReactNode {
-  if (!query) return text;
+  if (!query || !text) return text || '';
   
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
   const parts = text.split(regex);
