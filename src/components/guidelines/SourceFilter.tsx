@@ -16,41 +16,53 @@ const sourceConfig: Record<GuidelineSource, {
   shortName: string;
   color: string;
   bgColor: string;
+  borderColor: string;
+  badgeColor: string;
   icon: string;
 }> = {
   'USPSTF': {
     name: 'US Preventive Services Task Force',
     shortName: 'USPSTF',
-    color: 'text-blue-600',
+    color: 'text-blue-700',
     bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    badgeColor: 'bg-blue-600',
     icon: '🇺🇸'
   },
   'NICE': {
     name: 'National Institute for Health and Care Excellence',
     shortName: 'NICE',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
+    color: 'text-purple-700',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    badgeColor: 'bg-purple-600',
     icon: '🇬🇧'
   },
   'NCI_PDQ': {
     name: 'National Cancer Institute PDQ',
     shortName: 'NCI PDQ',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
+    color: 'text-emerald-700',
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    badgeColor: 'bg-emerald-600',
     icon: '🎗️'
   },
   'RxNorm': {
     name: 'RxNorm Drug Information',
     shortName: 'RxNorm',
-    color: 'text-orange-600',
+    color: 'text-orange-700',
     bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-200',
+    badgeColor: 'bg-orange-600',
     icon: '💊'
   },
   'MANUAL': {
     name: 'Manual Guidelines',
     shortName: 'Manual',
-    color: 'text-gray-600',
+    color: 'text-gray-700',
     bgColor: 'bg-gray-50',
+    borderColor: 'border-gray-200',
+    badgeColor: 'bg-gray-600',
     icon: '📝'
   }
 };

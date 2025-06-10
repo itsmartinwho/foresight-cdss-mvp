@@ -9,6 +9,7 @@ import GuidelineSearch from './GuidelineSearch';
 import GuidelineCard from './GuidelineCard';
 import GuidelineModal from './GuidelineModal';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { GridFour, List, SquaresFour } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
@@ -148,19 +149,83 @@ export default function GuidelinesTab() {
             "transition-all duration-300",
             uiState.currentView === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
             uiState.currentView === 'list' && "space-y-4",
-            uiState.currentView === 'comparison' && "grid grid-cols-1 lg:grid-cols-2 gap-6"
+            uiState.currentView === 'comparison' && "space-y-6"
           )}>
-            {guidelines.map((guideline) => (
-              <GuidelineCard
-                key={guideline.id}
-                guideline={guideline}
-                sourceTheme={getSourceTheme(guideline.source)}
-                isBookmarked={isBookmarked(guideline.id)}
-                viewMode={uiState.currentView}
-                onClick={() => handleGuidelineClick(guideline.id)}
-                onBookmarkToggle={() => handleBookmarkToggle(guideline.id)}
-              />
-            ))}
+            {uiState.currentView === 'comparison' && (
+              <div className="space-y-6">
+                {/* Comparison View Header */}
+                <div className="flex items-center justify-between bg-blue-50/50 backdrop-blur-sm border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <SquaresFour className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Compare Guidelines Side-by-Side</h3>
+                      <p className="text-sm text-gray-600">
+                        Select guidelines from different sources to compare recommendations
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Side-by-side comparison grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {guidelines.map((guideline) => (
+                    <div key={guideline.id} className="relative">
+                      <GuidelineCard
+                        guideline={guideline}
+                        sourceTheme={getSourceTheme(guideline.source)}
+                        isBookmarked={isBookmarked(guideline.id)}
+                        viewMode="comparison"
+                        onClick={() => handleGuidelineClick(guideline.id)}
+                        onBookmarkToggle={() => handleBookmarkToggle(guideline.id)}
+                      />
+                      
+                      {/* Source Badge */}
+                      <div className="absolute top-2 right-2 z-10">
+                        <Badge 
+                          className={cn(
+                            "text-white text-xs shadow-lg",
+                            guideline.source === 'USPSTF' && "bg-blue-600",
+                            guideline.source === 'NICE' && "bg-purple-600", 
+                            guideline.source === 'NCI_PDQ' && "bg-green-600",
+                            guideline.source === 'RxNorm' && "bg-orange-600"
+                          )}
+                        >
+                          {guideline.source}
+                        </Badge>
+                      </div>
+
+                      {/* Specialty Badge */}
+                      {guideline.specialty && guideline.specialty !== 'All' && (
+                        <div className="absolute bottom-2 left-2 z-10">
+                          <Badge 
+                            variant="outline" 
+                            className="bg-white/90 backdrop-blur-sm text-xs border-gray-300"
+                          >
+                            {guideline.specialty}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {uiState.currentView !== 'comparison' && (
+              <>
+                {guidelines.map((guideline) => (
+                  <GuidelineCard
+                    key={guideline.id}
+                    guideline={guideline}
+                    sourceTheme={getSourceTheme(guideline.source)}
+                    isBookmarked={isBookmarked(guideline.id)}
+                    viewMode={uiState.currentView}
+                    onClick={() => handleGuidelineClick(guideline.id)}
+                    onBookmarkToggle={() => handleBookmarkToggle(guideline.id)}
+                  />
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
