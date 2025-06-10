@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import SearchResults, { SearchResultItem, CategorizedResults } from './SearchResults';
-import { MagnifyingGlass, X } from '@phosphor-icons/react';
+import { MagnifyingGlass, X, SortAscending, Clock, BookOpen, CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { supabaseDataService } from '@/lib/supabaseDataService';
+
+type SortOption = 'relevance' | 'recency' | 'authority' | 'alphabetical';
 
 interface EnhancedSearchProps {
   className?: string;
@@ -32,10 +36,44 @@ export default function EnhancedSearch({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [showSortOptions, setShowSortOptions] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  const sortOptions = [
+    { value: 'relevance' as const, label: 'Most Relevant', icon: MagnifyingGlass },
+    { value: 'recency' as const, label: 'Most Recent', icon: Clock },
+    { value: 'authority' as const, label: 'Authority Source', icon: BookOpen },
+    { value: 'alphabetical' as const, label: 'Alphabetical', icon: SortAscending }
+  ];
+
+  // Sort results based on selected option
+  const sortResults = useCallback((items: SearchResultItem[], sortOption: SortOption): SearchResultItem[] => {
+    return [...items].sort((a, b) => {
+      switch (sortOption) {
+        case 'alphabetical':
+          return a.title.localeCompare(b.title);
+        case 'recency':
+          if (a.metadata?.updatedAt && b.metadata?.updatedAt) {
+            return new Date(b.metadata.updatedAt).getTime() - new Date(a.metadata.updatedAt).getTime();
+          }
+          return 0;
+        case 'authority':
+          // Sort by authority: USPSTF > NICE > NCI > Others
+          const authorityOrder = { 'USPSTF': 1, 'NICE': 2, 'NCI': 3 };
+          const aAuthority = authorityOrder[a.metadata?.source as keyof typeof authorityOrder] || 999;
+          const bAuthority = authorityOrder[b.metadata?.source as keyof typeof authorityOrder] || 999;
+          return aAuthority - bAuthority;
+        case 'relevance':
+        default:
+          return 0; // Keep original order for relevance
+      }
+    });
+  }, []);
 
   // Debounced search function
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -105,9 +143,9 @@ export default function EnhancedSearch({
       const encounterResults: SearchResultItem[] = [];
 
       setResults({
-        patients: patientResults,
-        guidelines: guidelineResults,
-        encounters: encounterResults
+        patients: sortResults(patientResults, sortBy),
+        guidelines: sortResults(guidelineResults, sortBy),
+        encounters: sortResults(encounterResults, sortBy)
       });
     } catch (error) {
       console.error('Error performing search:', error);
@@ -115,7 +153,7 @@ export default function EnhancedSearch({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sortBy, sortResults]);
 
   // Debounce search
   useEffect(() => {
@@ -169,13 +207,20 @@ export default function EnhancedSearch({
         setIsOpen(false);
         onClose?.();
       }
+      
+      if (
+        sortRef.current &&
+        !sortRef.current.contains(event.target as Node)
+      ) {
+        setShowSortOptions(false);
+      }
     };
 
-    if (isOpen) {
+    if (isOpen || showSortOptions) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, showSortOptions, onClose]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -215,6 +260,7 @@ export default function EnhancedSearch({
 
   const totalResults = results.patients.length + results.guidelines.length + results.encounters.length;
   const shouldShowDropdown = isOpen && (query.trim().length >= 2 || isLoading);
+  const currentSortOption = sortOptions.find(option => option.value === sortBy) || sortOptions[0];
 
   const dropdownContent = shouldShowDropdown ? (
     <div
@@ -225,6 +271,66 @@ export default function EnhancedSearch({
       )}
       style={portal ? portalStyle || {} : {}}
     >
+      {/* Sort Controls Header */}
+      {totalResults > 0 && !isLoading && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              {totalResults} results
+            </Badge>
+            {query && (
+              <span className="text-xs text-gray-500">for "{query}"</span>
+            )}
+          </div>
+          
+          {/* Sort Dropdown */}
+          <div className="relative" ref={sortRef}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSortOptions(!showSortOptions)}
+              className="h-7 px-2 text-xs gap-1"
+            >
+              <currentSortOption.icon className="h-3 w-3" />
+              {currentSortOption.label}
+              <CaretDown className={cn(
+                "h-3 w-3 transition-transform duration-200",
+                showSortOptions && "rotate-180"
+              )} />
+            </Button>
+
+            {showSortOptions && (
+              <div className="absolute top-full right-0 mt-1 bg-white rounded-md border border-gray-200 shadow-lg z-10 min-w-40">
+                <div className="p-1">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setShowSortOptions(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs",
+                        "hover:bg-gray-50 transition-colors duration-150",
+                        sortBy === option.value 
+                          ? "bg-blue-50 text-blue-700" 
+                          : "text-gray-700"
+                      )}
+                    >
+                      <option.icon className="h-3 w-3" />
+                      {option.label}
+                      {sortBy === option.value && (
+                        <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       <SearchResults
         results={results}
         query={query}

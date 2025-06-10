@@ -49,11 +49,11 @@ Based on PRD: `prd-clinical-guidelines-interface.md`
   - [x] 3.5 Update advisor API to filter guidelines by selected specialty
 
 - [ ] 4.0 Enhanced Search Functionality
-  - [ ] 4.1 Modify top navbar search to support categorized results
-  - [ ] 4.2 Implement GUIDELINES section in search results with source badges and specialty tags
+  - [x] 4.1 Modify top navbar search to support categorized results
+  - [x] 4.2 Implement GUIDELINES section in search results with source badges and specialty tags
   - [ ] 4.3 Add ranking options (relevance, recency, authority, alphabetical)
-  - [ ] 4.4 Create "Apply to Current Patient" quick action for guideline results
-  - [ ] 4.5 Implement preview text display (first ~100 characters) for guideline results
+  - [x] 4.4 Create "Apply to Current Patient" quick action for guideline results
+  - [x] 4.5 Implement preview text display (first ~100 characters) for guideline results
 
 - [ ] 5.0 Guideline Viewing & Personalization
   - [ ] 5.1 Create modal component for full guideline display with navigation breadcrumbs
