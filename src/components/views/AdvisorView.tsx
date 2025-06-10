@@ -14,6 +14,7 @@ import DOMPurify from 'dompurify';
 import { parser as smd_parser, default_renderer as smd_default_renderer, parser_write as smd_parser_write, parser_end as smd_parser_end } from '../advisor/streaming-markdown/smd';
 import PatientSelectionDropdown from "@/components/advisor/PatientSelectionDropdown";
 import SpecialtyDropdown from "@/components/advisor/SpecialtyDropdown";
+import GuidelineReferences from "@/components/advisor/GuidelineReferences";
 import { Specialty } from '@/types/guidelines';
 import {
   DropdownMenu,
@@ -869,12 +870,20 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
     </>
   );
 
+  // Render guideline references if available
+  const renderGuidelineReferences = () => (
+    assistantMessage.guidelineReferences && assistantMessage.guidelineReferences.length > 0 ? (
+      <GuidelineReferences references={assistantMessage.guidelineReferences} />
+    ) : null
+  );
+
   if (assistantMessage.isMarkdownStream && isStreaming && markdownRootDiv) {
     // Actively streaming with smd.js
     return (
       <>
         <div ref={containerRef} className="prose prose-sm max-w-none dark:prose-invert" />
         {renderToolOutputs()}
+        {renderGuidelineReferences()}
       </>
     );
   } else if (assistantMessage.finalMarkdown) {
@@ -888,6 +897,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         </ReactMarkdown>
         
         {renderToolOutputs()}
+        {renderGuidelineReferences()}
       </div>
     );
   } else if (assistantMessage.isFallback && assistantMessage.fallbackMarkdown) {
@@ -901,6 +911,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         </ReactMarkdown>
         
         {renderToolOutputs()}
+        {renderGuidelineReferences()}
       </div>
     );
   } else if (isStreaming) {
@@ -911,6 +922,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         {/* Optional: could show a generic "Assistant is working..." or specific tool call indicators */}
         {/* For now, tool outputs will cover this if they arrive before markdown */}
         {renderToolOutputs()}
+        {renderGuidelineReferences()}
         {/* Show pulsing if no tool output yet */}
         {!assistantMessage.toolCode && !assistantMessage.codeInterpreterOutputText && !assistantMessage.codeInterpreterImageId && (
             <div className="animate-pulse">Thinking...</div>
@@ -932,6 +944,7 @@ const AssistantMessageRenderer: React.FC<{ assistantMessage: AssistantMessageCon
         );
       })}
       {renderToolOutputs()}
+      {renderGuidelineReferences()}
       
       {/* Tool outputs are now handled by OpenAI Code Interpreter */}
       

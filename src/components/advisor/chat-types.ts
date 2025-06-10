@@ -72,9 +72,21 @@ export const VALID_ELEMENT_TYPES = [
   "references" // Assuming "references" is the container type, adjust if ContentElementReference is the one to validate against for individual refs
 ] as const;
 
+// Guideline reference interface for advisor responses
+export interface GuidelineReference {
+  id: string;
+  title: string;
+  source: 'USPSTF' | 'NICE' | 'NCI' | 'RxNorm';
+  url?: string;
+  summary?: string;
+  grade?: string;
+  specialty?: string;
+}
+
 export interface AssistantMessageContent {
   content?: ContentElement[]; // Made optional
   references?: Record<string, string>;
+  guidelineReferences?: GuidelineReference[]; // Added for clinical guideline references
   isFallback?: boolean;
   fallbackMarkdown?: string; // Made optional
   isMarkdownStream?: boolean; // Added for smd.js integration
