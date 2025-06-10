@@ -41,25 +41,25 @@ Based on PRD: `prd-clinical-guidelines-interface.md`
   - [x] 2.7 Add source-specific visual indicators and themes (USPSTF blue, NICE purple, NCI green, RxNorm orange)
   - [x] 2.8 Add bookmarking functionality with modal display and persistence
 
-- [ ] 3.0 Medical Advisor Enhancement
+- [x] 3.0 Medical Advisor Enhancement
   - [x] 3.1 Add specialty filter dropdown to medical advisor interface
   - [x] 3.2 Implement guideline references display in advisor responses with source badges
   - [x] 3.3 Create linking functionality from advisor references to full guideline view
   - [x] 3.4 Integrate patient context for automatic specialty suggestion
   - [x] 3.5 Update advisor API to filter guidelines by selected specialty
 
-- [ ] 4.0 Enhanced Search Functionality
+- [x] 4.0 Enhanced Search Functionality
   - [x] 4.1 Modify top navbar search to support categorized results
   - [x] 4.2 Implement GUIDELINES section in search results with source badges and specialty tags
-  - [ ] 4.3 Add ranking options (relevance, recency, authority, alphabetical)
+  - [x] 4.3 Add ranking options (relevance, recency, authority, alphabetical)
   - [x] 4.4 Create "Apply to Current Patient" quick action for guideline results
   - [x] 4.5 Implement preview text display (first ~100 characters) for guideline results
 
-- [ ] 5.0 Guideline Viewing & Personalization
-  - [ ] 5.1 Create modal component for full guideline display with navigation breadcrumbs
-  - [ ] 5.2 Implement expandable sections (Key Recommendations, Implementation, Rationale, Population Criteria)
-  - [ ] 5.3 Add "Expand All" toggle functionality for guideline sections
-  - [ ] 5.4 Display comprehensive metadata (source, dates, grade/evidence level, specialty)
-  - [ ] 5.5 Implement bookmarks/favorites system with star icons and persistence
-  - [ ] 5.6 Add recent access tracking for quick guideline retrieval
-  - [ ] 5.7 Create status indicators for recently updated guidelines and bookmark status 
+- [x] 5.0 Guideline Viewing & Personalization
+  - [x] 5.1 Create modal component for full guideline display with navigation breadcrumbs
+  - [x] 5.2 Implement expandable sections (Key Recommendations, Implementation, Rationale, Population Criteria)
+  - [x] 5.3 Add "Expand All" toggle functionality for guideline sections
+  - [x] 5.4 Display comprehensive metadata (source, dates, grade/evidence level, specialty)
+  - [x] 5.5 Implement bookmarks/favorites system with star icons and persistence
+  - [x] 5.6 Add recent access tracking for quick guideline retrieval
+  - [x] 5.7 Create status indicators for recently updated guidelines and bookmark status 
