@@ -202,20 +202,22 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           onAlertClick={onAlertClick}
         />
       )}
-      <NewConsultationModal 
-        open={showNewConsultModal} 
-        onOpenChange={setShowNewConsultModal}
-        draggable={true}
-        draggableConfig={{
-          id: 'new-consultation-dashboard',
-          title: 'New Consultation',
-          defaultPosition: { x: 300, y: 150 },
-          persistent: true
-        }}
-      />
+      {showNewConsultModal && (
+        <NewConsultationModal 
+          open={showNewConsultModal} 
+          onOpenChange={setShowNewConsultModal}
+          draggable={true}
+          draggableConfig={{
+            id: 'new-consultation-dashboard',
+            title: 'New Consultation',
+            defaultPosition: { x: 300, y: 150 },
+            persistent: true
+          }}
+        />
+      )}
 
       {/* Demo Modal */}
-      {demoStage === 'introModal' && (
+      {demoStage === 'introModal' && isDemoModalOpen && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
           <DraggableDialogContent 
             className="sm:max-w-[750px] max-h-[650px] p-8"

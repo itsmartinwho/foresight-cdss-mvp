@@ -208,7 +208,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
         className={`max-w-lg pb-4 ${shake ? 'animate-shake' : ''}`}
-        draggable={draggable}
+        draggable={draggable && open}
         draggableConfig={draggableConfig}
       >
         <DialogHeader>

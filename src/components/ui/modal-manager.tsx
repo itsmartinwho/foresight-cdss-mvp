@@ -317,11 +317,10 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
 
   // Initialize from storage on mount
   useEffect(() => {
-    // TEMPORARILY DISABLED FOR DEBUGGING OVERLAY ISSUE
-    // const persistedData = loadModalPositions();
-    // if (persistedData) {
-    //   dispatch({ type: 'INITIALIZE_FROM_STORAGE', payload: { persistedData } });
-    // }
+    const persistedData = loadModalPositions();
+    if (persistedData) {
+      dispatch({ type: 'INITIALIZE_FROM_STORAGE', payload: { persistedData } });
+    }
   }, []);
 
   // Determine if overlay should be shown
