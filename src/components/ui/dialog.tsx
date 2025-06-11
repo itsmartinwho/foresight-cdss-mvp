@@ -140,26 +140,20 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
-  // Create a config for both draggable and non-draggable modals to register with ModalManager
-  const effectiveConfig = React.useMemo(() => {
-    if (draggable && draggableConfig) {
-      return draggableConfig;
-    }
-    // For non-draggable dialogs, create a minimal config for overlay purposes
-    return {
-      id: `dialog-${Math.random().toString(36).substr(2, 9)}`,
-      title: 'Dialog',
-      persistent: false,
-    };
-  }, [draggable, draggableConfig]);
+  // Generate a stable ID for non-draggable dialogs (only once per component instance)
+  const stableId = React.useMemo(() => `dialog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
 
+  // For draggable dialogs, use the full drag hook
   const {
     isMinimized,
     isDragging,
     minimize,
     containerProps,
     dragHandleProps,
-  } = useModalDragAndMinimize(effectiveConfig);
+  } = useModalDragAndMinimize(draggable && draggableConfig ? draggableConfig : null);
+
+  // For non-draggable dialogs, register with simple overlay hook
+  useModalOverlay(stableId, !draggable);
 
   if (!draggable || !draggableConfig) {
     // Return regular dialog when not draggable - no overlay needed, handled by ModalManager

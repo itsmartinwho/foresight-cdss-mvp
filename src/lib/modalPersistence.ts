@@ -168,15 +168,32 @@ export function clearModalPositions(): void {
 /**
  * Gets the default center position for a modal
  */
-export function getDefaultCenterPosition(modalWidth = 600, modalHeight = 400): ModalPosition {
+export function getDefaultCenterPosition(modalWidth = 800, modalHeight = 600): ModalPosition {
+  if (typeof window === 'undefined') {
+    return { x: 200, y: 100 }; // SSR fallback
+  }
+
   const viewport = {
-    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
-    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+    width: window.innerWidth,
+    height: window.innerHeight,
   };
 
+  // Account for common UI elements
+  const headerHeight = 80; // Space for header/navigation
+  const bottomPadding = 40; // Bottom padding
+  const sidePadding = 40; // Side padding
+
+  // Calculate available space
+  const availableWidth = viewport.width - (sidePadding * 2);
+  const availableHeight = viewport.height - headerHeight - bottomPadding;
+
+  // Adjust modal size if it's too large for viewport
+  const effectiveModalWidth = Math.min(modalWidth, availableWidth);
+  const effectiveModalHeight = Math.min(modalHeight, availableHeight);
+
   return {
-    x: Math.max(0, (viewport.width - modalWidth) / 2),
-    y: Math.max(60, (viewport.height - modalHeight) / 2), // 60px top margin for header
+    x: sidePadding + Math.max(0, (availableWidth - effectiveModalWidth) / 2),
+    y: headerHeight + Math.max(0, (availableHeight - effectiveModalHeight) / 2),
   };
 }
 
@@ -185,18 +202,31 @@ export function getDefaultCenterPosition(modalWidth = 600, modalHeight = 400): M
  */
 export function constrainToViewport(
   position: ModalPosition, 
-  modalWidth = 600, 
-  modalHeight = 400,
-  headerHeight = 60
+  modalWidth = 800, 
+  modalHeight = 600
 ): ModalPosition {
+  if (typeof window === 'undefined') {
+    return position; // SSR fallback
+  }
+
   const viewport = {
-    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
-    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+    width: window.innerWidth,
+    height: window.innerHeight,
   };
 
+  // UI element constraints
+  const headerHeight = 80;
+  const bottomPadding = 20;
+  const sidePadding = 20;
+  const minVisibleWidth = 200; // Ensure at least this much is visible
+
+  // Ensure modal stays within bounds
+  const maxX = Math.max(sidePadding, viewport.width - minVisibleWidth);
+  const maxY = Math.max(headerHeight, viewport.height - bottomPadding - 50); // Ensure title bar is visible
+
   return {
-    x: Math.max(0, Math.min(viewport.width - modalWidth, position.x)),
-    y: Math.max(headerHeight, Math.min(viewport.height - headerHeight, position.y)),
+    x: Math.max(sidePadding, Math.min(maxX, position.x)),
+    y: Math.max(headerHeight, Math.min(maxY, position.y)),
   };
 }
 

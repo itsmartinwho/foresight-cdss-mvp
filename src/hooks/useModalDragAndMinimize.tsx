@@ -9,11 +9,31 @@ import { useModalManager } from '@/components/ui/modal-manager';
 
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 
-function getCenterPosition(modalWidth = 600, modalHeight = 400): ModalPosition {
-  if (typeof window === 'undefined') return { x: 0, y: 0 };
+function getCenterPosition(modalWidth = 800, modalHeight = 600): ModalPosition {
+  if (typeof window === 'undefined') return { x: 200, y: 100 };
+  
+  // Use the same logic as modalPersistence.ts for consistency
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+
+  // Account for common UI elements
+  const headerHeight = 80; // Space for header/navigation
+  const bottomPadding = 40; // Bottom padding
+  const sidePadding = 40; // Side padding
+
+  // Calculate available space
+  const availableWidth = viewport.width - (sidePadding * 2);
+  const availableHeight = viewport.height - headerHeight - bottomPadding;
+
+  // Adjust modal size if it's too large for viewport
+  const effectiveModalWidth = Math.min(modalWidth, availableWidth);
+  const effectiveModalHeight = Math.min(modalHeight, availableHeight);
+
   return {
-    x: Math.max(0, (window.innerWidth - modalWidth) / 2),
-    y: Math.max(0, (window.innerHeight - modalHeight) / 2),
+    x: sidePadding + Math.max(0, (availableWidth - effectiveModalWidth) / 2),
+    y: headerHeight + Math.max(0, (availableHeight - effectiveModalHeight) / 2),
   };
 }
 
@@ -71,10 +91,18 @@ export function useModalDragAndMinimize(
       y: event.clientY - dragState.dragOffset.y,
     };
     
-    // Constrain to viewport bounds
+    // Constrain to viewport bounds using the same logic as modalPersistence
+    const headerHeight = 80;
+    const bottomPadding = 20;
+    const sidePadding = 20;
+    const minVisibleWidth = 200; // Ensure at least this much is visible
+    
+    const maxX = Math.max(sidePadding, window.innerWidth - minVisibleWidth);
+    const maxY = Math.max(headerHeight, window.innerHeight - bottomPadding - 50); // Ensure title bar is visible
+    
     const constrainedPosition = {
-      x: Math.max(0, Math.min(newPosition.x, window.innerWidth - 400)), // 400px estimated modal width
-      y: Math.max(0, Math.min(newPosition.y, window.innerHeight - 200)), // 200px estimated modal height
+      x: Math.max(sidePadding, Math.min(maxX, newPosition.x)),
+      y: Math.max(headerHeight, Math.min(maxY, newPosition.y)),
     };
     
     updateModalPosition(config!.id, constrainedPosition);
@@ -116,10 +144,14 @@ export function useModalDragAndMinimize(
   // Register modal with manager
   useEffect(() => {
     if (isValidConfig) {
+      console.log('Registering modal:', config!.id);
       registerModal(config!);
-      return () => unregisterModal(config!.id);
+      return () => {
+        console.log('Unregistering modal:', config!.id);
+        unregisterModal(config!.id);
+      };
     }
-  }, [config, isValidConfig, registerModal, unregisterModal]);
+  }, [isValidConfig, config?.id, registerModal, unregisterModal]);
 
   // Modal management functions
   const minimize = useCallback(() => {
