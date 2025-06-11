@@ -223,7 +223,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
             draggable={true}
             draggableConfig={{
               id: 'demo-intro-modal',
-              title: 'Foresight Demo',
+              title: '',
               defaultPosition: typeof window !== 'undefined' ? {
                 x: Math.max(50, Math.round((window.innerWidth - 750) / 2)),
                 y: Math.round((window.innerHeight - Math.min(window.innerHeight * 0.85, 700)) / 2),

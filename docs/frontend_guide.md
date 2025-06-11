@@ -74,6 +74,193 @@ To test a different image, add it to `public/images/` and update the `background
 ### Plasma Background Effect
 A subtle, animated gradient flow background effect is implemented using Three.js and a custom GLSL fragment shader. It is managed outside the main React render tree for stability and respects the user's `prefers-reduced-motion` setting.
 
+## Draggable & Minimizable Modals
+
+The application features a comprehensive draggable and minimizable modal system that enhances user productivity by allowing modals to be repositioned, minimized to a bottom taskbar, and restored on demand. This system is built with accessibility, performance, and user experience as core priorities.
+
+#### Overview & Features
+
+**Core Functionality:**
+- **Drag and Drop**: Click and drag modals by their title bars for optimal positioning
+- **Minimize/Restore**: Collapse modals to a bottom taskbar when not actively needed  
+- **Position Persistence**: Modal positions are saved in sessionStorage and restored across sessions
+- **Multiple Modal Support**: Multiple modals can be open and minimized simultaneously
+- **Keyboard Shortcuts**: Ctrl+M to minimize, Escape to close
+- **Viewport Constraints**: Modals stay within screen boundaries with configurable constraints
+- **Perfect Centering**: All modals center correctly on initial open regardless of size
+- **Accessibility Compliant**: Full screen reader and keyboard navigation support
+
+**Supported Modal Types:**
+- Demo Intro Modal (Dashboard) - Draggable, Minimizable, Centered
+- New Consultation Modal (Dashboard & Patients) - Draggable, Minimizable, Centered  
+- Consultation Panel Modal (Patient Workspaces) - Draggable, Minimizable, Centered
+- Guidelines Modal - Draggable, Minimizable
+- All Dialog-based Modals - Support through DraggableDialogContent
+
+#### Technical Architecture
+
+**Core Components:**
+- `useModalDragAndMinimize` - Main hook for drag/minimize functionality
+- `DraggableModalWrapper` - Standalone draggable modal component  
+- `DraggableDialogContent` - Draggable version of Dialog component
+- `modal-manager` - Global state management with sessionStorage persistence
+- `modalPersistence` - Position constraints and storage utilities
+- `MinimizedModalsBar` - Bottom taskbar for minimized modals
+
+**Key Technical Features:**
+- **Smart Centering**: Dynamic calculation based on modal type and viewport size
+- **Drag Handle Optimization**: Full title bar draggable with button click prevention
+- **Pointer Events Management**: Simplified pointer-events structure for reliable dragging
+- **Constraint Management**: Proper viewport constraints with modal-specific dimensions
+- **State Persistence**: Positions saved per modal ID in sessionStorage
+- **Overlay Management**: Centralized overlay handling prevents UI blocking issues
+
+#### Usage Examples
+
+**Making a Dialog Draggable:**
+```tsx
+import { Dialog, DraggableDialogContent } from '@/components/ui/dialog';
+
+function MyModal({ isOpen, onClose }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DraggableDialogContent
+        draggable={true}
+        draggableConfig={{
+          id: 'my-modal-unique-id',
+          title: 'My Draggable Modal',
+          defaultPosition: { x: 100, y: 100 },
+          persistent: true, // Saves position to sessionStorage
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>My Draggable Modal</DialogTitle>
+        </DialogHeader>
+        {/* Modal content */}
+      </DraggableDialogContent>
+    </Dialog>
+  );
+}
+```
+
+**Custom Modal with DraggableModalWrapper:**
+```tsx
+import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
+
+function CustomModal({ isOpen, onClose }) {
+  return (
+    <DraggableModalWrapper
+      onClose={onClose}
+      config={{
+        id: 'custom-modal',
+        title: 'Custom Modal',
+        persistent: true,
+      }}
+    >
+      <div className="p-6">
+        {/* Your custom modal content */}
+      </div>
+    </DraggableModalWrapper>
+  );
+}
+```
+
+#### Configuration Options
+
+**ModalDragAndMinimizeConfig Interface:**
+```tsx
+interface ModalDragAndMinimizeConfig {
+  id: string;                    // Unique identifier (required)
+  title: string;                 // Title shown in minimized bar
+  defaultPosition?: { x: number; y: number }; // Initial position
+  persistent?: boolean;          // Save position to sessionStorage
+  canMinimize?: boolean;         // Allow minimization (default: true)
+  constraints?: {               // Viewport constraints
+    minX?: number;
+    maxX?: number;
+    minY?: number;
+    maxY?: number;
+  };
+}
+```
+
+#### Modal Manager Integration
+
+The `ModalManagerProvider` must be included in your app's root layout to enable the minimized modal bar and global state management:
+
+```tsx
+// In your layout.tsx or App component
+import { ModalManagerProvider } from '@/components/ui/modal-manager';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <ModalManagerProvider>
+          {children}
+        </ModalManagerProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+#### Keyboard Shortcuts & Accessibility
+
+**Keyboard Support:**
+- `Ctrl + M` - Minimize/restore active modal
+- `Escape` - Close active modal  
+- `Tab` - Navigate between modal elements
+- `Enter` - Activate focused button
+- `Space` - Toggle focused checkbox/button
+
+**Accessibility Features:**
+- Proper ARIA labels and roles for all interactive elements
+- Live region announcements for state changes
+- Keyboard navigation with logical tab order
+- Focus management during minimize/restore operations
+- Screen reader compatible with descriptive labels
+
+#### Performance & Browser Support
+
+**Performance Optimizations:**
+- Event listeners added/removed efficiently during drag operations
+- Position updates throttled during drag for smooth performance
+- Minimal DOM manipulations using CSS transforms
+- Automatic cleanup on component unmount
+- SessionStorage data with automatic expiration
+
+**Browser Compatibility:**
+- Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+- Progressive enhancement with graceful degradation
+- Core modal functionality works without drag features on older browsers
+
+#### Best Practices
+
+1. **Unique Modal IDs**: Always provide a unique `id` in draggableConfig for proper state management
+2. **Meaningful Titles**: Use descriptive titles for the minimized state display
+3. **Persistent Configuration**: Set `persistent: true` for modals that should remember position
+4. **Testing**: Test minimize/restore functionality when adding draggable support to new modals
+5. **Content Handling**: Ensure modal content handles being minimized appropriately (e.g., ongoing processes continue)
+6. **Responsive Design**: Consider how draggable modals behave on different screen sizes
+
+#### Implementation Examples from the Codebase
+
+**New Consultation Modal (Dashboard & Patients):**
+- Uses `mergedDraggableConfig` to inject centered `defaultPosition` when none provided
+- Calculates center based on estimated modal dimensions (512x400px)
+- Includes form state preservation during minimize/restore cycles
+
+**Consultation Panel Modal (Patient Workspaces):**
+- Larger modal (estimated 800x600px) with complex clinical workflows
+- Supports ongoing transcription and clinical engine processes while minimized
+- Uses direct `DraggableModalWrapper` rendering without container conflicts
+
+**Demo Intro Modal (Dashboard):**
+- Fixed modal size (750x650px) with custom positioning logic
+- Implements dynamic viewport-based centering calculations
+- Non-persistent configuration suitable for introductory content
+
 ## Forms and Validation
 - **Forms**: Standard React state and event handlers are used.
 - **Validation**: Manual validation and simple checks are used.
