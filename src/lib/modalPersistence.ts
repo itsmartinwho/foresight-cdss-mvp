@@ -214,19 +214,19 @@ export function constrainToViewport(
     height: window.innerHeight,
   };
 
-  // UI element constraints
-  const headerHeight = 80;
-  const bottomPadding = 20;
+  // UI element constraints - be more lenient with vertical space
+  const minTopPadding = 20; // Minimum space from top
+  const minBottomPadding = 20; // Minimum space from bottom  
   const sidePadding = 20;
   const minVisibleWidth = 200; // Ensure at least this much is visible
 
-  // Ensure modal stays within bounds
+  // Calculate max positions based on actual modal dimensions
   const maxX = Math.max(sidePadding, viewport.width - minVisibleWidth);
-  const maxY = Math.max(headerHeight, viewport.height - bottomPadding - 50); // Ensure title bar is visible
+  const maxY = Math.max(minTopPadding, viewport.height - modalHeight - minBottomPadding);
 
   return {
     x: Math.max(sidePadding, Math.min(maxX, position.x)),
-    y: Math.max(headerHeight, Math.min(maxY, position.y)),
+    y: Math.max(minTopPadding, Math.min(maxY, position.y)),
   };
 }
 
