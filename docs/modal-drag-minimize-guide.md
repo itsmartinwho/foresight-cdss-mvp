@@ -2,7 +2,17 @@
 
 This guide covers the implementation and usage of the draggable and minimizable modal system in the Foresight CDSS application.
 
-> **Note**: The draggable and minimizable modal functionality is now fully implemented and working. Visit `/demo/modal-test` to see it in action.
+> **Status: COMPLETED** ✅
+> 
+> The draggable and minimizable modal functionality has been fully implemented with centralized overlay management to prevent UI blocking issues. 
+> 
+> **Test it:** Visit `/demo/modal-test` to see all functionality in action.
+> 
+> **Key fixes applied:**
+> - Centralized overlay rendering in ModalManagerProvider
+> - Overlay only shows when modals are visible and not minimized  
+> - Proper z-index management and scroll locking
+> - No more persistent overlays blocking the UI
 
 ## Overview
 
