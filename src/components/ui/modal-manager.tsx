@@ -236,8 +236,11 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
       const modals: { [id: string]: ModalState } = {};
       let highestZIndex = state.highestZIndex;
 
+      console.log('🔍 INITIALIZE_FROM_STORAGE Debug:', persistedData);
+
       for (const modalId in persistedData.modals) {
         const pModal = persistedData.modals[modalId];
+        console.log('🔍 Loading modal from storage:', modalId, pModal);
         modals[modalId] = {
           ...pModal,
           isVisible: true,
@@ -261,6 +264,9 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
           return null;
         })
         .filter(Boolean) as MinimizedModalData[];
+
+      console.log('🔍 Initialized modals from storage:', Object.keys(modals));
+      console.log('🔍 Initialized minimized modals:', minimizedModals);
 
       return {
         modals,
@@ -312,8 +318,19 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     // Debug logging to understand overlay behavior
     console.log('🔍 Overlay Debug:');
     console.log('  Total modals:', allModals.length);
-    console.log('  All modal states:', allModals.map(m => ({ id: m.id, isVisible: m.isVisible, isMinimized: m.isMinimized })));
+    console.log('  All modal details:', allModals.map(m => ({ 
+      id: m.id, 
+      title: m.title, 
+      isVisible: m.isVisible, 
+      isMinimized: m.isMinimized 
+    })));
     console.log('  Visible non-minimized modals:', visibleNonMinimizedModals.length);
+    console.log('  Visible non-minimized details:', visibleNonMinimizedModals.map(m => ({ 
+      id: m.id, 
+      title: m.title, 
+      isVisible: m.isVisible, 
+      isMinimized: m.isMinimized 
+    })));
     console.log('  shouldShowOverlay result:', result);
     
     return result;

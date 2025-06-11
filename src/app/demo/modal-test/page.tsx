@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DraggableDialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import GuidelineModal from '@/components/guidelines/GuidelineModal';
 import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
 import { GuidelineModalData } from '@/types/guidelines';
 import { Medal } from '@phosphor-icons/react';
+import { clearModalPositions } from '@/lib/modalPersistence';
 
 // Mock guideline data for testing
 const mockGuidelineData: GuidelineModalData = {
@@ -47,6 +48,11 @@ export default function ModalTestPage() {
   const [isGuidelineModalOpen, setIsGuidelineModalOpen] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+
+  // Clear any persisted modal data for clean testing
+  useEffect(() => {
+    clearModalPositions();
+  }, []);
 
   return (
     <div className="p-8">
