@@ -147,11 +147,15 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
-  // For now, always render as regular dialog until modal manager is properly integrated
-  // This prevents overlay issues while preserving functionality
-  const shouldUseDraggable = false; // Disabled until modal manager integration is fixed
+  const {
+    isMinimized,
+    isDragging,
+    minimize,
+    containerProps,
+    dragHandleProps,
+  } = useModalDragAndMinimize(draggable && draggableConfig ? draggableConfig : null);
 
-  if (!shouldUseDraggable || !draggable || !draggableConfig) {
+  if (!draggable || !draggableConfig) {
     // Return regular dialog when not draggable
     return (
       <DialogPortal>
@@ -177,8 +181,76 @@ const DraggableDialogContent = React.forwardRef<
     );
   }
 
-  // Draggable functionality disabled for now
-  return null;
+  // Don't render if minimized
+  if (isMinimized) {
+    return null;
+  }
+
+  // Draggable dialog
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <div 
+        {...containerProps}
+        className={cn(
+          "glass rounded-lg shadow-xl overflow-hidden flex flex-col max-w-lg w-full",
+          isDragging && "modal-dragging",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          className
+        )}
+      >
+        <DialogPrimitive.Content 
+          ref={ref} 
+          className="flex flex-col flex-1"
+          {...props}
+        >
+          {/* Title bar with drag handle */}
+          <div 
+            {...dragHandleProps}
+            className={cn(
+              "modal-drag-handle flex items-center justify-between p-4 border-b border-white/10",
+              dragHandleProps.className
+            )}
+            data-testid="modal-title-bar"
+          >
+            <div className="flex-1">
+              {/* Title will be rendered by DialogTitle component */}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {showMinimizeButton && (
+                <button
+                  onClick={minimize}
+                  className="modal-minimize-btn"
+                  aria-label="Minimize modal"
+                  title="Minimize"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              )}
+              <DialogPrimitive.Close 
+                className="modal-minimize-btn"
+                aria-label="Close modal"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </DialogPrimitive.Close>
+            </div>
+          </div>
+
+          {/* Modal content */}
+          <div className="flex-1 overflow-auto p-6">
+            {children}
+          </div>
+
+          {/* Screen reader instructions */}
+          <div id={`${draggableConfig.id}-drag-instructions`} className="sr-only">
+            Drag the title bar to move this modal. Press Control+M to minimize or Escape to close.
+          </div>
+        </DialogPrimitive.Content>
+      </div>
+    </DialogPortal>
+  );
 });
 DraggableDialogContent.displayName = "DraggableDialogContent";
 

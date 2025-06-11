@@ -9,6 +9,8 @@ import PlasmaBackground from '../components/PlasmaBackground';
 import GlassHeader from '@/components/layout/GlassHeader';
 import GlassSidebar from '@/components/layout/GlassSidebar';
 import MotionWrapper from '../components/MotionWrapper';
+import { ModalManagerProvider } from '@/components/ui/modal-manager';
+import { MinimizedModalBar } from '@/components/ui/minimized-modal-bar';
 
 const DynamicDemoProvider = dynamic(() => 
   import('@/contexts/DemoContext').then((mod) => mod.DemoProvider),
@@ -40,16 +42,19 @@ export default function RootLayout({
       </head>
       <body>
         <DynamicDemoProvider>
-          <PlasmaBackground />
-          <GlassHeader />
-          <div className="flex flex-1 overflow-hidden pt-12 h-[calc(100svh-4rem)] min-h-0">
-            <GlassSidebar />
-            <main className="flex flex-col flex-1 overflow-hidden relative bg-transparent p-2">
-              <React.Suspense fallback={<div>Loading page...</div>}>
-                <MotionWrapper>{children}</MotionWrapper>
-              </React.Suspense>
-            </main>
-          </div>
+          <ModalManagerProvider>
+            <PlasmaBackground />
+            <GlassHeader />
+            <div className="flex flex-1 overflow-hidden pt-12 h-[calc(100svh-4rem)] min-h-0">
+              <GlassSidebar />
+              <main className="flex flex-col flex-1 overflow-hidden relative bg-transparent p-2">
+                <React.Suspense fallback={<div>Loading page...</div>}>
+                  <MotionWrapper>{children}</MotionWrapper>
+                </React.Suspense>
+              </main>
+            </div>
+            <MinimizedModalBar />
+          </ModalManagerProvider>
         </DynamicDemoProvider>
       </body>
     </html>

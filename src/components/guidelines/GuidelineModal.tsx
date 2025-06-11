@@ -57,6 +57,7 @@ interface GuidelineModalContentProps {
   isBookmarked: boolean;
   onBookmarkToggle: () => void;
   onClose: () => void;
+  hideCloseButton?: boolean;
 }
 
 function GuidelineModalContent({
@@ -68,7 +69,8 @@ function GuidelineModalContent({
   toggleExpandAll,
   isBookmarked,
   onBookmarkToggle,
-  onClose
+  onClose,
+  hideCloseButton = false
 }: GuidelineModalContentProps) {
   const IconComponent = config.icon;
 
@@ -130,14 +132,16 @@ function GuidelineModalContent({
                 )}
               />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-9 w-9 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {!hideCloseButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-9 w-9 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -289,13 +293,17 @@ export default function GuidelineModal({
 
   if (draggable) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 pointer-events-none">
+      <>
+        {/* Background overlay */}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]" />
+        
+        {/* Draggable modal */}
         <DraggableModalWrapper
           config={finalDraggableConfig}
           onClose={onClose}
-          className="pointer-events-auto max-w-5xl w-full bg-white"
+          className="max-w-5xl w-full bg-white z-[9999]"
           showMinimizeButton={true}
-          showCloseButton={false}
+          showCloseButton={true}
         >
           <GuidelineModalContent 
             modalData={modalData}
@@ -307,9 +315,10 @@ export default function GuidelineModal({
             isBookmarked={isBookmarked}
             onBookmarkToggle={onBookmarkToggle}
             onClose={onClose}
+            hideCloseButton={true}
           />
         </DraggableModalWrapper>
-      </div>
+      </>
     );
   }
 
