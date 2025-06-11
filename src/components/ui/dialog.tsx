@@ -7,7 +7,7 @@ import { X, Minus } from '@phosphor-icons/react';
 import { cn } from "@/lib/utils"
 import { DraggableModalWrapper } from './draggable-modal-wrapper';
 import { ModalDragAndMinimizeConfig } from '@/types/modal';
-import { useModalDragAndMinimize } from '@/hooks/useModalDragAndMinimize';
+import { useModalDragAndMinimize, useModalOverlay } from '@/hooks/useModalDragAndMinimize';
 
 const Dialog = DialogPrimitive.Root
 
@@ -36,17 +36,10 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => {
-  React.useEffect(() => {
-    // lock scroll
-    document.documentElement.classList.add('overflow-hidden');
-    return () => {
-      document.documentElement.classList.remove('overflow-hidden');
-    };
-  }, []);
-
+  // Scroll locking is now handled centrally by ModalManager
+  
   return (
     <DialogPortal>
-      <DialogOverlay />
       <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
         <DialogPrimitive.Content
           ref={ref}
@@ -147,19 +140,31 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
+  // Create a config for both draggable and non-draggable modals to register with ModalManager
+  const effectiveConfig = React.useMemo(() => {
+    if (draggable && draggableConfig) {
+      return draggableConfig;
+    }
+    // For non-draggable dialogs, create a minimal config for overlay purposes
+    return {
+      id: `dialog-${Math.random().toString(36).substr(2, 9)}`,
+      title: 'Dialog',
+      persistent: false,
+    };
+  }, [draggable, draggableConfig]);
+
   const {
     isMinimized,
     isDragging,
     minimize,
     containerProps,
     dragHandleProps,
-  } = useModalDragAndMinimize(draggable && draggableConfig ? draggableConfig : null);
+  } = useModalDragAndMinimize(effectiveConfig);
 
   if (!draggable || !draggableConfig) {
-    // Return regular dialog when not draggable
+    // Return regular dialog when not draggable - no overlay needed, handled by ModalManager
     return (
       <DialogPortal>
-        <DialogOverlay />
         <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
           <DialogPrimitive.Content 
             ref={ref} 
@@ -186,10 +191,9 @@ const DraggableDialogContent = React.forwardRef<
     return null;
   }
 
-  // Draggable dialog
+  // Draggable dialog - no overlay needed, handled by ModalManager
   return (
     <DialogPortal>
-      <DialogOverlay />
       <div 
         {...containerProps}
         className={cn(

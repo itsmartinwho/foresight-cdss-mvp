@@ -306,6 +306,31 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     }
   }, []);
 
+  // Determine if overlay should be shown
+  const shouldShowOverlay = React.useMemo(() => {
+    return Object.values(state.modals).some(modal => modal.isVisible && !modal.isMinimized);
+  }, [state.modals]);
+
+  // Get the highest z-index for overlay positioning
+  const overlayZIndex = React.useMemo(() => {
+    const visibleModals = Object.values(state.modals).filter(modal => modal.isVisible && !modal.isMinimized);
+    if (visibleModals.length === 0) return 0;
+    const highestModalZIndex = Math.max(...visibleModals.map(modal => modal.zIndex));
+    return highestModalZIndex - 1; // Overlay should be below the modals
+  }, [state.modals]);
+
+  // Handle scroll locking when overlay is shown
+  useEffect(() => {
+    if (shouldShowOverlay) {
+      document.documentElement.classList.add('overflow-hidden');
+      return () => {
+        document.documentElement.classList.remove('overflow-hidden');
+      };
+    } else {
+      document.documentElement.classList.remove('overflow-hidden');
+    }
+  }, [shouldShowOverlay]);
+
   const subscribe = useCallback((listener: Listener) => {
     listeners.current.push(listener);
     return () => {
@@ -363,6 +388,14 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   return (
     <ModalManagerContext.Provider value={contextValue}>
       {children}
+      {/* Global modal overlay - only shown when there are visible, non-minimized modals */}
+      {shouldShowOverlay && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          style={{ zIndex: overlayZIndex }}
+          aria-hidden="true"
+        />
+      )}
     </ModalManagerContext.Provider>
   );
 }

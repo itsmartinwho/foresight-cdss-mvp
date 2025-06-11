@@ -293,32 +293,27 @@ export default function GuidelineModal({
 
   if (draggable) {
     return (
-      <>
-        {/* Background overlay */}
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]" />
-        
-        {/* Draggable modal */}
-        <DraggableModalWrapper
-          config={finalDraggableConfig}
+      // No overlay needed - handled by ModalManager
+      <DraggableModalWrapper
+        config={finalDraggableConfig}
+        onClose={onClose}
+        className="max-w-5xl w-full bg-white"
+        showMinimizeButton={true}
+        showCloseButton={true}
+      >
+        <GuidelineModalContent 
+          modalData={modalData}
+          config={config}
+          expandedSections={expandedSections}
+          expandAll={expandAll}
+          toggleSection={toggleSection}
+          toggleExpandAll={toggleExpandAll}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={onBookmarkToggle}
           onClose={onClose}
-          className="max-w-5xl w-full bg-white z-[9999]"
-          showMinimizeButton={true}
-          showCloseButton={true}
-        >
-          <GuidelineModalContent 
-            modalData={modalData}
-            config={config}
-            expandedSections={expandedSections}
-            expandAll={expandAll}
-            toggleSection={toggleSection}
-            toggleExpandAll={toggleExpandAll}
-            isBookmarked={isBookmarked}
-            onBookmarkToggle={onBookmarkToggle}
-            onClose={onClose}
-            hideCloseButton={true}
-          />
-        </DraggableModalWrapper>
-      </>
+          hideCloseButton={true}
+        />
+      </DraggableModalWrapper>
     );
   }
 

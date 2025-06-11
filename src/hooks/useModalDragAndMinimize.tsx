@@ -217,4 +217,22 @@ export function useModalDragAndMinimize(
     containerProps,
     dragHandleProps,
   };
+}
+
+// Simple hook for regular (non-draggable) modals to register with ModalManager for overlay
+export function useModalOverlay(modalId: string, isOpen: boolean) {
+  const { registerModal, unregisterModal } = useModalManager();
+
+  useEffect(() => {
+    if (isOpen) {
+      // Register a minimal config for overlay purposes
+      const config: ModalDragAndMinimizeConfig = {
+        id: modalId,
+        title: 'Modal',
+        persistent: false,
+      };
+      registerModal(config);
+      return () => unregisterModal(modalId);
+    }
+  }, [isOpen, modalId, registerModal, unregisterModal]);
 } 
