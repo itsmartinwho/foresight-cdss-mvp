@@ -216,13 +216,15 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       };
     }
     const estimatedWidth = 512;
-    const estimatedHeight = 600;
+    const estimatedHeight = Math.min(window.innerHeight * 0.8, 900);
     const x = Math.max(50, Math.round((window.innerWidth - estimatedWidth) / 2));
-    const y = Math.max(50, Math.round((window.innerHeight - estimatedHeight) / 2));
+    const y = Math.round((window.innerHeight - estimatedHeight) / 2);
+    // Ensure we have at least 20px margin top
+    const safeY = Math.max(20, y);
 
     return {
       ...draggableConfig,
-      defaultPosition: { x, y },
+      defaultPosition: { x, y: safeY },
     };
   }, [draggable, draggableConfig]);
 
