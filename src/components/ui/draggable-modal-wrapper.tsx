@@ -40,31 +40,8 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
       return null;
     }
 
-    // Compute position style based on minimize state and drag state
-    const positionStyle = React.useMemo(() => {
-      if (isMinimized) return {};
-      
-      const pos = containerProps.style;
-      
-      // Check if we're at the initial center position and haven't been dragged
-      // Get current window dimensions
-      const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-      const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-      const isAtCenter = !isDragging && pos && 
-        pos.left === `${Math.round(windowWidth / 2)}px` && 
-        pos.top === `${Math.round(windowHeight / 2)}px`;
-      
-      if (isAtCenter) {
-        // Use transform to center the modal
-        return {
-          ...pos,
-          transform: 'translate(-50%, -50%)',
-        };
-      }
-      
-      // Otherwise use the position from containerProps
-      return pos || {};
-    }, [containerProps.style, isMinimized, isDragging]);
+    // Use position style from containerProps directly
+    const positionStyle = containerProps.style;
 
     return (
       <div 

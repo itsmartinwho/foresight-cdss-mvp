@@ -12,21 +12,25 @@ const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 function getCenterPosition(): ModalPosition {
   if (typeof window === 'undefined') return { x: 200, y: 100 };
   
-  // Use viewport dimensions
+  // Get viewport dimensions
   const viewport = {
     width: window.innerWidth,
     height: window.innerHeight,
   };
 
-  // Calculate true center - modal will be positioned at its top-left corner
-  // We'll use 50% transform in CSS to truly center it
-  const centerX = Math.round(viewport.width / 2);
-  const centerY = Math.round(viewport.height / 2);
+  // Estimate modal dimensions (can be refined based on actual modal sizes)
+  const modalWidth = 512; // max-w-lg is typically 512px
+  const modalHeight = 400; // Estimated height
+  
+  // Calculate position to center the modal
+  const centerX = Math.round((viewport.width - modalWidth) / 2);
+  const centerY = Math.round((viewport.height - modalHeight) / 2);
 
-  return {
-    x: centerX,
-    y: centerY,
-  };
+  // Ensure modal stays within viewport bounds
+  const x = Math.max(20, centerX);
+  const y = Math.max(20, centerY);
+
+  return { x, y };
 }
 
 export function useModalDragAndMinimize(
