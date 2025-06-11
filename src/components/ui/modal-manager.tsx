@@ -41,9 +41,23 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
       const { config } = action.payload;
       const { id, title, icon, defaultPosition } = config;
 
-      // Check if modal already exists
-      if (state.modals[id]) {
+      // Check if modal already exists and is visible - if so, just update its visibility
+      if (state.modals[id] && state.modals[id].isVisible) {
         return state;
+      }
+
+      // If modal exists but isn't visible, update it to be visible
+      if (state.modals[id]) {
+        return {
+          ...state,
+          modals: {
+            ...state.modals,
+            [id]: {
+              ...state.modals[id],
+              isVisible: true,
+            }
+          }
+        };
       }
 
       // Get persisted data if available
@@ -70,7 +84,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         isMinimized: modalPersistedData?.isMinimized ?? false,
         position,
         zIndex: modalPersistedData?.zIndex ?? newZIndex,
-        isVisible: true,
+        isVisible: true, // Always mark as visible when actively registering
       };
 
       // Update minimized modals if this modal was minimized
@@ -243,7 +257,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         console.log('🔍 Loading modal from storage:', modalId, pModal);
         modals[modalId] = {
           ...pModal,
-          isVisible: true,
+          isVisible: false, // Don't automatically make persisted modals visible
         };
         if (pModal.zIndex > highestZIndex) {
           highestZIndex = pModal.zIndex;
@@ -303,10 +317,11 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
 
   // Initialize from storage on mount
   useEffect(() => {
-    const persistedData = loadModalPositions();
-    if (persistedData) {
-      dispatch({ type: 'INITIALIZE_FROM_STORAGE', payload: { persistedData } });
-    }
+    // TEMPORARILY DISABLED FOR DEBUGGING OVERLAY ISSUE
+    // const persistedData = loadModalPositions();
+    // if (persistedData) {
+    //   dispatch({ type: 'INITIALIZE_FROM_STORAGE', payload: { persistedData } });
+    // }
   }, []);
 
   // Determine if overlay should be shown
@@ -315,23 +330,18 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     const visibleNonMinimizedModals = allModals.filter(modal => modal.isVisible && !modal.isMinimized);
     const result = visibleNonMinimizedModals.length > 0;
     
-    // Debug logging to understand overlay behavior
-    console.log('🔍 Overlay Debug:');
-    console.log('  Total modals:', allModals.length);
-    console.log('  All modal details:', allModals.map(m => ({ 
-      id: m.id, 
-      title: m.title, 
-      isVisible: m.isVisible, 
-      isMinimized: m.isMinimized 
-    })));
-    console.log('  Visible non-minimized modals:', visibleNonMinimizedModals.length);
-    console.log('  Visible non-minimized details:', visibleNonMinimizedModals.map(m => ({ 
-      id: m.id, 
-      title: m.title, 
-      isVisible: m.isVisible, 
-      isMinimized: m.isMinimized 
-    })));
-    console.log('  shouldShowOverlay result:', result);
+    // Only log debug info if there's a potential issue (overlay showing when no visible modals)
+    if (result && visibleNonMinimizedModals.length === 0) {
+      console.log('🔍 Overlay Issue Debug:');
+      console.log('  Total modals:', allModals.length);
+      console.log('  All modal details:', allModals.map(m => ({ 
+        id: m.id, 
+        title: m.title, 
+        isVisible: m.isVisible, 
+        isMinimized: m.isMinimized 
+      })));
+      console.log('  shouldShowOverlay result:', result);
+    }
     
     return result;
   }, [state.modals]);

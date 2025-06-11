@@ -8,6 +8,7 @@ import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
 import { GuidelineModalData } from '@/types/guidelines';
 import { Medal } from '@phosphor-icons/react';
 import { clearModalPositions } from '@/lib/modalPersistence';
+import { useModalManager } from '@/components/ui/modal-manager';
 
 // Mock guideline data for testing
 const mockGuidelineData: GuidelineModalData = {
@@ -49,14 +50,56 @@ export default function ModalTestPage() {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
+  // Get modal manager for debugging
+  const modalManager = useModalManager();
+
   // Clear any persisted modal data for clean testing
   useEffect(() => {
     clearModalPositions();
   }, []);
 
+  // Debug function to log current modal state
+  const debugModalState = () => {
+    console.log('🔧 Debug Modal State:');
+    console.log('  Current modals:', modalManager.state.modals);
+    console.log('  Minimized modals:', modalManager.state.minimizedModals);
+    console.log('  Highest Z-Index:', modalManager.state.highestZIndex);
+    
+    // Also check if each modal is visible and minimized
+    Object.values(modalManager.state.modals).forEach(modal => {
+      console.log(`  Modal ${modal.id}: visible=${modal.isVisible}, minimized=${modal.isMinimized}`);
+    });
+  };
+
+  // Force clear all modals
+  const forceCleanupModals = () => {
+    // Force unregister all current modals
+    Object.keys(modalManager.state.modals).forEach(modalId => {
+      modalManager.unregisterModal(modalId);
+    });
+    clearModalPositions();
+    console.log('🧹 Force cleaned all modals');
+  };
+
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Modal Drag and Minimize Test Page</h1>
+      
+      {/* Debug Section */}
+      <div className="mb-6 p-4 bg-yellow-100 border border-yellow-300 rounded">
+        <h3 className="font-semibold mb-2 text-yellow-800">Debug Controls</h3>
+        <div className="space-x-2">
+          <Button onClick={debugModalState} variant="outline" size="sm">
+            Log Modal State
+          </Button>
+          <Button onClick={forceCleanupModals} variant="outline" size="sm">
+            Force Clear All Modals
+          </Button>
+        </div>
+        <p className="text-sm text-yellow-700 mt-2">
+          Use these buttons to debug modal state. Check browser console for logs.
+        </p>
+      </div>
       
       <div className="space-y-4">
         <div>

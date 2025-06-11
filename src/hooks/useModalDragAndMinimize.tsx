@@ -149,7 +149,7 @@ export function useModalDragAndMinimize(
         unregisterModal(config!.id);
       };
     }
-  }, [isValidConfig, config?.id, registerModal, unregisterModal]);
+  }, [isValidConfig, config?.id, config?.title, config?.persistent, registerModal, unregisterModal]);
 
   // Modal management functions
   const minimize = useCallback(() => {
