@@ -2,6 +2,8 @@
 
 Based on: `tasks/prd-draggable-minimizable-modals.md`
 
+**Status: COMPLETED** - All functionality has been implemented and is working. Visit `/demo/modal-test` to see it in action.
+
 ## Relevant Files
 - `src/hooks/useModalDragAndMinimize.tsx` - Core hook providing drag and minimize functionality
 - `src/components/ui/modal-manager.tsx` - Global modal management and minimized modal container

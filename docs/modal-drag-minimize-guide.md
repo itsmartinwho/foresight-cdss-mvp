@@ -2,6 +2,8 @@
 
 This guide covers the implementation and usage of the draggable and minimizable modal system in the Foresight CDSS application.
 
+> **Note**: The draggable and minimizable modal functionality is now fully implemented and working. Visit `/demo/modal-test` to see it in action.
+
 ## Overview
 
 The modal system enhances user productivity by allowing modals to be:
