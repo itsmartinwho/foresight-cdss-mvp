@@ -144,10 +144,8 @@ export function useModalDragAndMinimize(
   // Register modal with manager
   useEffect(() => {
     if (isValidConfig) {
-      console.log('Registering modal:', config!.id);
       registerModal(config!);
       return () => {
-        console.log('Unregistering modal:', config!.id);
         unregisterModal(config!.id);
       };
     }

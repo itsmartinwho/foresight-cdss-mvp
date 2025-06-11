@@ -135,7 +135,6 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
     case 'MINIMIZE_MODAL': {
       const { id } = action.payload;
       const modal = state.modals[id];
-      console.log('ModalManager: MINIMIZE_MODAL called for id:', id, 'modal:', modal);
       if (!modal || modal.isMinimized) return state;
 
       const updatedModal = { ...modal, isMinimized: true };
@@ -164,8 +163,6 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         ...modal,
         order: index,
       }));
-
-      console.log('ModalManager: After minimize, minimizedModals:', minimizedModals);
 
       // Persist minimized state
       updateMinimizedOrder(id, true);
@@ -309,12 +306,7 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   // Determine if overlay should be shown
   const shouldShowOverlay = React.useMemo(() => {
     const visibleNonMinimizedModals = Object.values(state.modals).filter(modal => modal.isVisible && !modal.isMinimized);
-    const result = visibleNonMinimizedModals.length > 0;
-    console.log('ModalManager: shouldShowOverlay calculation:');
-    console.log('  - All modals:', Object.keys(state.modals));
-    console.log('  - Visible non-minimized modals:', visibleNonMinimizedModals.map(m => ({ id: m.id, isVisible: m.isVisible, isMinimized: m.isMinimized })));
-    console.log('  - shouldShowOverlay result:', result);
-    return result;
+    return visibleNonMinimizedModals.length > 0;
   }, [state.modals]);
 
   // Get the highest z-index for overlay positioning
