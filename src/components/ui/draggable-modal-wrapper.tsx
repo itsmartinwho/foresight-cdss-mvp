@@ -58,34 +58,29 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
       >
         {/* Title bar with drag handle */}
         <div 
+          {...dragHandleProps}
           className={cn(
             "modal-title-bar flex items-center justify-between p-4 border-b border-white/10",
-            "relative" // Add relative positioning for button z-index
+            "cursor-move", // Make the entire title bar show move cursor
+            dragHandleProps.className
           )}
           data-testid="modal-title-bar"
         >
-          {/* Invisible drag handle that covers the entire title bar */}
-          <div 
-            {...dragHandleProps}
-            className={cn(
-              "absolute inset-0", // Cover entire title bar
-              "cursor-move",
-              dragHandleProps.className
-            )}
-          />
-          
-          {/* Title - positioned above drag handle */}
-          <div className="flex items-center gap-2 relative z-10 pointer-events-none">
-            <h3 id={`${config.id}-title`} className="text-lg font-semibold">
+          {/* Title */}
+          <div className="flex items-center gap-2">
+            <h3 id={`${config.id}-title`} className="text-lg font-semibold pointer-events-none">
               {config.title}
             </h3>
           </div>
           
-          {/* Buttons - positioned above drag handle with pointer-events */}
-          <div className="flex items-center gap-2 relative z-10">
+          {/* Buttons - positioned with higher z-index and pointer-events */}
+          <div className="flex items-center gap-2 relative z-20">
             {showMinimizeButton && (
               <button
-                onClick={minimize}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering drag
+                  minimize();
+                }}
                 className="modal-minimize-btn pointer-events-auto"
                 aria-label="Minimize modal"
                 title="Minimize"
@@ -95,7 +90,10 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
             )}
             {showCloseButton && onClose && (
               <button
-                onClick={onClose}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering drag
+                  onClose();
+                }}
                 className="modal-minimize-btn pointer-events-auto"
                 aria-label="Close modal"
                 title="Close"
