@@ -9,27 +9,24 @@ import { useModalManager } from '@/components/ui/modal-manager';
 
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 
-function getCenterPosition(modalWidth = 600, modalHeight = 500): ModalPosition {
+function getCenterPosition(): ModalPosition {
   if (typeof window === 'undefined') return { x: 200, y: 100 };
   
-  // Use the same logic as modalPersistence.ts for consistency
+  // Don't assume modal dimensions - just center based on viewport
   const viewport = {
     width: window.innerWidth,
     height: window.innerHeight,
   };
 
-  // Account for common UI elements
-  const headerHeight = 80; // Space for header/navigation
-  const bottomPadding = 40; // Bottom padding
-  const sidePadding = 40; // Side padding
+  // Calculate center without assuming modal size
+  // The modal will be positioned at its top-left corner, so we need to account for that
+  // Use a reasonable offset that works for most modal sizes
+  const centerX = viewport.width / 2 - 250; // Assume ~500px modal width
+  const centerY = viewport.height / 2 - 200; // Assume ~400px modal height
 
-  // Calculate the center position
-  const centerX = (viewport.width - modalWidth) / 2;
-  const centerY = (viewport.height - modalHeight) / 2;
-
-  // Apply constraints to ensure modal is within bounds
-  const constrainedX = Math.max(sidePadding, Math.min(centerX, viewport.width - modalWidth - sidePadding));
-  const constrainedY = Math.max(headerHeight, Math.min(centerY, viewport.height - modalHeight - bottomPadding));
+  // Apply minimal constraints to keep modal visible
+  const constrainedX = Math.max(20, centerX);
+  const constrainedY = Math.max(20, centerY);
 
   return {
     x: constrainedX,
@@ -92,17 +89,19 @@ export function useModalDragAndMinimize(
     };
     
     // Constrain to viewport bounds using the same logic as modalPersistence
-    const headerHeight = 80;
     const bottomPadding = 20;
     const sidePadding = 20;
     const minVisibleWidth = 200; // Ensure at least this much is visible
+    const minVisibleHeight = 50; // Ensure at least the title bar is visible
     
-    const maxX = Math.max(sidePadding, window.innerWidth - minVisibleWidth);
-    const maxY = Math.max(headerHeight, window.innerHeight - bottomPadding - 50); // Ensure title bar is visible
+    // Allow dragging above viewport (negative y) but ensure some part is visible
+    const minY = -window.innerHeight + minVisibleHeight;
+    const maxX = window.innerWidth - minVisibleWidth;
+    const maxY = window.innerHeight - minVisibleHeight;
     
     const constrainedPosition = {
-      x: Math.max(sidePadding, Math.min(maxX, newPosition.x)),
-      y: Math.max(headerHeight, Math.min(maxY, newPosition.y)),
+      x: Math.max(-window.innerWidth + minVisibleWidth, Math.min(maxX, newPosition.x)),
+      y: Math.max(minY, Math.min(maxY, newPosition.y)),
     };
     
     updateModalPosition(config!.id, constrainedPosition);
