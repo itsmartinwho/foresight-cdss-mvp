@@ -19,10 +19,33 @@ function getCenterPosition(modalWidth = 600, modalHeight = 400): ModalPosition {
 }
 
 export function useModalDragAndMinimize(
-  config: ModalDragAndMinimizeConfig
+  config: ModalDragAndMinimizeConfig | null
 ): UseModalDragAndMinimizeReturn {
+  // If no config is provided, return default (non-functional) props
   if (!config || !config.id) {
-    throw new Error('useModalDragAndMinimize: config with id is required');
+    return {
+      isMinimized: false,
+      isDragging: false,
+      minimize: () => {},
+      restore: () => {},
+      close: () => {},
+      containerProps: {
+        style: {
+          position: 'relative' as const,
+        },
+        role: "dialog" as const,
+        "aria-modal": true as const,
+        "aria-hidden": false,
+        "aria-labelledby": '',
+        "aria-describedby": '',
+      },
+      dragHandleProps: {
+        onMouseDown: () => {},
+        style: {
+          cursor: 'default' as const,
+        },
+      },
+    };
   }
 
   const { 
@@ -48,6 +71,8 @@ export function useModalDragAndMinimize(
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     dragOffset: { x: 0, y: 0 },
+    startPosition: { x: 0, y: 0 },
+    currentPosition: { x: 0, y: 0 },
   });
 
   const modalState = getModalState(config.id);
@@ -84,7 +109,9 @@ export function useModalDragAndMinimize(
       dragOffset: {
         x: event.clientX - position.x,
         y: event.clientY - position.y,
-      }
+      },
+      startPosition: position,
+      currentPosition: position,
     });
 
     document.addEventListener('mousemove', handleDragMove);

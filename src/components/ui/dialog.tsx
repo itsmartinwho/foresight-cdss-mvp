@@ -147,14 +147,16 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
-  // Hooks must be called unconditionally at the top level.
+  // Always call the hook but only pass config when needed
   const {
     containerProps,
     dragHandleProps,
     minimize,
     close,
     isMinimized,
-  } = useModalDragAndMinimize(draggableConfig || { id: 'fallback', title: '' });
+  } = useModalDragAndMinimize(
+    draggable && draggableConfig ? draggableConfig : null
+  );
 
   if (!draggable || !draggableConfig) {
     return (
