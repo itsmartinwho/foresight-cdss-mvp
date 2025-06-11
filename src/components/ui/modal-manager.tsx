@@ -1,13 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, useRef } from 'react';
 import { 
   ModalManagerState, 
-  ModalManagerContextType, 
-  ModalState,
-  ModalDragAndMinimizeConfig,
+  ModalState, 
+  MinimizedModalData, 
+  ModalDragAndMinimizeConfig, 
   ModalPosition,
-  MinimizedModalData
+  ModalManagerContextType
 } from '@/types/modal';
 import { 
   loadModalPositions, 
@@ -135,6 +135,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
     case 'MINIMIZE_MODAL': {
       const { id } = action.payload;
       const modal = state.modals[id];
+      console.log('ModalManager: MINIMIZE_MODAL called for id:', id, 'modal:', modal);
       if (!modal || modal.isMinimized) return state;
 
       const updatedModal = { ...modal, isMinimized: true };
@@ -163,6 +164,8 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         ...modal,
         order: index,
       }));
+
+      console.log('ModalManager: After minimize, minimizedModals:', minimizedModals);
 
       // Persist minimized state
       updateMinimizedOrder(id, true);
@@ -232,14 +235,49 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
     }
 
     case 'INITIALIZE_FROM_STORAGE': {
-      // This action can be used to restore state from persistence if needed
-      return state;
+      const { persistedData } = action.payload;
+      const modals: { [id: string]: ModalState } = {};
+      let highestZIndex = state.highestZIndex;
+
+      for (const modalId in persistedData.modals) {
+        const pModal = persistedData.modals[modalId];
+        modals[modalId] = {
+          ...pModal,
+          isVisible: true,
+        };
+        if (pModal.zIndex > highestZIndex) {
+          highestZIndex = pModal.zIndex;
+        }
+      }
+
+      const minimizedModals = (persistedData.minimizedOrder || [])
+        .map((id: string, index: number) => {
+          const modal = persistedData.modals[id];
+          if (modal) {
+            return {
+              id,
+              title: modal.title || 'Untitled',
+              icon: modal.icon,
+              order: index,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean) as MinimizedModalData[];
+
+      return {
+        modals,
+        minimizedModals,
+        highestZIndex,
+      };
     }
 
     default:
       return state;
   }
 }
+
+type Listener = () => void;
 
 // Create context
 const ModalManagerContext = createContext<ModalManagerContextType | undefined>(undefined);
@@ -251,6 +289,14 @@ interface ModalManagerProviderProps {
 
 export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   const [state, dispatch] = useReducer(modalManagerReducer, initialState);
+  const listeners = useRef<Listener[]>([]);
+
+  // Notify listeners on state change
+  useEffect(() => {
+    for (const listener of listeners.current) {
+      listener();
+    }
+  }, [state]);
 
   // Initialize from storage on mount
   useEffect(() => {
@@ -258,6 +304,13 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     if (persistedData) {
       dispatch({ type: 'INITIALIZE_FROM_STORAGE', payload: { persistedData } });
     }
+  }, []);
+
+  const subscribe = useCallback((listener: Listener) => {
+    listeners.current.push(listener);
+    return () => {
+      listeners.current = listeners.current.filter(l => l !== listener);
+    };
   }, []);
 
   // Modal registration and management functions
@@ -304,6 +357,7 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     bringToFront,
     getModalState,
     getMinimizedModals,
+    subscribe,
   };
 
   return (

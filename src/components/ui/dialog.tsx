@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from '@phosphor-icons/react';
+import { X, Minus } from '@phosphor-icons/react';
 
 import { cn } from "@/lib/utils"
 import { DraggableModalWrapper } from './draggable-modal-wrapper';
 import { ModalDragAndMinimizeConfig } from '@/types/modal';
+import { useModalDragAndMinimize } from '@/hooks/useModalDragAndMinimize';
 
 const Dialog = DialogPrimitive.Root
 
@@ -146,68 +147,75 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
-  React.useEffect(() => {
-    // lock scroll
-    document.documentElement.classList.add('overflow-hidden');
-    return () => {
-      document.documentElement.classList.remove('overflow-hidden');
-    };
-  }, []);
+  // Hooks must be called unconditionally at the top level.
+  const {
+    containerProps,
+    dragHandleProps,
+    minimize,
+    close,
+    isMinimized,
+  } = useModalDragAndMinimize(draggableConfig || { id: 'fallback', title: '' });
 
-  // If not draggable or no config provided, use regular DialogContent
   if (!draggable || !draggableConfig) {
     return (
       <DialogPortal>
         <DialogOverlay />
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
-          <DialogPrimitive.Content
-            ref={ref}
-            className={cn(
-              "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
-              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-              className
-            )}
-            {...props}
-          >
-            {children}
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </DialogPrimitive.Close>
-          </DialogPrimitive.Content>
-        </div>
+        <DialogPrimitive.Content ref={ref} className={cn("sm:max-w-[425px]", className)} {...props}>
+          {children}
+          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
       </DialogPortal>
-    )
+    );
   }
 
-  // Use draggable version with provided config
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      close();
+    }
+  };
+
+  if (isMinimized) {
+    return null;
+  }
+  
   return (
     <DialogPortal>
       <DialogOverlay />
-      <div className="fixed inset-0 z-[10000] pointer-events-none">
-        <DraggableModalWrapper
-          config={draggableConfig}
-          onClose={onClose}
-          className={cn(
-            "pointer-events-auto",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-            className
-          )}
-          showMinimizeButton={showMinimizeButton}
-          showCloseButton={showCloseButton}
-          contentClassName="grid gap-4"
-        >
-          <DialogPrimitive.Content
-            ref={ref}
-            className="w-full outline-none"
-            {...props}
-          >
-            {children}
-          </DialogPrimitive.Content>
-        </DraggableModalWrapper>
+      <div 
+        ref={ref as React.Ref<HTMLDivElement>}
+        {...containerProps}
+        className={cn(
+          "fixed flex flex-col bg-background",
+          "sm:max-w-[425px] rounded-lg border shadow-lg",
+          className
+        )}
+      >
+        <div {...dragHandleProps} className="flex items-center justify-between p-4 border-b">
+          <DialogTitle>{draggableConfig.title}</DialogTitle>
+          <div className="flex items-center gap-1">
+            {showMinimizeButton && (
+              <button onClick={minimize} className="p-2 opacity-70 transition-opacity hover:opacity-100">
+                <Minus className="h-4 w-4" />
+              </button>
+            )}
+            {showCloseButton && (
+              <button onClick={handleClose} className="p-2 opacity-70 transition-opacity hover:opacity-100">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          {children}
+        </div>
       </div>
     </DialogPortal>
-  )
+  );
 });
 DraggableDialogContent.displayName = "DraggableDialogContent";
 

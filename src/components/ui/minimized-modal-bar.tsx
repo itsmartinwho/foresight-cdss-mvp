@@ -13,27 +13,22 @@ interface MinimizedModalBarProps {
  * Component that displays minimized modals at the bottom of the screen
  */
 export function MinimizedModalBar({ className }: MinimizedModalBarProps) {
-  const { getMinimizedModals, restoreModal } = useModalManager();
+  const { getMinimizedModals, restoreModal, subscribe } = useModalManager();
   const [minimizedModals, setMinimizedModals] = useState<MinimizedModalData[]>([]);
-  const [isVisible, setIsVisible] = useState(false);
 
-  // Update minimized modals from context
+  // Subscribe to modal manager updates
   useEffect(() => {
-    const modals = getMinimizedModals();
-    setMinimizedModals(modals);
-    setIsVisible(modals.length > 0);
-  }, [getMinimizedModals]);
+    // Set initial state
+    setMinimizedModals(getMinimizedModals());
 
-  // Poll for updates (simple approach, could be optimized with context subscription)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const modals = getMinimizedModals();
-      setMinimizedModals(modals);
-      setIsVisible(modals.length > 0);
-    }, 100);
+    // Subscribe to updates
+    const unsubscribe = subscribe(() => {
+      setMinimizedModals(getMinimizedModals());
+    });
 
-    return () => clearInterval(interval);
-  }, [getMinimizedModals]);
+    // Clean up subscription on unmount
+    return unsubscribe;
+  }, [subscribe, getMinimizedModals]);
 
   // Handle modal restore
   const handleRestoreModal = (modalId: string) => {
@@ -48,7 +43,7 @@ export function MinimizedModalBar({ className }: MinimizedModalBarProps) {
     }
   };
 
-  if (!isVisible || minimizedModals.length === 0) {
+  if (minimizedModals.length === 0) {
     return null;
   }
 

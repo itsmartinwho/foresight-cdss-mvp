@@ -64,46 +64,38 @@ export interface ModalDragAndMinimizeConfig {
   persistent?: boolean; // Whether to persist position across sessions
 }
 
-export interface UseModalDragAndMinimizeReturn {
-  // Position and state
-  position: ModalPosition;
-  isMinimized: boolean;
-  isDragging: boolean;
-  zIndex: number;
-  
-  // Event handlers
-  dragHandlers: DragHandlers;
-  onMinimize: () => void;
-  onRestore: () => void;
-  onClose: () => void;
-  
-  // Style props for the modal container
-  style: React.CSSProperties;
-  
-  // Accessibility props
-  dragProps: {
-    role: string;
-    'aria-grabbed': boolean;
-    'aria-describedby': string;
-    tabIndex: number;
-  };
-}
-
 export interface ModalManagerContextType {
-  // State
   state: ModalManagerState;
-  
-  // Registration
   registerModal: (config: ModalDragAndMinimizeConfig) => void;
   unregisterModal: (id: string) => void;
-  
-  // Actions
   minimizeModal: (id: string) => void;
   restoreModal: (id: string) => void;
   updateModalPosition: (id: string, position: ModalPosition) => void;
-  bringToFront: (id: string) => void;
-  
-  // Getters
+  bringToFront: (id:string) => void;
   getModalState: (id: string) => ModalState | undefined;
   getMinimizedModals: () => MinimizedModalData[];
+  subscribe: (listener: () => void) => () => void;
+}
+
+/**
+ * Return type for the useModalDragAndMinimize hook
+ */
+export interface UseModalDragAndMinimizeReturn {
+  isMinimized: boolean;
+  isDragging: boolean;
+  minimize: () => void;
+  restore: () => void;
+  close: () => void;
+  containerProps: {
+    style: React.CSSProperties;
+    role: "dialog";
+    "aria-modal": true;
+    "aria-hidden": boolean;
+    "aria-labelledby": string;
+    "aria-describedby": string;
+  };
+  dragHandleProps: {
+    onMouseDown: (event: React.MouseEvent<HTMLElement>) => void;
+    style: React.CSSProperties;
+  };
 } 

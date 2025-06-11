@@ -30,26 +30,19 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
     showCloseButton = true,
     customHeader,
   }, ref) => {
-    const modalDragAndMinimize = useModalDragAndMinimize(config);
-    
-    const {
-      position,
+    const { 
+      containerProps, 
+      dragHandleProps, 
+      minimize,
+      close, 
       isMinimized,
-      isDragging,
-      zIndex,
-      dragHandlers,
-      onMinimize,
-      onRestore,
-      onClose: modalOnClose,
-      style,
-      dragProps,
-    } = modalDragAndMinimize;
+    } = useModalDragAndMinimize(config);
 
     const handleClose = () => {
       if (onClose) {
         onClose();
       } else {
-        modalOnClose();
+        close();
       }
     };
 
@@ -61,7 +54,7 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
 
     return (
       <>
-        <div id={`${config.id}-drag-instructions`} className="modal-drag-instructions">
+        <div id={`${config.id}-drag-instructions`} className="sr-only">
           Press space or enter to grab this modal and move it around the screen. 
           Use arrow keys to move when grabbed. Press escape to release.
           Press Ctrl+M (Cmd+M on Mac) to minimize this modal.
@@ -77,26 +70,23 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
             'border border-white/20',
             'overflow-hidden',
             'flex flex-col',
-            'max-w-4xl',
-            'max-h-[90vh]',
-            isDragging && 'modal-dragging',
             className
           )}
-          style={style}
-          {...dragProps}
+          {...containerProps}
         >
           <div
+            id={`${config.id}-title`}
             data-modal-title-bar="true"
             className={cn(
               'modal-drag-handle',
               'flex items-center justify-between',
-              'px-6 py-4',
+              'px-4 py-3',
               'border-b border-white/10',
-              'min-h-[60px]',
+              'min-h-[56px]',
               'select-none',
               headerClassName
             )}
-            onMouseDown={dragHandlers.onDragStart}
+            {...dragHandleProps}
           >
             {customHeader ? (
               customHeader
@@ -120,7 +110,7 @@ export const DraggableModalWrapper = forwardRef<HTMLDivElement, DraggableModalWr
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onMinimize();
+                    minimize();
                   }}
                   className="modal-minimize-btn"
                   aria-label={`Minimize ${config.title}`}

@@ -2,6 +2,7 @@
 
 /* Base draggable modal styles */
 .modal-draggable {
+  /* position, left, top, and z-index are now set via inline styles from the hook */
   transition: transform 0.2s ease-out, opacity 0.2s ease-out;
   transform: translate3d(0, 0, 0); /* Force hardware acceleration */
   will-change: transform, opacity;
