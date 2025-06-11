@@ -16,6 +16,11 @@ const MODAL_HEADER_HEIGHT = 60; // Approximate header height for positioning
 export function useModalDragAndMinimize(
   config: ModalDragAndMinimizeConfig
 ): UseModalDragAndMinimizeReturn {
+  // Defensive check to ensure config is properly defined
+  if (!config || !config.id) {
+    throw new Error('useModalDragAndMinimize: config with id is required');
+  }
+
   const { 
     registerModal, 
     unregisterModal, 
@@ -49,7 +54,7 @@ export function useModalDragAndMinimize(
   useEffect(() => {
     registerModal(config);
     return () => unregisterModal(config.id);
-  }, [config.id, config.title, config.icon]);
+  }, [config, registerModal, unregisterModal]);
 
   // Get viewport bounds
   const getViewportBounds = useCallback((): ViewportBounds => {
@@ -82,7 +87,7 @@ export function useModalDragAndMinimize(
       x: Math.max(minX, Math.min(maxX, pos.x)),
       y: Math.max(minY, Math.min(maxY, pos.y)),
     };
-  }, [config.constraints, getViewportBounds]);
+  }, [config, getViewportBounds]);
 
   // Drag event handlers
   const handleDragStart = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -163,6 +168,7 @@ export function useModalDragAndMinimize(
     }));
 
     hasDraggedRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleDragMove]);
 
   // Modal actions

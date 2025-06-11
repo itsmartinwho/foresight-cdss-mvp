@@ -125,7 +125,8 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 // Draggable Dialog Components
 interface DraggableDialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'className'> {
-  draggableConfig: ModalDragAndMinimizeConfig;
+  draggable?: boolean;
+  draggableConfig?: ModalDragAndMinimizeConfig;
   className?: string;
   onClose?: () => void;
   showMinimizeButton?: boolean;
@@ -138,6 +139,7 @@ const DraggableDialogContent = React.forwardRef<
 >(({ 
   className, 
   children, 
+  draggable = false,
   draggableConfig,
   onClose,
   showMinimizeButton = true,
@@ -152,6 +154,33 @@ const DraggableDialogContent = React.forwardRef<
     };
   }, []);
 
+  // If not draggable or no config provided, use regular DialogContent
+  if (!draggable || !draggableConfig) {
+    return (
+      <DialogPortal>
+        <DialogOverlay />
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+          <DialogPrimitive.Content
+            ref={ref}
+            className={cn(
+              "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
+              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+              className
+            )}
+            {...props}
+          >
+            {children}
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </div>
+      </DialogPortal>
+    )
+  }
+
+  // Use draggable version with provided config
   return (
     <DialogPortal>
       <DialogOverlay />

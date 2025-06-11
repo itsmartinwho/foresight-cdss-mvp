@@ -930,25 +930,22 @@ export default function ConsultationPanel({
   );
 
   const panelContent = draggable ? (
-    <DraggableModalWrapper
-      isOpen={isOpen}
-      onClose={handleCloseRequest}
-      title="New Consultation"
-      config={{
-        defaultPosition: { x: 100, y: 100 },
-        canMinimize: true,
-        canMaximize: false,
-        persistPosition: true,
-        modalId: `consultation-panel-${patient.id}`,
-        ...draggableConfig,
-      }}
-      backdrop={{
-        className: "glass-backdrop",
-        onClick: (e) => e.target === e.currentTarget && handleCloseRequest(),
-      }}
-    >
-      {modalContent}
-    </DraggableModalWrapper>
+    <div className="fixed inset-0 z-[9999] glass-backdrop pointer-events-none">
+      <DraggableModalWrapper
+        onClose={handleCloseRequest}
+        config={{
+          id: `consultation-panel-${patient.id}`,
+          title: "New Consultation",
+          defaultPosition: { x: 100, y: 100 },
+          persistent: true,
+          ...draggableConfig,
+        }}
+        className="pointer-events-auto"
+        contentClassName="p-0"
+      >
+        {modalContent}
+      </DraggableModalWrapper>
+    </div>
   ) : (
     <div 
       className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center"
