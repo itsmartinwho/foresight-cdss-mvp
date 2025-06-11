@@ -16,12 +16,12 @@ export function MinimizedModalBar({ className }: MinimizedModalBarProps) {
   const { getMinimizedModals, restoreModal, subscribe } = useModalManager();
   const [minimizedModals, setMinimizedModals] = useState<MinimizedModalData[]>([]);
 
-  // Subscribe to modal manager updates
+  // Subscribe to modal manager updates for immediate re-renders
   useEffect(() => {
     // Set initial state
     setMinimizedModals(getMinimizedModals());
 
-    // Subscribe to updates
+    // Subscribe to updates - this ensures immediate re-renders when state changes
     const unsubscribe = subscribe(() => {
       setMinimizedModals(getMinimizedModals());
     });
@@ -43,6 +43,7 @@ export function MinimizedModalBar({ className }: MinimizedModalBarProps) {
     }
   };
 
+  // Don't render anything if no minimized modals
   if (minimizedModals.length === 0) {
     return null;
   }

@@ -1,11 +1,12 @@
 /* Modal Drag and Minimize Styles */
 
-/* Base draggable modal styles */
+/* Base draggable modal styles - only positioning, don't override existing styles */
 .modal-draggable {
   /* position, left, top, and z-index are now set via inline styles from the hook */
   transition: transform 0.2s ease-out, opacity 0.2s ease-out;
   transform: translate3d(0, 0, 0); /* Force hardware acceleration */
   will-change: transform, opacity;
+  /* Remove display:flex and size overrides to preserve original modal styling */
 }
 
 /* Active drag state */
@@ -203,17 +204,17 @@
 }
 
 .minimized-modal-bar.animate-in {
-  animation: slide-up 0.2s ease-out;
+  animation: slide-up 0.3s ease-out;
 }
 
-/* Accessibility focus styles */
+/* Accessibility styles */
 .modal-drag-handle:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--ring, #3b82f6);
   outline-offset: 2px;
 }
 
 .minimized-modal-item:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--ring, #3b82f6);
   outline-offset: 2px;
 }
 
@@ -222,79 +223,82 @@
   .modal-drag-handle {
     border: 1px solid;
   }
-  
+
   .modal-minimize-btn {
     border: 1px solid;
   }
-  
+
   .minimized-modal-item {
-    border-width: 2px;
+    border: 2px solid;
   }
 }
 
-/* Reduced motion support */
+/* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .modal-draggable,
-  .modal-drag-handle,
+  .modal-dragging,
   .modal-minimize-btn,
   .minimized-modal-item {
-    transition: none !important;
+    transition: none;
   }
-  
+
   .modal-minimizing,
   .modal-restoring {
-    animation: none !important;
+    animation: none;
   }
-  
+
   .minimized-modal-bar.animate-in {
-    animation: none !important;
+    animation: none;
   }
 }
 
-/* Dark mode optimizations */
+/* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
   .modal-drag-handle:hover {
     background-color: rgba(255, 255, 255, 0.08);
   }
-  
+
   .modal-drag-handle:active,
   .modal-dragging .modal-drag-handle {
     background-color: rgba(255, 255, 255, 0.12);
   }
-  
+
   .modal-minimize-btn:hover {
     background-color: rgba(255, 255, 255, 0.15);
   }
 }
 
-/* Responsive adjustments */
+/* Mobile/tablet responsive adjustments */
 @media (max-width: 768px) {
   .minimized-modal-bar {
     padding: 6px 12px;
     gap: 6px;
   }
-  
+
   .minimized-modal-item {
-    padding: 6px 10px;
     min-width: 100px;
     max-width: 150px;
+    padding: 6px 10px;
   }
-  
+
   .minimized-modal-title {
     font-size: 11px;
   }
 }
 
-/* Tooltip for drag instructions (accessibility) */
+/* Screen reader only content */
 .modal-drag-instructions {
   position: absolute;
-  left: -10000px;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-/* Screen reader only content */
 .sr-only {
   position: absolute;
   width: 1px;

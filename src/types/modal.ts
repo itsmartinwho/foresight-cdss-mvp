@@ -88,6 +88,7 @@ export interface UseModalDragAndMinimizeReturn {
   close: () => void;
   containerProps: {
     style: React.CSSProperties;
+    className?: string;
     role: "dialog";
     "aria-modal": true;
     "aria-hidden": boolean;
@@ -97,5 +98,6 @@ export interface UseModalDragAndMinimizeReturn {
   dragHandleProps: {
     onMouseDown: (event: React.MouseEvent<HTMLElement>) => void;
     style: React.CSSProperties;
+    className?: string;
   };
 } 

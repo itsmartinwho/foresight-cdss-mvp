@@ -159,16 +159,27 @@ const DraggableDialogContent = React.forwardRef<
   );
 
   if (!draggable || !draggableConfig) {
+    // Return regular dialog when not draggable
     return (
       <DialogPortal>
         <DialogOverlay />
-        <DialogPrimitive.Content ref={ref} className={cn("sm:max-w-[425px]", className)} {...props}>
-          {children}
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
+          <DialogPrimitive.Content 
+            ref={ref} 
+            className={cn(
+              "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
+              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+              className
+            )} 
+            {...props}
+          >
+            {children}
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+          </DialogPrimitive.Content>
+        </div>
       </DialogPortal>
     );
   }
@@ -184,7 +195,8 @@ const DraggableDialogContent = React.forwardRef<
   if (isMinimized) {
     return null;
   }
-  
+
+  // For draggable dialogs, use our wrapper but preserve dialog styling
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -192,27 +204,62 @@ const DraggableDialogContent = React.forwardRef<
         ref={ref as React.Ref<HTMLDivElement>}
         {...containerProps}
         className={cn(
-          "fixed flex flex-col bg-background",
-          "sm:max-w-[425px] rounded-lg border shadow-lg",
+          // Preserve original dialog styling
+          "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          // Add our drag class
+          containerProps.className,
           className
         )}
+        style={{
+          ...containerProps.style,
+          // Override center positioning only when draggable
+        }}
       >
-        <div {...dragHandleProps} className="flex items-center justify-between p-4 border-b">
-          <DialogTitle>{draggableConfig.title}</DialogTitle>
+        {/* Custom draggable header */}
+        <div 
+          {...dragHandleProps} 
+          className={cn(
+            "flex items-center justify-between p-0 pb-4 -m-6 mb-2 px-6 pt-6",
+            "border-b border-white/10",
+            dragHandleProps.className
+          )}
+        >
+          <DialogTitle className="text-lg font-semibold leading-none tracking-tight">
+            {draggableConfig.title}
+          </DialogTitle>
           <div className="flex items-center gap-1">
             {showMinimizeButton && (
-              <button onClick={minimize} className="p-2 opacity-70 transition-opacity hover:opacity-100">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  minimize();
+                }} 
+                className="modal-minimize-btn"
+                aria-label={`Minimize ${draggableConfig.title}`}
+                title={`Minimize ${draggableConfig.title} (Ctrl+M)`}
+              >
                 <Minus className="h-4 w-4" />
               </button>
             )}
             {showCloseButton && (
-              <button onClick={handleClose} className="p-2 opacity-70 transition-opacity hover:opacity-100">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                }} 
+                className="modal-minimize-btn hover:bg-red-500/20 hover:text-red-400"
+                aria-label={`Close ${draggableConfig.title}`}
+                title={`Close ${draggableConfig.title}`}
+              >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
         </div>
-        <div className="p-6">
+        
+        {/* Dialog content */}
+        <div className="grid gap-4">
           {children}
         </div>
       </div>
