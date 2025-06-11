@@ -224,7 +224,11 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
             draggableConfig={{
               id: 'demo-intro-modal',
               title: 'Foresight Demo',
-              defaultPosition: { x: 200, y: 100 },
+              // Dynamically center based on viewport (estimated modal size 750x650)
+              defaultPosition: typeof window !== 'undefined' ? {
+                x: Math.max(50, Math.round((window.innerWidth - 750) / 2)),
+                y: Math.max(50, Math.round((window.innerHeight - 650) / 2)),
+              } : { x: 200, y: 100 },
               persistent: false
             }}
           >

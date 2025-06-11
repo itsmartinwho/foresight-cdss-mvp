@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, forwardRef } from 'react';
+import React, { useEffect, useState, forwardRef, useMemo } from 'react';
 import { Dialog, DialogTrigger, DraggableDialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -201,6 +201,31 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
     }
   };
 
+  // If draggable, ensure we pass a centered defaultPosition when one isn't provided
+  const mergedDraggableConfig = useMemo(() => {
+    if (!draggable) return draggableConfig; // not draggable, return as-is
+
+    const hasDefault = draggableConfig?.defaultPosition !== undefined;
+    if (hasDefault) return draggableConfig;
+
+    // Calculate centered position based on an estimated modal size (max-w-lg ~= 512px wide, ~600px tall)
+    if (typeof window === 'undefined') {
+      return {
+        ...draggableConfig,
+        defaultPosition: { x: 200, y: 100 },
+      };
+    }
+    const estimatedWidth = 512;
+    const estimatedHeight = 600;
+    const x = Math.max(50, Math.round((window.innerWidth - estimatedWidth) / 2));
+    const y = Math.max(50, Math.round((window.innerHeight - estimatedHeight) / 2));
+
+    return {
+      ...draggableConfig,
+      defaultPosition: { x, y },
+    };
+  }, [draggable, draggableConfig]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden trigger; open controlled externally */}</DialogTrigger>
@@ -209,7 +234,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         onOpenAutoFocus={(e) => e.preventDefault()}
         className={`max-w-lg pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
-        draggableConfig={draggableConfig}
+        draggableConfig={mergedDraggableConfig}
       >
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
