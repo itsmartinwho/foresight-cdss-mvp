@@ -18,17 +18,18 @@ function getCenterPosition(): ModalPosition {
     height: window.innerHeight,
   };
 
-  // Estimate modal dimensions (can be refined based on actual modal sizes)
-  const modalWidth = 512; // max-w-lg is typically 512px
-  const modalHeight = 400; // Estimated height
+  // For larger modals (like ConsultationPanel), we want them more centered
+  // These values work well for both small and large modals
+  const modalWidth = 800; // Assume larger modal width
+  const modalHeight = 600; // Assume larger modal height
   
   // Calculate position to center the modal
   const centerX = Math.round((viewport.width - modalWidth) / 2);
   const centerY = Math.round((viewport.height - modalHeight) / 2);
 
-  // Ensure modal stays within viewport bounds
-  const x = Math.max(20, centerX);
-  const y = Math.max(20, centerY);
+  // Ensure modal stays within viewport bounds with some padding
+  const x = Math.max(50, centerX);
+  const y = Math.max(50, centerY);
 
   return { x, y };
 }

@@ -771,7 +771,178 @@ export default function ConsultationPanel({
   if (!mounted || !isOpen) return null;
 
   const modalContent = (
-    <div className="glass-dense rounded-2xl shadow-2xl relative w-[95%] max-w-6xl p-6 max-h-[95vh] overflow-hidden flex flex-col">
+    <>
+      <div className="pt-2 pb-4 px-6 border-b border-border/50">
+        <p className="text-sm text-muted-foreground">
+          Patient: {patient.firstName} {patient.lastName} • {encounter?.id ? `ID: ${encounter.id}` : 'Creating...'}
+        </p>
+      </div>
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {(!encounter && !isCreating && !isDemoMode) ? (
+          <div className="flex items-center justify-center flex-1">
+            <p className="text-muted-foreground">Failed to create consultation</p>
+          </div>
+        ) : (
+          <>
+            {planGenerated && (
+              <div className={cn("border-b border-border/50 transition-all", tabBarVisible ? "opacity-100" : "opacity-0")}>
+                <div className="flex space-x-4 px-1 py-2">
+                  {['transcript', 'differentials', 'diagnosis', 'treatment'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={cn(
+                        "px-4 py-2 text-sm font-medium rounded-md transition-all",
+                        activeTab === tab
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      {tab === 'differentials' ? 'Differentials' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex-1 overflow-hidden p-4 flex flex-col">
+              {started ? (
+                <>
+                  {(!planGenerated || activeTab === 'transcript') && (
+                    <div className={`flex-1 min-h-0 flex flex-col gap-4 ${(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) ? 'lg:flex-row' : ''}`}>
+                      {/* Transcript Panel */}
+                      <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium">Consultation Transcript</h3>
+                          <div className="flex items-center gap-2">
+                            {/* Save Icon Button */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={handleSaveAndClose}
+                              disabled={isSaving}
+                              className="h-8 w-8 hover:bg-muted transition-all"
+                              title="Save consultation"
+                            >
+                              {isSaving ? (
+                                <CircleNotch className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FloppyDisk className="h-4 w-4" />
+                              )}
+                            </Button>
+                            {!(isDemoMode && planGenerated) && (
+                              <Button
+                                variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
+                                onClick={isDemoMode ? onDemoClinicalPlanClick : handleClinicalPlan}
+                                disabled={isGeneratingPlan || isDemoGeneratingPlan || transcriptText.length < 10}
+                                className="gap-2"
+                              >
+                                {(isGeneratingPlan || isDemoGeneratingPlan) ? <><CircleNotch className="h-4 w-4 animate-spin" /> Analyzing...</> : <><Brain className="h-4 w-4" /> Clinical Plan</>}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="relative flex-1">
+                          <RichTextEditor
+                            ref={transcriptEditorRef}
+                            content={transcriptText}
+                            onContentChange={handleTranscriptChange}
+                            placeholder="Transcription will appear here..."
+                            disabled={isDemoMode || isTranscribing}
+                            showToolbar={!isDemoMode && !isTranscribing}
+                            minHeight="300px"
+                            className="h-full"
+                          />
+                          {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
+                          {!isDemoMode && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                              <AudioWaveform
+                                isRecording={isTranscribing}
+                                isPaused={isPaused}
+                                mediaStream={audioStreamRef.current}
+                                onPause={pauseTranscription}
+                                onResume={resumeTranscription}
+                                onStop={handleAudioWaveformStop}
+                              />
+                            </div>
+                          )}
+                          {isDemoMode && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                              <DemoAudioWaveform />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* SOAP Notes Panel - Only show when clinical engine is running */}
+                      {(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) && (
+                        <div className="flex-1 min-h-0">
+                          <SOAPNotesPanel
+                            soapNote={soapNote}
+                            isDemoMode={isDemoMode}
+                            isGenerating={isGeneratingSoap}
+                            isVisible={true}
+                            onSoapNoteChange={handleSoapNoteChange}
+                            className="h-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {planGenerated && activeTab === 'differentials' && (
+                    <DifferentialDiagnosesList
+                      diagnoses={differentialDiagnoses}
+                      isLoading={isLoadingDifferentials}
+                      isEditable={!isDemoMode}
+                      className="flex-1 min-h-0"
+                    />
+                  )}
+                  {planGenerated && activeTab === 'diagnosis' && (
+                    <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                      <h3 className="text-lg font-medium">Diagnosis</h3>
+                      <RichTextEditor content={diagnosisText} onContentChange={setDiagnosisText} placeholder="Enter diagnosis..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
+                    </div>
+                  )}
+                  {planGenerated && activeTab === 'treatment' && (
+                    <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                      <h3 className="text-lg font-medium">Treatment Plan</h3>
+                      <RichTextEditor content={treatmentText} onContentChange={handleTreatmentTextChange} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Setting up consultation...</p></div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+
+  const panelContent = draggable ? (
+    <div className="fixed inset-0 z-[9999] pointer-events-none">
+      <div className="pointer-events-auto">
+        <DraggableModalWrapper
+          onClose={handleCloseRequest}
+          config={{
+            id: `consultation-panel-${patient.id}`,
+            title: "New Consultation",
+            persistent: true,
+            ...draggableConfig,
+          }}
+          className="w-[95%] max-w-6xl max-h-[90vh]"
+          showCloseButton={!isSaving}
+        >
+          {modalContent}
+        </DraggableModalWrapper>
+      </div>
+    </div>
+  ) : (
+    <div 
+      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center p-4"
+      onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
+    >
+      <div className="glass-dense rounded-2xl shadow-2xl relative w-[95%] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
         <Button 
           variant="ghost" 
           size="icon"
@@ -781,176 +952,11 @@ export default function ConsultationPanel({
         >
           <X className="h-4 w-4" />
         </Button>
-        <div className="pt-8 pb-4 border-b border-border/50">
-          <h2 className="text-xl font-semibold mb-2">New Consultation</h2>
-          <p className="text-sm text-muted-foreground">
-            Patient: {patient.firstName} {patient.lastName} • {encounter?.id ? `ID: ${encounter.id}` : 'Creating...'}
-          </p>
-        </div>
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {(!encounter && !isCreating && !isDemoMode) ? (
-            <div className="flex items-center justify-center flex-1">
-              <p className="text-muted-foreground">Failed to create consultation</p>
-            </div>
-          ) : (
-            <>
-              {planGenerated && (
-                <div className={cn("border-b border-border/50 transition-all", tabBarVisible ? "opacity-100" : "opacity-0")}>
-                  <div className="flex space-x-4 px-1 py-2">
-                    {['transcript', 'differentials', 'diagnosis', 'treatment'].map(tab => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                          "px-4 py-2 text-sm font-medium rounded-md transition-all",
-                          activeTab === tab
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-muted/50"
-                        )}
-                      >
-                        {tab === 'differentials' ? 'Differentials' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="flex-1 overflow-hidden p-4 flex flex-col">
-                {started ? (
-                  <>
-                    {(!planGenerated || activeTab === 'transcript') && (
-                      <div className={`flex-1 min-h-0 flex flex-col gap-4 ${(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) ? 'lg:flex-row' : ''}`}>
-                        {/* Transcript Panel */}
-                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-medium">Consultation Transcript</h3>
-                            <div className="flex items-center gap-2">
-                              {/* Save Icon Button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleSaveAndClose}
-                                disabled={isSaving}
-                                className="h-8 w-8 hover:bg-muted transition-all"
-                                title="Save consultation"
-                              >
-                                {isSaving ? (
-                                  <CircleNotch className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <FloppyDisk className="h-4 w-4" />
-                                )}
-                              </Button>
-                              {!(isDemoMode && planGenerated) && (
-                                <Button
-                                  variant={(isGeneratingPlan || isDemoGeneratingPlan) ? "secondary" : "default"}
-                                  onClick={isDemoMode ? onDemoClinicalPlanClick : handleClinicalPlan}
-                                  disabled={isGeneratingPlan || isDemoGeneratingPlan || transcriptText.length < 10}
-                                  className="gap-2"
-                                >
-                                  {(isGeneratingPlan || isDemoGeneratingPlan) ? <><CircleNotch className="h-4 w-4 animate-spin" /> Analyzing...</> : <><Brain className="h-4 w-4" /> Clinical Plan</>}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="relative flex-1">
-                            <RichTextEditor
-                              ref={transcriptEditorRef}
-                              content={transcriptText}
-                              onContentChange={handleTranscriptChange}
-                              placeholder="Transcription will appear here..."
-                              disabled={isDemoMode || isTranscribing}
-                              showToolbar={!isDemoMode && !isTranscribing}
-                              minHeight="300px"
-                              className="h-full"
-                            />
-                            {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
-                            {!isDemoMode && (
-                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                                <AudioWaveform
-                                  isRecording={isTranscribing}
-                                  isPaused={isPaused}
-                                  mediaStream={audioStreamRef.current}
-                                  onPause={pauseTranscription}
-                                  onResume={resumeTranscription}
-                                  onStop={handleAudioWaveformStop}
-                                />
-                              </div>
-                            )}
-                            {isDemoMode && (
-                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                                <DemoAudioWaveform />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* SOAP Notes Panel - Only show when clinical engine is running */}
-                        {(isGeneratingSoap || isGeneratingPlan || isDemoGeneratingPlan || !!soapNote) && (
-                          <div className="flex-1 min-h-0">
-                            <SOAPNotesPanel
-                              soapNote={soapNote}
-                              isDemoMode={isDemoMode}
-                              isGenerating={isGeneratingSoap}
-                              isVisible={true}
-                              onSoapNoteChange={handleSoapNoteChange}
-                              className="h-full"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {planGenerated && activeTab === 'differentials' && (
-                      <DifferentialDiagnosesList
-                        diagnoses={differentialDiagnoses}
-                        isLoading={isLoadingDifferentials}
-                        isEditable={!isDemoMode}
-                        className="flex-1 min-h-0"
-                      />
-                    )}
-                    {planGenerated && activeTab === 'diagnosis' && (
-                      <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                        <h3 className="text-lg font-medium">Diagnosis</h3>
-                        <RichTextEditor content={diagnosisText} onContentChange={setDiagnosisText} placeholder="Enter diagnosis..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
-                      </div>
-                    )}
-                    {planGenerated && activeTab === 'treatment' && (
-                      <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                        <h3 className="text-lg font-medium">Treatment Plan</h3>
-                        <RichTextEditor content={treatmentText} onContentChange={handleTreatmentTextChange} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Setting up consultation...</p></div>
-                )}
-              </div>
-            </>
-          )}
+        <div className="pt-8">
+          <h2 className="text-xl font-semibold px-6 pb-2">New Consultation</h2>
+          {modalContent}
         </div>
       </div>
-  );
-
-  const panelContent = draggable ? (
-    <div className="fixed inset-0 z-[9999] glass-backdrop pointer-events-none">
-      <DraggableModalWrapper
-        onClose={handleCloseRequest}
-        config={{
-          id: `consultation-panel-${patient.id}`,
-          title: "New Consultation",
-          defaultPosition: { x: 100, y: 100 },
-          persistent: true,
-          ...draggableConfig,
-        }}
-        className="pointer-events-auto"
-      >
-        {modalContent}
-      </DraggableModalWrapper>
-    </div>
-  ) : (
-    <div 
-      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center"
-      onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
-    >
-      {modalContent}
     </div>
   );
 

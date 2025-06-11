@@ -206,14 +206,17 @@ const DraggableDialogContent = React.forwardRef<
           {/* Title bar with drag handle */}
           <div 
             className={cn(
-              "modal-title-bar flex items-center justify-between p-4 border-b border-white/10"
+              "modal-title-bar flex items-center justify-between p-4 border-b border-white/10",
+              "relative" // Add relative positioning for button z-index
             )}
             data-testid="modal-title-bar"
           >
+            {/* Invisible drag handle that covers the entire title bar */}
             <div 
               {...dragHandleProps}
               className={cn(
-                "modal-drag-handle flex items-center flex-1 cursor-move select-none",
+                "absolute inset-0", // Cover entire title bar
+                "cursor-move",
                 dragHandleProps.className
               )}
               onMouseDown={(e) => {
@@ -225,18 +228,21 @@ const DraggableDialogContent = React.forwardRef<
                   dragHandleProps.onMouseDown(e);
                 }
               }}
-            >
-              {/* Display the modal title from config */}
+            />
+            
+            {/* Title - positioned above drag handle */}
+            <div className="relative z-10 pointer-events-none">
               <h3 className="text-lg font-semibold m-0">
                 {draggableConfig?.title || 'Untitled'}
               </h3>
             </div>
             
-            <div className="flex items-center gap-2 ml-4">
+            {/* Buttons - positioned above drag handle with pointer-events */}
+            <div className="flex items-center gap-2 ml-4 relative z-10">
               {showMinimizeButton && (
                 <button
                   onClick={minimize}
-                  className="modal-minimize-btn"
+                  className="modal-minimize-btn pointer-events-auto"
                   aria-label="Minimize modal"
                   title="Minimize"
                 >
@@ -244,7 +250,7 @@ const DraggableDialogContent = React.forwardRef<
                 </button>
               )}
               <DialogPrimitive.Close 
-                className="modal-minimize-btn"
+                className="modal-minimize-btn pointer-events-auto"
                 aria-label="Close modal"
                 title="Close"
               >
