@@ -305,8 +305,18 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
 
   // Determine if overlay should be shown
   const shouldShowOverlay = React.useMemo(() => {
-    const visibleNonMinimizedModals = Object.values(state.modals).filter(modal => modal.isVisible && !modal.isMinimized);
-    return visibleNonMinimizedModals.length > 0;
+    const allModals = Object.values(state.modals);
+    const visibleNonMinimizedModals = allModals.filter(modal => modal.isVisible && !modal.isMinimized);
+    const result = visibleNonMinimizedModals.length > 0;
+    
+    // Debug logging to understand overlay behavior
+    console.log('🔍 Overlay Debug:');
+    console.log('  Total modals:', allModals.length);
+    console.log('  All modal states:', allModals.map(m => ({ id: m.id, isVisible: m.isVisible, isMinimized: m.isMinimized })));
+    console.log('  Visible non-minimized modals:', visibleNonMinimizedModals.length);
+    console.log('  shouldShowOverlay result:', result);
+    
+    return result;
   }, [state.modals]);
 
   // Get the highest z-index for overlay positioning

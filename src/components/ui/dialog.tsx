@@ -7,7 +7,7 @@ import { X, Minus } from '@phosphor-icons/react';
 import { cn } from "@/lib/utils"
 import { DraggableModalWrapper } from './draggable-modal-wrapper';
 import { ModalDragAndMinimizeConfig } from '@/types/modal';
-import { useModalDragAndMinimize, useModalOverlay } from '@/hooks/useModalDragAndMinimize';
+import { useModalDragAndMinimize } from '@/hooks/useModalDragAndMinimize';
 
 const Dialog = DialogPrimitive.Root
 
@@ -152,13 +152,14 @@ const DraggableDialogContent = React.forwardRef<
     dragHandleProps,
   } = useModalDragAndMinimize(draggable && draggableConfig ? draggableConfig : null);
 
-  // For non-draggable dialogs, register with simple overlay hook
-  useModalOverlay(stableId, !draggable);
+  // NOTE: Removed useModalOverlay call - regular dialogs should NOT register with ModalManager
+  // They have their own overlay through DialogOverlay component
 
   if (!draggable || !draggableConfig) {
-    // Return regular dialog when not draggable - no overlay needed, handled by ModalManager
+    // Return regular dialog when not draggable - uses its own overlay via DialogOverlay
     return (
       <DialogPortal>
+        <DialogOverlay />
         <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
           <DialogPrimitive.Content 
             ref={ref} 
