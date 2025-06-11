@@ -20,6 +20,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useDemo } from '@/contexts/DemoContext';
 import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagnosesList';
 import { SOAPNotesPanel } from '@/components/soap/SOAPNotesPanel';
+import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
+import { ModalDragAndMinimizeConfig } from '@/types/modal';
 
 interface ConsultationPanelProps {
   /** Controls open state from parent */
@@ -46,6 +48,10 @@ interface ConsultationPanelProps {
   onDemoClinicalPlanClick?: () => void;
   /** Controls loading state of Clinical Plan button externally for demo */
   isDemoGeneratingPlan?: boolean;
+  /** Enable draggable functionality */
+  draggable?: boolean;
+  /** Configuration for drag and minimize behavior */
+  draggableConfig?: ModalDragAndMinimizeConfig;
 }
 
 // Styled DatePicker component to match the design
@@ -76,6 +82,8 @@ export default function ConsultationPanel({
   demoSoapNote,
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false,
+  draggable = false,
+  draggableConfig,
 }: ConsultationPanelProps) {
   // Debug demo mode detection
   useEffect(() => {
@@ -762,12 +770,8 @@ export default function ConsultationPanel({
 
   if (!mounted || !isOpen) return null;
 
-  const panelContent = (
-    <div 
-      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center"
-      onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
-    >
-      <div className="glass-dense rounded-2xl shadow-2xl relative w-[95%] max-w-6xl p-6 max-h-[95vh] overflow-hidden flex flex-col">
+  const modalContent = (
+    <div className="glass-dense rounded-2xl shadow-2xl relative w-[95%] max-w-6xl p-6 max-h-[95vh] overflow-hidden flex flex-col">
         <Button 
           variant="ghost" 
           size="icon"
@@ -923,6 +927,40 @@ export default function ConsultationPanel({
           )}
         </div>
       </div>
+  );
+
+  const panelContent = draggable ? (
+    <DraggableModalWrapper
+      isOpen={isOpen}
+      onClose={handleCloseRequest}
+      title="New Consultation"
+      config={{
+        defaultPosition: { x: 100, y: 100 },
+        canMinimize: true,
+        canMaximize: false,
+        persistPosition: true,
+        modalId: `consultation-panel-${patient.id}`,
+        ...draggableConfig,
+      }}
+      backdrop={{
+        className: "glass-backdrop",
+        onClick: (e) => e.target === e.currentTarget && handleCloseRequest(),
+      }}
+    >
+      {modalContent}
+    </DraggableModalWrapper>
+  ) : (
+    <div 
+      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center"
+      onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
+    >
+      {modalContent}
+    </div>
+  );
+
+  return createPortal(
+    <>
+      {panelContent}
       {showConfirmationDialog && (
         <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full">
@@ -937,7 +975,7 @@ export default function ConsultationPanel({
           </div>
         </div>
       )}
-    </div>
+    </>,
+    document.body
   );
-  return createPortal(panelContent, document.body);
 }

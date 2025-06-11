@@ -1,0 +1,307 @@
+/* Modal Drag and Minimize Styles */
+
+/* Base draggable modal styles */
+.modal-draggable {
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  transform: translate3d(0, 0, 0); /* Force hardware acceleration */
+  will-change: transform, opacity;
+}
+
+/* Active drag state */
+.modal-dragging {
+  transition: none !important; /* Disable transitions during drag */
+  opacity: 0.95;
+  cursor: grabbing !important;
+  z-index: 9999; /* Ensure dragged modal is on top */
+  user-select: none;
+}
+
+/* Drag handle (title bar) styles */
+.modal-drag-handle {
+  cursor: grab;
+  transition: background-color 0.15s ease;
+  position: relative;
+}
+
+.modal-drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.modal-drag-handle:active,
+.modal-dragging .modal-drag-handle {
+  cursor: grabbing;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Prevent text selection during drag */
+.modal-dragging,
+.modal-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Minimize button styles */
+.modal-minimize-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0.7;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.modal-minimize-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-minimize-btn:focus {
+  outline: none;
+  ring-offset-background: var(--background);
+  ring: 2px solid var(--ring);
+  ring-offset: 2px;
+}
+
+.modal-minimize-btn:active {
+  transform: scale(0.95);
+}
+
+/* Minimized modal bar at bottom of screen */
+.minimized-modal-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9998;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.minimized-modal-bar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Individual minimized modal item */
+.minimized-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 120px;
+  max-width: 200px;
+  user-select: none;
+}
+
+.minimized-modal-item:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.minimized-modal-item:active {
+  transform: translateY(-1px);
+}
+
+/* Minimized modal icon */
+.minimized-modal-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+/* Minimized modal title */
+.minimized-modal-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Animation for minimize/restore */
+@keyframes modal-minimize {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.8) translateY(10px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0) translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes modal-restore {
+  0% {
+    transform: scale(0) translateY(100vh);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(0.8) translateY(10px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Apply animations */
+.modal-minimizing {
+  animation: modal-minimize 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.modal-restoring {
+  animation: modal-restore 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Minimized modal bar slide-in animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.minimized-modal-bar.animate-in {
+  animation: slide-up 0.2s ease-out;
+}
+
+/* Accessibility focus styles */
+.modal-drag-handle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.minimized-modal-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal-drag-handle {
+    border: 1px solid;
+  }
+  
+  .modal-minimize-btn {
+    border: 1px solid;
+  }
+  
+  .minimized-modal-item {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .modal-draggable,
+  .modal-drag-handle,
+  .modal-minimize-btn,
+  .minimized-modal-item {
+    transition: none !important;
+  }
+  
+  .modal-minimizing,
+  .modal-restoring {
+    animation: none !important;
+  }
+  
+  .minimized-modal-bar.animate-in {
+    animation: none !important;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .modal-drag-handle:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+  
+  .modal-drag-handle:active,
+  .modal-dragging .modal-drag-handle {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+  
+  .modal-minimize-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .minimized-modal-bar {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+  
+  .minimized-modal-item {
+    padding: 6px 10px;
+    min-width: 100px;
+    max-width: 150px;
+  }
+  
+  .minimized-modal-title {
+    font-size: 11px;
+  }
+}
+
+/* Tooltip for drag instructions (accessibility) */
+.modal-drag-instructions {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+} 

@@ -5,6 +5,8 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from '@phosphor-icons/react';
 
 import { cn } from "@/lib/utils"
+import { DraggableModalWrapper } from './draggable-modal-wrapper';
+import { ModalDragAndMinimizeConfig } from '@/types/modal';
 
 const Dialog = DialogPrimitive.Root
 
@@ -121,6 +123,65 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+// Draggable Dialog Components
+interface DraggableDialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'className'> {
+  draggableConfig: ModalDragAndMinimizeConfig;
+  className?: string;
+  onClose?: () => void;
+  showMinimizeButton?: boolean;
+  showCloseButton?: boolean;
+}
+
+const DraggableDialogContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  DraggableDialogContentProps
+>(({ 
+  className, 
+  children, 
+  draggableConfig,
+  onClose,
+  showMinimizeButton = true,
+  showCloseButton = true,
+  ...props 
+}, ref) => {
+  React.useEffect(() => {
+    // lock scroll
+    document.documentElement.classList.add('overflow-hidden');
+    return () => {
+      document.documentElement.classList.remove('overflow-hidden');
+    };
+  }, []);
+
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <div className="fixed inset-0 z-[10000] pointer-events-none">
+        <DraggableModalWrapper
+          config={draggableConfig}
+          onClose={onClose}
+          className={cn(
+            "pointer-events-auto",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            className
+          )}
+          showMinimizeButton={showMinimizeButton}
+          showCloseButton={showCloseButton}
+          contentClassName="grid gap-4"
+        >
+          <DialogPrimitive.Content
+            ref={ref}
+            className="w-full outline-none"
+            {...props}
+          >
+            {children}
+          </DialogPrimitive.Content>
+        </DraggableModalWrapper>
+      </div>
+    </DialogPortal>
+  )
+});
+DraggableDialogContent.displayName = "DraggableDialogContent";
+
 export {
   Dialog,
   DialogPortal,
@@ -132,4 +193,5 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
+  DraggableDialogContent,
 }

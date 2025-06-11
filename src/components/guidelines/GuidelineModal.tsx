@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GuidelineModalData, SourceTheme } from '@/types/guidelines';
 import { cn } from '@/lib/utils';
+import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
+import { ModalDragAndMinimizeConfig } from '@/types/modal';
 
 interface GuidelineModalProps {
   modalData: GuidelineModalData;
@@ -14,6 +16,8 @@ interface GuidelineModalProps {
   sourceTheme?: SourceTheme;
   isBookmarked: boolean;
   onBookmarkToggle: () => void;
+  draggable?: boolean;
+  draggableConfig?: ModalDragAndMinimizeConfig;
 }
 
 const sourceConfig = {
@@ -43,13 +47,208 @@ const sourceConfig = {
   }
 };
 
+interface GuidelineModalContentProps {
+  modalData: GuidelineModalData;
+  config: typeof sourceConfig[keyof typeof sourceConfig];
+  expandedSections: Set<string>;
+  expandAll: boolean;
+  toggleSection: (sectionId: string) => void;
+  toggleExpandAll: () => void;
+  isBookmarked: boolean;
+  onBookmarkToggle: () => void;
+  onClose: () => void;
+}
+
+function GuidelineModalContent({
+  modalData,
+  config,
+  expandedSections,
+  expandAll,
+  toggleSection,
+  toggleExpandAll,
+  isBookmarked,
+  onBookmarkToggle,
+  onClose
+}: GuidelineModalContentProps) {
+  const IconComponent = config.icon;
+
+  return (
+    <>
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${config.color}20`, color: config.color }}
+            >
+              <IconComponent className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{modalData.title}</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge
+                  style={{ backgroundColor: config.color, color: 'white' }}
+                  className="text-xs"
+                >
+                  {config.name}
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {modalData.specialty}
+                </Badge>
+                {modalData.metadata.grade && (
+                  <Badge variant="outline" className="text-xs">
+                    Grade {modalData.metadata.grade}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* View Original Source Button */}
+            {modalData.metadata?.url && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(modalData.metadata?.url as string, '_blank')}
+                className="text-xs px-3 py-1"
+              >
+                View Original Source
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBookmarkToggle}
+              className="h-9 w-9 p-0"
+            >
+              <Star 
+                className={cn(
+                  "h-4 w-4",
+                  isBookmarked ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
+                )}
+              />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-9 w-9 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Breadcrumbs */}
+        {modalData.breadcrumbs && modalData.breadcrumbs.length > 0 && (
+          <nav className="text-sm text-gray-500 mb-4">
+            {modalData.breadcrumbs.map((crumb, index) => (
+              <span key={index}>
+                {crumb}
+                {index < modalData.breadcrumbs.length - 1 && (
+                  <span className="mx-2">›</span>
+                )}
+              </span>
+            ))}
+          </nav>
+        )}
+
+        {/* Metadata */}
+        <div className="text-sm text-gray-600 space-y-1">
+          {modalData.metadata.publication_date && (
+            <p>Published: {new Date(modalData.metadata.publication_date).toLocaleDateString()}</p>
+          )}
+          {modalData.metadata.last_reviewed && (
+            <p>Last Reviewed: {new Date(modalData.metadata.last_reviewed).toLocaleDateString()}</p>
+          )}
+          {modalData.metadata.organization && (
+            <p>Organization: {modalData.metadata.organization}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6">
+          {/* Section Controls */}
+          {modalData.sections && modalData.sections.length > 0 && (
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Guideline Sections</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleExpandAll}
+                className="text-xs"
+              >
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </Button>
+            </div>
+          )}
+
+          {/* Sections */}
+          {modalData.sections && modalData.sections.length > 0 ? (
+            <div className="space-y-4">
+              {modalData.sections.map((section) => {
+                const isExpanded = expandedSections.has(section.id);
+                return (
+                  <div key={section.id} className="border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <CaretDown className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <CaretRight className="h-4 w-4 text-gray-500" />
+                        )}
+                        <h4 className="font-semibold text-gray-900">{section.title}</h4>
+                      </div>
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {section.type.replace('_', ' ')}
+                      </Badge>
+                    </button>
+                    
+                    {isExpanded && (
+                      <div className="px-4 pb-4">
+                        <div className="pl-7 prose prose-sm max-w-none">
+                          <div
+                            className="text-gray-700 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: section.content }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Full Content Fallback */
+            <div className="prose prose-sm max-w-none">
+              <div
+                className="text-gray-700 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: modalData.fullContent }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function GuidelineModal({
   modalData,
   isOpen,
   onClose,
   sourceTheme,
   isBookmarked,
-  onBookmarkToggle
+  onBookmarkToggle,
+  draggable = false,
+  draggableConfig
 }: GuidelineModalProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [expandAll, setExpandAll] = useState(false);
@@ -78,171 +277,77 @@ export default function GuidelineModal({
     setExpandAll(!expandAll);
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-start justify-between mb-4">
+  // Create default draggable config if needed
+  const defaultDraggableConfig: ModalDragAndMinimizeConfig = {
+    id: `guideline-modal-${modalData.id || Date.now()}`,
+    title: modalData.title,
+    icon: IconComponent,
+    persistent: true,
+  };
+
+  const finalDraggableConfig = draggableConfig || defaultDraggableConfig;
+
+  if (draggable) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 pointer-events-none">
+        <DraggableModalWrapper
+          config={finalDraggableConfig}
+          onClose={onClose}
+          className="pointer-events-auto max-w-5xl w-full bg-white"
+          showMinimizeButton={true}
+          showCloseButton={false} // We'll use the existing close button
+          customHeader={
             <div className="flex items-center gap-3 flex-1">
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: `${config.color}20`, color: config.color }}
               >
-                <IconComponent className="h-5 w-5" />
+                <IconComponent className="h-4 w-4" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">{modalData.title}</h2>
-                <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-semibold text-white/90 truncate">{modalData.title}</h2>
+                <div className="flex items-center gap-1">
                   <Badge
                     style={{ backgroundColor: config.color, color: 'white' }}
                     className="text-xs"
                   >
                     {config.name}
                   </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {modalData.specialty}
-                  </Badge>
-                  {modalData.metadata.grade && (
-                    <Badge variant="outline" className="text-xs">
-                      Grade {modalData.metadata.grade}
-                    </Badge>
-                  )}
                 </div>
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              {/* View Original Source Button */}
-              {modalData.metadata?.url && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(modalData.metadata?.url as string, '_blank')}
-                  className="text-xs px-3 py-1"
-                >
-                  View Original Source
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBookmarkToggle}
-                className="h-9 w-9 p-0"
-              >
-                <Star 
-                  className={cn(
-                    "h-4 w-4",
-                    isBookmarked ? "fill-yellow-400 text-yellow-400" : "text-gray-400"
-                  )}
-                />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-9 w-9 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          }
+        >
+          <GuidelineModalContent 
+            modalData={modalData}
+            config={config}
+            expandedSections={expandedSections}
+            expandAll={expandAll}
+            toggleSection={toggleSection}
+            toggleExpandAll={toggleExpandAll}
+            isBookmarked={isBookmarked}
+            onBookmarkToggle={onBookmarkToggle}
+            onClose={onClose}
+          />
+        </DraggableModalWrapper>
+      </div>
+    );
+  }
 
-          {/* Breadcrumbs */}
-          {modalData.breadcrumbs && modalData.breadcrumbs.length > 0 && (
-            <nav className="text-sm text-gray-500 mb-4">
-              {modalData.breadcrumbs.map((crumb, index) => (
-                <span key={index}>
-                  {crumb}
-                  {index < modalData.breadcrumbs.length - 1 && (
-                    <span className="mx-2">›</span>
-                  )}
-                </span>
-              ))}
-            </nav>
-          )}
-
-          {/* Metadata */}
-          <div className="text-sm text-gray-600 space-y-1">
-            {modalData.metadata.publication_date && (
-              <p>Published: {new Date(modalData.metadata.publication_date).toLocaleDateString()}</p>
-            )}
-            {modalData.metadata.last_reviewed && (
-              <p>Last Reviewed: {new Date(modalData.metadata.last_reviewed).toLocaleDateString()}</p>
-            )}
-            {modalData.metadata.organization && (
-              <p>Organization: {modalData.metadata.organization}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            {/* Section Controls */}
-            {modalData.sections && modalData.sections.length > 0 && (
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Guideline Sections</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleExpandAll}
-                  className="text-xs"
-                >
-                  {expandAll ? 'Collapse All' : 'Expand All'}
-                </Button>
-              </div>
-            )}
-
-            {/* Sections */}
-            {modalData.sections && modalData.sections.length > 0 ? (
-              <div className="space-y-4">
-                {modalData.sections.map((section) => {
-                  const isExpanded = expandedSections.has(section.id);
-                  return (
-                    <div key={section.id} className="border border-gray-200 rounded-lg">
-                      <button
-                        onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          {isExpanded ? (
-                            <CaretDown className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <CaretRight className="h-4 w-4 text-gray-500" />
-                          )}
-                          <h4 className="font-semibold text-gray-900">{section.title}</h4>
-                        </div>
-                        <Badge variant="secondary" className="text-xs capitalize">
-                          {section.type.replace('_', ' ')}
-                        </Badge>
-                      </button>
-                      
-                      {isExpanded && (
-                        <div className="px-4 pb-4">
-                          <div className="pl-7 prose prose-sm max-w-none">
-                            <div
-                              className="text-gray-700 leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: section.content }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Full Content Fallback */
-              <div className="prose prose-sm max-w-none">
-                <div
-                  className="text-gray-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: modalData.fullContent }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <GuidelineModalContent 
+          modalData={modalData}
+          config={config}
+          expandedSections={expandedSections}
+          expandAll={expandAll}
+          toggleSection={toggleSection}
+          toggleExpandAll={toggleExpandAll}
+          isBookmarked={isBookmarked}
+          onBookmarkToggle={onBookmarkToggle}
+          onClose={onClose}
+        />
       </div>
     </div>
   );

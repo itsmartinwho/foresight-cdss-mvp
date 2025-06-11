@@ -5,6 +5,8 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { DraggableModalWrapper } from './draggable-modal-wrapper';
+import { ModalDragAndMinimizeConfig } from '@/types/modal';
 
 const AlertDialog = AlertDialogPrimitive.Root
 
@@ -126,6 +128,55 @@ const AlertDialogCancel = React.forwardRef<
 ))
 AlertDialogCancel.displayName = AlertDialogPrimitive.Cancel.displayName
 
+// Draggable AlertDialog Components
+interface DraggableAlertDialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>, 'className'> {
+  draggableConfig: ModalDragAndMinimizeConfig;
+  className?: string;
+  onClose?: () => void;
+  showMinimizeButton?: boolean;
+  showCloseButton?: boolean;
+}
+
+const DraggableAlertDialogContent = React.forwardRef<
+  React.ElementRef<typeof AlertDialogPrimitive.Content>,
+  DraggableAlertDialogContentProps
+>(({ 
+  className, 
+  children, 
+  draggableConfig,
+  onClose,
+  showMinimizeButton = false, // Alert dialogs typically shouldn't be minimizable
+  showCloseButton = false, // Alert dialogs typically shouldn't have close button
+  ...props 
+}, ref) => (
+  <AlertDialogPortal>
+    <AlertDialogOverlay />
+    <div className="fixed inset-0 z-[9999] pointer-events-none">
+      <DraggableModalWrapper
+        config={draggableConfig}
+        onClose={onClose}
+        className={cn(
+          "pointer-events-auto max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          className
+        )}
+        showMinimizeButton={showMinimizeButton}
+        showCloseButton={showCloseButton}
+        contentClassName="grid gap-4"
+      >
+        <AlertDialogPrimitive.Content
+          ref={ref}
+          className="w-full outline-none"
+          {...props}
+        >
+          {children}
+        </AlertDialogPrimitive.Content>
+      </DraggableModalWrapper>
+    </div>
+  </AlertDialogPortal>
+));
+DraggableAlertDialogContent.displayName = "DraggableAlertDialogContent";
+
 export {
   AlertDialog,
   AlertDialogPortal,
@@ -138,4 +189,5 @@ export {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+  DraggableAlertDialogContent,
 }

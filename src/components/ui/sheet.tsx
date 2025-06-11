@@ -6,6 +6,8 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from '@phosphor-icons/react';
 
 import { cn } from "@/lib/utils"
+import { DraggableModalWrapper } from './draggable-modal-wrapper';
+import { ModalDragAndMinimizeConfig } from '@/types/modal';
 
 const Sheet = SheetPrimitive.Root
 
@@ -126,6 +128,87 @@ const SheetDescription = React.forwardRef<
 ))
 SheetDescription.displayName = SheetPrimitive.Description.displayName
 
+// Draggable Sheet Components
+interface DraggableSheetContentProps extends Omit<React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, 'className'> {
+  draggableConfig: ModalDragAndMinimizeConfig;
+  className?: string;
+  onClose?: () => void;
+  showMinimizeButton?: boolean;
+  showCloseButton?: boolean;
+  side?: VariantProps<typeof sheetVariants>['side'];
+}
+
+const DraggableSheetContent = React.forwardRef<
+  React.ElementRef<typeof SheetPrimitive.Content>,
+  DraggableSheetContentProps
+>(({ 
+  className, 
+  children, 
+  draggableConfig,
+  onClose,
+  showMinimizeButton = true,
+  showCloseButton = true,
+  side = "right",
+  ...props 
+}, ref) => {
+  // Calculate initial position based on side
+  const getInitialPosition = () => {
+    const viewport = {
+      width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+      height: typeof window !== 'undefined' ? window.innerHeight : 800,
+    };
+    
+    switch (side) {
+      case 'left':
+        return { x: 50, y: (viewport.height - 600) / 2 };
+      case 'right':
+        return { x: viewport.width - 450, y: (viewport.height - 600) / 2 };
+      case 'top':
+        return { x: (viewport.width - 600) / 2, y: 50 };
+      case 'bottom':
+        return { x: (viewport.width - 600) / 2, y: viewport.height - 450 };
+      default:
+        return { x: (viewport.width - 600) / 2, y: (viewport.height - 600) / 2 };
+    }
+  };
+
+  const configWithPosition = {
+    ...draggableConfig,
+    defaultPosition: draggableConfig.defaultPosition || getInitialPosition(),
+  };
+
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <div className="fixed inset-0 z-50 pointer-events-none">
+        <DraggableModalWrapper
+          config={configWithPosition}
+          onClose={onClose}
+          className={cn(
+            "pointer-events-auto",
+            side === 'left' || side === 'right' ? 'w-3/4 max-w-sm h-full max-h-[90vh]' : '',
+            side === 'top' || side === 'bottom' ? 'w-full max-w-4xl h-3/4 max-h-sm' : '',
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            className
+          )}
+          showMinimizeButton={showMinimizeButton}
+          showCloseButton={showCloseButton}
+          contentClassName="flex flex-col space-y-4"
+        >
+          <SheetPrimitive.Content
+            ref={ref}
+            className="w-full h-full outline-none"
+            {...props}
+          >
+            {children}
+          </SheetPrimitive.Content>
+        </DraggableModalWrapper>
+      </div>
+    </SheetPortal>
+  )
+});
+DraggableSheetContent.displayName = "DraggableSheetContent";
+
 export {
   Sheet,
   SheetPortal,
@@ -137,4 +220,5 @@ export {
   SheetFooter,
   SheetTitle,
   SheetDescription,
+  DraggableSheetContent,
 }

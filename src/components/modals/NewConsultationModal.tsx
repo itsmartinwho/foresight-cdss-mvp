@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, forwardRef } from 'react';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DraggableDialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,17 @@ import { supabaseDataService } from '@/lib/supabaseDataService';
 import type { Encounter } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ModalDragAndMinimizeConfig } from '@/types/modal';
 
 interface Props {
   /** Controls open state from parent */
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onConsultationCreated?: (patient: Patient | null, newEncounter: Encounter | null) => void;
+  /** Enable draggable functionality */
+  draggable?: boolean;
+  /** Configuration for drag and minimize behavior */
+  draggableConfig?: ModalDragAndMinimizeConfig;
 }
 
 // Custom DatePicker wrapper component
@@ -59,7 +64,7 @@ const StyledDatePicker = forwardRef<DatePicker, any>(({ value, onClick, onChange
 });
 StyledDatePicker.displayName = 'StyledDatePicker';
 
-export default function NewConsultationModal({ open, onOpenChange, onConsultationCreated }: Props) {
+export default function NewConsultationModal({ open, onOpenChange, onConsultationCreated, draggable, draggableConfig }: Props) {
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const router = useRouter();
 
@@ -199,10 +204,12 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden trigger; open controlled externally */}</DialogTrigger>
-      <DialogContent
+      <DraggableDialogContent
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
         className={`max-w-lg pb-4 ${shake ? 'animate-shake' : ''}`}
+        draggable={draggable}
+        draggableConfig={draggableConfig}
       >
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>
@@ -437,7 +444,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
             {isCreating ? 'Creating...' : 'Start Consultation'}
           </Button>
         </div>
-      </DialogContent>
+      </DraggableDialogContent>
     </Dialog>
   );
 } 
