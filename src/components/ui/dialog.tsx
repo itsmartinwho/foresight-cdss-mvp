@@ -155,6 +155,32 @@ const DraggableDialogContent = React.forwardRef<
   // NOTE: Removed useModalOverlay call - regular dialogs should NOT register with ModalManager
   // They have their own overlay through DialogOverlay component
 
+  // Compute position style based on minimize state and drag state
+  const positionStyle = React.useMemo(() => {
+    if (isMinimized) return {};
+    
+    const pos = containerProps?.style;
+    if (!pos) return {};
+    
+    // Check if we're at the initial center position and haven't been dragged
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const isAtCenter = !isDragging && pos && 
+      pos.left === `${Math.round(windowWidth / 2)}px` && 
+      pos.top === `${Math.round(windowHeight / 2)}px`;
+    
+    if (isAtCenter) {
+      // Use transform to center the modal
+      return {
+        ...pos,
+        transform: 'translate(-50%, -50%)',
+      };
+    }
+    
+    // Otherwise use the position from containerProps
+    return pos;
+  }, [containerProps?.style, isMinimized, isDragging]);
+
   if (!draggable || !draggableConfig) {
     // Return regular dialog when not draggable - uses its own overlay via DialogOverlay
     return (
@@ -191,6 +217,7 @@ const DraggableDialogContent = React.forwardRef<
     <DialogPortal>
       <div 
         {...containerProps}
+        style={positionStyle}
         className={cn(
           "glass rounded-lg shadow-xl overflow-hidden flex flex-col max-w-lg w-full",
           isDragging && "modal-dragging",
@@ -205,18 +232,34 @@ const DraggableDialogContent = React.forwardRef<
         >
           {/* Title bar with drag handle */}
           <div 
-            {...dragHandleProps}
             className={cn(
-              "modal-drag-handle flex items-center justify-between p-4 border-b border-white/10",
-              dragHandleProps.className
+              "modal-title-bar flex items-center justify-between p-4 border-b border-white/10"
             )}
             data-testid="modal-title-bar"
           >
-            <div className="flex-1">
-              {/* Title will be rendered by DialogTitle component */}
+            <div 
+              {...dragHandleProps}
+              className={cn(
+                "modal-drag-handle flex items-center flex-1 cursor-move select-none",
+                dragHandleProps.className
+              )}
+              onMouseDown={(e) => {
+                // Prevent any default behavior
+                e.preventDefault();
+                e.stopPropagation();
+                // Call the original onMouseDown if it exists
+                if (dragHandleProps.onMouseDown) {
+                  dragHandleProps.onMouseDown(e);
+                }
+              }}
+            >
+              {/* Display the modal title from config */}
+              <h3 className="text-lg font-semibold m-0">
+                {draggableConfig?.title || 'Untitled'}
+              </h3>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-4">
               {showMinimizeButton && (
                 <button
                   onClick={minimize}

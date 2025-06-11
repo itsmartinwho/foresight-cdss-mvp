@@ -12,25 +12,20 @@ const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 function getCenterPosition(): ModalPosition {
   if (typeof window === 'undefined') return { x: 200, y: 100 };
   
-  // Don't assume modal dimensions - just center based on viewport
+  // Use viewport dimensions
   const viewport = {
     width: window.innerWidth,
     height: window.innerHeight,
   };
 
-  // Calculate center without assuming modal size
-  // The modal will be positioned at its top-left corner, so we need to account for that
-  // Use a reasonable offset that works for most modal sizes
-  const centerX = viewport.width / 2 - 250; // Assume ~500px modal width
-  const centerY = viewport.height / 2 - 200; // Assume ~400px modal height
-
-  // Apply minimal constraints to keep modal visible
-  const constrainedX = Math.max(20, centerX);
-  const constrainedY = Math.max(20, centerY);
+  // Calculate true center - modal will be positioned at its top-left corner
+  // We'll use 50% transform in CSS to truly center it
+  const centerX = Math.round(viewport.width / 2);
+  const centerY = Math.round(viewport.height / 2);
 
   return {
-    x: constrainedX,
-    y: constrainedY,
+    x: centerX,
+    y: centerY,
   };
 }
 
@@ -88,19 +83,18 @@ export function useModalDragAndMinimize(
       y: event.clientY - dragState.dragOffset.y,
     };
     
-    // Constrain to viewport bounds using the same logic as modalPersistence
-    const bottomPadding = 20;
-    const sidePadding = 20;
-    const minVisibleWidth = 200; // Ensure at least this much is visible
-    const minVisibleHeight = 50; // Ensure at least the title bar is visible
+    // Constrain to viewport bounds but allow going above viewport
+    const minVisibleWidth = 100; // Ensure at least this much width is visible
+    const minVisibleHeight = 30; // Ensure at least the title bar is visible
     
-    // Allow dragging above viewport (negative y) but ensure some part is visible
-    const minY = -window.innerHeight + minVisibleHeight;
+    // Allow dragging above viewport (negative y) and to the left (negative x)
+    const minX = -window.innerWidth + minVisibleWidth;
+    const minY = -300; // Allow dragging 300px above viewport
     const maxX = window.innerWidth - minVisibleWidth;
     const maxY = window.innerHeight - minVisibleHeight;
     
     const constrainedPosition = {
-      x: Math.max(-window.innerWidth + minVisibleWidth, Math.min(maxX, newPosition.x)),
+      x: Math.max(minX, Math.min(maxX, newPosition.x)),
       y: Math.max(minY, Math.min(maxY, newPosition.y)),
     };
     
