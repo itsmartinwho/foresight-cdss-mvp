@@ -193,7 +193,6 @@ const DraggableSheetContent = React.forwardRef<
           )}
           showMinimizeButton={showMinimizeButton}
           showCloseButton={showCloseButton}
-          contentClassName="flex flex-col space-y-4"
         >
           <SheetPrimitive.Content
             ref={ref}

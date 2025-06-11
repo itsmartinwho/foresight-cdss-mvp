@@ -162,7 +162,6 @@ const DraggableAlertDialogContent = React.forwardRef<
         )}
         showMinimizeButton={showMinimizeButton}
         showCloseButton={showCloseButton}
-        contentClassName="grid gap-4"
       >
         <AlertDialogPrimitive.Content
           ref={ref}

@@ -941,7 +941,6 @@ export default function ConsultationPanel({
           ...draggableConfig,
         }}
         className="pointer-events-auto"
-        contentClassName="p-0"
       >
         {modalContent}
       </DraggableModalWrapper>

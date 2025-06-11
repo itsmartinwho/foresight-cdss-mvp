@@ -147,18 +147,11 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
-  // Always call the hook but only pass config when needed
-  const {
-    containerProps,
-    dragHandleProps,
-    minimize,
-    close,
-    isMinimized,
-  } = useModalDragAndMinimize(
-    draggable && draggableConfig ? draggableConfig : null
-  );
+  // For now, always render as regular dialog until modal manager is properly integrated
+  // This prevents overlay issues while preserving functionality
+  const shouldUseDraggable = false; // Disabled until modal manager integration is fixed
 
-  if (!draggable || !draggableConfig) {
+  if (!shouldUseDraggable || !draggable || !draggableConfig) {
     // Return regular dialog when not draggable
     return (
       <DialogPortal>
@@ -184,87 +177,8 @@ const DraggableDialogContent = React.forwardRef<
     );
   }
 
-  const handleClose = () => {
-    if (onClose) {
-      onClose();
-    } else {
-      close();
-    }
-  };
-
-  if (isMinimized) {
-    return null;
-  }
-
-  // For draggable dialogs, use our wrapper but preserve dialog styling
-  return (
-    <DialogPortal>
-      <DialogOverlay />
-      <div 
-        ref={ref as React.Ref<HTMLDivElement>}
-        {...containerProps}
-        className={cn(
-          // Preserve original dialog styling
-          "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          // Add our drag class
-          containerProps.className,
-          className
-        )}
-        style={{
-          ...containerProps.style,
-          // Override center positioning only when draggable
-        }}
-      >
-        {/* Custom draggable header */}
-        <div 
-          {...dragHandleProps} 
-          className={cn(
-            "flex items-center justify-between p-0 pb-4 -m-6 mb-2 px-6 pt-6",
-            "border-b border-white/10",
-            dragHandleProps.className
-          )}
-        >
-          <DialogTitle className="text-lg font-semibold leading-none tracking-tight">
-            {draggableConfig.title}
-          </DialogTitle>
-          <div className="flex items-center gap-1">
-            {showMinimizeButton && (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  minimize();
-                }} 
-                className="modal-minimize-btn"
-                aria-label={`Minimize ${draggableConfig.title}`}
-                title={`Minimize ${draggableConfig.title} (Ctrl+M)`}
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-            )}
-            {showCloseButton && (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClose();
-                }} 
-                className="modal-minimize-btn hover:bg-red-500/20 hover:text-red-400"
-                aria-label={`Close ${draggableConfig.title}`}
-                title={`Close ${draggableConfig.title}`}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-        
-        {/* Dialog content */}
-        <div className="grid gap-4">
-          {children}
-        </div>
-      </div>
-    </DialogPortal>
-  );
+  // Draggable functionality disabled for now
+  return null;
 });
 DraggableDialogContent.displayName = "DraggableDialogContent";
 

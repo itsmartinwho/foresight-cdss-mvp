@@ -295,28 +295,7 @@ export default function GuidelineModal({
           onClose={onClose}
           className="pointer-events-auto max-w-5xl w-full bg-white"
           showMinimizeButton={true}
-          showCloseButton={false} // We'll use the existing close button
-          customHeader={
-            <div className="flex items-center gap-3 flex-1">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: `${config.color}20`, color: config.color }}
-              >
-                <IconComponent className="h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-white/90 truncate">{modalData.title}</h2>
-                <div className="flex items-center gap-1">
-                  <Badge
-                    style={{ backgroundColor: config.color, color: 'white' }}
-                    className="text-xs"
-                  >
-                    {config.name}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          }
+          showCloseButton={false}
         >
           <GuidelineModalContent 
             modalData={modalData}
