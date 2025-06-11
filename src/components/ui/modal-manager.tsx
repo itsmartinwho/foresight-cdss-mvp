@@ -26,7 +26,8 @@ type ModalManagerAction =
   | { type: 'MINIMIZE_MODAL'; payload: { id: string } }
   | { type: 'RESTORE_MODAL'; payload: { id: string } }
   | { type: 'BRING_TO_FRONT'; payload: { id: string } }
-  | { type: 'INITIALIZE_FROM_STORAGE'; payload: { persistedData: any } };
+  | { type: 'INITIALIZE_FROM_STORAGE'; payload: { persistedData: any } }
+  | { type: 'CLEAN_ORPHANED_MODALS' };
 
 const initialState: ModalManagerState = {
   modals: {},
@@ -226,22 +227,31 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
     case 'BRING_TO_FRONT': {
       const { id } = action.payload;
-      const modal = state.modals[id];
-      if (!modal || modal.isMinimized) return state;
-
+      if (!state.modals[id]) return state;
+      
       const newZIndex = state.highestZIndex + 1;
-      const updatedModal = { ...modal, zIndex: newZIndex };
-
-      // Persist z-index
-      saveModalPosition(id, modal.position, modal.isMinimized, newZIndex);
-
       return {
         ...state,
         modals: {
           ...state.modals,
-          [id]: updatedModal,
+          [id]: {
+            ...state.modals[id],
+            zIndex: newZIndex,
+          },
         },
         highestZIndex: newZIndex,
+      };
+    }
+
+    case 'CLEAN_ORPHANED_MODALS': {
+      // Remove any minimized modals that don't have corresponding modal entries
+      const validMinimizedModals = state.minimizedModals.filter(minimizedModal => state.modals[minimizedModal.id]);
+      if (validMinimizedModals.length === state.minimizedModals.length) {
+        return state; // No changes needed
+      }
+      return {
+        ...state,
+        minimizedModals: validMinimizedModals,
       };
     }
 

@@ -210,7 +210,6 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           draggableConfig={{
             id: 'new-consultation-dashboard',
             title: 'New Consultation',
-            defaultPosition: { x: 300, y: 150 },
             persistent: true
           }}
         />

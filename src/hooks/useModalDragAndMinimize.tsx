@@ -9,7 +9,7 @@ import { useModalManager } from '@/components/ui/modal-manager';
 
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 
-function getCenterPosition(modalWidth = 800, modalHeight = 600): ModalPosition {
+function getCenterPosition(modalWidth = 600, modalHeight = 500): ModalPosition {
   if (typeof window === 'undefined') return { x: 200, y: 100 };
   
   // Use the same logic as modalPersistence.ts for consistency
@@ -23,17 +23,17 @@ function getCenterPosition(modalWidth = 800, modalHeight = 600): ModalPosition {
   const bottomPadding = 40; // Bottom padding
   const sidePadding = 40; // Side padding
 
-  // Calculate available space
-  const availableWidth = viewport.width - (sidePadding * 2);
-  const availableHeight = viewport.height - headerHeight - bottomPadding;
+  // Calculate the center position
+  const centerX = (viewport.width - modalWidth) / 2;
+  const centerY = (viewport.height - modalHeight) / 2;
 
-  // Adjust modal size if it's too large for viewport
-  const effectiveModalWidth = Math.min(modalWidth, availableWidth);
-  const effectiveModalHeight = Math.min(modalHeight, availableHeight);
+  // Apply constraints to ensure modal is within bounds
+  const constrainedX = Math.max(sidePadding, Math.min(centerX, viewport.width - modalWidth - sidePadding));
+  const constrainedY = Math.max(headerHeight, Math.min(centerY, viewport.height - modalHeight - bottomPadding));
 
   return {
-    x: sidePadding + Math.max(0, (availableWidth - effectiveModalWidth) / 2),
-    y: headerHeight + Math.max(0, (availableHeight - effectiveModalHeight) / 2),
+    x: constrainedX,
+    y: constrainedY,
   };
 }
 
