@@ -1,46 +1,116 @@
 # Draggable and Minimizable Modals - Implementation Status
 
-## Status: ✅ COMPLETED
+## Status: ✅ MOSTLY COMPLETED (90%)
 
-All major features have been successfully implemented and tested.
+Major features have been successfully implemented with some remaining issues to fix.
 
 ## Recent Fixes (June 2025)
 
-### 1. Minimize Button Not Working
+### ✅ Fixed Issues:
+
+#### 1. Overlay Persistence Issue
+**Issue**: The overlay remained after minimizing modals.
+**Fix**: Improved modal lifecycle management and state tracking in `dialog.tsx`.
+**Status**: ✅ Resolved
+
+#### 2. Minimize Button Not Working
 **Issue**: The minimize button was clickable but didn't do anything when clicked.
+**Fix**: Removed the problematic `isMounted` state logic that was preventing proper hook initialization.
+**Status**: ✅ Resolved
 
-**Root Cause**: The `DraggableDialogContent` component was using a `isMounted` state that prevented proper initialization of the modal drag hook. The hook was being initialized with a null config because `isMounted` was false at initialization time.
+#### 3. Modal Registration Logic
+**Issue**: Modals were registering even when not mounted.
+**Fix**: Added proper mount/unmount tracking and conditional rendering.
+**Status**: ✅ Resolved
 
-**Fix Applied**: 
-- Removed the conditional config logic in `DraggableDialogContent`
-- Directly pass the config to `useModalDragAndMinimize` when draggable is true
-- Removed unnecessary `onOpenAutoFocus` and `onCloseAutoFocus` callbacks
+#### 4. Reset Demo Button
+**Issue**: User reported missing reset demo button.
+**Status**: ✅ Verified - Button exists and is functional in profile menu
 
-**Result**: Minimize button now works correctly - modals minimize to the bottom bar and can be restored.
+### ⚠️ Partially Fixed Issues:
 
-### 2. Off-Center Modal Positioning
-**Issue**: Modals appeared off-center when first opened.
+#### 1. Modal Centering
+**Issue**: Modals appear off-center to the left.
+**Attempted Fix**: Updated `getCenterPosition()` to return true center coordinates and added CSS transform logic.
+**Status**: ⚠️ Needs additional work - the transform logic needs to be properly applied
 
-**Root Cause**: 
-- Hardcoded default positions that didn't account for different screen sizes
-- Incorrect center calculation logic that didn't properly center modals
+#### 2. Drag Above Navbar
+**Issue**: Modals cannot be dragged above the navbar.
+**Fix**: Updated drag constraints to allow negative Y values (-300px above viewport).
+**Status**: ✅ Code updated but needs testing
 
-**Fix Applied**:
-- Removed hardcoded `defaultPosition` from modal configurations
-- Improved the `getCenterPosition` function to properly calculate center based on viewport dimensions
-- Changed default modal size assumptions from 800x600 to 600x500 for better fit
-- Cleared persisted modal positions to reset state
+### ❌ Remaining Issues:
 
-**Result**: Modals now open properly centered on the screen.
+#### 1. Modal Centering Still Off
+- Despite fixes, modals still appear off-center
+- Need to investigate the actual rendering position vs calculated position
+- May need to measure modal dimensions after render
 
-### 3. Overlay Persistence Issue
-**Issue**: Modal overlay remained visible after minimizing modals, blocking UI interaction.
+#### 2. Dragging Behavior Issues
+- Dragging from slightly incorrect area may close the modal
+- Drag handle area needs better definition
+- Event propagation issues need resolution
 
-**Root Cause**: Dialog components were registering with the modal manager even when not mounted.
+#### 3. Modal Disappearing After Drag
+- After dragging modal multiple times, it may disappear
+- Need to investigate position state management during drag
 
-**Fix Applied**: Added proper mount/unmount tracking and conditional registration.
+## Working Features:
+- ✅ Minimize button successfully minimizes modals
+- ✅ Minimized modals appear in the bottom bar
+- ✅ Click to restore minimized modals works
+- ✅ Multiple modals can be managed independently
+- ✅ Modal state persists correctly
+- ✅ Overlay correctly shows/hides based on modal state
 
-**Result**: Overlay correctly appears/disappears with modal state changes.
+## Technical Details:
+
+### Key Components Updated:
+1. **`src/components/ui/dialog.tsx`**
+   - Fixed modal registration logic
+   - Updated drag handle structure
+   - Added position style computation
+
+2. **`src/hooks/useModalDragAndMinimize.tsx`**
+   - Improved center position calculation
+   - Updated drag constraints to allow negative positions
+   - Fixed dependency arrays
+
+3. **`src/components/ui/modal-manager.tsx`**
+   - Improved overlay state management
+   - Fixed initialization from storage
+
+4. **`src/components/ui/draggable-modal-wrapper.tsx`**
+   - Added position style computation for centering
+
+## Next Steps:
+
+1. **Fix Modal Centering**
+   - Investigate why transform centering isn't working
+   - Consider measuring modal dimensions after mount
+   - Update position calculation based on actual dimensions
+
+2. **Improve Drag Behavior**
+   - Better define drag handle hit area
+   - Fix event propagation issues
+   - Add drag state validation
+
+3. **Test Edge Cases**
+   - Multiple modal interactions
+   - Rapid minimize/restore cycles
+   - Browser resize during modal display
+
+## Testing Instructions:
+
+1. **Test Modal Centering**: Open any draggable modal and verify it appears centered
+2. **Test Drag Above Navbar**: Try dragging modal to the very top of the screen
+3. **Test Minimize/Restore**: Click minimize and restore buttons multiple times
+4. **Test Multiple Modals**: Open multiple modals and test interactions
+
+## Known Modals to Test:
+- Demo intro modal (on first visit to dashboard)
+- New Consultation modal (dashboard and patients page)
+- New Consultation modal (patient workspace)
 
 ## Current Features Working
 
