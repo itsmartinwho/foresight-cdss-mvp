@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DraggableDialogContent,
 } from "@/components/ui/dialog";
 
 // Import side panel configuration
@@ -201,12 +202,31 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           onAlertClick={onAlertClick}
         />
       )}
-      <NewConsultationModal open={showNewConsultModal} onOpenChange={setShowNewConsultModal} />
+      <NewConsultationModal 
+        open={showNewConsultModal} 
+        onOpenChange={setShowNewConsultModal}
+        draggable={true}
+        draggableConfig={{
+          id: 'new-consultation-dashboard',
+          title: 'New Consultation',
+          defaultPosition: { x: 300, y: 150 },
+          persistent: true
+        }}
+      />
 
       {/* Demo Modal */}
       {demoStage === 'introModal' && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
-          <DialogContent className="sm:max-w-[750px] max-h-[650px] p-8">
+          <DraggableDialogContent 
+            className="sm:max-w-[750px] max-h-[650px] p-8"
+            draggable={true}
+            draggableConfig={{
+              id: 'demo-intro-modal',
+              title: 'Foresight Demo',
+              defaultPosition: { x: 200, y: 100 },
+              persistent: false
+            }}
+          >
             <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
               <DialogHeader className="space-y-0">
                 <DialogTitle className="text-center text-3xl font-bold">See Foresight in Action</DialogTitle>
@@ -244,7 +264,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                 </Button>
               </DialogFooter>
             </div>
-          </DialogContent>
+          </DraggableDialogContent>
         </Dialog>
       )}
     </ContentSurface>

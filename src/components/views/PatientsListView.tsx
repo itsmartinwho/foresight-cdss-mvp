@@ -425,6 +425,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
             fetchData();
           }
         }}
+        draggable={true}
+        draggableConfig={{
+          id: 'new-consultation-patients',
+          title: 'New Consultation',
+          defaultPosition: { x: 250, y: 100 },
+          persistent: true
+        }}
       />
     </ContentSurface>
   );

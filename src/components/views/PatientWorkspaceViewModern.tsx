@@ -523,6 +523,13 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         patient={patient}
         onConsultationCreated={handleConsultationCreated}
         isDemoMode={false}
+        draggable={true}
+        draggableConfig={{
+          id: `consultation-panel-patient-${patient.id}`,
+          title: "New Consultation",
+          defaultPosition: { x: 150, y: 80 },
+          persistent: true
+        }}
       />
 
       {/* Demo Consultation Panel - separate instance for demo */}
@@ -543,6 +550,13 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           demoSoapNote={demoConsultation.demoSoapNote}
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
           onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
+          draggable={true}
+          draggableConfig={{
+            id: `demo-consultation-panel-${patient.id}`,
+            title: "Demo Consultation",
+            defaultPosition: { x: 200, y: 120 },
+            persistent: false
+          }}
         />
       )}
     </ContentSurface>
