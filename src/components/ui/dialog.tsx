@@ -143,25 +143,14 @@ const DraggableDialogContent = React.forwardRef<
   // Generate a stable ID for non-draggable dialogs (only once per component instance)
   const stableId = React.useMemo(() => `dialog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
   
-  // Track if the dialog content is actually mounted and visible
-  const [isMounted, setIsMounted] = React.useState(false);
-  
-  // Create a modified config that's null when dialog is not mounted
-  const activeConfig = React.useMemo(() => {
-    if (draggable && draggableConfig && isMounted) {
-      return draggableConfig;
-    }
-    return null;
-  }, [draggable, draggableConfig, isMounted]);
-
-  // For draggable dialogs, use the full drag hook with active config
+  // For draggable dialogs, use the full drag hook
   const {
     isMinimized,
     isDragging,
     minimize,
     containerProps,
     dragHandleProps,
-  } = useModalDragAndMinimize(activeConfig);
+  } = useModalDragAndMinimize(draggable ? draggableConfig : null);
 
   // NOTE: Removed useModalOverlay call - regular dialogs should NOT register with ModalManager
   // They have their own overlay through DialogOverlay component
@@ -212,12 +201,6 @@ const DraggableDialogContent = React.forwardRef<
         <DialogPrimitive.Content 
           ref={ref} 
           className="flex flex-col flex-1"
-          onOpenAutoFocus={() => {
-            setIsMounted(true);
-          }}
-          onCloseAutoFocus={() => {
-            setIsMounted(false);
-          }}
           {...props}
         >
           {/* Title bar with drag handle */}
