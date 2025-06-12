@@ -216,7 +216,7 @@ const DraggableDialogContent = React.forwardRef<
             {/* Title */}
             <div className="pointer-events-none">
               <h3 className="text-lg font-semibold m-0">
-                {draggableConfig?.title || 'Untitled'}
+                {draggableConfig?.title || ''}
               </h3>
             </div>
             

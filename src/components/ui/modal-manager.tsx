@@ -289,7 +289,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
           if (modal) {
             return {
               id,
-              title: modal.title || 'Untitled',
+              title: modal.title || '',
               icon: modal.icon,
               order: index,
             };
