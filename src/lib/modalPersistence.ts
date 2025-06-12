@@ -10,6 +10,7 @@ interface PersistedModalData {
   timestamp: number;
   title?: string;
   icon?: React.ComponentType<{ className?: string }> | string;
+  originUrl?: string; // Track where the modal was originally opened
 }
 
 interface ModalPositionStorage {
@@ -95,7 +96,8 @@ export function saveModalPosition(
   isMinimized: boolean = false,
   zIndex: number = 1000,
   title?: string,
-  icon?: React.ComponentType<{ className?: string }> | string
+  icon?: React.ComponentType<{ className?: string }> | string,
+  originUrl?: string
 ): void {
   const currentData = loadModalPositions() || {
     version: STORAGE_VERSION,
@@ -103,16 +105,18 @@ export function saveModalPosition(
     minimizedOrder: [],
   };
 
-  // Preserve existing title and icon if not provided
-  const existingData = currentData.modals[modalId];
-  
+  // Preserve existing originUrl if not provided and modal already exists
+  const existingModal = currentData.modals[modalId];
+  const finalOriginUrl = originUrl || existingModal?.originUrl;
+
   currentData.modals[modalId] = {
     position,
     zIndex,
     isMinimized,
     timestamp: Date.now(),
-    title: title || existingData?.title,
-    icon: icon || existingData?.icon,
+    title,
+    icon,
+    originUrl: finalOriginUrl,
   };
 
   saveModalPositions(currentData);

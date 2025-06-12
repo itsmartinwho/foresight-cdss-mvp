@@ -66,7 +66,7 @@ export interface ModalDragAndMinimizeConfig {
 
 export interface ModalManagerContextType {
   state: ModalManagerState;
-  registerModal: (config: ModalDragAndMinimizeConfig) => void;
+  registerModal: (config: ModalDragAndMinimizeConfig, originUrl?: string) => void;
   unregisterModal: (id: string) => void;
   minimizeModal: (id: string) => void;
   restoreModal: (id: string) => void;

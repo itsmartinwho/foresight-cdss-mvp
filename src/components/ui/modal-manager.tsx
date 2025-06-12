@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   ModalManagerState, 
   ModalState, 
@@ -20,7 +21,7 @@ import {
 
 // Action types for modal manager reducer
 type ModalManagerAction =
-  | { type: 'REGISTER_MODAL'; payload: { config: ModalDragAndMinimizeConfig } }
+  | { type: 'REGISTER_MODAL'; payload: { config: ModalDragAndMinimizeConfig; originUrl?: string } }
   | { type: 'UNREGISTER_MODAL'; payload: { id: string } }
   | { type: 'UPDATE_POSITION'; payload: { id: string; position: ModalPosition } }
   | { type: 'MINIMIZE_MODAL'; payload: { id: string } }
@@ -40,7 +41,7 @@ const initialState: ModalManagerState = {
 function modalManagerReducer(state: ModalManagerState, action: ModalManagerAction): ModalManagerState {
   switch (action.type) {
     case 'REGISTER_MODAL': {
-      const { config } = action.payload;
+      const { config, originUrl } = action.payload;
       const { id, title, icon, defaultPosition } = config;
 
       // Check if modal already exists and is visible - if so, just update its visibility
@@ -109,6 +110,9 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         isVisible: true, // Always mark as visible when actively registering
       };
 
+      // Save the modal position with origin URL for navigation purposes
+      saveModalPosition(id, position, modalState.isMinimized, modalState.zIndex, title, icon, originUrl);
+
       // Update minimized modals if this modal was minimized
       let minimizedModals = state.minimizedModals;
       if (modalState.isMinimized) {
@@ -175,8 +179,9 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
       const updatedModal = { ...modal, position };
       
-      // Persist position
-      saveModalPosition(id, position, modal.isMinimized, modal.zIndex, modal.title, modal.icon);
+      // Persist position (preserve existing originUrl)
+      const existingPersistedData = loadModalPositions()?.modals[id];
+      saveModalPosition(id, position, modal.isMinimized, modal.zIndex, modal.title, modal.icon, existingPersistedData?.originUrl);
 
       return {
         ...state,
@@ -219,9 +224,10 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         order: index,
       }));
 
-      // Persist minimized state
+      // Persist minimized state (preserve existing originUrl)
       updateMinimizedOrder(id, true);
-      saveModalPosition(id, modal.position, true, modal.zIndex, modal.title, modal.icon);
+      const existingPersistedData = loadModalPositions()?.modals[id];
+      saveModalPosition(id, modal.position, true, modal.zIndex, modal.title, modal.icon, existingPersistedData?.originUrl);
 
       return {
         ...state,
@@ -239,7 +245,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
       if (!modal || !modal.isMinimized) return state;
 
       const newZIndex = state.highestZIndex + 1;
-      
+
       // Check if modal component is currently mounted (isVisible indicates an active component)
       // If not mounted, we'll mark it as pending restore and it will restore when component mounts
       const updatedModal = { 
@@ -255,9 +261,10 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         .filter(m => m.id !== id)
         .map((modal, index) => ({ ...modal, order: index }));
 
-      // Persist restored state
+      // Persist restored state (preserve existing originUrl)
       updateMinimizedOrder(id, false);
-      saveModalPosition(id, modal.position, false, newZIndex, modal.title, modal.icon);
+      const existingPersistedData = loadModalPositions()?.modals[id];
+      saveModalPosition(id, modal.position, false, newZIndex, modal.title, modal.icon, existingPersistedData?.originUrl);
 
       return {
         ...state,
@@ -351,8 +358,9 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
       const updatedModal = { ...modal, isVisible };
       
-             // Persist visibility
-       saveModalPosition(id, modal.position, modal.isMinimized, modal.zIndex, modal.title, modal.icon);
+             // Persist visibility (preserve existing originUrl)
+       const existingPersistedData = loadModalPositions()?.modals[id];
+       saveModalPosition(id, modal.position, modal.isMinimized, modal.zIndex, modal.title, modal.icon, existingPersistedData?.originUrl);
 
       return {
         ...state,
@@ -380,6 +388,8 @@ interface ModalManagerProviderProps {
 
 export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   const [state, dispatch] = useReducer(modalManagerReducer, initialState);
+  const router = useRouter();
+  const pathname = usePathname();
   const listeners = useRef<Listener[]>([]);
 
   // Notify listeners on state change
@@ -447,8 +457,8 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   }, []);
 
   // Modal registration and management functions
-  const registerModal = useCallback((config: ModalDragAndMinimizeConfig) => {
-    dispatch({ type: 'REGISTER_MODAL', payload: { config } });
+  const registerModal = useCallback((config: ModalDragAndMinimizeConfig, originUrl?: string) => {
+    dispatch({ type: 'REGISTER_MODAL', payload: { config, originUrl } });
   }, []);
 
   const unregisterModal = useCallback((id: string) => {
@@ -459,13 +469,42 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     dispatch({ type: 'UPDATE_POSITION', payload: { id, position } });
   }, []);
 
+  // Getter functions - declared early to avoid scope issues
+  const getModalState = useCallback((id: string): ModalState | undefined => {
+    return state.modals[id];
+  }, [state.modals]);
+
+  const getMinimizedModals = useCallback((): MinimizedModalData[] => {
+    return state.minimizedModals;
+  }, [state.minimizedModals]);
+
   const minimizeModal = useCallback((id: string) => {
     dispatch({ type: 'MINIMIZE_MODAL', payload: { id } });
   }, []);
 
   const restoreModal = useCallback((id: string) => {
+    const currentModal = state.modals[id];
+    if (!currentModal) return;
+
+    // First, dispatch the restore action
     dispatch({ type: 'RESTORE_MODAL', payload: { id } });
-  }, []);
+
+    // Check if modal component is actually mounted by checking if it becomes visible
+    // We'll use a small delay to allow the state to update
+    setTimeout(() => {
+      const updatedModal = getModalState(id);
+      if (updatedModal && !updatedModal.isMinimized && !updatedModal.isVisible) {
+        // Modal was restored but component isn't mounted, need to navigate
+        const persistedData = loadModalPositions();
+        const modalData = persistedData?.modals[id];
+        
+        if (modalData?.originUrl && modalData.originUrl !== pathname) {
+          console.log(`🔗 Navigating to origin URL for modal ${id}: ${modalData.originUrl}`);
+          router.push(modalData.originUrl);
+        }
+      }
+    }, 100);
+  }, [state.modals, getModalState, pathname, router]);
 
   const bringToFront = useCallback((id: string) => {
     dispatch({ type: 'BRING_TO_FRONT', payload: { id } });
@@ -474,15 +513,6 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   const setModalVisibility = useCallback((id: string, isVisible: boolean) => {
     dispatch({ type: 'SET_MODAL_VISIBILITY', payload: { id, isVisible } });
   }, []);
-
-  // Getter functions
-  const getModalState = useCallback((id: string): ModalState | undefined => {
-    return state.modals[id];
-  }, [state.modals]);
-
-  const getMinimizedModals = useCallback((): MinimizedModalData[] => {
-    return state.minimizedModals;
-  }, [state.minimizedModals]);
 
   const contextValue: ModalManagerContextType = {
     state,

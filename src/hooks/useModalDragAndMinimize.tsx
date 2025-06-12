@@ -6,6 +6,7 @@ import {
   UseModalDragAndMinimizeReturn
 } from '@/types/modal';
 import { useModalManager } from '@/components/ui/modal-manager';
+import { usePathname } from 'next/navigation';
 
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 
@@ -37,6 +38,7 @@ function getCenterPosition(): ModalPosition {
 export function useModalDragAndMinimize(
   config: ModalDragAndMinimizeConfig | null
 ): UseModalDragAndMinimizeReturn {
+  const pathname = usePathname();
   // Always call hooks first, then handle null config
   const { 
     registerModal, 
@@ -142,14 +144,14 @@ export function useModalDragAndMinimize(
   // Register modal with manager
   useEffect(() => {
     if (isValidConfig) {
-      registerModal(config!);
+      registerModal(config!, pathname);
       return () => {
         // Simple cleanup - just unregister when component unmounts
         // The modal manager will handle persistence for minimized modals
         unregisterModal(config!.id);
       };
     }
-  }, [isValidConfig, config?.id, config?.title, config?.persistent, registerModal, unregisterModal]);
+  }, [isValidConfig, config?.id, config?.title, config?.persistent, registerModal, unregisterModal, pathname]);
 
   // Modal management functions
   const minimize = useCallback(() => {
