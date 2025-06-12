@@ -74,7 +74,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       // Open the modal so that it can register itself and become visible
       setShowNewConsultModal(true);
     }
-  }, [pendingRestoredDashboardModal?.isMinimized, pendingRestoredDashboardModal?.isVisible]);
+  }, [pendingRestoredDashboardModal]);
 
   // Debug demo state
   useEffect(() => {

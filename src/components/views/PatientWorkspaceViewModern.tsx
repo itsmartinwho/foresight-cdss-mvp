@@ -222,7 +222,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     ) {
       setShowConsultationPanel(true);
     }
-  }, [pendingRestoredConsultModal?.isMinimized, pendingRestoredConsultModal?.isVisible]);
+  }, [pendingRestoredConsultModal]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button

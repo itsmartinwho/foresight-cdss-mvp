@@ -174,14 +174,14 @@ export default function ConsultationPanel({
         setTranscriptText(draft.transcriptText);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, draftId]);
 
   // Persist transcript text whenever it changes
   useEffect(() => {
     if (isOpen) {
       saveConsultationDraft(draftId, { transcriptText });
     }
-  }, [transcriptText, isOpen]);
+  }, [transcriptText, isOpen, draftId]);
 
   // Helper to clear draft and perform close
   const finalizeAndClose = useCallback(() => {
@@ -802,7 +802,7 @@ export default function ConsultationPanel({
         saveConsultationDraft(draftId, { transcriptText });
       }
     };
-  }, []);
+  }, [draftId, transcriptText]);
 
   if (!mounted || !isOpen) return null;
 
