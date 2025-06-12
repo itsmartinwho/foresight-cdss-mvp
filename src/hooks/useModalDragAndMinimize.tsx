@@ -45,7 +45,8 @@ export function useModalDragAndMinimize(
     updateModalPosition, 
     minimizeModal, 
     restoreModal,
-    bringToFront 
+    bringToFront,
+    setModalVisibility 
   } = useModalManager();
 
   // Store initial position only once on first mount
@@ -144,10 +145,19 @@ export function useModalDragAndMinimize(
     if (isValidConfig) {
       registerModal(config!);
       return () => {
-        unregisterModal(config!.id);
+        // When component unmounts, mark modal as not visible but don't unregister
+        // This allows minimized modals to persist across page navigation
+        const modalState = getModalState(config!.id);
+        if (modalState && modalState.isMinimized) {
+          // If modal is minimized, just mark as not visible
+          setModalVisibility(config!.id, false);
+        } else {
+          // If modal is not minimized, fully unregister it
+          unregisterModal(config!.id);
+        }
       };
     }
-  }, [isValidConfig, config?.id, config?.title, config?.persistent, registerModal, unregisterModal]);
+  }, [isValidConfig, config?.id, config?.title, config?.persistent, registerModal, unregisterModal, getModalState, setModalVisibility]);
 
   // Modal management functions
   const minimize = useCallback(() => {

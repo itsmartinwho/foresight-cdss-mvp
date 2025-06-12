@@ -27,7 +27,8 @@ type ModalManagerAction =
   | { type: 'RESTORE_MODAL'; payload: { id: string } }
   | { type: 'BRING_TO_FRONT'; payload: { id: string } }
   | { type: 'INITIALIZE_FROM_STORAGE'; payload: { persistedData: any } }
-  | { type: 'CLEAN_ORPHANED_MODALS' };
+  | { type: 'CLEAN_ORPHANED_MODALS' }
+  | { type: 'SET_MODAL_VISIBILITY'; payload: { id: string; isVisible: boolean } };
 
 const initialState: ModalManagerState = {
   modals: {},
@@ -49,15 +50,26 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
       // If modal exists but isn't visible, update it to be visible
       if (state.modals[id]) {
+        const existingModal = state.modals[id];
+        
+        // If the modal was restored while component wasn't mounted, 
+        // it will have isMinimized: false but isVisible: false
+        // In this case, we should show it restored, not minimized
+        const shouldShowRestored = !existingModal.isMinimized && !existingModal.isVisible;
+        
         return {
           ...state,
           modals: {
             ...state.modals,
             [id]: {
-              ...state.modals[id],
+              ...existingModal,
               isVisible: true,
             }
-          }
+          },
+          // If we're showing a restored modal, ensure it's not in minimized list
+          minimizedModals: shouldShowRestored 
+            ? state.minimizedModals.filter(m => m.id !== id)
+            : state.minimizedModals
         };
       }
 
@@ -145,7 +157,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
       const updatedModal = { ...modal, position };
       
       // Persist position
-      saveModalPosition(id, position, modal.isMinimized, modal.zIndex);
+      saveModalPosition(id, position, modal.isMinimized, modal.zIndex, modal.title, modal.icon);
 
       return {
         ...state,
@@ -190,7 +202,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
       // Persist minimized state
       updateMinimizedOrder(id, true);
-      saveModalPosition(id, modal.position, true, modal.zIndex);
+      saveModalPosition(id, modal.position, true, modal.zIndex, modal.title, modal.icon);
 
       return {
         ...state,
@@ -208,10 +220,15 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
       if (!modal || !modal.isMinimized) return state;
 
       const newZIndex = state.highestZIndex + 1;
+      
+      // Check if modal component is currently mounted (isVisible indicates an active component)
+      // If not mounted, we'll mark it as pending restore and it will restore when component mounts
       const updatedModal = { 
         ...modal, 
         isMinimized: false,
         zIndex: newZIndex,
+        // Keep isVisible as-is - if component isn't mounted, it stays false
+        // When component mounts and registers, it will see isMinimized: false and show itself
       };
 
       // Remove from minimized modals
@@ -221,7 +238,7 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
       // Persist restored state
       updateMinimizedOrder(id, false);
-      saveModalPosition(id, modal.position, false, newZIndex);
+      saveModalPosition(id, modal.position, false, newZIndex, modal.title, modal.icon);
 
       return {
         ...state,
@@ -305,6 +322,25 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
         modals,
         minimizedModals,
         highestZIndex,
+      };
+    }
+
+    case 'SET_MODAL_VISIBILITY': {
+      const { id, isVisible } = action.payload;
+      const modal = state.modals[id];
+      if (!modal) return state;
+
+      const updatedModal = { ...modal, isVisible };
+      
+             // Persist visibility
+       saveModalPosition(id, modal.position, modal.isMinimized, modal.zIndex, modal.title, modal.icon);
+
+      return {
+        ...state,
+        modals: {
+          ...state.modals,
+          [id]: updatedModal,
+        },
       };
     }
 
@@ -416,6 +452,10 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     dispatch({ type: 'BRING_TO_FRONT', payload: { id } });
   }, []);
 
+  const setModalVisibility = useCallback((id: string, isVisible: boolean) => {
+    dispatch({ type: 'SET_MODAL_VISIBILITY', payload: { id, isVisible } });
+  }, []);
+
   // Getter functions
   const getModalState = useCallback((id: string): ModalState | undefined => {
     return state.modals[id];
@@ -433,6 +473,7 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     restoreModal,
     updateModalPosition,
     bringToFront,
+    setModalVisibility,
     getModalState,
     getMinimizedModals,
     subscribe,

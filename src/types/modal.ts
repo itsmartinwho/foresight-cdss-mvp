@@ -72,6 +72,7 @@ export interface ModalManagerContextType {
   restoreModal: (id: string) => void;
   updateModalPosition: (id: string, position: ModalPosition) => void;
   bringToFront: (id:string) => void;
+  setModalVisibility: (id: string, isVisible: boolean) => void;
   getModalState: (id: string) => ModalState | undefined;
   getMinimizedModals: () => MinimizedModalData[];
   subscribe: (listener: () => void) => () => void;

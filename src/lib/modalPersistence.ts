@@ -8,6 +8,8 @@ interface PersistedModalData {
   zIndex: number;
   isMinimized: boolean;
   timestamp: number;
+  title?: string;
+  icon?: React.ComponentType<{ className?: string }> | string;
 }
 
 interface ModalPositionStorage {
@@ -91,7 +93,9 @@ export function saveModalPosition(
   modalId: string, 
   position: ModalPosition, 
   isMinimized: boolean = false,
-  zIndex: number = 1000
+  zIndex: number = 1000,
+  title?: string,
+  icon?: React.ComponentType<{ className?: string }> | string
 ): void {
   const currentData = loadModalPositions() || {
     version: STORAGE_VERSION,
@@ -99,11 +103,16 @@ export function saveModalPosition(
     minimizedOrder: [],
   };
 
+  // Preserve existing title and icon if not provided
+  const existingData = currentData.modals[modalId];
+  
   currentData.modals[modalId] = {
     position,
     zIndex,
     isMinimized,
     timestamp: Date.now(),
+    title: title || existingData?.title,
+    icon: icon || existingData?.icon,
   };
 
   saveModalPositions(currentData);
