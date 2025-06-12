@@ -25,6 +25,7 @@ import { useDemo } from '@/contexts/DemoContext';
 import { useDemoWorkspace } from '@/hooks/demo/useDemoWorkspace';
 import { useDemoConsultation } from '@/hooks/demo/useDemoConsultation';
 import { DemoDataService } from "@/services/demo/DemoDataService";
+import { useModalManager } from '@/components/ui/modal-manager';
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -79,6 +80,11 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
   // Track previous consultation selection to restore on discard
   const previousEncounterRef = useRef<Encounter | null>(null);
+
+  // Modal manager integration to detect consultation-panel restoration
+  const { getModalState } = useModalManager();
+  const consultationModalId = `consultation-panel-patient-${initialPatientStub.id}`;
+  const pendingRestoredConsultModal = getModalState(consultationModalId);
 
   useEffect(() => {
     if (initialTab) {
@@ -207,6 +213,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       }
     }
   }, [isDemoRoute, demoState, demoPanelForceOpen]);
+
+  useEffect(() => {
+    if (
+      pendingRestoredConsultModal &&
+      !pendingRestoredConsultModal.isMinimized &&
+      !pendingRestoredConsultModal.isVisible
+    ) {
+      setShowConsultationPanel(true);
+    }
+  }, [pendingRestoredConsultModal?.isMinimized, pendingRestoredConsultModal?.isVisible]);
 
   const TabBtn = ({ k, children }: { k: string; children: React.ReactNode }) => (
     <Button
