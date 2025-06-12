@@ -22,6 +22,7 @@ import DifferentialDiagnosesList from '@/components/diagnosis/DifferentialDiagno
 import { SOAPNotesPanel } from '@/components/soap/SOAPNotesPanel';
 import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
 import { ModalDragAndMinimizeConfig } from '@/types/modal';
+import { saveConsultationDraft, loadConsultationDraft, clearConsultationDraft } from '@/lib/consultationDraftStore';
 
 interface ConsultationPanelProps {
   /** Controls open state from parent */
@@ -162,6 +163,32 @@ export default function ConsultationPanel({
     transcriptionActiveRef.current = val;
   };
 
+  // ---------- Draft persistence across page navigation ----------
+  const draftId = (draggableConfig?.id) ?? `consultation-draft-${patient.id}`;
+
+  // Load draft on open
+  useEffect(() => {
+    if (isOpen) {
+      const draft = loadConsultationDraft(draftId);
+      if (draft?.transcriptText) {
+        setTranscriptText(draft.transcriptText);
+      }
+    }
+  }, [isOpen]);
+
+  // Persist transcript text whenever it changes
+  useEffect(() => {
+    if (isOpen) {
+      saveConsultationDraft(draftId, { transcriptText });
+    }
+  }, [transcriptText, isOpen]);
+
+  // Helper to clear draft and perform close
+  const finalizeAndClose = useCallback(() => {
+    clearConsultationDraft(draftId);
+    onClose();
+  }, [draftId, onClose]);
+
   // --- LIFECYCLE & SETUP ---
 
   useEffect(() => {
@@ -206,7 +233,7 @@ export default function ConsultationPanel({
     }
     
     if (isDemoMode || !encounter) {
-      onClose();
+      finalizeAndClose();
       return;
     }
     if (isSaving) return;
@@ -249,14 +276,14 @@ export default function ConsultationPanel({
       await Promise.all(updatePromises);
       
       toast({ title: "Consultation Saved" });
-      onClose();
+      finalizeAndClose();
     } catch (error) {
       console.error("Failed to save consultation:", error);
       toast({ title: "Save Failed", description: error instanceof Error ? error.message : "An unknown error occurred.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
-  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, onClose, toast, isSaving]);
+  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, finalizeAndClose, toast, isSaving]);
 
   const handleDiscard = useCallback(async () => {
     // Call stopTranscription directly without it being in dependencies
@@ -283,18 +310,18 @@ export default function ConsultationPanel({
     }
     
     if (isDemoMode) {
-      onClose();
+      finalizeAndClose();
       return;
     }
     if (encounter) {
       await supabaseDataService.permanentlyDeleteEncounter(patient.id, encounter.id);
     }
-    onClose();
-  }, [isDemoMode, encounter, patient.id, onClose]);
+    finalizeAndClose();
+  }, [isDemoMode, encounter, patient.id, finalizeAndClose]);
   
   const handleCloseRequest = useCallback(() => {
     if (isDemoMode) {
-      onClose();
+      finalizeAndClose();
       return;
     }
     const hasUnsavedContent = transcriptText.trim() || diagnosisText.trim() || treatmentText.trim();
@@ -303,7 +330,7 @@ export default function ConsultationPanel({
     } else {
       handleDiscard();
     }
-  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, onClose, handleDiscard]);
+  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, finalizeAndClose, handleDiscard]);
 
   const handleConfirmSave = useCallback(() => {
     setShowConfirmationDialog(false);
@@ -526,12 +553,12 @@ export default function ConsultationPanel({
       onConsultationCreated?.(newEncounter);
     } catch (error) {
       toast({ title: "Error", description: `Failed to create consultation: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
-      onClose();
+      finalizeAndClose();
     } finally {
       setIsCreating(false);
       isCurrentlyCreatingEncounter.current = false;
     }
-  }, [patient?.id, onConsultationCreated, onClose, toast]);
+  }, [patient?.id, onConsultationCreated, finalizeAndClose, toast]);
 
   const handleClinicalPlan = useCallback(async () => {
     setIsGeneratingPlan(true);
