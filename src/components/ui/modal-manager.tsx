@@ -137,6 +137,25 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
 
     case 'UNREGISTER_MODAL': {
       const { id } = action.payload;
+      const modalToRemove = state.modals[id];
+      
+      // If modal is minimized, don't remove it completely - just mark as not visible
+      // This allows minimized modals to persist across page navigation
+      if (modalToRemove && modalToRemove.isMinimized) {
+        return {
+          ...state,
+          modals: {
+            ...state.modals,
+            [id]: {
+              ...modalToRemove,
+              isVisible: false,
+            }
+          }
+          // Keep minimized modal in the list
+        };
+      }
+      
+      // If modal is not minimized, remove it completely
       const { [id]: removedModal, ...remainingModals } = state.modals;
       
       // Remove from persistence
