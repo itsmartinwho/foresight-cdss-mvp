@@ -6,16 +6,41 @@ export interface ConsultationDraft {
   soapNote?: any;
 }
 
-const drafts: Record<string, ConsultationDraft> = {};
+const MEMORY_STORE: Record<string, ConsultationDraft> = {};
+
+function persistToSession(id: string) {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem('consultationDraft_' + id, JSON.stringify(MEMORY_STORE[id]));
+}
+
+function restoreFromSession(id: string): ConsultationDraft | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const raw = window.sessionStorage.getItem('consultationDraft_' + id);
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as ConsultationDraft;
+  } catch {
+    return undefined;
+  }
+}
 
 export function saveConsultationDraft(id: string, partial: Partial<ConsultationDraft>): void {
-  drafts[id] = { ...drafts[id], ...partial };
+  MEMORY_STORE[id] = { ...MEMORY_STORE[id], ...partial };
+  persistToSession(id);
 }
 
 export function loadConsultationDraft(id: string): ConsultationDraft | undefined {
-  return drafts[id];
+  if (MEMORY_STORE[id]) return MEMORY_STORE[id];
+  const restored = restoreFromSession(id);
+  if (restored) {
+    MEMORY_STORE[id] = restored;
+  }
+  return restored;
 }
 
 export function clearConsultationDraft(id: string): void {
-  delete drafts[id];
+  delete MEMORY_STORE[id];
+  if (typeof window !== 'undefined') {
+    window.sessionStorage.removeItem('consultationDraft_' + id);
+  }
 } 

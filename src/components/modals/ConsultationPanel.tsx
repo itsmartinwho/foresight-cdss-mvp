@@ -795,6 +795,15 @@ export default function ConsultationPanel({
     }
   }, [isOpen]); // CRITICAL: Only depend on isOpen - NO OTHER DEPENDENCIES
 
+  useEffect(() => {
+    return () => {
+      // On unmount always persist latest text
+      if (transcriptText) {
+        saveConsultationDraft(draftId, { transcriptText });
+      }
+    };
+  }, []);
+
   if (!mounted || !isOpen) return null;
 
   const modalContent = (

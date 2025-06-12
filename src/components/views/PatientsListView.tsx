@@ -19,7 +19,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { columns as patientColumns } from "./patient-columns";
 import { useModalManager } from '@/components/ui/modal-manager';
-
+g
 // Import side panel configuration
 import { SIDE_PANEL_CONFIG } from '@/lib/side-panel-config';
 
