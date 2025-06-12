@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { columns as patientColumns } from "./patient-columns";
+import { useModalManager } from '@/components/ui/modal-manager';
 
 // Import side panel configuration
 import { SIDE_PANEL_CONFIG } from '@/lib/side-panel-config';
@@ -52,6 +53,10 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const [activeTab, setActiveTab] = useState<"allPatients" | "allConsultations">("allPatients");
   const router = useRouter();
 
+  // Modal manager integration to detect pending restored modal
+  const { getModalState } = useModalManager();
+  const pendingRestoredPatientsModal = getModalState('new-consultation-patients');
+
   const fetchData = async () => {
     setIsLoading(true);
     await supabaseDataService.loadPatientData();
@@ -75,6 +80,16 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
       supabaseDataService.unsubscribe(cb);
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      pendingRestoredPatientsModal &&
+      !pendingRestoredPatientsModal.isMinimized &&
+      !pendingRestoredPatientsModal.isVisible
+    ) {
+      setShowNewConsultModal(true);
+    }
+  }, [pendingRestoredPatientsModal?.isMinimized, pendingRestoredPatientsModal?.isVisible]);
 
   const displayName = useCallback((p: Patient | null) => {
     if (p?.name) return p.name;

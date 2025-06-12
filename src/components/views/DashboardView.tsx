@@ -33,6 +33,9 @@ import {
 // Import side panel configuration
 import { SIDE_PANEL_CONFIG } from '@/lib/side-panel-config';
 
+// Import modal manager
+import { useModalManager } from "@/components/ui/modal-manager";
+
 // Type for upcoming appointments, specific to this view
 type UpcomingEntry = { patient: Patient; encounter: Encounter };
 
@@ -57,6 +60,21 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
     setDemoModalOpen,
     isDemoActive,
   } = useDemo();
+
+  // Automatically show New Consultation modal if it was restored from another page
+  const { getModalState } = useModalManager();
+  const pendingRestoredDashboardModal = getModalState('new-consultation-dashboard');
+
+  useEffect(() => {
+    if (
+      pendingRestoredDashboardModal &&
+      !pendingRestoredDashboardModal.isMinimized &&
+      !pendingRestoredDashboardModal.isVisible
+    ) {
+      // Open the modal so that it can register itself and become visible
+      setShowNewConsultModal(true);
+    }
+  }, [pendingRestoredDashboardModal?.isMinimized, pendingRestoredDashboardModal?.isVisible]);
 
   // Debug demo state
   useEffect(() => {

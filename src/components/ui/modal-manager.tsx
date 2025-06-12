@@ -486,22 +486,35 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     const currentModal = state.modals[id];
     if (!currentModal) return;
 
-    // First, dispatch the restore action
+    // Check if we need to navigate before restoring
+    const persistedData = loadModalPositions();
+    const modalData = persistedData?.modals[id];
+    
+    if (modalData?.originUrl && modalData.originUrl !== pathname) {
+      // First, mark the modal for restoration after navigation
+      // This ensures it will be restored when the component mounts on the target page
+      dispatch({ type: 'RESTORE_MODAL', payload: { id } });
+      
+      // Then navigate to origin URL
+      console.log(`🔗 Navigating to origin URL for modal ${id}: ${modalData.originUrl}`);
+      router.push(modalData.originUrl);
+      return;
+    }
+
+    // We're already on the correct page, restore the modal immediately
     dispatch({ type: 'RESTORE_MODAL', payload: { id } });
 
-    // Check if modal component is actually mounted by checking if it becomes visible
-    // We'll use a small delay to allow the state to update
+    // For immediate restoration on the same page, check if modal becomes visible
     setTimeout(() => {
       const updatedModal = getModalState(id);
+      console.log(`🔍 Immediate restore check for modal ${id}:`, {
+        exists: !!updatedModal,
+        isMinimized: updatedModal?.isMinimized,
+        isVisible: updatedModal?.isVisible
+      });
+
       if (updatedModal && !updatedModal.isMinimized && !updatedModal.isVisible) {
-        // Modal was restored but component isn't mounted, need to navigate
-        const persistedData = loadModalPositions();
-        const modalData = persistedData?.modals[id];
-        
-        if (modalData?.originUrl && modalData.originUrl !== pathname) {
-          console.log(`🔗 Navigating to origin URL for modal ${id}: ${modalData.originUrl}`);
-          router.push(modalData.originUrl);
-        }
+        console.warn(`⚠️ Modal ${id} component not mounted for immediate restoration. This indicates the component may not be available on this page.`);
       }
     }, 100);
   }, [state.modals, getModalState, pathname, router]);
