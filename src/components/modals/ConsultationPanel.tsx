@@ -658,11 +658,14 @@ export default function ConsultationPanel({
       setTabBarVisible(false);
       setIsGeneratingPlan(false);
       setStarted(false);
-      setTranscriptText(isDemoMode ? initialDemoTranscript || '' : '');
-      setDiagnosisText(isDemoMode ? demoDiagnosis || '' : '');
-      setTreatmentText(isDemoMode ? demoTreatment || '' : '');
-      setDifferentialDiagnoses(isDemoMode ? demoDifferentialDiagnoses || [] : []);
-      setSoapNote(isDemoMode ? demoSoapNote || null : null);
+      // Preserve any previously restored draft data for non-demo sessions.
+      if (isDemoMode) {
+        setTranscriptText(initialDemoTranscript || '');
+        setDiagnosisText(demoDiagnosis || '');
+        setTreatmentText(demoTreatment || '');
+        setDifferentialDiagnoses(demoDifferentialDiagnoses || []);
+        setSoapNote(demoSoapNote || null);
+      }
       setIsGeneratingSoap(false);
       setIsLoadingDifferentials(false);
       setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment || demoDifferentialDiagnoses)));
