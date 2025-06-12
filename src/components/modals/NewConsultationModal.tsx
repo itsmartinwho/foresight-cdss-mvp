@@ -234,7 +234,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       <DraggableDialogContent
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className={`max-w-lg pb-4 ${shake ? 'animate-shake' : ''}`}
+        className={`max-w-lg max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
         draggableConfig={mergedDraggableConfig}
       >
@@ -342,7 +342,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
 
           {/* New patient tab */}
           <TabsContent value="new">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="font-semibold text-step--1">Patient info</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
