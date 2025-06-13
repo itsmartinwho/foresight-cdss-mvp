@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { useGlassClass } from '@/lib/uiVariant';
 
 interface ContentSurfaceProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
@@ -20,6 +21,8 @@ export default function ContentSurface({
   fullBleed = false,
   ...rest
 }: ContentSurfaceProps) {
+  const glassClass = useGlassClass('soft');
+  
   if (fullBleed) {
     return (
       <div
@@ -37,7 +40,8 @@ export default function ContentSurface({
   return (
     <div
       className={cn(
-        'glass-soft rounded-2xl p-4 mx-auto max-w-7xl w-full',
+        glassClass,
+        'rounded-2xl p-4 mx-auto max-w-7xl w-full',
         className
       )}
       {...rest}

@@ -15,6 +15,7 @@ import type { Patient, Encounter, Treatment, DifferentialDiagnosis, SoapNote } f
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useGlassClass } from '@/lib/uiVariant';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useDemo } from '@/contexts/DemoContext';
@@ -978,10 +979,10 @@ export default function ConsultationPanel({
     </DraggableModalWrapper>
   ) : (
     <div 
-      className="fixed inset-0 z-[9999] glass-backdrop flex items-center justify-center p-4"
+      className={cn("fixed inset-0 z-[9999] flex items-center justify-center p-4", useGlassClass('backdrop'))}
       onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
     >
-      <div className="glass-dense rounded-2xl shadow-2xl relative w-[95%] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+      <div className={cn("rounded-2xl shadow-2xl relative w-[95%] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col", useGlassClass('dense'))}>
         <Button 
           variant="ghost" 
           size="icon"

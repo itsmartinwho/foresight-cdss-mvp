@@ -1,19 +1,23 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useGlassClass } from "@/lib/uiVariant"
 
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto glass-soft px-4">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-))
+>(({ className, ...props }, ref) => {
+  const glassClass = useGlassClass('soft');
+  return (
+    <div className={cn("relative w-full overflow-auto px-4", glassClass)}>
+      <table
+        ref={ref}
+        className={cn("w-full caption-bottom text-sm", className)}
+        {...props}
+      />
+    </div>
+  )
+})
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
