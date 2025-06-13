@@ -449,8 +449,8 @@ export default function EnhancedSearch({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={handleFocus}
           className={cn(
-            query ? "pl-3 pr-10" : "pl-10 pr-10",
-            inputClassName
+            inputClassName,
+            query ? "pl-3 pr-10" : "pl-10 pr-10"
           )}
         />
         {query && (
