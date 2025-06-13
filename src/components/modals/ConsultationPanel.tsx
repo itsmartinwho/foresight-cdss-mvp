@@ -812,6 +812,10 @@ export default function ConsultationPanel({
     };
   }, [draftId, transcriptText]);
 
+  // Glass classes (called unconditionally at top level)
+  const backdropGlassClass = useGlassClass('backdrop');
+  const denseGlassClass = useGlassClass('dense');
+
   if (!mounted || !isOpen) return null;
 
   const modalContent = (
@@ -979,10 +983,10 @@ export default function ConsultationPanel({
     </DraggableModalWrapper>
   ) : (
     <div 
-      className={cn("fixed inset-0 z-[9999] flex items-center justify-center p-4", useGlassClass('backdrop'))}
+      className={cn("fixed inset-0 z-[9999] flex items-center justify-center p-4", backdropGlassClass)}
       onClick={(e) => e.target === e.currentTarget && handleCloseRequest()}
     >
-      <div className={cn("rounded-2xl shadow-2xl relative w-[95%] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col", useGlassClass('dense'))}>
+      <div className={cn("rounded-2xl shadow-2xl relative w-[95%] max-w-6xl max-h-[95vh] overflow-hidden flex flex-col", denseGlassClass)}>
         <Button 
           variant="ghost" 
           size="icon"
