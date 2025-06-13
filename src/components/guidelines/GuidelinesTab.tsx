@@ -156,7 +156,11 @@ export default function GuidelinesTab() {
 
         {/* Right Side - Guidelines Grid/List */}
         <div className="flex-1 min-w-0">
-          <div className="min-h-[400px]">
+          <div className="min-h-[400px] max-h-[calc(100vh-12rem)] overflow-y-auto pr-2" 
+               style={{
+                 scrollbarWidth: 'thin',
+                 scrollbarColor: '#d1d5db transparent'
+               }}>
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -186,7 +190,7 @@ export default function GuidelinesTab() {
           </div>
         ) : (
           <div className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 pb-6",
             uiState.currentView === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
             uiState.currentView === 'list' && "space-y-4",
             uiState.currentView === 'comparison' && "space-y-6"
