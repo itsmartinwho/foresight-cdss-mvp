@@ -195,41 +195,73 @@ export default function ConsultationPanel({
     setMounted(true);
   }, []);
 
+  // CRITICAL: Comprehensive audio cleanup function
+  // This ensures ALL audio tracks are stopped from every possible source
+  const cleanupAllAudioResources = useCallback(() => {
+    console.log('[ConsultationPanel] Performing comprehensive audio cleanup');
+    
+    // Stop MediaRecorder and its stream
+    if (mediaRecorderRef.current) {
+      try {
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      } catch (e) {
+        console.warn('Error stopping MediaRecorder:', e);
+      }
+      
+      // Stop ALL tracks from MediaRecorder's stream
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => {
+          console.log(`Stopping MediaRecorder track: ${track.kind}, state: ${track.readyState}`);
+          track.stop();
+        });
+      }
+      mediaRecorderRef.current = null;
+    }
+    
+    // Stop ALL tracks from audioStreamRef
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => {
+        console.log(`Stopping audioStreamRef track: ${track.kind}, state: ${track.readyState}`);
+        track.stop();
+      });
+      audioStreamRef.current = null;
+    }
+    
+    // Close WebSocket
+    if (socketRef.current) {
+      try {
+        if (socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.close();
+        }
+      } catch (e) {
+        console.warn('Error closing WebSocket:', e);
+      }
+      socketRef.current = null;
+    }
+    
+    // Reset transcription state
+    setIsTranscribingAndRef(false);
+    setIsPaused(false);
+    transcriptionActiveRef.current = false;
+    
+    console.log('[ConsultationPanel] Audio cleanup completed');
+  }, []);
+
   // CRITICAL PATTERN: stopTranscription is NOT in any dependency arrays
   // Including it would cause immediate start/stop cycles due to React re-renders
   const stopTranscription = useCallback((resetPaused: boolean = true)=>{
     console.log("ConsultationPanel stopTranscription called",{resetPaused,isTranscribing:isTranscribingRef.current,isPaused:isPausedRef.current});
     if(isDemoMode) return;
-    // Direct resource cleanup in exact order:
-    if(mediaRecorderRef.current){try{if(mediaRecorderRef.current.state!=='inactive'){mediaRecorderRef.current.stop();}}catch{} mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());mediaRecorderRef.current=null;}
-    audioStreamRef.current?.getTracks().forEach(t=>t.stop());audioStreamRef.current=null;
-    if(socketRef.current){try{socketRef.current.close();}catch{} socketRef.current=null;}
-    setIsTranscribingAndRef(false); // Use the ref-updating function
+    cleanupAllAudioResources();
     if(resetPaused) setIsPaused(false);
-  },[isDemoMode]); // ONLY isDemoMode in dependencies
+  },[isDemoMode, cleanupAllAudioResources]);
 
   const handleSaveAndClose = useCallback(async () => {
-    // Call stopTranscription directly without it being in dependencies
+    // Call comprehensive cleanup if transcription is active
     if (!isDemoMode && transcriptionActiveRef.current) {
-      if(mediaRecorderRef.current){
-        try{
-          if(mediaRecorderRef.current.state!=='inactive'){
-            mediaRecorderRef.current.stop();
-          }
-        }catch{} 
-        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-        mediaRecorderRef.current=null;
-      }
-      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-      audioStreamRef.current=null;
-      if(socketRef.current){
-        try{
-          socketRef.current.close();
-        }catch{} 
-        socketRef.current=null;
-      }
-      setIsTranscribingAndRef(false);
-      setIsPaused(false);
+      cleanupAllAudioResources();
     }
     
     if (isDemoMode || !encounter) {
@@ -283,30 +315,12 @@ export default function ConsultationPanel({
     } finally {
       setIsSaving(false);
     }
-  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, finalizeAndClose, toast, isSaving]);
+  }, [isDemoMode, patient.id, encounter, transcriptText, diagnosisText, treatmentText, finalizeAndClose, toast, isSaving, cleanupAllAudioResources]);
 
   const handleDiscard = useCallback(async () => {
-    // Call stopTranscription directly without it being in dependencies
+    // Call comprehensive cleanup if transcription is active
     if (!isDemoMode && transcriptionActiveRef.current) {
-      if(mediaRecorderRef.current){
-        try{
-          if(mediaRecorderRef.current.state!=='inactive'){
-            mediaRecorderRef.current.stop();
-          }
-        }catch{} 
-        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-        mediaRecorderRef.current=null;
-      }
-      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-      audioStreamRef.current=null;
-      if(socketRef.current){
-        try{
-          socketRef.current.close();
-        }catch{} 
-        socketRef.current=null;
-      }
-      setIsTranscribingAndRef(false);
-      setIsPaused(false);
+      cleanupAllAudioResources();
     }
     
     if (isDemoMode) {
@@ -317,7 +331,7 @@ export default function ConsultationPanel({
       await supabaseDataService.permanentlyDeleteEncounter(patient.id, encounter.id);
     }
     finalizeAndClose();
-  }, [isDemoMode, encounter, patient.id, finalizeAndClose]);
+  }, [isDemoMode, encounter, patient.id, finalizeAndClose, cleanupAllAudioResources]);
   
   const handleCloseRequest = useCallback(() => {
     if (isDemoMode) {
@@ -334,28 +348,7 @@ export default function ConsultationPanel({
     // If transcription is active but no content, stop transcription and close immediately
     if (isActivelyTranscribing && !hasAnyContent) {
       console.log('[ConsultationPanel] Closing modal with active transcription but no content - stopping transcription');
-      
-      // Stop transcription directly
-      if(mediaRecorderRef.current){
-        try{
-          if(mediaRecorderRef.current.state!=='inactive'){
-            mediaRecorderRef.current.stop();
-          }
-        }catch{} 
-        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-        mediaRecorderRef.current=null;
-      }
-      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-      audioStreamRef.current=null;
-      if(socketRef.current){
-        try{
-          socketRef.current.close();
-        }catch{} 
-        socketRef.current=null;
-      }
-      setIsTranscribingAndRef(false);
-      setIsPaused(false);
-      
+      cleanupAllAudioResources();
       handleDiscard();
       return;
     }
@@ -373,7 +366,7 @@ export default function ConsultationPanel({
     } else {
       handleDiscard();
     }
-  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, finalizeAndClose, handleDiscard, isTranscribing, isPaused]);
+  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, finalizeAndClose, handleDiscard, isTranscribing, isPaused, cleanupAllAudioResources]);
 
   const handleConfirmSave = useCallback(() => {
     setShowConfirmationDialog(false);
@@ -429,27 +422,8 @@ export default function ConsultationPanel({
   // CRITICAL PATTERN: Stable callback for child components
   // No dependencies prevents re-renders that could break transcription
   const handleAudioWaveformStop = useCallback(() => {
-    // Direct cleanup using refs - no callback dependencies
-    if(mediaRecorderRef.current){
-      try{
-        if(mediaRecorderRef.current.state!=='inactive'){
-          mediaRecorderRef.current.stop();
-        }
-      }catch{} 
-      mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-      mediaRecorderRef.current=null;
-    }
-    audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-    audioStreamRef.current=null;
-    if(socketRef.current){
-      try{
-        socketRef.current.close();
-      }catch{} 
-      socketRef.current=null;
-    }
-    setIsTranscribingAndRef(false);
-    setIsPaused(false);
-  }, []); // CRITICAL: No dependencies - uses refs only
+    cleanupAllAudioResources();
+  }, [cleanupAllAudioResources]);
 
   const startVoiceInput = useCallback(async () => {
     console.log("ConsultationPanel startVoiceInput called - current states:", { isTranscribing, isPaused });
@@ -531,54 +505,18 @@ export default function ConsultationPanel({
       };
 
       ws.onclose = () => {
-        // Call cleanup directly without using stopTranscription
-        if(mediaRecorderRef.current){
-          try{
-            if(mediaRecorderRef.current.state!=='inactive'){
-              mediaRecorderRef.current.stop();
-            }
-          }catch{} 
-          mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-          mediaRecorderRef.current=null;
-        }
-        audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-        audioStreamRef.current=null;
-        if(socketRef.current){
-          try{
-            socketRef.current.close();
-          }catch{} 
-          socketRef.current=null;
-        }
-        setIsTranscribingAndRef(false);
-        // Don't reset paused state on connection issues
+        console.log('[ConsultationPanel] WebSocket closed - cleaning up audio resources');
+        cleanupAllAudioResources();
       };
       ws.onerror = () => {
         toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
-        // Call cleanup directly without using stopTranscription
-        if(mediaRecorderRef.current){
-          try{
-            if(mediaRecorderRef.current.state!=='inactive'){
-              mediaRecorderRef.current.stop();
-            }
-          }catch{} 
-          mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-          mediaRecorderRef.current=null;
-        }
-        audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-        audioStreamRef.current=null;
-        if(socketRef.current){
-          try{
-            socketRef.current.close();
-          }catch{} 
-          socketRef.current=null;
-        }
-        setIsTranscribingAndRef(false);
-        // Don't reset paused state on connection issues
+        console.log('[ConsultationPanel] WebSocket error - cleaning up audio resources');
+        cleanupAllAudioResources();
       };
     } catch (err) {
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
-  }, [isTranscribing, isPaused, isOpen, toast]);
+  }, [isTranscribing, isPaused, isOpen, toast, cleanupAllAudioResources]);
 
   // Update ref whenever startVoiceInput changes
   useEffect(() => {
@@ -817,29 +755,9 @@ export default function ConsultationPanel({
     // When modal closes, ensure transcription is stopped
     if (transcriptionActiveRef.current) {
       console.log('[ConsultationPanel] Modal closing: Stopping active transcription');
-      // CRITICAL: Direct cleanup without using the callback to avoid dependency issues
-      if(mediaRecorderRef.current){
-        try{
-          if(mediaRecorderRef.current.state!=='inactive'){
-            mediaRecorderRef.current.stop();
-          }
-        }catch{} 
-        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
-        mediaRecorderRef.current=null;
-      }
-      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
-      audioStreamRef.current=null;
-      if(socketRef.current){
-        try{
-          socketRef.current.close();
-        }catch{} 
-        socketRef.current=null;
-      }
-      setIsTranscribing(false);
-      setIsPaused(false);
-      transcriptionActiveRef.current = false;
+      cleanupAllAudioResources();
     }
-  }, [isOpen]); // CRITICAL: Only depend on isOpen - NO OTHER DEPENDENCIES
+  }, [isOpen, cleanupAllAudioResources]);
 
   useEffect(() => {
     return () => {

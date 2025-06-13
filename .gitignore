@@ -27,6 +27,11 @@ yarn-error.log*
 .env.backup
 .env*.backup
 .env.local.backup
+.env.local.bak
+.env.local.tmp
+.env.local.backup.*
+*.env.bak
+*.env.tmp
 
 # TypeScript
 *.tsbuildinfo

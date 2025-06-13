@@ -9,19 +9,30 @@ export interface TextChunk {
 
 export class EmbeddingService {
   private supabase;
-  private openai: OpenAI;
+  private openai: OpenAI | null;
+  private isServerSide: boolean;
 
   constructor() {
     try {
       this.supabase = getSupabaseClient();
+      this.isServerSide = typeof window === 'undefined';
       
-      this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY!
-      });
+      // Only create OpenAI client on server side
+      if (this.isServerSide) {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          throw new Error('OPENAI_API_KEY environment variable is missing or empty');
+        }
+        
+        this.openai = new OpenAI({
+          apiKey: apiKey
+        });
+      } else {
+        this.openai = null;
+      }
     } catch (error) {
       console.error('Failed to initialize EmbeddingService:', error);
-      this.supabase = null as any;
-      this.openai = null as any;
+      throw error;
     }
   }
 
@@ -29,6 +40,17 @@ export class EmbeddingService {
    * Process all guidelines that don't have embeddings yet
    */
   async processAllGuidelines(): Promise<{ processed: number; errors: string[] }> {
+    if (this.isServerSide) {
+      return await this.processAllGuidelinesServerSide();
+    } else {
+      return await this.processAllGuidelinesClientSide();
+    }
+  }
+
+  /**
+   * Server-side implementation for processing guidelines
+   */
+  private async processAllGuidelinesServerSide(): Promise<{ processed: number; errors: string[] }> {
     const result = { processed: 0, errors: [] as string[] };
 
     try {
@@ -62,6 +84,36 @@ export class EmbeddingService {
     }
 
     return result;
+  }
+
+  /**
+   * Client-side implementation for processing guidelines (uses API route)
+   */
+  private async processAllGuidelinesClientSide(): Promise<{ processed: number; errors: string[] }> {
+    try {
+      const response = await fetch('/api/guidelines/embed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return {
+        processed: data.processed || 0,
+        errors: data.errors || []
+      };
+    } catch (error) {
+      return {
+        processed: 0,
+        errors: [error instanceof Error ? error.message : 'Failed to process guidelines']
+      };
+    }
   }
 
   /**
@@ -113,9 +165,13 @@ export class EmbeddingService {
   }
 
   /**
-   * Get embeddings from OpenAI
+   * Get embeddings from OpenAI (server-side only)
    */
   private async getEmbeddings(texts: string[]): Promise<number[][]> {
+    if (!this.isServerSide || !this.openai) {
+      throw new Error('getEmbeddings can only be called on server side');
+    }
+
     try {
       const response = await this.openai.embeddings.create({
         model: 'text-embedding-ada-002',
