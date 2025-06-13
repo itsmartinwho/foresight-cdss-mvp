@@ -45,40 +45,38 @@ export const getGlassClass = (variant: "default" | "soft" | "dense" | "backdrop"
   }
 };
 
-import { useContext } from 'react';
-import { UISettingsContext } from '@/contexts/UISettingsContext';
-
-// React hook: returns correct class based on context (always safe to call in components)
-export const useGlassClass = (
-  variant: "default" | "soft" | "dense" | "backdrop" = "default"
-): string => {
-  const context = useContext(UISettingsContext);
-  const uiVariant: UIVariant = (context?.uiVariant as UIVariant) ?? getUIVariant();
-  return getGlassClassByVariant(uiVariant, variant);
-};
-
-function getGlassClassByVariant(uiVariant: UIVariant, variant: string) {
-  if (uiVariant === "liquid") {
-    switch (variant) {
-      case "soft":
-        return "liquid-glass-soft";
-      case "dense":
-        return "liquid-glass-dense";
-      case "backdrop":
-        return "liquid-glass-backdrop";
-      default:
-        return "liquid-glass";
+// Hook-based version that uses context when available
+export const useGlassClass = (variant: "default" | "soft" | "dense" | "backdrop" = "default"): string => {
+  try {
+    // Try to use context if available
+    const { useUISettings } = require('@/contexts/UISettingsContext');
+    const { uiVariant } = useUISettings();
+    
+    if (uiVariant === "liquid") {
+      switch (variant) {
+        case "soft":
+          return "liquid-glass-soft";
+        case "dense":
+          return "liquid-glass-dense";
+        case "backdrop":
+          return "liquid-glass-backdrop";
+        default:
+          return "liquid-glass";
+      }
+    } else {
+      switch (variant) {
+        case "soft":
+          return "glass-soft";
+        case "dense":
+          return "glass-dense";
+        case "backdrop":
+          return "glass-backdrop";
+        default:
+          return "glass";
+      }
     }
-  } else {
-    switch (variant) {
-      case "soft":
-        return "glass-soft";
-      case "dense":
-        return "glass-dense";
-      case "backdrop":
-        return "glass-backdrop";
-      default:
-        return "glass";
-    }
+  } catch {
+    // Fall back to static function if context is not available
+    return getGlassClass(variant);
   }
-} 
+}; 

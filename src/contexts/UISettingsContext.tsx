@@ -10,7 +10,7 @@ interface UISettingsContextType {
   isLiquidGlass: boolean;
 }
 
-export const UISettingsContext = createContext<UISettingsContextType | undefined>(undefined);
+const UISettingsContext = createContext<UISettingsContextType | undefined>(undefined);
 
 export function UISettingsProvider({ children }: { children: React.ReactNode }) {
   const [uiVariant, setUIVariantState] = useState<UIVariant>('liquid');
