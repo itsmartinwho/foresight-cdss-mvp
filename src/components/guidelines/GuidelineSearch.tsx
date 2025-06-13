@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -61,6 +62,8 @@ export default function GuidelineSearch({
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [tempSearchQuery, setTempSearchQuery] = useState(searchQuery);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [dropdownPortalStyle, setDropdownPortalStyle] = useState<React.CSSProperties | null>(null);
+  const [sortPortalStyle, setSortPortalStyle] = useState<React.CSSProperties | null>(null);
   
   const searchRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -77,6 +80,37 @@ export default function GuidelineSearch({
       setFilteredSuggestions([]);
     }
   }, [tempSearchQuery]);
+
+  // Calculate dropdown portal position
+  useEffect(() => {
+    if (isSearchFocused && searchRef.current) {
+      const rect = searchRef.current.getBoundingClientRect();
+      const dropdownWidth = rect.width;
+      
+      setDropdownPortalStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: dropdownWidth,
+        zIndex: 9999, // Use a very high z-index to ensure it's above everything
+      });
+    }
+  }, [isSearchFocused]);
+
+  // Calculate sort dropdown portal position
+  useEffect(() => {
+    if (isSortDropdownOpen && sortRef.current) {
+      const rect = sortRef.current.getBoundingClientRect();
+      
+      setSortPortalStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        minWidth: '192px', // min-w-48 equivalent
+        zIndex: 9999,
+      });
+    }
+  }, [isSortDropdownOpen]);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -158,9 +192,9 @@ export default function GuidelineSearch({
               )}
             </div>
 
-            {/* Search Suggestions Dropdown */}
-            {isSearchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-50 max-h-80 overflow-y-auto">
+            {/* Search Suggestions Dropdown - Rendered via Portal */}
+            {isSearchFocused && dropdownPortalStyle && createPortal(
+              <div className="bg-white rounded-lg border border-gray-200 shadow-lg max-h-80 overflow-y-auto" style={dropdownPortalStyle}>
                 {/* Search Tips - Only show when no search query */}
                 {tempSearchQuery === '' && (
                   <div className="p-3 border-b border-gray-100 bg-blue-50/50">
@@ -237,7 +271,8 @@ export default function GuidelineSearch({
                     </button>
                   </div>
                 )}
-              </div>
+              </div>,
+              document.body
             )}
           </div>
 
@@ -261,8 +296,8 @@ export default function GuidelineSearch({
               )} />
             </button>
 
-            {isSortDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-50 min-w-48">
+            {isSortDropdownOpen && sortPortalStyle && createPortal(
+              <div className="bg-white rounded-lg border border-gray-200 shadow-lg" style={sortPortalStyle}>
                 <div className="p-2">
                   {sortOptions.map((option) => (
                     <button
@@ -287,7 +322,8 @@ export default function GuidelineSearch({
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
 
