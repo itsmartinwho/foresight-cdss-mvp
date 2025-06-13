@@ -313,6 +313,17 @@ export class EmbeddingService {
    * Re-embed a specific document (for updates)
    */
   async reEmbedDocument(docId: number): Promise<void> {
+    if (this.isServerSide) {
+      return await this.reEmbedDocumentServerSide(docId);
+    } else {
+      return await this.reEmbedDocumentClientSide(docId);
+    }
+  }
+
+  /**
+   * Server-side implementation for re-embedding a document
+   */
+  private async reEmbedDocumentServerSide(docId: number): Promise<void> {
     const { data: doc, error } = await this.supabase
       .from('guidelines_docs')
       .select('*')
@@ -324,5 +335,27 @@ export class EmbeddingService {
     }
 
     await this.processDocument(doc);
+  }
+
+  /**
+   * Client-side implementation for re-embedding a document (uses API route)
+   */
+  private async reEmbedDocumentClientSide(docId: number): Promise<void> {
+    const response = await fetch('/api/guidelines/embed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ docId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to re-embed document');
+    }
   }
 } 

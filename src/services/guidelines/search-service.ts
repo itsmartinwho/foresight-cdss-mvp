@@ -15,17 +15,11 @@ export interface CombinedSearchResult {
 
 export class GuidelineSearchService {
   private supabase;
-  private embeddingService: EmbeddingService | null;
+  private embeddingService: EmbeddingService;
 
   constructor() {
     this.supabase = getSupabaseClient();
-    
-    // Only create EmbeddingService on server side where OpenAI API key is available
-    if (typeof window === 'undefined' && process.env.OPENAI_API_KEY) {
-      this.embeddingService = new EmbeddingService();
-    } else {
-      this.embeddingService = null;
-    }
+    this.embeddingService = new EmbeddingService();
   }
 
   /**
@@ -36,10 +30,6 @@ export class GuidelineSearchService {
     specialty?: Specialty,
     limit: number = 5
   ): Promise<GuidelineSearchResult[]> {
-    if (!this.embeddingService) {
-      console.warn('EmbeddingService not available on client side, returning empty results');
-      return [];
-    }
     return await this.embeddingService.searchSimilar(query, specialty, limit);
   }
 
@@ -89,16 +79,6 @@ export class GuidelineSearchService {
     textLimit: number = 5
   ): Promise<CombinedSearchResult> {
     try {
-      // On client side, only do text search since semantic search requires OpenAI
-      if (!this.embeddingService) {
-        const textResults = await this.textSearch(query, specialty, textLimit);
-        return {
-          semanticResults: [],
-          textResults,
-          totalResults: textResults.length
-        };
-      }
-
       const [semanticResults, textResults] = await Promise.all([
         this.semanticSearch(query, specialty, semanticLimit),
         this.textSearch(query, specialty, textLimit)
