@@ -13,7 +13,7 @@ interface UISettingsContextType {
 const UISettingsContext = createContext<UISettingsContextType | undefined>(undefined);
 
 export function UISettingsProvider({ children }: { children: React.ReactNode }) {
-  const [uiVariant, setUIVariantState] = useState<UIVariant>('liquid');
+  const [uiVariant, setUIVariantState] = useState<UIVariant>('legacy');
 
   // Load saved preference from localStorage on mount
   useEffect(() => {
@@ -21,9 +21,9 @@ export function UISettingsProvider({ children }: { children: React.ReactNode }) 
     if (saved === 'liquid' || saved === 'legacy') {
       setUIVariantState(saved);
     } else {
-      // No saved preference – default to liquid glass unless environment forces legacy
-      const envForceLegacy = process.env.NEXT_PUBLIC_LIQUID_GLASS === "0";
-      setUIVariantState(envForceLegacy ? 'legacy' : 'liquid');
+      // Fallback to environment variable if no saved preference
+      const envVariant = process.env.NEXT_PUBLIC_LIQUID_GLASS === "1" ? 'liquid' : 'legacy';
+      setUIVariantState(envVariant);
     }
   }, []);
 

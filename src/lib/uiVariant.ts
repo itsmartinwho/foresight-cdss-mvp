@@ -12,8 +12,7 @@ export const getUIVariant = (): UIVariant => {
       return saved;
     }
   }
-  // Default to liquid glass unless NEXT_PUBLIC_LIQUID_GLASS explicitly set to "0"
-  return process.env.NEXT_PUBLIC_LIQUID_GLASS === "0" ? "legacy" : "liquid";
+  return useLiquidGlass ? "liquid" : "legacy";
 };
 
 // Helper function to get appropriate glass class based on current UI variant
