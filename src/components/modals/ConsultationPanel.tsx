@@ -324,13 +324,56 @@ export default function ConsultationPanel({
       finalizeAndClose();
       return;
     }
-    const hasUnsavedContent = transcriptText.trim() || diagnosisText.trim() || treatmentText.trim();
-    if (hasUnsavedContent) {
+
+    // First, handle transcription if it's running
+    const isActivelyTranscribing = transcriptionActiveRef.current || isTranscribing || isPaused;
+    const hasTranscriptContent = transcriptText.trim();
+    const hasOtherContent = diagnosisText.trim() || treatmentText.trim();
+    const hasAnyContent = hasTranscriptContent || hasOtherContent;
+
+    // If transcription is active but no content, stop transcription and close immediately
+    if (isActivelyTranscribing && !hasAnyContent) {
+      console.log('[ConsultationPanel] Closing modal with active transcription but no content - stopping transcription');
+      
+      // Stop transcription directly
+      if(mediaRecorderRef.current){
+        try{
+          if(mediaRecorderRef.current.state!=='inactive'){
+            mediaRecorderRef.current.stop();
+          }
+        }catch{} 
+        mediaRecorderRef.current.stream?.getTracks().forEach(t=>t.stop());
+        mediaRecorderRef.current=null;
+      }
+      audioStreamRef.current?.getTracks().forEach(t=>t.stop());
+      audioStreamRef.current=null;
+      if(socketRef.current){
+        try{
+          socketRef.current.close();
+        }catch{} 
+        socketRef.current=null;
+      }
+      setIsTranscribingAndRef(false);
+      setIsPaused(false);
+      
+      handleDiscard();
+      return;
+    }
+
+    // If transcription is active AND there's content, ask for confirmation with transcription context
+    if (isActivelyTranscribing && hasAnyContent) {
+      console.log('[ConsultationPanel] Closing modal with active transcription and content - asking for confirmation');
+      setShowConfirmationDialog(true);
+      return;
+    }
+
+    // If no transcription is active, use the existing logic
+    if (hasAnyContent) {
       setShowConfirmationDialog(true);
     } else {
       handleDiscard();
     }
-  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, finalizeAndClose, handleDiscard]);
+  }, [isDemoMode, transcriptText, diagnosisText, treatmentText, finalizeAndClose, handleDiscard, isTranscribing, isPaused]);
 
   const handleConfirmSave = useCallback(() => {
     setShowConfirmationDialog(false);
@@ -1001,13 +1044,54 @@ export default function ConsultationPanel({
       {showConfirmationDialog && (
         <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Save transcript content?</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              You have transcript content that will be lost if you don&apos;t save it. What would you like to do?
-            </p>
+            {(() => {
+              const isActivelyTranscribing = transcriptionActiveRef.current || isTranscribing || isPaused;
+              const hasTranscriptContent = transcriptText.trim();
+              
+              if (isActivelyTranscribing && hasTranscriptContent) {
+                return (
+                  <>
+                    <h3 className="text-lg font-semibold mb-4">Stop transcription and save content?</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Transcription is currently {isPaused ? 'paused' : 'running'} and you have transcript content. 
+                      Closing will stop the transcription. Would you like to save your content before closing?
+                    </p>
+                  </>
+                );
+              } else if (isActivelyTranscribing && !hasTranscriptContent) {
+                return (
+                  <>
+                    <h3 className="text-lg font-semibold mb-4">Stop transcription?</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Transcription is currently {isPaused ? 'paused' : 'running'} but no content has been recorded yet. 
+                      Closing will stop the transcription.
+                    </p>
+                  </>
+                );
+              } else {
+                return (
+                  <>
+                    <h3 className="text-lg font-semibold mb-4">Save transcript content?</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      You have transcript content that will be lost if you don&apos;t save it. What would you like to do?
+                    </p>
+                  </>
+                );
+              }
+            })()}
             <div className="flex justify-end gap-2">
-              <Button variant="destructive" onClick={handleConfirmDiscard}>Delete</Button>
-              <Button variant="default" onClick={handleConfirmSave}>Save</Button>
+              <Button variant="destructive" onClick={handleConfirmDiscard}>
+                {(() => {
+                  const isActivelyTranscribing = transcriptionActiveRef.current || isTranscribing || isPaused;
+                  return isActivelyTranscribing ? 'Stop & Discard' : 'Delete';
+                })()}
+              </Button>
+              <Button variant="default" onClick={handleConfirmSave}>
+                {(() => {
+                  const isActivelyTranscribing = transcriptionActiveRef.current || isTranscribing || isPaused;
+                  return isActivelyTranscribing ? 'Stop & Save' : 'Save';
+                })()}
+              </Button>
             </div>
           </div>
         </div>
