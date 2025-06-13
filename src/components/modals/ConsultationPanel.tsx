@@ -163,6 +163,9 @@ export default function ConsultationPanel({
     transcriptionActiveRef.current = val;
   };
 
+  // CRITICAL: Store the original getUserMedia stream for complete cleanup
+  const originalStreamRef = useRef<MediaStream | null>(null);
+
   // ---------- Draft persistence across page navigation ----------
   const draftId = (draggableConfig?.id) ?? `consultation-draft-${patient.id}`;
 
@@ -200,6 +203,9 @@ export default function ConsultationPanel({
   const cleanupAllAudioResources = useCallback(() => {
     console.log('[ConsultationPanel] Performing comprehensive audio cleanup');
     
+    // Store references to all tracks before cleanup for verification
+    const allTracks: MediaStreamTrack[] = [];
+    
     // Stop MediaRecorder and its stream
     if (mediaRecorderRef.current) {
       try {
@@ -212,9 +218,14 @@ export default function ConsultationPanel({
       
       // Stop ALL tracks from MediaRecorder's stream
       if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => {
-          console.log(`Stopping MediaRecorder track: ${track.kind}, state: ${track.readyState}`);
-          track.stop();
+        const tracks = mediaRecorderRef.current.stream.getTracks();
+        tracks.forEach(track => {
+          allTracks.push(track);
+          console.log(`Stopping MediaRecorder track: ${track.kind}, state: ${track.readyState}, enabled: ${track.enabled}`);
+          if (track.readyState === 'live') {
+            track.stop();
+            console.log(`MediaRecorder track stopped: ${track.kind}, new state: ${track.readyState}`);
+          }
         });
       }
       mediaRecorderRef.current = null;
@@ -222,11 +233,30 @@ export default function ConsultationPanel({
     
     // Stop ALL tracks from audioStreamRef
     if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach(track => {
-        console.log(`Stopping audioStreamRef track: ${track.kind}, state: ${track.readyState}`);
-        track.stop();
+      const tracks = audioStreamRef.current.getTracks();
+      tracks.forEach(track => {
+        allTracks.push(track);
+        console.log(`Stopping audioStreamRef track: ${track.kind}, state: ${track.readyState}, enabled: ${track.enabled}`);
+        if (track.readyState === 'live') {
+          track.stop();
+          console.log(`AudioStreamRef track stopped: ${track.kind}, new state: ${track.readyState}`);
+        }
       });
       audioStreamRef.current = null;
+    }
+    
+    // CRITICAL: Stop the original getUserMedia stream
+    if (originalStreamRef.current) {
+      const tracks = originalStreamRef.current.getTracks();
+      tracks.forEach(track => {
+        allTracks.push(track);
+        console.log(`Stopping original stream track: ${track.kind}, state: ${track.readyState}, enabled: ${track.enabled}`);
+        if (track.readyState === 'live') {
+          track.stop();
+          console.log(`Original stream track stopped: ${track.kind}, new state: ${track.readyState}`);
+        }
+      });
+      originalStreamRef.current = null;
     }
     
     // Close WebSocket
@@ -241,12 +271,23 @@ export default function ConsultationPanel({
       socketRef.current = null;
     }
     
+    // Verify all tracks are actually stopped
+    setTimeout(() => {
+      console.log('[ConsultationPanel] Verifying track cleanup:');
+      allTracks.forEach((track, index) => {
+        console.log(`Track ${index}: ${track.kind}, state: ${track.readyState}, enabled: ${track.enabled}`);
+      });
+      
+      // Final verification: Log current track count
+      console.log(`[ConsultationPanel] Total tracks processed: ${allTracks.length}`);
+    }, 100);
+    
     // Reset transcription state
     setIsTranscribingAndRef(false);
     setIsPaused(false);
     transcriptionActiveRef.current = false;
     
-    console.log('[ConsultationPanel] Audio cleanup completed');
+    console.log('[ConsultationPanel] Audio cleanup completed - all tracks stopped and streams cleared');
   }, []);
 
   // CRITICAL PATTERN: stopTranscription is NOT in any dependency arrays
@@ -441,6 +482,8 @@ export default function ConsultationPanel({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (!isOpen) return stream.getTracks().forEach(track => track.stop());
 
+      // CRITICAL: Store the original stream for complete cleanup
+      originalStreamRef.current = stream;
       audioStreamRef.current = stream; // Store the original stream for waveform
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const mediaRecorder = mediaRecorderRef.current;
