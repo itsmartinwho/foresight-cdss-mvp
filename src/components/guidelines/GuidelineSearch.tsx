@@ -160,7 +160,7 @@ export default function GuidelineSearch({
 
             {/* Search Suggestions Dropdown */}
             {isSearchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-20 max-h-80 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-50 max-h-80 overflow-y-auto">
                 {/* Search Tips - Only show when no search query */}
                 {tempSearchQuery === '' && (
                   <div className="p-3 border-b border-gray-100 bg-blue-50/50">
@@ -262,7 +262,7 @@ export default function GuidelineSearch({
             </button>
 
             {isSortDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-10 min-w-48">
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg z-50 min-w-48">
                 <div className="p-2">
                   {sortOptions.map((option) => (
                     <button
