@@ -5,13 +5,6 @@ module.exports = {
     "./src/app/**/*.{ts,tsx,jsx,js,mdx}",
     "./src/components/**/*.{ts,tsx,jsx,js,mdx}",
     "./src/pages/**/*.{ts,tsx,jsx,js,mdx}",
-    "./src/styles/utils.css"
-  ],
-  safelist: [
-    "liquid-glass",
-    "liquid-glass-soft",
-    "liquid-glass-dense",
-    "liquid-glass-backdrop"
   ],
   theme: {
     container: {

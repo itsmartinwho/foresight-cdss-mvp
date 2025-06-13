@@ -1,25 +1,20 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { useGlassClass } from "@/lib/uiVariant"
 
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const glassClass = useGlassClass();
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        glassClass,
-        "text-card-foreground",
-        className
-      )}
-      {...props}
-    />
-  )
-})
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "glass text-card-foreground",
+      className
+    )}
+    {...props}
+  />
+))
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
