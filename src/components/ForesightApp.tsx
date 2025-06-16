@@ -14,6 +14,8 @@ import DashboardView from "@/components/views/DashboardView";
 import PatientsListView from "@/components/views/PatientsListView";
 import PatientWorkspaceViewModern from "@/components/views/PatientWorkspaceViewModern";
 import AlertsScreenView from "@/components/views/AlertsScreenView";
+import AlertDashboard from "@/components/alerts/AlertDashboard";
+import ContentSurface from '@/components/layout/ContentSurface';
 import AnalyticsScreenView from "@/components/views/AnalyticsScreenView";
 import SettingsScreenView from "@/components/views/SettingsScreenView";
 import LoadingAnimation from '@/components/LoadingAnimation';
@@ -114,7 +116,19 @@ function ForesightApp() {
       }
       break;
     case "alerts":
-      currentView = <AlertsScreenView onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
+      currentView = (
+        <ContentSurface fullBleed className="p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold">Alert Management</h1>
+          </div>
+          <AlertDashboard 
+            onAlertAction={(alertId, action) => {
+              console.log(`Alert ${alertId} ${action}ed`);
+              // TODO: Handle alert actions
+            }}
+          />
+        </ContentSurface>
+      );
       break;
     case "analytics":
       currentView = <AnalyticsScreenView />;

@@ -217,7 +217,7 @@ export default function ConsultationPanel({
     if (started && transcriptText && !isDemoMode) {
       realTimeAlerts.updateTranscript(transcriptText);
     }
-  }, [transcriptText, started, isDemoMode, realTimeAlerts]);
+  }, [transcriptText, started, isDemoMode, realTimeAlerts.updateTranscript]);
 
   // Helper to clear draft and perform close
   const finalizeAndClose = useCallback(() => {

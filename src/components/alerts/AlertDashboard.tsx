@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UnifiedAlert, AlertType, AlertSeverity } from '@/types/alerts';
+import { UnifiedAlert, AlertType, AlertSeverity, AlertStatus, AlertCategory } from '@/types/alerts';
 import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import AlertList from './AlertList';
 import { Button } from '@/components/ui/button';
@@ -119,6 +119,13 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
         alert.status === 'active' && !alert.isRealTime
       );
       
+      // For development: Add mock alerts if no real alerts exist
+      if (postConsultationAlerts.length === 0 && process.env.NODE_ENV === 'development') {
+        console.log('No alerts found, generating mock alerts for development');
+        const mockAlerts = generateMockAlerts();
+        postConsultationAlerts.push(...mockAlerts);
+      }
+      
       setAlerts(postConsultationAlerts);
       
       // Group by type
@@ -139,6 +146,98 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
       setIsLoading(false);
     }
   }, [patientId, consultationId, alertsService]);
+
+  // Generate mock alerts for development/testing
+  const generateMockAlerts = (): UnifiedAlert[] => {
+    const mockAlerts: UnifiedAlert[] = [
+      {
+        id: 'mock-drug-1',
+        patientId: patientId || 'demo-patient',
+        encounterId: consultationId,
+        alertType: AlertType.DRUG_INTERACTION,
+        severity: AlertSeverity.WARNING,
+        status: AlertStatus.ACTIVE,
+        title: 'Potential Drug Interaction Detected',
+        message: 'Interaction between prescribed Warfarin and patient-reported NSAIDs may increase bleeding risk.',
+        suggestion: 'Consider switching to acetaminophen for pain management or monitor INR more frequently.',
+        confidenceScore: 0.89,
+        sourceReasoning: 'Based on known pharmacokinetic interactions between warfarin and NSAIDs affecting platelet function and warfarin metabolism.',
+        processingModel: 'gpt-o3',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        isRealTime: false,
+        isPostConsultation: true,
+        acknowledged: false,
+        migratedFromPatientAlerts: false,
+        category: AlertCategory.POST_CONSULTATION
+      },
+      {
+        id: 'mock-lab-1',
+        patientId: patientId || 'demo-patient', 
+        encounterId: consultationId,
+        alertType: AlertType.MISSING_LAB_RESULT,
+        severity: AlertSeverity.INFO,
+        status: AlertStatus.ACTIVE,
+        title: 'Consider Thyroid Function Testing',
+        message: 'Patient presents with fatigue and weight changes. TSH and free T4 may help rule out thyroid dysfunction.',
+        suggestion: 'Order TSH, free T4, and free T3 to evaluate thyroid function.',
+        confidenceScore: 0.75,
+        sourceReasoning: 'Symptoms of fatigue, weight changes, and hair thinning are consistent with thyroid dysfunction.',
+        processingModel: 'gpt-o3',
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+        updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        isRealTime: false,
+        isPostConsultation: true,
+        acknowledged: false,
+        migratedFromPatientAlerts: false,
+        category: AlertCategory.POST_CONSULTATION
+      },
+      {
+        id: 'mock-comorbidity-1',
+        patientId: patientId || 'demo-patient',
+        encounterId: consultationId,
+        alertType: AlertType.COMORBIDITY,
+        severity: AlertSeverity.CRITICAL,
+        status: AlertStatus.ACTIVE,
+        title: 'High Risk for Cardiovascular Disease',
+        message: 'Patient has multiple risk factors: hypertension, diabetes, obesity (BMI 34), and family history of MI.',
+        suggestion: 'Consider cardiology referral and initiate statin therapy. Order ECG and echocardiogram.',
+        confidenceScore: 0.94,
+        sourceReasoning: 'Multiple established cardiovascular risk factors present with high predictive value for future events.',
+        processingModel: 'gpt-o3',
+        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+        updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        isRealTime: false,
+        isPostConsultation: true,
+        acknowledged: false,
+        migratedFromPatientAlerts: false,
+        category: AlertCategory.POST_CONSULTATION
+      },
+      {
+        id: 'mock-diagnostic-1',
+        patientId: patientId || 'demo-patient',
+        encounterId: consultationId,
+        alertType: AlertType.DIAGNOSTIC_GAP,
+        severity: AlertSeverity.WARNING,
+        status: AlertStatus.ACTIVE,
+        title: 'Consider Depression Screening',
+        message: 'Patient reports sleep disturbances, low energy, and decreased interest in activities for >2 weeks.',
+        suggestion: 'Administer PHQ-9 questionnaire and consider mental health referral if score ≥10.',
+        confidenceScore: 0.82,
+        sourceReasoning: 'Symptoms duration and constellation meet criteria for major depressive episode screening.',
+        processingModel: 'gpt-o3',
+        createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
+        updatedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        isRealTime: false,
+        isPostConsultation: true,
+        acknowledged: false,
+        migratedFromPatientAlerts: false,
+        category: AlertCategory.POST_CONSULTATION
+      }
+    ];
+
+    return mockAlerts;
+  };
 
   const refreshAlerts = async () => {
     setRefreshing(true);
