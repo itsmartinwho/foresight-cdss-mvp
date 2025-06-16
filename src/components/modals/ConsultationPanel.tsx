@@ -173,9 +173,9 @@ export default function ConsultationPanel({
   const [showRealTimeAlerts, setShowRealTimeAlerts] = useState(false);
   const [alertToasts, setAlertToasts] = useState<any[]>([]);
   
-  // Real-time alerts hook
+  // Real-time alerts hook (without auto-start/stop to avoid dependency loops)
   const realTimeAlerts = useRealTimeAlerts({
-    enabled: started && !isDemoMode, // Only enable when consultation started and not in demo
+    enabled: false, // Manual management only
     patientId: patient?.id,
     encounterId: encounter?.id,
     onAlert: (alert) => {
@@ -191,6 +191,22 @@ export default function ConsultationPanel({
       });
     }
   });
+
+  // Track if we should start real-time alerts  
+  const shouldStartAlertsRef = useRef(false);
+  
+  // Manually start/stop real-time alerts session when consultation starts/stops
+  useEffect(() => {
+    const shouldStart = started && !isDemoMode && patient?.id && encounter?.id;
+    
+    if (shouldStart && !shouldStartAlertsRef.current) {
+      shouldStartAlertsRef.current = true;
+      realTimeAlerts.startSession();
+    } else if (!shouldStart && shouldStartAlertsRef.current) {
+      shouldStartAlertsRef.current = false;
+      realTimeAlerts.endSession();
+    }
+  }, [started, isDemoMode, patient?.id, encounter?.id]);
 
   // ---------- Draft persistence across page navigation ----------
   const draftId = (draggableConfig?.id) ?? `consultation-draft-${patient.id}`;

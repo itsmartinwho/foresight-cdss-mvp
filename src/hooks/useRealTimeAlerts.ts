@@ -274,21 +274,9 @@ export function useRealTimeAlerts(options: UseRealTimeAlertsOptions) {
     setState(prev => ({ ...prev, alerts: [] }));
   }, []);
 
-  // Auto-start/stop session based on enabled state
-  useEffect(() => {
-    if (enabled && patientId && encounterId && !sessionStartedRef.current) {
-      startSession();
-    } else if (!enabled && sessionStartedRef.current) {
-      endSession();
-    }
-
-    // Cleanup on unmount or dependency change
-    return () => {
-      if (sessionStartedRef.current) {
-        endSession();
-      }
-    };
-  }, [enabled, patientId, encounterId, startSession, endSession]);
+  // Note: Manual session management is preferred over auto-start/stop
+  // to avoid infinite loop issues with dependencies. Sessions should be
+  // explicitly started/stopped by the consuming component.
 
   return {
     ...state,

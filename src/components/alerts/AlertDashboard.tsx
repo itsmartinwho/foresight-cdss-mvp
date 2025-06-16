@@ -95,58 +95,6 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     }
   };
 
-  const loadAlerts = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      
-      let loadedAlerts: UnifiedAlert[] = [];
-      
-      if (consultationId) {
-        // Use encounterId filter since the service uses that field name
-        const result = await alertsService.getAlerts({ encounterId: consultationId });
-        loadedAlerts = result.alerts;
-      } else if (patientId) {
-        const result = await alertsService.getAlerts({ patientId });
-        loadedAlerts = result.alerts;
-      } else {
-        // Load all alerts for overview
-        const result = await alertsService.getAlerts();
-        loadedAlerts = result.alerts;
-      }
-      
-      // Only show post-consultation alerts (active status)
-      const postConsultationAlerts = loadedAlerts.filter(alert => 
-        alert.status === 'active' && !alert.isRealTime
-      );
-      
-      // For development: Add mock alerts if no real alerts exist
-      if (postConsultationAlerts.length === 0 && process.env.NODE_ENV === 'development') {
-        console.log('No alerts found, generating mock alerts for development');
-        const mockAlerts = generateMockAlerts();
-        postConsultationAlerts.push(...mockAlerts);
-      }
-      
-      setAlerts(postConsultationAlerts);
-      
-      // Group by type
-      const grouped = postConsultationAlerts.reduce((acc, alert) => {
-        const type = alert.alertType;
-        if (!acc[type]) {
-          acc[type] = [];
-        }
-        acc[type].push(alert);
-        return acc;
-      }, {} as AlertsByType);
-      
-      setAlertsByType(grouped);
-      
-    } catch (error) {
-      console.error('Error loading alerts:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [patientId, consultationId, alertsService]);
-
   // Generate mock alerts for development/testing
   const generateMockAlerts = (): UnifiedAlert[] => {
     const mockAlerts: UnifiedAlert[] = [
@@ -238,6 +186,58 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
 
     return mockAlerts;
   };
+
+  const loadAlerts = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      let loadedAlerts: UnifiedAlert[] = [];
+      
+      if (consultationId) {
+        // Use encounterId filter since the service uses that field name
+        const result = await alertsService.getAlerts({ encounterId: consultationId });
+        loadedAlerts = result.alerts;
+      } else if (patientId) {
+        const result = await alertsService.getAlerts({ patientId });
+        loadedAlerts = result.alerts;
+      } else {
+        // Load all alerts for overview
+        const result = await alertsService.getAlerts();
+        loadedAlerts = result.alerts;
+      }
+      
+      // Only show post-consultation alerts (active status)
+      const postConsultationAlerts = loadedAlerts.filter(alert => 
+        alert.status === 'active' && !alert.isRealTime
+      );
+      
+      // For development: Add mock alerts if no real alerts exist
+      if (postConsultationAlerts.length === 0 && process.env.NODE_ENV === 'development') {
+        console.log('No alerts found, generating mock alerts for development');
+        const mockAlerts = generateMockAlerts();
+        postConsultationAlerts.push(...mockAlerts);
+      }
+      
+      setAlerts(postConsultationAlerts);
+      
+      // Group by type
+      const grouped = postConsultationAlerts.reduce((acc, alert) => {
+        const type = alert.alertType;
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(alert);
+        return acc;
+      }, {} as AlertsByType);
+      
+      setAlertsByType(grouped);
+      
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patientId, consultationId, alertsService, generateMockAlerts]);
 
   const refreshAlerts = async () => {
     setRefreshing(true);
