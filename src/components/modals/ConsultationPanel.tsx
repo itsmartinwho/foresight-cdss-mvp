@@ -195,18 +195,8 @@ export default function ConsultationPanel({
   // Track if we should start real-time alerts  
   const shouldStartAlertsRef = useRef(false);
   
-  // Manually start/stop real-time alerts session when consultation starts/stops
-  useEffect(() => {
-    const shouldStart = started && !isDemoMode && patient?.id && encounter?.id;
-    
-    if (shouldStart && !shouldStartAlertsRef.current) {
-      shouldStartAlertsRef.current = true;
-      realTimeAlerts.startSession();
-    } else if (!shouldStart && shouldStartAlertsRef.current) {
-      shouldStartAlertsRef.current = false;
-      realTimeAlerts.endSession();
-    }
-  }, [started, isDemoMode, patient?.id, encounter?.id]);
+  // Note: Real-time alerts session management moved to be handled manually 
+  // in specific functions to avoid dependency loops in useEffect
 
   // ---------- Draft persistence across page navigation ----------
   const draftId = (draggableConfig?.id) ?? `consultation-draft-${patient.id}`;
@@ -230,10 +220,10 @@ export default function ConsultationPanel({
 
   // Update transcript for real-time alert processing
   useEffect(() => {
-    if (started && transcriptText && !isDemoMode) {
+    if (started && transcriptText && !isDemoMode && shouldStartAlertsRef.current) {
       realTimeAlerts.updateTranscript(transcriptText);
     }
-  }, [transcriptText, started, isDemoMode, realTimeAlerts.updateTranscript]);
+  }, [transcriptText, started, isDemoMode]);
 
   // Helper to clear draft and perform close
   const finalizeAndClose = useCallback(() => {
@@ -340,6 +330,16 @@ export default function ConsultationPanel({
     setIsTranscribingAndRef(false);
     setIsPaused(false);
     transcriptionActiveRef.current = false;
+    
+    // Stop real-time alerts session if active
+    if (shouldStartAlertsRef.current) {
+      shouldStartAlertsRef.current = false;
+      try {
+        realTimeAlerts.endSession();
+      } catch (error) {
+        console.warn('Error stopping real-time alerts session:', error);
+      }
+    }
     
     console.log('[ConsultationPanel] Audio cleanup completed - all tracks stopped and streams cleared');
   }, []);
@@ -555,13 +555,13 @@ export default function ConsultationPanel({
   }, [cleanupAllAudioResources]);
 
   const startVoiceInput = useCallback(async () => {
-    console.log("ConsultationPanel startVoiceInput called - current states:", { isTranscribing, isPaused });
+    console.log("ConsultationPanel startVoiceInput called - current states:", { isTranscribing: isTranscribingRef.current, isPaused: isPausedRef.current });
     const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
     if (!apiKey) {
       console.error("ConsultationPanel startVoiceInput: No API key");
       return toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
     }
-    if (isTranscribing) {
+    if (isTranscribingRef.current) {
       console.log("ConsultationPanel startVoiceInput: Already transcribing, returning early");
       return;
     }
@@ -647,13 +647,10 @@ export default function ConsultationPanel({
     } catch (err) {
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
-  }, [isTranscribing, isPaused, isOpen, toast, cleanupAllAudioResources]);
+  }, [isOpen, toast, cleanupAllAudioResources]);
 
-  // Update ref whenever startVoiceInput changes
-  useEffect(() => {
-    startVoiceInputRef.current = startVoiceInput;
-    console.log('[ConsultationPanel] Updated startVoiceInputRef, function available:', !!startVoiceInput);
-  }, [startVoiceInput]);
+  // Store startVoiceInput function in ref for auto-start functionality
+  startVoiceInputRef.current = startVoiceInput;
 
   const createEncounter = useCallback(async () => {
     if (!patient?.id || isCurrentlyCreatingEncounter.current) return;
@@ -802,7 +799,7 @@ export default function ConsultationPanel({
   }, [isDemoMode, isOpen, encounter, isCreating, createEncounter]);
   
   useEffect(() => {
-    if (!isDemoMode && isOpen && encounter && !started && !isTranscribing && !autoStartSessionRef.current) {
+    if (!isDemoMode && isOpen && encounter && !started && !isTranscribingRef.current && !autoStartSessionRef.current) {
       const encounterId = encounter.id;
       if (autoStartAttemptedRef.current.has(encounterId)) {
         console.log('[ConsultationPanel] Auto-start already attempted for encounter:', encounterId);
@@ -815,7 +812,7 @@ export default function ConsultationPanel({
       (async () => {
         console.log('[ConsultationPanel] Attempting immediate auto-start of transcription');
         try {
-          if (isTranscribing) {
+          if (isTranscribingRef.current) {
             console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
             setStarted(true);
             return;
@@ -834,6 +831,13 @@ export default function ConsultationPanel({
           console.log('[ConsultationPanel] All checks passed, calling startVoiceInput via ref...');
           await startVoiceInputRef.current();
           setStarted(true);
+          
+          // Start real-time alerts session when transcription starts
+          if (!shouldStartAlertsRef.current && patient?.id && encounter?.id) {
+            shouldStartAlertsRef.current = true;
+            realTimeAlerts.startSession();
+          }
+          
           console.log('[ConsultationPanel] Auto-start transcription successful');
         } catch (error) {
           console.error('[ConsultationPanel] Auto-start transcription failed via ref:', error);
@@ -841,6 +845,13 @@ export default function ConsultationPanel({
             console.log('[ConsultationPanel] Attempting fallback to direct function call...');
             await startVoiceInput();
             setStarted(true);
+            
+            // Start real-time alerts session when transcription starts (fallback)
+            if (!shouldStartAlertsRef.current && patient?.id && encounter?.id) {
+              shouldStartAlertsRef.current = true;
+              realTimeAlerts.startSession();
+            }
+            
             console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
           } catch (fallbackError) {
             console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
@@ -849,7 +860,7 @@ export default function ConsultationPanel({
         }
       })();
     }
-  }, [isDemoMode, encounter, isOpen, toast, startVoiceInput, isTranscribing, started]);
+  }, [isDemoMode, encounter, isOpen, toast, started]);
   
   useEffect(() => {
     if (!isOpen) return;
