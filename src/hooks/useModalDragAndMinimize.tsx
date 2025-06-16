@@ -115,15 +115,19 @@ export function useModalDragAndMinimize(
       y: Math.max(minY, Math.min(maxY, newPosition.y)),
     };
     
-    updateModalPosition(config!.id, constrainedPosition);
-  }, [config, isValidConfig, updateModalPosition]);
+    setDragState(prev => ({ ...prev, currentPosition: constrainedPosition }));
+  }, [isValidConfig, setDragState]);
 
   const handleDragEnd = useCallback(() => {
     setDragState(prev => ({ ...prev, isDragging: false }));
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = '';
-  }, [handleDragMove]);
+
+    if (isValidConfig) {
+      updateModalPosition(config!.id, dragState.currentPosition);
+    }
+  }, [isValidConfig, setDragState, updateModalPosition]);
 
   const handleDragStart = useCallback((event: React.MouseEvent<HTMLElement>) => {
     if (!isValidConfig) return;
@@ -220,8 +224,8 @@ export function useModalDragAndMinimize(
     return {
       style: {
         position: 'fixed' as const,
-        left: position.x,
-        top: position.y,
+        left: dragState.isDragging ? dragState.currentPosition.x : position.x,
+        top: dragState.isDragging ? dragState.currentPosition.y : position.y,
         zIndex,
         opacity: isMinimized ? 0 : 1,
         pointerEvents: (isMinimized ? 'none' : 'auto') as React.CSSProperties['pointerEvents'],
