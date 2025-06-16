@@ -69,8 +69,16 @@ These display in development mode only (`NODE_ENV === 'development'`).
 ## ✅ **FINAL TESTING RESULTS - ALL ISSUES RESOLVED!**
 
 ### **Infinite Loop Issue**: ✅ FIXED
-- **Root Cause**: Complex useEffect dependency loop in useRealTimeAlerts hook
-- **Final Solution**: Removed auto-start/stop logic and implemented manual session management with refs
+- **Root Cause**: Multiple dependency loops in ConsultationPanel:
+  1. `startVoiceInput` useCallback had dependencies `[isTranscribing, isPaused, ...]` but changes those states when called
+  2. `useEffect` updating `startVoiceInputRef` with dependency `[startVoiceInput]` recreated constantly  
+  3. Auto-start `useEffect` with dependencies `[..., startVoiceInput, isTranscribing, ...]` caused loops
+  4. Real-time alerts session management in `useEffect` triggered more re-renders
+- **Final Solution**: 
+  - Removed state dependencies from `startVoiceInput`, used refs instead (`isTranscribingRef`, `isPausedRef`)
+  - Eliminated `useEffect` that updated `startVoiceInputRef` (direct assignment instead)
+  - Removed `startVoiceInput` and `isTranscribing` from auto-start `useEffect` dependencies  
+  - Moved real-time alerts session management out of `useEffect` to manual calls in auto-start functions
 - **Status**: No more "Maximum update depth exceeded" errors - consultations start normally
 
 ### **Alerts Tab Issue**: ✅ FIXED  

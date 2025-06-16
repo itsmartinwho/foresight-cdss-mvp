@@ -60,6 +60,8 @@ export function useModalDragAndMinimize(
     currentPosition: { x: 0, y: 0 },
   });
 
+  const dragOffsetRef = useRef<{x:number;y:number}>({x:0,y:0});
+
   // Check if we have a valid config
   const isValidConfig = Boolean(config && config.id);
 
@@ -81,13 +83,21 @@ export function useModalDragAndMinimize(
   const position = modalState?.position ?? initialPositionRef.current ?? getCenterPosition();
   const zIndex = modalState?.zIndex ?? 1000;
 
+  // Keep a ref with the latest position so callbacks don't re-create when position changes
+  const positionRef = useRef(position);
+
+  // Sync ref whenever position updates
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
   const handleDragMove = useCallback((event: MouseEvent) => {
     if (!isValidConfig) return;
     
     event.preventDefault();
     const newPosition = {
-      x: event.clientX - dragState.dragOffset.x,
-      y: event.clientY - dragState.dragOffset.y,
+      x: event.clientX - dragOffsetRef.current.x,
+      y: event.clientY - dragOffsetRef.current.y,
     };
     
     // Constrain to viewport bounds but allow going above viewport
@@ -106,7 +116,7 @@ export function useModalDragAndMinimize(
     };
     
     updateModalPosition(config!.id, constrainedPosition);
-  }, [config, isValidConfig, updateModalPosition, dragState.dragOffset]);
+  }, [config, isValidConfig, updateModalPosition]);
 
   const handleDragEnd = useCallback(() => {
     setDragState(prev => ({ ...prev, isDragging: false }));
@@ -119,27 +129,32 @@ export function useModalDragAndMinimize(
     if (!isValidConfig) return;
     if (event.button !== 0) return; // Only handle left click
     const target = event.target as HTMLElement;
-    
-    // Don't start drag on interactive elements
+
+    // Prevent starting drag on interactive elements inside the title bar
     if (target.closest('button, input, select, textarea, [role="button"]')) return;
 
     event.preventDefault();
     bringToFront(config!.id);
-    
+
+    const currentPos = positionRef.current;
+
+    const offset = {
+      x: event.clientX - currentPos.x,
+      y: event.clientY - currentPos.y,
+    };
+    dragOffsetRef.current = offset;
+
     setDragState({
       isDragging: true,
-      dragOffset: {
-        x: event.clientX - position.x,
-        y: event.clientY - position.y,
-      },
-      startPosition: position,
-      currentPosition: position,
+      dragOffset: offset,
+      startPosition: currentPos,
+      currentPosition: currentPos,
     });
 
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = 'none';
-  }, [isValidConfig, position, config, bringToFront, handleDragMove, handleDragEnd]);
+  }, [isValidConfig, config, bringToFront, handleDragMove, handleDragEnd]);
 
   // Register modal with manager
   useEffect(() => {
