@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { UnifiedAlert, AlertType, AlertSeverity, AlertStatus, AlertCategory } from '@/types/alerts';
 import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import AlertList from './AlertList';
@@ -46,6 +46,12 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
   const [sortBy, setSortBy] = useState<'date' | 'severity' | 'type'>('date');
   const [alertsService] = useState(() => new UnifiedAlertsService());
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Track fetch attempts to prevent infinite loops
+  const fetchAttemptRef = useRef(0);
+  const hasFetchedRef = useRef(false);
+  const fetchFailedRef = useRef(false);
+  const MAX_FETCH_ATTEMPTS = 3;
 
   const alertTypeConfig = {
     [AlertType.DRUG_INTERACTION]: {
@@ -95,9 +101,9 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     }
   };
 
-  // Generate mock alerts for development/testing
-  const generateMockAlerts = (): UnifiedAlert[] => {
-    const mockAlerts: UnifiedAlert[] = [
+  // Memoize mock alerts to prevent regeneration on every render
+  const mockAlerts = useMemo(() => {
+    const alerts: UnifiedAlert[] = [
       {
         id: 'mock-drug-1',
         patientId: patientId || 'demo-patient',
@@ -184,10 +190,24 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
       }
     ];
 
-    return mockAlerts;
-  };
+    return alerts;
+  }, [patientId, consultationId]);
 
   const loadAlerts = useCallback(async () => {
+    // Prevent multiple simultaneous fetches
+    if (hasFetchedRef.current && fetchFailedRef.current) {
+      console.log('Fetch already failed, not retrying');
+      return;
+    }
+    
+    // Check max attempts
+    if (fetchAttemptRef.current >= MAX_FETCH_ATTEMPTS) {
+      console.log('Max fetch attempts reached, stopping');
+      return;
+    }
+    
+    fetchAttemptRef.current++;
+    
     try {
       setIsLoading(true);
       
@@ -214,7 +234,6 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
       // For development: Add mock alerts if no real alerts exist
       if (postConsultationAlerts.length === 0 && process.env.NODE_ENV === 'development') {
         console.log('No alerts found, generating mock alerts for development');
-        const mockAlerts = generateMockAlerts();
         postConsultationAlerts.push(...mockAlerts);
       }
       
@@ -232,22 +251,60 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
       
       setAlertsByType(grouped);
       
-    } catch (error) {
+      // Mark as successfully fetched
+      hasFetchedRef.current = true;
+      fetchFailedRef.current = false;
+      
+    } catch (error: any) {
       console.error('Error loading alerts:', error);
+      
+      // Check if this is a 404 or table doesn't exist error
+      if (error?.code === '42P01' || error?.message?.includes('relation') || error?.message?.includes('does not exist')) {
+        console.log('Alerts table does not exist, using mock data');
+        fetchFailedRef.current = true;
+        
+        // Use mock alerts in development
+        if (process.env.NODE_ENV === 'development') {
+          setAlerts(mockAlerts);
+          
+          // Group mock alerts by type
+          const grouped = mockAlerts.reduce((acc, alert) => {
+            const type = alert.alertType;
+            if (!acc[type]) {
+              acc[type] = [];
+            }
+            acc[type].push(alert);
+            return acc;
+          }, {} as AlertsByType);
+          
+          setAlertsByType(grouped);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [patientId, consultationId, alertsService, generateMockAlerts]);
+  }, [patientId, consultationId, alertsService, mockAlerts]);
 
   const refreshAlerts = async () => {
+    // Reset fetch tracking for manual refresh
+    fetchAttemptRef.current = 0;
+    hasFetchedRef.current = false;
+    fetchFailedRef.current = false;
+    
     setRefreshing(true);
     await loadAlerts();
     setRefreshing(false);
   };
 
+  // Load alerts only once on mount or when key props change
   useEffect(() => {
+    // Reset fetch tracking when key props change
+    fetchAttemptRef.current = 0;
+    hasFetchedRef.current = false;
+    fetchFailedRef.current = false;
+    
     loadAlerts();
-  }, [loadAlerts]);
+  }, [patientId, consultationId]); // Remove loadAlerts from dependencies to prevent loops
 
   useEffect(() => {
     let filtered = [...alerts];

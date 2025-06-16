@@ -109,6 +109,18 @@ export default function ConsultationPanel({
   const isCurrentlyCreatingEncounter = useRef(false);
   const [mounted, setMounted] = useState(false);
   
+  // Development render count guard
+  const renderCountRef = useRef(0);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      renderCountRef.current++;
+      if (renderCountRef.current > 50) {
+        console.error('[ConsultationPanel] Excessive renders detected (>50), possible infinite loop!');
+        console.trace();
+      }
+    }
+  });
+  
   // Form state
   const [reason, setReason] = useState('');
   const [scheduledDate, setScheduledDate] = useState<Date>(new Date());
@@ -806,30 +818,29 @@ export default function ConsultationPanel({
         setStarted(true);
         return;
       }
-      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounterId, { isDemoMode, encounter: !!encounter, started, isTranscribing, isOpen });
+      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounterId);
       autoStartAttemptedRef.current.add(encounterId);
       autoStartSessionRef.current = true;
-      (async () => {
-        console.log('[ConsultationPanel] Attempting immediate auto-start of transcription');
+      
+      // Use setTimeout to break out of the render cycle
+      setTimeout(async () => {
+        console.log('[ConsultationPanel] Attempting auto-start of transcription');
         try {
           if (isTranscribingRef.current) {
             console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
             setStarted(true);
             return;
           }
-          if (!startVoiceInputRef.current) {
-            console.warn('[ConsultationPanel] startVoiceInputRef.current is null, cannot auto-start');
-            toast({ title: "Auto-start Warning", description: "Transcription function not ready. Transcription will start automatically when ready.", variant: "destructive" });
-            return;
-          }
+          
           const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
           if (!apiKey) {
             console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
             toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
             return;
           }
-          console.log('[ConsultationPanel] All checks passed, calling startVoiceInput via ref...');
-          await startVoiceInputRef.current();
+          
+          // Call startVoiceInput directly
+          await startVoiceInput();
           setStarted(true);
           
           // Start real-time alerts session when transcription starts
@@ -840,27 +851,12 @@ export default function ConsultationPanel({
           
           console.log('[ConsultationPanel] Auto-start transcription successful');
         } catch (error) {
-          console.error('[ConsultationPanel] Auto-start transcription failed via ref:', error);
-          try {
-            console.log('[ConsultationPanel] Attempting fallback to direct function call...');
-            await startVoiceInput();
-            setStarted(true);
-            
-            // Start real-time alerts session when transcription starts (fallback)
-            if (!shouldStartAlertsRef.current && patient?.id && encounter?.id) {
-              shouldStartAlertsRef.current = true;
-              realTimeAlerts.startSession();
-            }
-            
-            console.log('[ConsultationPanel] Auto-start transcription successful via fallback');
-          } catch (fallbackError) {
-            console.error('[ConsultationPanel] Auto-start transcription failed completely:', fallbackError);
-            toast({ title: "Auto-start Failed", description: "Could not automatically start transcription. Transcription will retry automatically.", variant: "destructive" });
-          }
+          console.error('[ConsultationPanel] Auto-start transcription failed:', error);
+          toast({ title: "Auto-start Failed", description: "Could not automatically start transcription.", variant: "destructive" });
         }
-      })();
+      }, 100); // Small delay to ensure we're out of the render cycle
     }
-  }, [isDemoMode, encounter, isOpen, toast, started]);
+  }, [isDemoMode, encounter, isOpen, started]); // Minimal dependencies
   
   useEffect(() => {
     if (!isOpen) return;

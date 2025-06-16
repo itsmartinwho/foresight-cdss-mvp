@@ -119,15 +119,18 @@ export function useModalDragAndMinimize(
   }, [isValidConfig, setDragState]);
 
   const handleDragEnd = useCallback(() => {
+    // Get current position from state
+    const finalPosition = dragState.currentPosition;
+    
     setDragState(prev => ({ ...prev, isDragging: false }));
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = '';
 
-    if (isValidConfig) {
-      updateModalPosition(config!.id, dragState.currentPosition);
+    if (isValidConfig && config) {
+      updateModalPosition(config.id, finalPosition);
     }
-  }, [isValidConfig, setDragState, updateModalPosition]);
+  }, [isValidConfig, config, handleDragMove, updateModalPosition]);
 
   const handleDragStart = useCallback((event: React.MouseEvent<HTMLElement>) => {
     if (!isValidConfig) return;
