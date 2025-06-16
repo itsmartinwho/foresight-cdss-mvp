@@ -304,6 +304,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     fetchFailedRef.current = false;
     
     loadAlerts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId, consultationId]); // Remove loadAlerts from dependencies to prevent loops
 
   useEffect(() => {

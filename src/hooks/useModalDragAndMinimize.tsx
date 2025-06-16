@@ -130,7 +130,8 @@ export function useModalDragAndMinimize(
     if (isValidConfig && config) {
       updateModalPosition(config.id, finalPosition);
     }
-  }, [isValidConfig, config, handleDragMove, updateModalPosition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isValidConfig, config, handleDragMove, updateModalPosition]); // dragState.currentPosition intentionally excluded to prevent ref churn
 
   const handleDragStart = useCallback((event: React.MouseEvent<HTMLElement>) => {
     if (!isValidConfig) return;
@@ -241,7 +242,8 @@ export function useModalDragAndMinimize(
       "aria-labelledby": `${config!.id}-title`,
       "aria-describedby": `${config!.id}-drag-instructions`,
     };
-  }, [isValidConfig, position, zIndex, isMinimized, dragState.isDragging, config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isValidConfig, position, zIndex, isMinimized, dragState.isDragging, config]); // dragState position values intentionally excluded to prevent ref churn
 
   // Drag handle props for the title bar
   const dragHandleProps = useMemo(() => {

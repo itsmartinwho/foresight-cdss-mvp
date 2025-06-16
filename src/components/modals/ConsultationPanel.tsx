@@ -235,7 +235,8 @@ export default function ConsultationPanel({
     if (started && transcriptText && !isDemoMode && shouldStartAlertsRef.current) {
       realTimeAlerts.updateTranscript(transcriptText);
     }
-  }, [transcriptText, started, isDemoMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcriptText, started, isDemoMode]); // realTimeAlerts intentionally excluded to prevent dependency loops
 
   // Helper to clear draft and perform close
   const finalizeAndClose = useCallback(() => {
@@ -546,7 +547,8 @@ export default function ConsultationPanel({
     } else {
       console.log("ConsultationPanel pauseTranscription: mediaRecorder not in recording state:", mediaRecorderRef.current?.state);
     }
-  }, [isTranscribing, isPaused]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTranscribing, isPaused]); // realTimeAlerts intentionally excluded to prevent dependency loops
 
   const resumeTranscription = useCallback(() => {
     console.log("ConsultationPanel resumeTranscription called - current states:", { isTranscribing, isPaused });
@@ -558,7 +560,8 @@ export default function ConsultationPanel({
     } else {
       console.log("ConsultationPanel resumeTranscription: mediaRecorder not in paused state:", mediaRecorderRef.current?.state);
     }
-  }, [isTranscribing, isPaused]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTranscribing, isPaused]); // realTimeAlerts intentionally excluded to prevent dependency loops
 
   // CRITICAL PATTERN: Stable callback for child components
   // No dependencies prevents re-renders that could break transcription
@@ -856,7 +859,8 @@ export default function ConsultationPanel({
         }
       }, 100); // Small delay to ensure we're out of the render cycle
     }
-  }, [isDemoMode, encounter, isOpen, started]); // Minimal dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemoMode, encounter, isOpen, started]); // Minimal dependencies, other deps intentionally excluded to prevent loops
   
   useEffect(() => {
     if (!isOpen) return;

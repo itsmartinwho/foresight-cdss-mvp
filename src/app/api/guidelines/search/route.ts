@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GuidelineSearchService } from '@/services/guidelines/search-service';
 import { Specialty } from '@/types/guidelines';
 
+// Mark route as dynamic to allow request.url usage
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
