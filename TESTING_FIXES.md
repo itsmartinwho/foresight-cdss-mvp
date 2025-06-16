@@ -4,9 +4,21 @@
 
 ### 1. **Infinite Loop in Consultation Modal** 
 - **Problem**: "Maximum update depth exceeded" error when starting consultations
-- **Root Cause**: useEffect dependency loop in `useRealTimeAlerts` hook
-- **Fix**: Changed dependency from `realTimeAlerts` object to `realTimeAlerts.updateTranscript` function
-- **Location**: `src/components/modals/ConsultationPanel.tsx:186`
+- **Root Cause**: Multiple dependency loops in ConsultationPanel:
+  1. `startVoiceInput` useCallback had dependencies `[isTranscribing, isPaused, ...]` but changes those states when called
+  2. `useEffect` updating `startVoiceInputRef` with dependency `[startVoiceInput]` recreated constantly  
+  3. Auto-start `useEffect` with dependencies `[..., startVoiceInput, isTranscribing, ...]` caused loops
+  4. Real-time alerts session management in `useEffect` triggered more re-renders
+  5. Modal drag callbacks recreating on every position change
+- **Final Solution**: 
+  - Removed state dependencies from `startVoiceInput`, used refs instead (`isTranscribingRef`, `isPausedRef`)
+  - Eliminated `useEffect` that updated `startVoiceInputRef` (direct assignment instead)
+  - Removed `startVoiceInput` and `isTranscribing` from auto-start `useEffect` dependencies  
+  - Moved real-time alerts session management out of `useEffect` to manual calls in auto-start functions
+  - Used `setTimeout` in auto-start to break out of render cycle
+  - Stabilized drag callbacks with refs to prevent ref churn
+  - Added render count guard in development (warns at >50 renders)
+- **Location**: `src/components/modals/ConsultationPanel.tsx`, `src/hooks/useModalDragAndMinimize.tsx`
 
 ### 2. **Alerts Tab Not Showing New Dashboard**
 - **Problem**: `/alerts` tab still showed old legacy alert view
@@ -14,14 +26,31 @@
 - **Fix**: Updated ForesightApp to use AlertDashboard with ContentSurface wrapper
 - **Location**: `src/components/ForesightApp.tsx:104-115`
 
+### 3. **Alerts Tab Infinite Reload (404 Loop)**
+- **Problem**: Alerts tab continuously fetching and getting 404 errors
+- **Root Cause**: 
+  - `useEffect` with `loadAlerts` in dependency array caused re-fetch on every state change
+  - 404 errors not handled as terminal, causing retry loops
+  - Mock alerts regenerated on every render
+- **Fix**:
+  - Added fetch attempt tracking with max attempts (3)
+  - Handle 404/table not exist as terminal error
+  - Memoized mock alerts with `useMemo`
+  - Removed `loadAlerts` from effect dependencies
+  - Reset fetch tracking only on manual refresh or prop changes
+- **Location**: `src/components/alerts/AlertDashboard.tsx`
+
 ## Testing Instructions
 
 ### Test 1: Consultation Modal (Infinite Loop Fix)
 1. Navigate to `/patients` 
 2. Select any patient
 3. Click "Start Consultation" or use the consultation tab
-4. **Expected Result**: Modal opens without infinite loop errors
-5. **Previous Error**: "Maximum update depth exceeded" in console
+4. **Expected Result**: 
+   - Modal opens without infinite loop errors
+   - No "Maximum update depth exceeded" in console
+   - In dev console, no warnings about >50 renders
+5. **Previous Error**: "Maximum update depth exceeded" with @radix-ui/react-compose-refs stack trace
 
 ### Test 2: Enhanced Alerts Tab
 1. Navigate to `/alerts` tab in main navigation
@@ -30,7 +59,12 @@
    - Search and filter controls
    - Tabbed view by alert type
    - Mock alerts in development mode (4 sample alerts)
-3. **Previous State**: Old legacy alert screen with patient-specific alerts
+   - **No repeated 404 errors in console**
+   - **No infinite reloading when scrolling**
+3. **Previous State**: 
+   - Old legacy alert screen
+   - Continuous 404 errors: "relation public.alerts does not exist"
+   - Infinite reload loop
 
 ### Test 3: Real-Time Alerts (Integration Test)
 1. Start a consultation (non-demo mode)
@@ -39,6 +73,14 @@
    - No infinite loops
    - Bell icon shows session status
    - Toast notifications work with upward swipe dismissal
+
+### Test 4: Modal Dragging
+1. Open a consultation modal
+2. Drag the modal around the screen
+3. **Expected Result**:
+   - Smooth dragging without lag
+   - No infinite loops during drag
+   - Position persists after drag
 
 ## Mock Alerts for Development
 
@@ -54,17 +96,22 @@ These display in development mode only (`NODE_ENV === 'development'`).
 ## Verification Steps
 
 - [ ] Consultation modal opens without errors
+- [ ] No "Maximum update depth exceeded" errors
 - [ ] Alerts tab shows new dashboard interface
+- [ ] No repeated 404 errors in alerts tab
 - [ ] Mock alerts appear in development
 - [ ] Real-time alerts integrate properly
 - [ ] Toast notifications work with swipe-up dismissal
+- [ ] Modal dragging works smoothly
 - [ ] No console errors or infinite loops
 
 ## Key Files Modified
 
-- `src/components/modals/ConsultationPanel.tsx` - Fixed useEffect dependency
+- `src/components/modals/ConsultationPanel.tsx` - Fixed multiple useEffect dependencies, added render guard
 - `src/components/ForesightApp.tsx` - Updated alerts route
-- `src/components/alerts/AlertDashboard.tsx` - Added mock alerts for development
+- `src/components/alerts/AlertDashboard.tsx` - Added fetch guards, memoized mocks
+- `src/hooks/useModalDragAndMinimize.tsx` - Stabilized drag callbacks
+- `src/hooks/useRealTimeAlerts.ts` - Removed auto-start/stop logic
 
 ## ✅ **FINAL TESTING RESULTS - ALL ISSUES RESOLVED!**
 
@@ -86,10 +133,17 @@ These display in development mode only (`NODE_ENV === 'development'`).
 - **Final Solution**: Updated ForesightApp.tsx to use AlertDashboard with proper layout and mock data
 - **Status**: Alerts tab now shows enhanced dashboard with development mock alerts
 
+### **Alerts Infinite Reload**: ✅ FIXED
+- **Root Cause**: Effect dependency loop and 404 not handled as terminal
+- **Final Solution**: Added fetch guards, max attempts, memoized mocks
+- **Status**: No more infinite 404 loops
+
 ### **Additional Improvements**:
 - ✅ Mock alerts automatically generated in development mode for testing
 - ✅ All TypeScript compilation errors and warnings resolved
 - ✅ React Hook dependency warnings fixed
 - ✅ Session management refactored to prevent any future dependency loops
+- ✅ Render count guard added for development
+- ✅ Fetch attempt tracking prevents infinite API calls
 
 All fixes maintain backward compatibility and existing functionality. 
