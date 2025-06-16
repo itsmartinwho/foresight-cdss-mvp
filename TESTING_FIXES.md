@@ -40,6 +40,28 @@
   - Reset fetch tracking only on manual refresh or prop changes
 - **Location**: `src/components/alerts/AlertDashboard.tsx`
 
+### 4. **React Hook Dependency Warnings (Build Warnings)**
+- **Problem**: Multiple React Hook dependency warnings in build output
+- **Root Cause**: Intentionally excluded dependencies to prevent infinite loops triggered ESLint warnings
+- **Fix**:
+  - Added `eslint-disable-next-line react-hooks/exhaustive-deps` comments for all intentionally excluded dependencies
+  - Added explanatory comments explaining why dependencies were excluded
+  - Specifically addressed in:
+    - `AlertDashboard.tsx` - loadAlerts dependency
+    - `ConsultationPanel.tsx` - realTimeAlerts and state dependencies
+    - `useModalDragAndMinimize.tsx` - dragState position dependencies
+- **Location**: Multiple hook files
+
+### 5. **API Route Dynamic Server Usage Errors**
+- **Problem**: Build failures due to API routes using `request.url` during static generation
+- **Root Cause**: Next.js trying to statically generate dynamic API routes
+- **Fix**:
+  - Added `export const dynamic = 'force-dynamic';` to API routes that use request.url
+  - Specifically fixed:
+    - `src/app/api/guidelines/search/route.ts`
+    - `src/app/api/search/enhanced/route.ts`
+- **Location**: API route files
+
 ## Testing Instructions
 
 ### Test 1: Consultation Modal (Infinite Loop Fix)
@@ -82,6 +104,14 @@
    - No infinite loops during drag
    - Position persists after drag
 
+### Test 5: Build Process
+1. Run `npm run build`
+2. **Expected Result**:
+   - Build completes successfully
+   - Minimal or no React Hook dependency warnings
+   - No API route dynamic server usage errors
+   - All routes compile and generate properly
+
 ## Mock Alerts for Development
 
 The AlertDashboard now includes 4 mock alerts when no real alerts exist:
@@ -104,6 +134,8 @@ These display in development mode only (`NODE_ENV === 'development'`).
 - [ ] Toast notifications work with swipe-up dismissal
 - [ ] Modal dragging works smoothly
 - [ ] No console errors or infinite loops
+- [ ] Build completes without critical warnings
+- [ ] API routes function properly in production
 
 ## Key Files Modified
 
@@ -112,6 +144,8 @@ These display in development mode only (`NODE_ENV === 'development'`).
 - `src/components/alerts/AlertDashboard.tsx` - Added fetch guards, memoized mocks
 - `src/hooks/useModalDragAndMinimize.tsx` - Stabilized drag callbacks
 - `src/hooks/useRealTimeAlerts.ts` - Removed auto-start/stop logic
+- `src/app/api/guidelines/search/route.ts` - Added dynamic export
+- `src/app/api/search/enhanced/route.ts` - Added dynamic export
 
 ## ✅ **FINAL TESTING RESULTS - ALL ISSUES RESOLVED!**
 
@@ -138,12 +172,19 @@ These display in development mode only (`NODE_ENV === 'development'`).
 - **Final Solution**: Added fetch guards, max attempts, memoized mocks
 - **Status**: No more infinite 404 loops
 
+### **Build Warnings**: ✅ FIXED
+- **Root Cause**: React Hook dependency warnings and API route static generation errors
+- **Final Solution**: Added eslint-disable comments and dynamic route exports
+- **Status**: Clean build with minimal warnings
+
 ### **Additional Improvements**:
 - ✅ Mock alerts automatically generated in development mode for testing
 - ✅ All TypeScript compilation errors and warnings resolved
-- ✅ React Hook dependency warnings fixed
+- ✅ React Hook dependency warnings fixed with proper eslint suppressions
 - ✅ Session management refactored to prevent any future dependency loops
 - ✅ Render count guard added for development
 - ✅ Fetch attempt tracking prevents infinite API calls
+- ✅ API routes properly configured for dynamic server usage
+- ✅ Build process optimized and warnings minimized
 
 All fixes maintain backward compatibility and existing functionality. 
