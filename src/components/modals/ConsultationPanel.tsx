@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -211,24 +211,32 @@ export default function ConsultationPanel({
   // in specific functions to avoid dependency loops in useEffect
 
   // ---------- Draft persistence across page navigation ----------
-  const draftId = (draggableConfig?.id) ?? `consultation-draft-${patient.id}`;
+  // Use stable draft ID that doesn't change during the component lifecycle
+  const draftId = useMemo(() => (draggableConfig?.id) ?? `consultation-draft-${patient.id}`, [draggableConfig?.id, patient.id]);
 
-  // Load draft on open
+  // Load draft on open - stable dependencies
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isDemoMode) {
       const draft = loadConsultationDraft(draftId);
-      if (draft?.transcriptText) {
+      if (draft?.transcriptText && !transcriptText) {
         setTranscriptText(draft.transcriptText);
       }
     }
-  }, [isOpen, draftId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, draftId, isDemoMode]); // Remove transcriptText dependency to prevent loops
 
-  // Persist transcript text whenever it changes
+  // Persist transcript text whenever it changes - debounced
   useEffect(() => {
-    if (isOpen) {
-      saveConsultationDraft(draftId, { transcriptText });
-    }
-  }, [transcriptText, isOpen, draftId]);
+    if (!isOpen || isDemoMode) return;
+    
+    const timeoutId = setTimeout(() => {
+      if (transcriptText) {
+        saveConsultationDraft(draftId, { transcriptText });
+      }
+    }, 500); // Debounce saves
+    
+    return () => clearTimeout(timeoutId);
+  }, [transcriptText, isOpen, draftId, isDemoMode]);
 
   // Update transcript for real-time alert processing
   useEffect(() => {
@@ -355,7 +363,8 @@ export default function ConsultationPanel({
     }
     
     console.log('[ConsultationPanel] Audio cleanup completed - all tracks stopped and streams cleared');
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // realTimeAlerts is stable and doesn't need to be a dependency
 
   // CRITICAL PATTERN: stopTranscription is NOT in any dependency arrays
   // Including it would cause immediate start/stop cycles due to React re-renders
@@ -772,95 +781,125 @@ export default function ConsultationPanel({
     }
   }, [planGenerated]);
 
+  // Initialize modal state when opened - stable effect with minimal dependencies
   useEffect(() => {
-    if (isOpen) {
-      setEncounter(null);
-      setReason('');
-      setScheduledDate(new Date());
-      setDuration(30);
-      setActiveTab('transcript');
-      setTabBarVisible(false);
-      setIsGeneratingPlan(false);
-      setStarted(false);
-      // Preserve any previously restored draft data for non-demo sessions.
-      if (isDemoMode) {
-        setTranscriptText(initialDemoTranscript || '');
-        setDiagnosisText(demoDiagnosis || '');
-        setTreatmentText(demoTreatment || '');
-        setDifferentialDiagnoses(demoDifferentialDiagnoses || []);
-        setSoapNote(demoSoapNote || null);
+    if (!isOpen) {
+      // Cleanup when modal closes
+      if (mounted && started) {
+        setStarted(false);
+        autoStartSessionRef.current = false;
+        console.log('[ConsultationPanel] Modal closed, autoStartSessionRef reset');
       }
-      setIsGeneratingSoap(false);
-      setIsLoadingDifferentials(false);
-      setPlanGenerated(!!(isDemoMode && (demoDiagnosis || demoTreatment || demoDifferentialDiagnoses)));
-      setShowConfirmationDialog(false);
-      setEditedWhilePaused(false);
-      autoStartSessionRef.current = false;
-      console.log('[ConsultationPanel] Modal opened, autoStartSessionRef reset');
-      if (isDemoMode) {
-        setStarted(true);
-      }
-    } else if (mounted) {
-      setStarted(false);
-      autoStartSessionRef.current = false;
-      console.log('[ConsultationPanel] Modal closed, autoStartSessionRef reset');
+      return;
     }
-  }, [isOpen, isDemoMode, initialDemoTranscript, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, demoSoapNote, mounted]);
-  
-  useEffect(() => {
-    if (!isDemoMode && isOpen && !encounter && !isCreating) {
-      createEncounter();
-    }
-  }, [isDemoMode, isOpen, encounter, isCreating, createEncounter]);
-  
-  useEffect(() => {
-    if (!isDemoMode && isOpen && encounter && !started && !isTranscribingRef.current && !autoStartSessionRef.current) {
-      const encounterId = encounter.id;
-      if (autoStartAttemptedRef.current.has(encounterId)) {
-        console.log('[ConsultationPanel] Auto-start already attempted for encounter:', encounterId);
-        setStarted(true);
-        return;
-      }
-      console.log('[ConsultationPanel] Auto-starting transcription for encounter:', encounterId);
-      autoStartAttemptedRef.current.add(encounterId);
-      autoStartSessionRef.current = true;
-      
-      // Use setTimeout to break out of the render cycle
-      setTimeout(async () => {
-        console.log('[ConsultationPanel] Attempting auto-start of transcription');
-        try {
-          if (isTranscribingRef.current) {
-            console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
-            setStarted(true);
-            return;
-          }
-          
-          const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
-          if (!apiKey) {
-            console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
-            toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
-            return;
-          }
-          
-          // Call startVoiceInput directly
-          await startVoiceInput();
-          setStarted(true);
-          
-          // Start real-time alerts session when transcription starts
-          if (!shouldStartAlertsRef.current && patient?.id && encounter?.id) {
-            shouldStartAlertsRef.current = true;
-            realTimeAlerts.startSession();
-          }
-          
-          console.log('[ConsultationPanel] Auto-start transcription successful');
-        } catch (error) {
-          console.error('[ConsultationPanel] Auto-start transcription failed:', error);
-          toast({ title: "Auto-start Failed", description: "Could not automatically start transcription.", variant: "destructive" });
-        }
-      }, 100); // Small delay to ensure we're out of the render cycle
+    
+    // Modal is opening - reset state
+    setEncounter(null);
+    setReason('');
+    setScheduledDate(new Date());
+    setDuration(30);
+    setActiveTab('transcript');
+    setTabBarVisible(false);
+    setIsGeneratingPlan(false);
+    setStarted(false);
+    setIsGeneratingSoap(false);
+    setIsLoadingDifferentials(false);
+    setShowConfirmationDialog(false);
+    setEditedWhilePaused(false);
+    autoStartSessionRef.current = false;
+    console.log('[ConsultationPanel] Modal opened, state reset');
+    
+    // Handle demo mode initialization
+    if (isDemoMode) {
+      setTranscriptText(initialDemoTranscript || '');
+      setDiagnosisText(demoDiagnosis || '');
+      setTreatmentText(demoTreatment || '');
+      setDifferentialDiagnoses(demoDifferentialDiagnoses || []);
+      setSoapNote(demoSoapNote || null);
+      setPlanGenerated(!!(demoDiagnosis || demoTreatment || demoDifferentialDiagnoses));
+      setStarted(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDemoMode, encounter, isOpen, started]); // Minimal dependencies, other deps intentionally excluded to prevent loops
+  }, [isOpen]); // Only depend on isOpen to prevent loops - demo props are init values only
+  
+  // Create encounter for non-demo mode - separate effect with stable dependencies
+  useEffect(() => {
+    if (!isDemoMode && isOpen && !encounter && !isCreating && mounted) {
+      createEncounter();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemoMode, isOpen, mounted, createEncounter]); // encounter/isCreating are state managed by this effect
+  
+  // Auto-start transcription for non-demo mode when encounter is ready
+  useEffect(() => {
+    if (isDemoMode || !isOpen || !encounter || !mounted) return;
+    if (started || isTranscribingRef.current || autoStartSessionRef.current) return;
+    
+    const encounterId = encounter.id;
+    if (autoStartAttemptedRef.current.has(encounterId)) {
+      console.log('[ConsultationPanel] Auto-start already attempted for encounter:', encounterId);
+      setStarted(true);
+      return;
+    }
+    
+    console.log('[ConsultationPanel] Scheduling auto-start of transcription for encounter:', encounterId);
+    autoStartAttemptedRef.current.add(encounterId);
+    autoStartSessionRef.current = true;
+    
+    // Clear any existing timeout
+    if (autoStartTimeoutRef.current) {
+      clearTimeout(autoStartTimeoutRef.current);
+    }
+    
+    // Use setTimeout to break out of the render cycle
+    autoStartTimeoutRef.current = setTimeout(async () => {
+      if (!isOpen || !mounted) return; // Double-check modal is still open
+      
+      console.log('[ConsultationPanel] Attempting auto-start of transcription');
+      try {
+        if (isTranscribingRef.current) {
+          console.log('[ConsultationPanel] Already transcribing, skipping auto-start');
+          setStarted(true);
+          return;
+        }
+        
+        const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+        if (!apiKey) {
+          console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
+          toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+          return;
+        }
+        
+        // Call startVoiceInput directly
+        await startVoiceInput();
+        setStarted(true);
+        
+        // Start real-time alerts session when transcription starts
+        if (!shouldStartAlertsRef.current && patient?.id && encounter?.id) {
+          shouldStartAlertsRef.current = true;
+          try {
+            realTimeAlerts.startSession();
+          } catch (error) {
+            console.warn('[ConsultationPanel] Failed to start real-time alerts:', error);
+          }
+        }
+        
+        console.log('[ConsultationPanel] Auto-start transcription successful');
+      } catch (error) {
+        console.error('[ConsultationPanel] Auto-start transcription failed:', error);
+        toast({ title: "Auto-start Failed", description: "Could not automatically start transcription.", variant: "destructive" });
+      }
+    }, 200); // Slightly longer delay for stability
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoStartTimeoutRef.current) {
+        clearTimeout(autoStartTimeoutRef.current);
+        autoStartTimeoutRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemoMode, isOpen, encounter?.id, mounted, startVoiceInput, toast, patient?.id, realTimeAlerts]); // started is managed by this effect
   
   useEffect(() => {
     if (!isOpen) return;
