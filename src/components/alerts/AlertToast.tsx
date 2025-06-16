@@ -2,231 +2,210 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
-import { AlertTriangle, Info, AlertCircle, X, Clock } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Info, AlertCircle, X } from 'lucide-react';
 
 interface AlertToastProps {
   alert: UnifiedAlert;
-  duration?: number; // in milliseconds, default 8000 (8 seconds)
+  duration?: number;
   onExpire?: () => void;
+  onClose?: () => void; // Only close functionality needed
   onHover?: () => void;
   onLeave?: () => void;
-  onDismiss?: (alertId: string) => void;
-  onAccept?: (alertId: string) => void;
 }
 
 export const AlertToast: React.FC<AlertToastProps> = ({
   alert,
   duration = 8000,
   onExpire,
+  onClose,
   onHover,
-  onLeave,
-  onDismiss,
-  onAccept
+  onLeave
 }) => {
   const [isVisible, setIsVisible] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(duration);
+  const [isPaused, setIsPaused] = useState(false);
+  const [progress, setProgress] = useState(100);
+  const [startX, setStartX] = useState(0);
+  const [currentX, setCurrentX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const pausedTimeRef = useRef<number>(0);
 
-  // Get icon and styles based on severity
-  const getSeverityConfig = () => {
-    switch (alert.severity) {
+  const getSeverityIcon = (severity: AlertSeverity) => {
+    switch (severity) {
       case AlertSeverity.CRITICAL:
-        return {
-          icon: AlertTriangle,
-          bgColor: 'bg-red-50 border-red-200',
-          iconColor: 'text-red-600',
-          titleColor: 'text-red-900',
-          messageColor: 'text-red-800',
-          progressColor: 'bg-red-500'
-        };
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
       case AlertSeverity.WARNING:
-        return {
-          icon: AlertCircle,
-          bgColor: 'bg-amber-50 border-amber-200',
-          iconColor: 'text-amber-600',
-          titleColor: 'text-amber-900',
-          messageColor: 'text-amber-800',
-          progressColor: 'bg-amber-500'
-        };
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       case AlertSeverity.INFO:
+        return <Info className="h-5 w-5 text-blue-500" />;
       default:
-        return {
-          icon: Info,
-          bgColor: 'bg-blue-50 border-blue-200',
-          iconColor: 'text-blue-600',
-          titleColor: 'text-blue-900',
-          messageColor: 'text-blue-800',
-          progressColor: 'bg-blue-500'
-        };
+        return <Info className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  const config = getSeverityConfig();
-  const IconComponent = config.icon;
+  const getSeverityColor = (severity: AlertSeverity) => {
+    switch (severity) {
+      case AlertSeverity.CRITICAL:
+        return 'border-red-500 bg-red-50';
+      case AlertSeverity.WARNING:
+        return 'border-yellow-500 bg-yellow-50';
+      case AlertSeverity.INFO:
+        return 'border-blue-500 bg-blue-50';
+      default:
+        return 'border-gray-500 bg-gray-50';
+    }
+  };
 
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose?.();
+    }, 300); // Allow time for exit animation
+  };
+
+  const updateProgress = () => {
+    const elapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
+    const remaining = Math.max(0, duration - elapsed);
+    const progressPercent = (remaining / duration) * 100;
+    
+    setProgress(progressPercent);
+    
+    if (remaining <= 0) {
+      onExpire?.();
+      handleClose();
+    }
+  };
+
+  // Auto-expire timer
   useEffect(() => {
-    if (!isHovered && isVisible) {
-      const remaining = timeRemaining;
-      
-      timerRef.current = setTimeout(() => {
-        setIsVisible(false);
-        onExpire?.();
-      }, remaining);
-
-      // Update time remaining every 100ms for smooth progress bar
-      const progressInterval = setInterval(() => {
-        const elapsed = Date.now() - startTimeRef.current;
-        const newTimeRemaining = Math.max(0, duration - elapsed);
-        setTimeRemaining(newTimeRemaining);
-        
-        if (newTimeRemaining <= 0) {
-          clearInterval(progressInterval);
-        }
-      }, 100);
-
-      return () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        clearInterval(progressInterval);
-      };
+    if (!isPaused && isVisible) {
+      timerRef.current = setInterval(updateProgress, 50);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
     };
-  }, [isHovered, timeRemaining, duration, isVisible, onExpire]);
+  }, [isPaused, isVisible, duration]);
 
+  // Mouse handlers
   const handleMouseEnter = () => {
-    setIsHovered(true);
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
+    setIsPaused(true);
+    pausedTimeRef.current = Date.now() - startTimeRef.current - pausedTimeRef.current;
     onHover?.();
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
-    startTimeRef.current = Date.now(); // Reset timer from current time
-    setTimeRemaining(duration); // Reset to full duration
+    setIsPaused(false);
+    startTimeRef.current = Date.now() - pausedTimeRef.current;
     onLeave?.();
   };
 
-  const handleDismiss = () => {
-    setIsVisible(false);
-    onDismiss?.(alert.id);
+  // Touch handlers for swipe-to-close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setStartX(e.touches[0].clientX);
+    setIsDragging(true);
+    setIsPaused(true);
   };
 
-  const handleAccept = () => {
-    setIsVisible(false);
-    onAccept?.(alert.id);
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const deltaX = e.touches[0].clientX - startX;
+    setCurrentX(Math.max(0, deltaX)); // Only allow right swipe
   };
 
-  const progressPercentage = ((duration - timeRemaining) / duration) * 100;
+  const handleTouchEnd = () => {
+    if (currentX > 100) { // Swipe threshold
+      handleClose();
+    } else {
+      setCurrentX(0);
+    }
+    setIsDragging(false);
+    setIsPaused(false);
+  };
 
-  if (!isVisible) return null;
+  const toastStyle = {
+    transform: `translateX(${currentX}px)`,
+    opacity: currentX > 50 ? 1 - (currentX / 200) : 1,
+    transition: isDragging ? 'none' : 'transform 0.3s ease, opacity 0.3s ease',
+  };
+
+  if (!isVisible) {
+    return null;
+  }
 
   return (
-    <div
-      className={`fixed top-4 right-4 max-w-md w-full z-50 transform transition-all duration-300 ease-in-out ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-      }`}
+    <Card 
+      className={`
+        ${getSeverityColor(alert.severity)} 
+        border-l-4 shadow-lg cursor-pointer transition-all duration-300 min-w-80 max-w-96
+        ${isVisible ? 'animate-in slide-in-from-right' : 'animate-out slide-out-to-right'}
+      `}
+      style={toastStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
-      <div className={`rounded-lg border shadow-lg ${config.bgColor} overflow-hidden`}>
-        {/* Progress bar */}
-        {!isHovered && (
-          <div className="w-full h-1 bg-gray-200">
-            <div 
-              className={`h-full transition-all duration-100 ease-linear ${config.progressColor}`}
-              style={{ width: `${progressPercentage}%` }}
-            />
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2 flex-1">
+            {getSeverityIcon(alert.severity)}
+            <CardTitle className="text-sm font-medium line-clamp-2">
+              {alert.title}
+            </CardTitle>
           </div>
-        )}
-        
-        <div className="p-4">
-          <div className="flex items-start space-x-3">
-            {/* Alert Icon */}
-            <div className="flex-shrink-0">
-              <IconComponent className={`h-6 w-6 ${config.iconColor}`} />
-            </div>
-            
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className={`text-sm font-semibold ${config.titleColor}`}>
-                    {alert.title}
-                  </h4>
-                  <p className={`mt-1 text-sm ${config.messageColor}`}>
-                    {alert.message}
-                  </p>
-                  
-                  {alert.suggestion && (
-                    <div className="mt-2">
-                      <p className={`text-xs font-medium ${config.titleColor}`}>
-                        Suggested Action:
-                      </p>
-                      <p className={`text-xs ${config.messageColor}`}>
-                        {alert.suggestion}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Close button */}
-                <button
-                  onClick={handleDismiss}
-                  className={`ml-2 flex-shrink-0 p-1 rounded-md hover:bg-gray-100 transition-colors ${config.iconColor} hover:${config.iconColor}`}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="mt-3 flex space-x-2">
-                <button
-                  onClick={handleAccept}
-                  className={`px-3 py-1 text-xs font-medium rounded-md border transition-colors ${
-                    alert.severity === AlertSeverity.CRITICAL
-                      ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
-                      : alert.severity === AlertSeverity.WARNING
-                      ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
-                      : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  Accept & Navigate
-                </button>
-                <button
-                  onClick={handleDismiss}
-                  className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Metadata */}
-          <div className="mt-3 pt-2 border-t border-gray-200">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center space-x-4">
-                <span>Real-time Alert</span>
-                {alert.confidenceScore && (
-                  <span>Confidence: {Math.round(alert.confidenceScore * 100)}%</span>
-                )}
-              </div>
-              <div className="flex items-center space-x-1">
-                <Clock className="h-3 w-3" />
-                <span>{new Date(alert.createdAt).toLocaleTimeString()}</span>
-              </div>
-            </div>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 hover:bg-gray-200/50"
+            onClick={handleClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardHeader>
+      
+      <CardContent className="pt-0 pb-3">
+        <p className="text-sm text-gray-700 mb-2 line-clamp-3">
+          {alert.message}
+        </p>
+        
+        {alert.suggestion && (
+          <p className="text-xs text-gray-600 italic">
+            <strong>Suggestion:</strong> {alert.suggestion}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between mt-3">
+          <Badge variant="outline" className="text-xs">
+            {alert.severity}
+          </Badge>
+          
+          {alert.confidenceScore && (
+            <span className="text-xs text-gray-500">
+              {Math.round(alert.confidenceScore * 100)}% confidence
+            </span>
+          )}
+        </div>
+        
+        {/* Progress bar */}
+        <div className="w-full bg-gray-200 rounded-full h-1 mt-3">
+          <div 
+            className="bg-gray-400 h-1 rounded-full transition-all duration-75"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,246 +1,213 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UnifiedAlert, AlertSeverity, AlertType } from '@/types/alerts';
+import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
+import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import AlertToast from './AlertToast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Play, Pause, Square, TestTube } from 'lucide-react';
 
 interface RealTimeAlertManagerProps {
-  patientId?: string;
-  encounterId?: string;
-  onAlertAccept?: (alertId: string) => void;
-  onAlertDismiss?: (alertId: string) => void;
-  onNavigate?: (target: string) => void;
-  maxVisibleAlerts?: number;
-  defaultToastDuration?: number;
-}
-
-interface ActiveToast {
-  alert: UnifiedAlert;
-  id: string;
-  createdAt: number;
+  isActive: boolean;
+  consultationId?: string;
+  onAlert?: (alert: UnifiedAlert) => void;
+  maxToasts?: number;
 }
 
 export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
-  patientId,
-  encounterId,
-  onAlertAccept,
-  onAlertDismiss,
-  onNavigate,
-  maxVisibleAlerts = 3,
-  defaultToastDuration = 8000
+  isActive,
+  consultationId,
+  onAlert,
+  maxToasts = 3
 }) => {
-  const [activeToasts, setActiveToasts] = useState<ActiveToast[]>([]);
-  const [alertQueue, setAlertQueue] = useState<UnifiedAlert[]>([]);
+  const [alerts, setAlerts] = useState<UnifiedAlert[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingId, setProcessingId] = useState<NodeJS.Timeout | null>(null);
+  const [alertsService] = useState(() => new UnifiedAlertsService());
+  const [processingError, setProcessingError] = useState<string | null>(null);
 
-  // Add new alert to the system
-  const addAlert = useCallback((alert: UnifiedAlert) => {
-    const newToast: ActiveToast = {
-      alert,
-      id: `toast_${alert.id}_${Date.now()}`,
-      createdAt: Date.now()
-    };
+  const removeAlert = useCallback((alertId: string) => {
+    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+  }, []);
 
-    setActiveToasts(current => {
-      const updated = [...current];
+  const processRealTimeAlert = useCallback(async () => {
+    if (!isActive || !consultationId) return;
+
+    try {
+      setIsProcessing(true);
+      setProcessingError(null);
       
-      // If we're at capacity, queue the alert
-      if (updated.length >= maxVisibleAlerts) {
-        setAlertQueue(queue => [...queue, alert]);
-        return updated;
-      }
+      // Mock transcript for now - in real implementation this would come from the consultation
+      const mockTranscript = "Patient reports chest pain and shortness of breath. No previous cardiac history.";
       
-      // Add new toast, prioritizing by severity
-      updated.push(newToast);
-      return updated.sort((a, b) => {
-        // Sort by severity first (Critical > Warning > Info)
-        const severityOrder = { 
-          [AlertSeverity.CRITICAL]: 3, 
-          [AlertSeverity.WARNING]: 2, 
-          [AlertSeverity.INFO]: 1 
-        };
-        
-        const severityDiff = severityOrder[b.alert.severity] - severityOrder[a.alert.severity];
-        if (severityDiff !== 0) return severityDiff;
-        
-        // Then by creation time (newer first)
-        return b.createdAt - a.createdAt;
-      });
-    });
-  }, [maxVisibleAlerts]);
-
-  // Mock function to simulate receiving real-time alerts
-  // In production, this would be replaced with WebSocket or polling mechanism
-  const simulateRealTimeAlert = useCallback(() => {
-    if (!patientId || !encounterId) return;
-    
-    const mockAlert: UnifiedAlert = {
-      id: `alert_${Date.now()}`,
-      patientId,
-      encounterId,
-      alertType: AlertType.DRUG_INTERACTION,
-      severity: AlertSeverity.WARNING,
-      title: 'Potential Drug Interaction',
-      message: 'Potential interaction detected between Warfarin and Aspirin.',
-      suggestion: 'Review medication list and consider alternative therapy.',
-      confidenceScore: 0.85,
-      sourceReasoning: 'AI detected potential interaction based on pharmacological data.',
-      processingModel: 'gpt-4.1-mini',
-      status: 'active' as any,
-      isRealTime: true,
-      isPostConsultation: false,
-      acknowledged: false,
-      migratedFromPatientAlerts: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      navigationTarget: '/patients/' + patientId + '/medications'
-    };
-
-    addAlert(mockAlert);
-  }, [patientId, encounterId, addAlert]);
-
-  // Remove toast and show next queued alert if any
-  const removeToast = useCallback((toastId: string) => {
-    setActiveToasts(current => {
-      const filtered = current.filter(toast => toast.id !== toastId);
+      const newAlerts = await alertsService.processRealTimeAlerts(consultationId, mockTranscript);
       
-      // If there are queued alerts and we have space, show the next one
-      if (filtered.length < maxVisibleAlerts) {
-        setAlertQueue(queue => {
-          if (queue.length > 0) {
-            const nextAlert = queue[0];
-            const remainingQueue = queue.slice(1);
-            
-            // Add the next queued alert as a toast
-            const newToast: ActiveToast = {
-              alert: nextAlert,
-              id: `toast_${nextAlert.id}_${Date.now()}`,
-              createdAt: Date.now()
-            };
-            
-            filtered.push(newToast);
-            return remainingQueue;
-          }
-          return queue;
+      if (newAlerts.length > 0) {
+        newAlerts.forEach(alert => {
+          // Add to display queue
+          setAlerts(prev => {
+            const filtered = prev.slice(-(maxToasts - 1)); // Keep space for new alert
+            return [...filtered, alert];
+          });
+          
+          // Notify parent
+          onAlert?.(alert);
         });
       }
-      
-      return filtered;
+    } catch (error) {
+      console.error('Error processing real-time alerts:', error);
+      setProcessingError(error instanceof Error ? error.message : 'Unknown error');
+      // Do not create fallback mock alerts - just log the error
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isActive, consultationId, alertsService, onAlert, maxToasts]);
+
+  const startProcessing = useCallback(() => {
+    if (!isActive || !consultationId || processingId) return;
+    
+    // Process immediately
+    processRealTimeAlert();
+    
+    // Then process every minute (60000ms)
+    const id = setInterval(processRealTimeAlert, 60000);
+    setProcessingId(id);
+  }, [isActive, consultationId, processRealTimeAlert, processingId]);
+
+  const stopProcessing = useCallback(() => {
+    if (processingId) {
+      clearInterval(processingId);
+      setProcessingId(null);
+    }
+    setIsProcessing(false);
+  }, [processingId]);
+
+  const simulateAlert = useCallback(() => {
+    // Only for development/testing
+    if (!consultationId) return;
+    
+    const mockAlert: UnifiedAlert = {
+      id: `test-${Date.now()}`,
+      consultationId,
+      patientId: 'test-patient',
+      type: 'DRUG_INTERACTION',
+      severity: AlertSeverity.WARNING,
+      title: 'Test Real-time Alert',
+      message: 'This is a simulated alert for testing purposes.',
+      suggestion: 'This is only for development testing.',
+      createdAt: new Date(),
+      isActive: true,
+      metadata: { isSimulated: true }
+    };
+
+    setAlerts(prev => {
+      const filtered = prev.slice(-(maxToasts - 1));
+      return [...filtered, mockAlert];
     });
-  }, [maxVisibleAlerts]);
 
-  // Handle alert acceptance
-  const handleAlertAccept = useCallback((alertId: string) => {
-    const toast = activeToasts.find(t => t.alert.id === alertId);
-    if (toast) {
-      removeToast(toast.id);
-      onAlertAccept?.(alertId);
-      
-      // Handle navigation if specified
-      if (toast.alert.navigationTarget) {
-        onNavigate?.(toast.alert.navigationTarget);
-      }
-    }
-  }, [activeToasts, removeToast, onAlertAccept, onNavigate]);
+    onAlert?.(mockAlert);
+  }, [consultationId, onAlert, maxToasts]);
 
-  // Handle alert dismissal
-  const handleAlertDismiss = useCallback((alertId: string) => {
-    const toast = activeToasts.find(t => t.alert.id === alertId);
-    if (toast) {
-      removeToast(toast.id);
-      onAlertDismiss?.(alertId);
-    }
-  }, [activeToasts, removeToast, onAlertDismiss]);
-
-  // Handle toast expiration
-  const handleToastExpire = useCallback((toastId: string) => {
-    removeToast(toastId);
-  }, [removeToast]);
-
-  // Demo: Add a mock alert every 30 seconds for testing
+  // Auto-start when active and consultation ID is provided
   useEffect(() => {
-    if (!patientId || !encounterId) return;
-
-    // Uncomment for testing real-time alerts
-    // const interval = setInterval(simulateRealTimeAlert, 30000);
-    // return () => clearInterval(interval);
-  }, [patientId, encounterId, simulateRealTimeAlert]);
-
-  // Calculate positions for stacked toasts
-  const getToastPosition = (index: number) => {
-    const baseTop = 16; // 1rem in pixels
-    const spacing = 120; // Space between toasts
-    return baseTop + (index * spacing);
-  };
-
-  // Get appropriate duration based on severity
-  const getToastDuration = (severity: AlertSeverity) => {
-    switch (severity) {
-      case AlertSeverity.CRITICAL:
-        return defaultToastDuration * 2; // 16 seconds for critical alerts
-      case AlertSeverity.WARNING:
-        return defaultToastDuration * 1.5; // 12 seconds for warnings
-      case AlertSeverity.INFO:
-      default:
-        return defaultToastDuration; // 8 seconds for info
+    if (isActive && consultationId && !processingId) {
+      startProcessing();
+    } else if ((!isActive || !consultationId) && processingId) {
+      stopProcessing();
     }
-  };
+
+    return () => {
+      if (processingId) {
+        clearInterval(processingId);
+      }
+    };
+  }, [isActive, consultationId, startProcessing, stopProcessing, processingId]);
+
+  // Clear alerts when inactive
+  useEffect(() => {
+    if (!isActive) {
+      setAlerts([]);
+      setProcessingError(null);
+    }
+  }, [isActive]);
 
   return (
-    <>
-      {/* Active Toast Notifications */}
-      {activeToasts.map((toast, index) => (
-        <div
-          key={toast.id}
-          style={{
-            position: 'fixed',
-            top: `${getToastPosition(index)}px`,
-            right: '1rem',
-            zIndex: 9999 - index, // Ensure proper layering
-          }}
-        >
-          <AlertToast
-            alert={toast.alert}
-            duration={getToastDuration(toast.alert.severity)}
-            onExpire={() => handleToastExpire(toast.id)}
-            onAccept={handleAlertAccept}
-            onDismiss={handleAlertDismiss}
-            onHover={() => {
-              // Optional: Pause auto-dismiss for all toasts when one is hovered
-            }}
-            onLeave={() => {
-              // Optional: Resume auto-dismiss
-            }}
-          />
-        </div>
-      ))}
-
-      {/* Queue Indicator (optional) */}
-      {alertQueue.length > 0 && (
-        <div
-          className="fixed bottom-4 right-4 bg-gray-800 text-white px-3 py-2 rounded-lg shadow-lg z-50"
-          style={{ zIndex: 9990 }}
-        >
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            <span className="text-sm">
-              {alertQueue.length} more alert{alertQueue.length !== 1 ? 's' : ''} pending
-            </span>
+    <div className="space-y-4">
+      {/* Development Controls */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <TestTube className="h-4 w-4" />
+            Real-time Processing Controls (Development)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={processingId ? "destructive" : "default"}
+              onClick={processingId ? stopProcessing : startProcessing}
+              disabled={!consultationId || (!isActive && !processingId)}
+            >
+              {processingId ? (
+                <>
+                  <Square className="h-3 w-3 mr-1" />
+                  Stop Processing
+                </>
+              ) : (
+                <>
+                  <Play className="h-3 w-3 mr-1" />
+                  Start Processing
+                </>
+              )}
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={simulateAlert}
+              disabled={!consultationId}
+            >
+              <TestTube className="h-3 w-3 mr-1" />
+              Simulate Alert
+            </Button>
           </div>
-        </div>
-      )}
 
-      {/* Development/Testing Controls (remove in production) */}
-      {process.env.NODE_ENV === 'development' && patientId && encounterId && (
-        <div className="fixed bottom-4 left-4 bg-gray-100 p-2 rounded border z-50">
-          <button
-            onClick={simulateRealTimeAlert}
-            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+          <div className="text-xs text-gray-500 space-y-1">
+            <div>Status: {isActive ? 'Active' : 'Inactive'}</div>
+            <div>Processing: {isProcessing ? 'Running' : 'Stopped'}</div>
+            <div>Consultation: {consultationId || 'None'}</div>
+            <div>Active Toasts: {alerts.length}</div>
+            {processingError && (
+              <div className="text-red-500">Error: {processingError}</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+        {alerts.map((alert, index) => (
+          <div
+            key={alert.id}
+            style={{
+              transform: `translateY(${index * 8}px)`,
+              zIndex: 1000 - index
+            }}
           >
-            Simulate Alert
-          </button>
-        </div>
-      )}
-    </>
+            <AlertToast
+              alert={alert}
+              duration={8000}
+              onExpire={() => removeAlert(alert.id)}
+              onClose={() => removeAlert(alert.id)}
+              onHover={() => console.log('Toast hovered:', alert.id)}
+              onLeave={() => console.log('Toast left:', alert.id)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 

@@ -1,408 +1,367 @@
 // src/app/copilot/page.tsx
 'use client'; // Required for useState and event handlers
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import CopilotDisplay from '@/components/copilot/CopilotDisplay';
-import { RealTimeAlertManager } from '@/components/alerts/RealTimeAlertManager';
-import { AlertDashboard } from '@/components/alerts/AlertDashboard';
-import { CopilotAlert } from '@/types/copilot';
-import { UnifiedAlert, AlertFilterOptions, AlertStatus } from '@/types/alerts';
-import { mockPatientData, mockDrugInteractions, mockLabRequirements } from '@/data/mockCopilotData';
-import { checkForDrugInteractions, checkForMissingLabs } from '@/lib/copilotLogic';
-import { unifiedAlertsService } from '@/lib/unifiedAlertsService';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // For selecting context
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Play, Square, RefreshCw, Brain, History } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Clock, 
+  AlertTriangle, 
+  TrendingUp, 
+  Activity, 
+  Bot,
+  TestTube,
+  Stethoscope,
+  CheckCircle
+} from 'lucide-react';
 
-const CopilotPage = () => {
+// Legacy copilot components
+import { checkForDrugInteractions, checkForMissingLabs } from '@/lib/copilotLogic';
+import { CopilotAlert } from '@/types/copilot';
+import { mockPatientData, mockDrugInteractions, mockLabRequirements } from '@/data/mockCopilotData';
+
+// New unified components
+import RealTimeAlertManager from '@/components/alerts/RealTimeAlertManager';
+import AlertDashboard from '@/components/alerts/AlertDashboard';
+import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
+import { UnifiedAlert } from '@/types/alerts';
+
+export default function CopilotPage() {
   // Legacy state for backward compatibility
   const [legacyAlerts, setLegacyAlerts] = useState<CopilotAlert[]>([]);
-  const [newDrug, setNewDrug] = useState<string>('');
-  const [consultationContext, setConsultationContext] = useState<string>('');
-  
-  // New unified alerts state
-  const [unifiedAlerts, setUnifiedAlerts] = useState<UnifiedAlert[]>([]);
-  const [isRealTimeActive, setIsRealTimeActive] = useState<boolean>(false);
-  const [currentPatientId] = useState<string>('patient-123'); // Mock patient ID
-  const [currentEncounterId] = useState<string>(`encounter-${Date.now()}`); // Mock encounter ID
-  const [activeTab, setActiveTab] = useState<string>('legacy');
-  
-  const router = useRouter();
+  const [legacyLoading, setLegacyLoading] = useState(false);
 
-  const loadUnifiedAlerts = useCallback(async () => {
-    try {
-      const result = await unifiedAlertsService.getAlerts({
-        patientId: currentPatientId,
-        encounterId: currentEncounterId,
-        statuses: [AlertStatus.ACTIVE, AlertStatus.ACCEPTED]
-      });
-      setUnifiedAlerts(result.alerts);
-    } catch (error) {
-      console.error('Failed to load unified alerts:', error);
-    }
-  }, [currentPatientId, currentEncounterId]);
+  // New unified system state
+  const [isInConsultation, setIsInConsultation] = useState(false);
+  const [consultationId, setConsultationId] = useState<string>('');
+  const [patientId, setPatientId] = useState<string>('test-patient-123');
+  const [alertHistory, setAlertHistory] = useState<UnifiedAlert[]>([]);
+  const [alertsService] = useState(() => new UnifiedAlertsService());
 
-  // Load unified alerts on component mount
+  // Auto-start real-time processing when consultation begins
   useEffect(() => {
-    loadUnifiedAlerts();
-  }, [loadUnifiedAlerts]);
-
-  // Handle real-time processing toggle
-  const handleToggleRealTime = useCallback(async () => {
-    if (isRealTimeActive) {
-      unifiedAlertsService.stopRealTimeProcessing();
-      setIsRealTimeActive(false);
-    } else {
-      await unifiedAlertsService.startRealTimeProcessing(currentPatientId, currentEncounterId);
-      setIsRealTimeActive(true);
+    if (isInConsultation && consultationId) {
+      console.log('Auto-starting real-time processing for consultation:', consultationId);
+      // Real-time processing will automatically start via RealTimeAlertManager
     }
-  }, [isRealTimeActive, currentPatientId, currentEncounterId]);
+  }, [isInConsultation, consultationId]);
 
-  // Handle post-consultation processing
-  const handlePostConsultationProcessing = useCallback(async () => {
+  const startConsultation = () => {
+    const newConsultationId = `consultation-${Date.now()}`;
+    setConsultationId(newConsultationId);
+    setIsInConsultation(true);
+    console.log('Starting consultation:', newConsultationId);
+  };
+
+  const endConsultation = async () => {
+    if (!consultationId) return;
+    
+    console.log('Ending consultation:', consultationId);
+    
+    // Trigger post-consultation analysis
     try {
-      await unifiedAlertsService.processPostConsultationAlerts(currentPatientId, currentEncounterId);
-      await loadUnifiedAlerts(); // Refresh alerts after processing
+      await alertsService.processPostConsultationAlerts(patientId, consultationId);
+      console.log('Post-consultation analysis completed');
     } catch (error) {
-      console.error('Failed to process post-consultation alerts:', error);
+      console.error('Error in post-consultation analysis:', error);
     }
-  }, [currentPatientId, currentEncounterId, loadUnifiedAlerts]);
+    
+    setIsInConsultation(false);
+    // Keep consultationId for viewing results
+  };
 
-  // Legacy handlers for backward compatibility
+  const simulateTranscriptUpdate = () => {
+    // This would be called when transcript is updated in real system
+    console.log('Transcript updated - real-time processing will trigger automatically');
+  };
+
+  const handleNewAlert = (alert: UnifiedAlert) => {
+    console.log('New real-time alert received:', alert.title);
+    setAlertHistory(prev => [alert, ...prev]);
+  };
+
+  const handleAlertAction = (alertId: string, action: string) => {
+    console.log(`Alert ${alertId} ${action}`);
+    // Update alert status in database
+    if (action === 'dismiss') {
+      alertsService.dismissAlert(alertId);
+    } else if (action === 'accept') {
+      alertsService.acceptAlert(alertId);
+    }
+  };
+
+  // Legacy copilot functionality for testing
   const handleCheckDrugInteractions = () => {
-    if (!newDrug.trim()) return;
-    
-    const interactionAlerts = checkForDrugInteractions(
-      mockPatientData.currentMedications,
-      newDrug,
-      mockDrugInteractions
-    );
-    setLegacyAlerts(prevAlerts => [
-      ...interactionAlerts, 
-      ...prevAlerts.filter(a => a.type !== 'DRUG_INTERACTION' || a.relatedData?.drug2 !== newDrug)
-    ]);
-  };
-
-  const handleCheckMissingLabs = () => {
-    if (!consultationContext.trim()) return;
-    
-    const missingLabAlerts = checkForMissingLabs(
-      mockPatientData.labResults,
-      consultationContext,
-      mockLabRequirements
-    );
-    setLegacyAlerts(prevAlerts => [
-      ...missingLabAlerts, 
-      ...prevAlerts.filter(a => a.type !== 'MISSING_LAB_RESULT')
-    ]);
-  };
-
-  const handleClearLegacyAlerts = () => {
-    setLegacyAlerts([]);
-  };
-
-  // Handle unified alert actions
-  const handleAlertAccept = useCallback(async (alertId: string) => {
+    setLegacyLoading(true);
     try {
-      await unifiedAlertsService.acceptAlert(alertId);
-      await loadUnifiedAlerts();
+      const alerts = checkForDrugInteractions(
+        mockPatientData.currentMedications,
+        'Warfarin', // Test drug
+        mockDrugInteractions
+      );
+      setLegacyAlerts(alerts);
     } catch (error) {
-      console.error('Failed to accept alert:', error);
+      console.error('Drug interaction check failed:', error);
+    } finally {
+      setLegacyLoading(false);
     }
-  }, [loadUnifiedAlerts]);
+  };
 
-  const handleAlertDismiss = useCallback(async (alertId: string) => {
+  const handleCheckLabResults = () => {
+    setLegacyLoading(true);
     try {
-      await unifiedAlertsService.dismissAlert(alertId);
-      await loadUnifiedAlerts();
+      const alerts = checkForMissingLabs(
+        mockPatientData.labResults,
+        'fatigue', // Test consultation context
+        mockLabRequirements
+      );
+      setLegacyAlerts(alerts);
     } catch (error) {
-      console.error('Failed to dismiss alert:', error);
+      console.error('Lab results check failed:', error);
+    } finally {
+      setLegacyLoading(false);
     }
-  }, [loadUnifiedAlerts]);
-
-  const handleNavigate = useCallback((target: string) => {
-    router.push(target);
-  }, [router]);
-
-  // Get real-time and post-consultation alerts
-  const realTimeAlerts = unifiedAlerts.filter(alert => alert.isRealTime && !alert.isPostConsultation);
-  const postConsultationAlerts = unifiedAlerts.filter(alert => alert.isPostConsultation);
+  };
 
   return (
-    <div className="container mx-auto p-4">
-      <header className="mb-6 text-center">
-        <h1 className="text-3xl font-bold">Tool C: Enhanced Medical Co-pilot</h1>
-        <p className="text-muted-foreground">
-          Real-time AI-powered assistance with comprehensive alert management
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Page Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center gap-2">
+          <Bot className="h-8 w-8 text-blue-600" />
+          Medical Co-pilot Testing Environment
+        </h1>
+        <p className="text-gray-600">
+          Real-time AI-powered medical assistance during consultations
         </p>
-      </header>
+      </div>
 
-      {/* Real-time Status and Controls */}
-      <Card className="mb-6">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              AI Co-pilot Status
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant={isRealTimeActive ? "default" : "secondary"}>
-                {isRealTimeActive ? "Active" : "Inactive"}
-              </Badge>
-              <Button
-                onClick={handleToggleRealTime}
-                variant={isRealTimeActive ? "destructive" : "default"}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                {isRealTimeActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {isRealTimeActive ? "Stop" : "Start"} Real-time
-              </Button>
-              <Button
-                onClick={handlePostConsultationProcessing}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <History className="h-4 w-4" />
-                Post-consultation Analysis
-              </Button>
-              <Button
-                onClick={loadUnifiedAlerts}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
-            </div>
-          </div>
+      {/* Consultation Control */}
+      <Card className="border-2 border-dashed border-blue-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Stethoscope className="h-5 w-5" />
+            Consultation Simulation
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <strong>Patient:</strong> {mockPatientData.name} (ID: {currentPatientId})
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Activity className={`h-4 w-4 ${isInConsultation ? 'text-green-500' : 'text-gray-400'}`} />
+                <span className="font-medium">
+                  Status: {isInConsultation ? 'In Consultation' : 'Not Started'}
+                </span>
+              </div>
+              {consultationId && (
+                <p className="text-sm text-gray-500">ID: {consultationId}</p>
+              )}
+              <p className="text-sm text-gray-500">Patient: {patientId}</p>
             </div>
-            <div>
-              <strong>Encounter:</strong> {currentEncounterId.slice(-8)}
-            </div>
-            <div>
-              <strong>Active Alerts:</strong> {unifiedAlerts.filter(a => a.status === 'active').length}
+            
+            <div className="flex gap-2">
+              {!isInConsultation ? (
+                <Button onClick={startConsultation} className="bg-green-600 hover:bg-green-700">
+                  Start Consultation
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={simulateTranscriptUpdate}
+                    className="text-xs"
+                  >
+                    <TestTube className="h-3 w-3 mr-1" />
+                    Simulate Transcript Update
+                  </Button>
+                  <Button 
+                    onClick={endConsultation}
+                    variant="destructive"
+                  >
+                    End Consultation
+                  </Button>
+                </>
+              )}
             </div>
           </div>
+
+          {isInConsultation && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center gap-2 text-green-800">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  Real-time alerts active - Processing every minute automatically
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Patient Data Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        <div className="lg:col-span-1 space-y-4">
+      {/* Alert Systems */}
+      <Tabs defaultValue="realtime" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="realtime" className="flex items-center gap-1">
+            <Activity className="h-3 w-3" />
+            Real-time Alerts
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" />
+            Alert Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="legacy" className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Legacy System
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Alert History
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Real-time Alerts Tab */}
+        <TabsContent value="realtime" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Patient Snapshot</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-500" />
+                Real-time Alert System
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                {isInConsultation 
+                  ? 'Active during consultation - Processing transcript changes automatically'
+                  : 'Start a consultation to enable real-time alerts'
+                }
+              </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-md font-semibold mb-2">Current Medications:</h3>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {mockPatientData.currentMedications.map(med => (
-                    <li key={med.id}>{med.name} ({med.dosage})</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-md font-semibold mb-2">Recent Labs:</h3>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {mockPatientData.labResults.map(lab => (
-                    <li key={lab.id} className={lab.status === 'abnormal' ? 'text-red-600' : ''}>
-                      {lab.name}: {lab.value} {lab.unit} ({lab.status})
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-md font-semibold mb-2">Conditions:</h3>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  {mockPatientData.conditions.map(condition => (
-                    <li key={condition.id}>{condition.name}</li>
-                  ))}
-                </ul>
-              </div>
+            <CardContent>
+              <RealTimeAlertManager
+                isActive={isInConsultation}
+                consultationId={consultationId || undefined}
+                onAlert={handleNewAlert}
+                maxToasts={3}
+              />
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        {/* Main Content Area */}
-        <div className="lg:col-span-3">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="legacy">Legacy System</TabsTrigger>
-              <TabsTrigger value="unified">Unified Alerts</TabsTrigger>
-              <TabsTrigger value="dashboard">Alert Dashboard</TabsTrigger>
-            </TabsList>
+        {/* Alert Dashboard Tab */}
+        <TabsContent value="dashboard" className="space-y-4">
+          <AlertDashboard
+            patientId={patientId}
+            consultationId={consultationId || undefined}
+            onAlertAction={handleAlertAction}
+          />
+        </TabsContent>
 
-            {/* Legacy System Tab */}
-            <TabsContent value="legacy" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Legacy Co-pilot Checks</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Drug Interaction Check */}
-                  <div className="space-y-2 p-3 border rounded">
-                    <label htmlFor="newDrugInput" className="block text-sm font-medium">
-                      Check New Drug Interaction:
-                    </label>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="newDrugInput"
-                        type="text"
-                        value={newDrug}
-                        onChange={(e) => setNewDrug(e.target.value)}
-                        placeholder="Enter new drug name (e.g., Warfarin)"
-                        className="flex-grow"
-                      />
-                      <Button onClick={handleCheckDrugInteractions}>Check Interactions</Button>
-                    </div>
-                  </div>
-
-                  {/* Missing Labs Check */}
-                  <div className="space-y-2 p-3 border rounded">
-                    <label htmlFor="consultContextSelect" className="block text-sm font-medium">
-                      Check Missing Labs for Context:
-                    </label>
-                    <div className="flex space-x-2">
-                      <Select value={consultationContext} onValueChange={setConsultationContext}>
-                        <SelectTrigger id="consultContextSelect" className="flex-grow">
-                          <SelectValue placeholder="Select consultation context" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fatigue">Fatigue/General Checkup</SelectItem>
-                          <SelectItem value="diabetes_management">Diabetes Management</SelectItem>
-                          <SelectItem value="hypertension_check">Hypertension Check</SelectItem>
-                          <SelectItem value="acute_infection">Acute Infection</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button onClick={handleCheckMissingLabs}>Check Missing Labs</Button>
-                    </div>
-                  </div>
-
-                  <Button onClick={handleClearLegacyAlerts} variant="outline" size="sm">
-                    Clear All Legacy Alerts
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Legacy Alerts Display */}
-              <CopilotDisplay alerts={legacyAlerts} />
-            </TabsContent>
-
-            {/* Unified Alerts Tab */}
-            <TabsContent value="unified" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Real-time Alerts */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Play className="h-4 w-4" />
-                      Real-time Alerts ({realTimeAlerts.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {realTimeAlerts.length > 0 ? (
-                      <div className="space-y-2">
-                        {realTimeAlerts.slice(0, 5).map(alert => (
-                          <div key={alert.id} className="p-2 border rounded text-sm">
-                            <div className="font-medium">{alert.title}</div>
-                            <div className="text-muted-foreground">{alert.message}</div>
-                            <Badge variant="secondary" className="mt-1">
-                              {alert.severity}
-                            </Badge>
-                          </div>
-                        ))}
-                        {realTimeAlerts.length > 5 && (
-                          <div className="text-sm text-muted-foreground">
-                            +{realTimeAlerts.length - 5} more alerts
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No real-time alerts. {isRealTimeActive ? 'Monitoring...' : 'Start real-time monitoring to see alerts.'}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Post-consultation Alerts */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <History className="h-4 w-4" />
-                      Post-consultation Alerts ({postConsultationAlerts.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {postConsultationAlerts.length > 0 ? (
-                      <div className="space-y-2">
-                        {postConsultationAlerts.slice(0, 5).map(alert => (
-                          <div key={alert.id} className="p-2 border rounded text-sm">
-                            <div className="font-medium">{alert.title}</div>
-                            <div className="text-muted-foreground">{alert.message}</div>
-                            <Badge variant="secondary" className="mt-1">
-                              {alert.severity}
-                            </Badge>
-                          </div>
-                        ))}
-                        {postConsultationAlerts.length > 5 && (
-                          <div className="text-sm text-muted-foreground">
-                            +{postConsultationAlerts.length - 5} more alerts
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No post-consultation alerts. Run post-consultation analysis to generate comprehensive alerts.
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+        {/* Legacy System Tab */}
+        <TabsContent value="legacy" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-500" />
+                Legacy Copilot System
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Original copilot functionality for testing and comparison
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleCheckDrugInteractions}
+                  disabled={legacyLoading}
+                  variant="outline"
+                >
+                  Check Drug Interactions
+                </Button>
+                <Button 
+                  onClick={handleCheckLabResults}
+                  disabled={legacyLoading}
+                  variant="outline"
+                >
+                  Check Lab Results
+                </Button>
               </div>
-            </TabsContent>
 
-            {/* Alert Dashboard Tab */}
-            <TabsContent value="dashboard">
-              <AlertDashboard
-                patientId={currentPatientId}
-                encounterId={currentEncounterId}
-                initialAlerts={unifiedAlerts}
-                onAlertAccept={handleAlertAccept}
-                onAlertDismiss={handleAlertDismiss}
-                onNavigate={handleNavigate}
-                onRefresh={loadUnifiedAlerts}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
+              {legacyAlerts.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-medium text-gray-900">Legacy Alerts:</h3>
+                  {legacyAlerts.map((alert, index) => (
+                    <div 
+                      key={index}
+                      className="p-3 border rounded-md bg-amber-50 border-amber-200"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-medium text-amber-900">{alert.type}</h4>
+                          <p className="text-sm text-amber-800">{alert.message}</p>
+                          {alert.suggestion && (
+                            <p className="text-xs text-amber-700 mt-1">
+                              <strong>Suggestion:</strong> {alert.suggestion}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {alert.severity}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Real-time Toast Notifications */}
-      <RealTimeAlertManager
-        patientId={currentPatientId}
-        encounterId={currentEncounterId}
-        onAlertAccept={handleAlertAccept}
-        onAlertDismiss={handleAlertDismiss}
-        onNavigate={handleNavigate}
-        maxVisibleAlerts={3}
-        defaultToastDuration={8000}
-      />
+        {/* Alert History Tab */}
+        <TabsContent value="history" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-purple-500" />
+                Alert History ({alertHistory.length})
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Real-time alerts received during this session
+              </p>
+            </CardHeader>
+            <CardContent>
+              {alertHistory.length > 0 ? (
+                <div className="space-y-2">
+                  {alertHistory.map((alert) => (
+                    <div 
+                      key={alert.id}
+                      className="p-3 border rounded-md bg-gray-50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{alert.title}</h4>
+                          <p className="text-sm text-gray-700">{alert.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(alert.createdAt).toLocaleTimeString()}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {alert.severity}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>No alerts received yet</p>
+                  <p className="text-sm">Start a consultation to see real-time alerts</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-};
-
-export default CopilotPage;
+}
