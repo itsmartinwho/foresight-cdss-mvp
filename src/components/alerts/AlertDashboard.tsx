@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UnifiedAlert, AlertType, AlertSeverity } from '@/types/alerts';
 import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import AlertList from './AlertList';
@@ -95,7 +95,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     }
   };
 
-  const loadAlerts = async () => {
+  const loadAlerts = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -138,7 +138,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [patientId, consultationId, alertsService]);
 
   const refreshAlerts = async () => {
     setRefreshing(true);
@@ -148,7 +148,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
 
   useEffect(() => {
     loadAlerts();
-  }, [patientId, consultationId]);
+  }, [loadAlerts]);
 
   useEffect(() => {
     let filtered = [...alerts];
@@ -346,8 +346,10 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
                     <CardContent>
                       <AlertList
                         alerts={typeAlerts}
-                        onAction={onAlertAction}
-                        showGrouping={false}
+                        onAccept={(alertId) => onAlertAction?.(alertId, 'accept')}
+                        onDismiss={(alertId) => onAlertAction?.(alertId, 'dismiss')}
+                        showFilters={false}
+                        compact={false}
                       />
                     </CardContent>
                   </Card>
@@ -370,8 +372,10 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
           <TabsContent key={type} value={type}>
             <AlertList
               alerts={typeAlerts}
-              onAction={onAlertAction}
-              showGrouping={false}
+              onAccept={(alertId) => onAlertAction?.(alertId, 'accept')}
+              onDismiss={(alertId) => onAlertAction?.(alertId, 'dismiss')}
+              showFilters={false}
+              compact={false}
             />
           </TabsContent>
         ))}

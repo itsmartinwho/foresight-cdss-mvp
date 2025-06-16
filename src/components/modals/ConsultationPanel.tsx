@@ -7,9 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
-import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk } from '@phosphor-icons/react';
+import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk, Bell } from '@phosphor-icons/react';
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { DemoAudioWaveform } from '@/components/ui/DemoAudioWaveform';
+import { RealTimeAlertManager } from '@/components/alerts/RealTimeAlertManager';
+import { AlertToast } from '@/components/alerts/AlertToast';
+import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
 import { format } from 'date-fns';
 import type { Patient, Encounter, Treatment, DifferentialDiagnosis, SoapNote } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
@@ -166,6 +169,29 @@ export default function ConsultationPanel({
   // CRITICAL: Store the original getUserMedia stream for complete cleanup
   const originalStreamRef = useRef<MediaStream | null>(null);
 
+  // ---------- Real-time Alerts Integration ----------
+  const [showRealTimeAlerts, setShowRealTimeAlerts] = useState(false);
+  const [alertToasts, setAlertToasts] = useState<any[]>([]);
+  
+  // Real-time alerts hook
+  const realTimeAlerts = useRealTimeAlerts({
+    enabled: started && !isDemoMode, // Only enable when consultation started and not in demo
+    patientId: patient?.id,
+    encounterId: encounter?.id,
+    onAlert: (alert) => {
+      // Add alert to toast display
+      setAlertToasts(prev => [...prev.slice(-2), alert]); // Keep max 3 toasts
+    },
+    onError: (error) => {
+      console.error('Real-time alerts error:', error);
+      toast({
+        title: 'Alert System Error',
+        description: 'Real-time alerts temporarily unavailable',
+        variant: 'destructive'
+      });
+    }
+  });
+
   // ---------- Draft persistence across page navigation ----------
   const draftId = (draggableConfig?.id) ?? `consultation-draft-${patient.id}`;
 
@@ -186,11 +212,23 @@ export default function ConsultationPanel({
     }
   }, [transcriptText, isOpen, draftId]);
 
+  // Update transcript for real-time alert processing
+  useEffect(() => {
+    if (started && transcriptText && !isDemoMode) {
+      realTimeAlerts.updateTranscript(transcriptText);
+    }
+  }, [transcriptText, started, isDemoMode, realTimeAlerts]);
+
   // Helper to clear draft and perform close
   const finalizeAndClose = useCallback(() => {
     clearConsultationDraft(draftId);
     onClose();
   }, [draftId, onClose]);
+
+  // Remove alert toast
+  const removeAlertToast = useCallback((alertId: string) => {
+    setAlertToasts(prev => prev.filter(alert => alert.id !== alertId));
+  }, []);
 
   // --- LIFECYCLE & SETUP ---
 
@@ -348,7 +386,41 @@ export default function ConsultationPanel({
       
       await Promise.all(updatePromises);
       
-      toast({ title: "Consultation Saved" });
+      // Trigger post-consultation analysis
+      if (encounter?.id) {
+        try {
+          const response = await fetch('/api/alerts/post-consultation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              patientId: patient.id,
+              encounterId: encounter.id,
+              trigger: 'consultation_save'
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.alertCount > 0) {
+              toast({ 
+                title: "Consultation Saved", 
+                description: `${result.alertCount} post-consultation alerts generated` 
+              });
+            } else {
+              toast({ title: "Consultation Saved" });
+            }
+          } else {
+            console.warn('Post-consultation analysis failed:', await response.text());
+            toast({ title: "Consultation Saved" });
+          }
+        } catch (error) {
+          console.error('Post-consultation analysis error:', error);
+          toast({ title: "Consultation Saved" });
+        }
+      } else {
+        toast({ title: "Consultation Saved" });
+      }
+      
       finalizeAndClose();
     } catch (error) {
       console.error("Failed to save consultation:", error);
@@ -857,6 +929,27 @@ export default function ConsultationPanel({
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
                           <div className="flex items-center gap-2">
+                            {/* Real-time Alerts Button */}
+                            {!isDemoMode && started && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowRealTimeAlerts(!showRealTimeAlerts)}
+                                className="h-8 w-8 hover:bg-muted transition-all relative"
+                                title={`Real-time alerts ${realTimeAlerts.isSessionActive ? 'active' : 'inactive'}`}
+                              >
+                                <Bell className={cn(
+                                  "h-4 w-4", 
+                                  realTimeAlerts.isSessionActive ? "text-green-500" : "text-muted-foreground"
+                                )} />
+                                {alertToasts.length > 0 && (
+                                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center">
+                                    {alertToasts.length}
+                                  </div>
+                                )}
+                              </Button>
+                            )}
+                            
                             {/* Save Icon Button */}
                             <Button
                               variant="ghost"
@@ -1002,6 +1095,22 @@ export default function ConsultationPanel({
   return createPortal(
     <>
       {panelContent}
+      
+      {/* Real-time Alert Toasts */}
+      {!isDemoMode && alertToasts.length > 0 && (
+        <div className="fixed top-4 right-4 z-[10001] space-y-2 pointer-events-none">
+          {alertToasts.map((alert) => (
+            <div key={alert.id} className="pointer-events-auto">
+              <AlertToast
+                alert={alert}
+                onClose={() => removeAlertToast(alert.id)}
+                duration={8000}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      
       {showConfirmationDialog && (
         <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full">

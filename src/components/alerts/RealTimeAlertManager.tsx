@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
-import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
+import { UnifiedAlert, AlertSeverity, AlertType, AlertStatus } from '@/types/alerts';
+import { AlertEngine } from '@/lib/alerts/alert-engine';
 import AlertToast from './AlertToast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,7 @@ export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
   const [alerts, setAlerts] = useState<UnifiedAlert[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingId, setProcessingId] = useState<NodeJS.Timeout | null>(null);
-  const [alertsService] = useState(() => new UnifiedAlertsService());
+  const [alertEngine] = useState(() => new AlertEngine());
   const [processingError, setProcessingError] = useState<string | null>(null);
 
   const removeAlert = useCallback((alertId: string) => {
@@ -41,7 +41,7 @@ export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
       // Mock transcript for now - in real implementation this would come from the consultation
       const mockTranscript = "Patient reports chest pain and shortness of breath. No previous cardiac history.";
       
-      const newAlerts = await alertsService.processRealTimeAlerts(consultationId, mockTranscript);
+      const newAlerts = await alertEngine.processRealTimeAlerts(consultationId, mockTranscript, 'test-patient');
       
       if (newAlerts.length > 0) {
         newAlerts.forEach(alert => {
@@ -62,7 +62,7 @@ export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [isActive, consultationId, alertsService, onAlert, maxToasts]);
+  }, [isActive, consultationId, alertEngine, onAlert, maxToasts]);
 
   const startProcessing = useCallback(() => {
     if (!isActive || !consultationId || processingId) return;
@@ -89,16 +89,20 @@ export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
     
     const mockAlert: UnifiedAlert = {
       id: `test-${Date.now()}`,
-      consultationId,
+      encounterId: consultationId,
       patientId: 'test-patient',
-      type: 'DRUG_INTERACTION',
+      alertType: AlertType.DRUG_INTERACTION,
       severity: AlertSeverity.WARNING,
+      status: AlertStatus.ACTIVE,
       title: 'Test Real-time Alert',
       message: 'This is a simulated alert for testing purposes.',
       suggestion: 'This is only for development testing.',
-      createdAt: new Date(),
-      isActive: true,
-      metadata: { isSimulated: true }
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isRealTime: true,
+      isPostConsultation: false,
+      acknowledged: false,
+      migratedFromPatientAlerts: false
     };
 
     setAlerts(prev => {

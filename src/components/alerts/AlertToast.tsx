@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +27,8 @@ export const AlertToast: React.FC<AlertToastProps> = ({
   const [isVisible, setIsVisible] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
-  const [startX, setStartX] = useState(0);
-  const [currentX, setCurrentX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [currentY, setCurrentY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
@@ -60,14 +60,14 @@ export const AlertToast: React.FC<AlertToastProps> = ({
     }
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => {
       onClose?.();
     }, 300); // Allow time for exit animation
-  };
+  }, [onClose]);
 
-  const updateProgress = () => {
+  const updateProgress = useCallback(() => {
     const elapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
     const remaining = Math.max(0, duration - elapsed);
     const progressPercent = (remaining / duration) * 100;
@@ -78,7 +78,7 @@ export const AlertToast: React.FC<AlertToastProps> = ({
       onExpire?.();
       handleClose();
     }
-  };
+  }, [duration, onExpire, handleClose]);
 
   // Auto-expire timer
   useEffect(() => {
@@ -93,7 +93,7 @@ export const AlertToast: React.FC<AlertToastProps> = ({
         clearInterval(timerRef.current);
       }
     };
-  }, [isPaused, isVisible, duration]);
+  }, [isPaused, isVisible, updateProgress]);
 
   // Mouse handlers
   const handleMouseEnter = () => {
@@ -108,32 +108,32 @@ export const AlertToast: React.FC<AlertToastProps> = ({
     onLeave?.();
   };
 
-  // Touch handlers for swipe-to-close
+  // Touch handlers for swipe-up-to-close
   const handleTouchStart = (e: React.TouchEvent) => {
-    setStartX(e.touches[0].clientX);
+    setStartY(e.touches[0].clientY);
     setIsDragging(true);
     setIsPaused(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    const deltaX = e.touches[0].clientX - startX;
-    setCurrentX(Math.max(0, deltaX)); // Only allow right swipe
+    const deltaY = e.touches[0].clientY - startY;
+    setCurrentY(Math.min(0, deltaY)); // Only allow upward swipe (negative values)
   };
 
   const handleTouchEnd = () => {
-    if (currentX > 100) { // Swipe threshold
+    if (currentY < -100) { // Swipe up threshold
       handleClose();
     } else {
-      setCurrentX(0);
+      setCurrentY(0);
     }
     setIsDragging(false);
     setIsPaused(false);
   };
 
   const toastStyle = {
-    transform: `translateX(${currentX}px)`,
-    opacity: currentX > 50 ? 1 - (currentX / 200) : 1,
+    transform: `translateY(${currentY}px)`,
+    opacity: currentY < -50 ? 1 - (Math.abs(currentY) / 200) : 1,
     transition: isDragging ? 'none' : 'transform 0.3s ease, opacity 0.3s ease',
   };
 
