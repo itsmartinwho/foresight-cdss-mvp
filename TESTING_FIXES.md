@@ -43,6 +43,22 @@
 - **Root Cause**: PlasmaBackground component using Three.js was imported directly causing SSR issues
 - **Solution**: Converted to dynamic import with `ssr: false` in layout.tsx
 
+### 7. **Maximum Update Depth Exceeded (Radix UI Ref Composition)**
+- **Problem**: "Maximum update depth exceeded" error when starting consultations, stack trace showing @radix-ui/react-compose-refs
+- **Root Cause**: Ref composition conflict between DraggableModalWrapper's forwardRef and Radix UI's internal ref handling
+- **Solution**:
+  - Removed forwardRef from DraggableModalWrapper to prevent ref composition conflicts
+  - Restructured ConsultationPanel effects with stable dependencies only
+  - Separated modal initialization from encounter creation into distinct effects
+  - Added proper cleanup for auto-start timeouts
+  - Used stable draft ID with useMemo to prevent recreations
+  - Added ESLint disable comments for intentional dependency exclusions
+- **Key Changes**:
+  - `DraggableModalWrapper`: Removed forwardRef, now a regular functional component
+  - `ConsultationPanel`: Split single large useEffect into focused effects with minimal dependencies
+  - Auto-start effect: Added timeout cleanup and stable dependency array
+  - Draft persistence: Debounced saves and stable draft ID generation
+
 ## Major Implementation Progress ✅
 
 ### 1. **Patient Data Integration** 🎯
@@ -85,6 +101,7 @@ All critical issues have been resolved and major implementation priorities compl
 - ✅ **Transcript Processing**: Real-time incremental transcript analysis
 - ✅ **Performance**: Caching and background processing implemented
 - ✅ **Build System**: All errors resolved, successful production builds
+- ✅ **Ref Management**: Radix UI ref composition conflicts resolved
 
 ## Next Steps
 
@@ -94,53 +111,45 @@ All critical issues have been resolved and major implementation priorities compl
 
 ## Testing Instructions
 
-### Test 1: Consultation Modal (Infinite Loop Fix)
-1. Navigate to `/patients` 
-2. Select any patient
-3. Click "Start Consultation" or use the consultation tab
-4. **Expected Result**: 
-   - Modal opens without infinite loop errors
-   - No "Maximum update depth exceeded" in console
-   - In dev console, no warnings about >50 renders
-5. **Previous Error**: "Maximum update depth exceeded" with @radix-ui/react-compose-refs stack trace
+### 1. Test Infinite Loop Fix
+- Navigate to a patient workspace
+- Click "New Consultation"
+- Modal should open without errors
+- Verify no "Maximum update depth exceeded" errors
+- Transcription should auto-start smoothly
 
-### Test 2: Enhanced Alerts Tab
-1. Navigate to `/alerts` tab in main navigation
-2. **Expected Result**: New AlertDashboard interface with:
-   - Statistics cards (Total Alerts, Alert Types, Last Updated)
-   - Search and filter controls
-   - Tabbed view by alert type
-   - Mock alerts in development mode (4 sample alerts)
-   - **No repeated 404 errors in console**
-   - **No infinite reloading when scrolling**
-3. **Previous State**: 
-   - Old legacy alert screen
-   - Continuous 404 errors: "relation public.alerts does not exist"
-   - Infinite reload loop
+### 2. Test Alerts Tab
+- Navigate to `/alerts`
+- Dashboard should load without 404 errors or infinite reloading
+- Mock alerts should display for development
 
-### Test 3: Real-Time Alerts (Integration Test)
-1. Start a consultation (non-demo mode)
-2. Check for real-time alerts functionality
-3. **Expected Result**: 
-   - No infinite loops
-   - Bell icon shows session status
-   - Toast notifications work with upward swipe dismissal
+### 3. Test Real-time Alerts
+- Start a new consultation
+- Begin transcription
+- Real-time alerts bell icon should turn green
+- Simulated alerts should appear as toasts
 
-### Test 4: Modal Dragging
-1. Open a consultation modal
-2. Drag the modal around the screen
-3. **Expected Result**:
-   - Smooth dragging without lag
-   - No infinite loops during drag
-   - Position persists after drag
+### 4. Test Draggable Modals
+- Open a new consultation modal
+- Drag the modal by its title bar
+- Minimize the modal
+- Restore from minimized bar
+- Verify no ref-related errors occur
 
-### Test 5: Build Process
-1. Run `npm run build`
-2. **Expected Result**:
-   - Build completes successfully
-   - Minimal or no React Hook dependency warnings
-   - No API route dynamic server usage errors
-   - All routes compile and generate properly
+## Development Notes
+
+### Dependency Management Strategy
+When working with React hooks in this codebase, follow these patterns:
+
+1. **Refs for Callbacks**: Use refs (e.g., `isTranscribingRef`) to access current state in callbacks without causing re-renders
+2. **Minimal Dependencies**: Keep useEffect dependency arrays minimal to prevent loops
+3. **Stable References**: Use useCallback with empty or minimal deps for functions passed to child components
+4. **Separate Effects**: Split large effects into focused, single-purpose effects
+
+### Real-time Alerts Architecture
+- Manual session management (no auto-start/stop in hooks)
+- Refs for state tracking to prevent dependency loops
+- Transcript updates handled separately from alert processing
 
 ## Mock Alerts for Development
 
