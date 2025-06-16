@@ -41,9 +41,39 @@ export class UnifiedAlertsService {
     fullTranscript: string;
   }> = new Map();
 
+  // Performance optimization: Caching
+  private patientDataCache: Map<string, {
+    data: any;
+    timestamp: number;
+    ttl: number;
+  }> = new Map();
+  
+  private alertsCache: Map<string, {
+    alerts: UnifiedAlert[];
+    timestamp: number;
+    ttl: number;
+  }> = new Map();
+
+  // Performance optimization: Background processing queue
+  private processingQueue: Array<{
+    id: string;
+    type: 'real_time' | 'post_consultation';
+    patientId: string;
+    encounterId: string;
+    priority: number;
+    timestamp: number;
+  }> = [];
+  
+  private isBackgroundProcessing: boolean = false;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private readonly PATIENT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes for patient data
+
   constructor() {
     // AI clients are now lazy-loaded to prevent initialization errors
     // They will be created when needed and API key is available
+    
+    // Start background processing
+    this.startBackgroundProcessing();
   }
 
   // Lazy initialization of AI clients
@@ -155,6 +185,21 @@ export class UnifiedAlertsService {
 
   async getAlerts(filters: AlertFilterOptions = {}): Promise<AlertQueryResult> {
     try {
+      // Create cache key based on filters
+      const cacheKey = `alerts_${JSON.stringify(filters)}`;
+      
+      // Check cache first for simple patient/encounter queries
+      if (filters.patientId && filters.encounterId && Object.keys(filters).length <= 2) {
+        const cached = this.getCachedAlerts(`${filters.patientId}_${filters.encounterId}`);
+        if (cached) {
+          return {
+            alerts: cached,
+            totalCount: cached.length,
+            hasMore: false
+          };
+        }
+      }
+
       let query = this.supabase.from('alerts').select('*', { count: 'exact' });
 
       // Apply filters
@@ -185,6 +230,11 @@ export class UnifiedAlertsService {
       }
 
       const alerts = (data || []).map(this.transformDatabaseToAlert);
+      
+      // Cache the result for simple patient/encounter queries
+      if (filters.patientId && filters.encounterId && Object.keys(filters).length <= 2) {
+        this.setCachedAlerts(`${filters.patientId}_${filters.encounterId}`, alerts);
+      }
       
       return {
         alerts,
@@ -242,9 +292,13 @@ export class UnifiedAlertsService {
       this.stopRealTimeProcessing();
     }
 
-    this.realTimeInterval = setInterval(async () => {
-      await this.processRealTimeAlerts(patientId, encounterId);
-    }, 60000); // Every minute
+    this.realTimeInterval = setInterval(() => {
+      // Queue real-time processing with high priority
+      this.queueBackgroundTask('real_time', patientId, encounterId, 10);
+    }, 60000); // Queue every minute
+
+    // Process immediately with highest priority
+    this.queueBackgroundTask('real_time', patientId, encounterId, 20);
 
     console.log('Real-time alert processing started for patient:', patientId);
   }
@@ -454,7 +508,7 @@ export class UnifiedAlertsService {
       });
 
       // Get real patient data from the database
-      const patientData = await supabaseDataService.getPatientData(patientId);
+      const patientData = await this.getCachedPatientData(patientId);
       if (!patientData) {
         console.warn(`UnifiedAlertsService: Patient ${patientId} not found`);
         return null;
@@ -511,7 +565,7 @@ export class UnifiedAlertsService {
       });
 
       // Get real patient data from the database
-      const patientData = await supabaseDataService.getPatientData(patientId);
+      const patientData = await this.getCachedPatientData(patientId);
       if (!patientData) {
         console.warn(`UnifiedAlertsService: Patient ${patientId} not found`);
         return null;
@@ -717,6 +771,152 @@ export class UnifiedAlertsService {
     };
 
     await this.createAlert(createRequest);
+  }
+
+  // ==================== PERFORMANCE OPTIMIZATION ====================
+
+  /**
+   * Cache patient data to reduce database queries
+   */
+  private async getCachedPatientData(patientId: string): Promise<any> {
+    const cached = this.patientDataCache.get(patientId);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < cached.ttl) {
+      return cached.data;
+    }
+    
+    // Fetch fresh data
+    const patientData = await supabaseDataService.getPatientData(patientId);
+    
+    // Cache the result
+    this.patientDataCache.set(patientId, {
+      data: patientData,
+      timestamp: now,
+      ttl: this.PATIENT_CACHE_TTL
+    });
+    
+    return patientData;
+  }
+
+  /**
+   * Cache alerts to reduce database queries
+   */
+  private getCachedAlerts(cacheKey: string): UnifiedAlert[] | null {
+    const cached = this.alertsCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < cached.ttl) {
+      return cached.alerts;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Set alerts in cache
+   */
+  private setCachedAlerts(cacheKey: string, alerts: UnifiedAlert[]): void {
+    this.alertsCache.set(cacheKey, {
+      alerts,
+      timestamp: Date.now(),
+      ttl: this.CACHE_TTL
+    });
+  }
+
+  /**
+   * Clear cache for a specific patient/encounter
+   */
+  clearCache(patientId: string, encounterId?: string): void {
+    // Clear patient data cache
+    this.patientDataCache.delete(patientId);
+    
+    // Clear relevant alerts cache
+    if (encounterId) {
+      const cacheKey = `${patientId}_${encounterId}`;
+      this.alertsCache.delete(cacheKey);
+    } else {
+      // Clear all alerts cache for the patient
+      Array.from(this.alertsCache.keys())
+        .filter(key => key.startsWith(`${patientId}_`))
+        .forEach(key => this.alertsCache.delete(key));
+    }
+  }
+
+  /**
+   * Add task to background processing queue
+   */
+  private queueBackgroundTask(
+    type: 'real_time' | 'post_consultation',
+    patientId: string,
+    encounterId: string,
+    priority: number = 1
+  ): void {
+    const taskId = `${type}_${patientId}_${encounterId}_${Date.now()}`;
+    
+    this.processingQueue.push({
+      id: taskId,
+      type,
+      patientId,
+      encounterId,
+      priority,
+      timestamp: Date.now()
+    });
+    
+    // Sort by priority (higher priority first)
+    this.processingQueue.sort((a, b) => b.priority - a.priority);
+  }
+
+  /**
+   * Background processing loop
+   */
+  private startBackgroundProcessing(): void {
+    setInterval(async () => {
+      if (this.isBackgroundProcessing || this.processingQueue.length === 0) {
+        return;
+      }
+      
+      this.isBackgroundProcessing = true;
+      
+      try {
+        const task = this.processingQueue.shift();
+        if (!task) return;
+        
+        // Process task based on type
+        if (task.type === 'real_time') {
+          await this.processRealTimeAlerts(task.patientId, task.encounterId);
+        } else if (task.type === 'post_consultation') {
+          await this.processPostConsultationAlerts(task.patientId, task.encounterId);
+        }
+        
+        // Clear cache after processing to ensure fresh data next time
+        this.clearCache(task.patientId, task.encounterId);
+        
+      } catch (error) {
+        console.error('Background processing error:', error);
+      } finally {
+        this.isBackgroundProcessing = false;
+      }
+    }, 2000); // Process every 2 seconds
+  }
+
+  /**
+   * Get performance statistics
+   */
+  getPerformanceStats(): {
+    cacheHitRatio: number;
+    queueLength: number;
+    isProcessing: boolean;
+    cachedPatients: number;
+    cachedAlerts: number;
+  } {
+    return {
+      cacheHitRatio: 0, // TODO: Implement cache hit tracking
+      queueLength: this.processingQueue.length,
+      isProcessing: this.isBackgroundProcessing,
+      cachedPatients: this.patientDataCache.size,
+      cachedAlerts: this.alertsCache.size
+    };
   }
 }
 
