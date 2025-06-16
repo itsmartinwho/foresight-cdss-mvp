@@ -26,6 +26,7 @@ import {
 import { OpenAIClient, AIModelFactory } from './ai/gpt-models';
 import { getRealTimeTemplate } from './ai/prompt-templates';
 import { getSupabaseClient } from './supabaseClient';
+import { supabaseDataService } from '@/lib/supabaseDataService';
 
 export class UnifiedAlertsService {
   private realTimeClient: OpenAIClient | null = null;
@@ -440,18 +441,43 @@ export class UnifiedAlertsService {
         statuses: [AlertStatus.ACTIVE]
       });
 
-      // TODO: In production, this would fetch:
-      // - Latest transcript segment from the consultation system
-      // - Full transcript for context
-      // - Patient medical history from database
-      // - Current medications, labs, vitals, etc.
+      // Get real patient data from the database
+      const patientData = await supabaseDataService.getPatientData(patientId);
+      if (!patientData) {
+        console.warn(`UnifiedAlertsService: Patient ${patientId} not found`);
+        return null;
+      }
+
+      // Get encounter details including transcript
+      const encounter = supabaseDataService.getPatientEncounters(patientId)
+        .find(enc => enc.id === encounterId || enc.encounterIdentifier === encounterId);
+      
+      // Build comprehensive patient history
+      const patientHistory = {
+        demographics: {
+          age: patientData.patient.dateOfBirth ? 
+            Math.floor((Date.now() - new Date(patientData.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 
+            null,
+          gender: patientData.patient.gender,
+          race: patientData.patient.race,
+          ethnicity: patientData.patient.ethnicity,
+          maritalStatus: patientData.patient.maritalStatus,
+          language: patientData.patient.language
+        },
+        conditions: supabaseDataService.getPatientDiagnoses(patientId),
+        medications: encounter?.treatments || [],
+        labResults: supabaseDataService.getPatientLabResults(patientId),
+        allergies: [], // TODO: Add allergies to patient data model if needed
+        vitals: [], // TODO: Add vitals to patient data model if needed
+        existingAlerts: patientData.patient.alerts || []
+      };
       
       return {
         patientId,
         encounterId,
-        transcriptSegment: '', // Placeholder - integrate with transcript system
-        fullTranscript: '', // Placeholder - integrate with transcript system
-        patientHistory: {}, // Placeholder - integrate with patient data system
+        transcriptSegment: '', // Will be populated by real-time processing
+        fullTranscript: encounter?.transcript || '',
+        patientHistory,
         existingAlerts: existingAlerts.alerts
       };
     } catch (error) {
@@ -469,18 +495,55 @@ export class UnifiedAlertsService {
         isRealTime: true
       });
 
-      // TODO: In production, this would fetch:
-      // - Complete consultation transcript
-      // - Generated SOAP note
-      // - Diagnostic results
-      // - Treatment decisions
-      // - Patient medical history
+      // Get real patient data from the database
+      const patientData = await supabaseDataService.getPatientData(patientId);
+      if (!patientData) {
+        console.warn(`UnifiedAlertsService: Patient ${patientId} not found`);
+        return null;
+      }
+
+      // Get encounter details including transcript, SOAP note, treatments
+      const encounter = supabaseDataService.getPatientEncounters(patientId)
+        .find(enc => enc.id === encounterId || enc.encounterIdentifier === encounterId);
+
+      // Get differential diagnoses if available
+      const differentialDx = supabaseDataService.getDifferentialDiagnosesForEncounter(patientId, encounterId);
+      
+      // Build comprehensive patient history
+      const patientHistory = {
+        demographics: {
+          age: patientData.patient.dateOfBirth ? 
+            Math.floor((Date.now() - new Date(patientData.patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 
+            null,
+          gender: patientData.patient.gender,
+          race: patientData.patient.race,
+          ethnicity: patientData.patient.ethnicity,
+          maritalStatus: patientData.patient.maritalStatus,
+          language: patientData.patient.language
+        },
+        conditions: supabaseDataService.getPatientDiagnoses(patientId),
+        medications: encounter?.treatments || [],
+        labResults: supabaseDataService.getPatientLabResults(patientId),
+        allergies: [], // TODO: Add allergies to patient data model if needed
+        vitals: [], // TODO: Add vitals to patient data model if needed
+        existingAlerts: patientData.patient.alerts || [],
+        consultationOutcome: {
+          transcript: encounter?.transcript || '',
+          soapNote: encounter?.soapNote || '',
+          treatments: encounter?.treatments || [],
+                     differentialDiagnoses: differentialDx.map(dx => ({
+             diagnosis: dx.diagnosis_name,
+             likelihood: dx.likelihood,
+             reasoning: dx.key_factors || ''
+           }))
+        }
+      };
       
       return {
         patientId,
         encounterId,
-        fullTranscript: '', // Placeholder - integrate with transcript system
-        patientHistory: {}, // Placeholder - integrate with patient data system
+        fullTranscript: encounter?.transcript || '',
+        patientHistory,
         realTimeAlerts: realTimeAlerts.alerts
       };
     } catch (error) {
@@ -496,12 +559,12 @@ export class UnifiedAlertsService {
       patientId: context.patientId,
       encounterId: context.encounterId,
       patientData: {
-        demographics: {},
-        conditions: [],
-        medications: [],
-        labResults: [],
-        allergies: [],
-        vitals: []
+        demographics: context.patientHistory.demographics,
+        conditions: context.patientHistory.conditions,
+        medications: context.patientHistory.medications,
+        labResults: context.patientHistory.labResults,
+        allergies: context.patientHistory.allergies,
+        vitals: context.patientHistory.vitals
       },
       transcript: {
         full: context.fullTranscript,
