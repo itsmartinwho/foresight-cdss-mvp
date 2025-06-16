@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
+import { UnifiedAlert, AlertSeverity, AlertType } from '@/types/alerts';
 import AlertToast from './AlertToast';
 
 interface RealTimeAlertManagerProps {
@@ -31,38 +31,6 @@ export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
 }) => {
   const [activeToasts, setActiveToasts] = useState<ActiveToast[]>([]);
   const [alertQueue, setAlertQueue] = useState<UnifiedAlert[]>([]);
-
-  // Mock function to simulate receiving real-time alerts
-  // In production, this would be replaced with WebSocket or polling mechanism
-  const simulateRealTimeAlert = useCallback(() => {
-    if (!patientId || !encounterId) return;
-
-    // This is a mock alert for demonstration
-    const mockAlert: UnifiedAlert = {
-      id: `alert_${Date.now()}`,
-      patientId,
-      encounterId,
-      alertType: 'DRUG_INTERACTION' as any,
-      severity: AlertSeverity.WARNING,
-      category: 'real_time' as any,
-      title: 'Potential Drug Interaction',
-      message: 'Interaction detected between newly prescribed medication and existing therapy.',
-      suggestion: 'Review medication list and consider alternative therapy.',
-      confidenceScore: 0.85,
-      sourceReasoning: 'AI detected potential interaction based on pharmacological data.',
-      processingModel: 'gpt-4.1-mini',
-      status: 'active' as any,
-      isRealTime: true,
-      isPostConsultation: false,
-      acknowledged: false,
-      migratedFromPatientAlerts: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      navigationTarget: '/patients/' + patientId + '/medications'
-    };
-
-    addAlert(mockAlert);
-  }, [patientId, encounterId]);
 
   // Add new alert to the system
   const addAlert = useCallback((alert: UnifiedAlert) => {
@@ -99,6 +67,36 @@ export const RealTimeAlertManager: React.FC<RealTimeAlertManagerProps> = ({
       });
     });
   }, [maxVisibleAlerts]);
+
+  // Mock function to simulate receiving real-time alerts
+  // In production, this would be replaced with WebSocket or polling mechanism
+  const simulateRealTimeAlert = useCallback(() => {
+    if (!patientId || !encounterId) return;
+    
+    const mockAlert: UnifiedAlert = {
+      id: `alert_${Date.now()}`,
+      patientId,
+      encounterId,
+      alertType: AlertType.DRUG_INTERACTION,
+      severity: AlertSeverity.WARNING,
+      title: 'Potential Drug Interaction',
+      message: 'Potential interaction detected between Warfarin and Aspirin.',
+      suggestion: 'Review medication list and consider alternative therapy.',
+      confidenceScore: 0.85,
+      sourceReasoning: 'AI detected potential interaction based on pharmacological data.',
+      processingModel: 'gpt-4.1-mini',
+      status: 'active' as any,
+      isRealTime: true,
+      isPostConsultation: false,
+      acknowledged: false,
+      migratedFromPatientAlerts: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      navigationTarget: '/patients/' + patientId + '/medications'
+    };
+
+    addAlert(mockAlert);
+  }, [patientId, encounterId, addAlert]);
 
   // Remove toast and show next queued alert if any
   const removeToast = useCallback((toastId: string) => {

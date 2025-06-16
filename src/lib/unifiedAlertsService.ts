@@ -19,7 +19,8 @@ import {
   AIModel, 
   AIProcessingRequest, 
   AIProcessingResponse,
-  AIProcessingContext
+  AIProcessingContext,
+  AIAlertResult
 } from '@/types/ai-models';
 
 import { OpenAIClient, AIModelFactory } from './ai/gpt-models';
@@ -123,7 +124,7 @@ export class UnifiedAlertsService {
 
   async getAlerts(filters: AlertFilterOptions = {}): Promise<AlertQueryResult> {
     try {
-      let query = this.supabase.from('alerts').select('*');
+      let query = this.supabase.from('alerts').select('*', { count: 'exact' });
 
       // Apply filters
       if (filters.patientId) query = query.eq('patient_id', filters.patientId);
@@ -145,7 +146,7 @@ export class UnifiedAlertsService {
       query = query.order('severity', { ascending: false })
                    .order('created_at', { ascending: false });
 
-      const { data, error } = await supabase.from('alerts').select('*', { count: 'exact' });
+      const { data, error, count } = await query;
 
       if (error) {
         console.error('Error fetching alerts:', error);
@@ -156,7 +157,7 @@ export class UnifiedAlertsService {
       
       return {
         alerts,
-        totalCount: data?.length || 0,
+        totalCount: count || 0,
         hasMore: false // Implement pagination if needed
       };
     } catch (error) {
@@ -334,7 +335,7 @@ export class UnifiedAlertsService {
 
   private async getAlertById(alertId: string): Promise<UnifiedAlert | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('alerts')
         .select('*')
         .eq('id', alertId)
@@ -389,30 +390,66 @@ export class UnifiedAlertsService {
   }
 
   private async buildRealTimeContext(patientId: string, encounterId: string): Promise<RealTimeAlertContext | null> {
-    // Implementation would fetch current patient data and transcript
-    // This is a simplified version
-    return {
-      patientId,
-      encounterId,
-      transcriptSegment: '', // Get latest transcript segment
-      fullTranscript: '', // Get full transcript
-      patientHistory: {}, // Get patient data
-      existingAlerts: [] // Get current alerts
-    };
+    try {
+      // Get existing alerts for context
+      const existingAlerts = await this.getAlerts({
+        patientId,
+        encounterId,
+        statuses: [AlertStatus.ACTIVE]
+      });
+
+      // TODO: In production, this would fetch:
+      // - Latest transcript segment from the consultation system
+      // - Full transcript for context
+      // - Patient medical history from database
+      // - Current medications, labs, vitals, etc.
+      
+      return {
+        patientId,
+        encounterId,
+        transcriptSegment: '', // Placeholder - integrate with transcript system
+        fullTranscript: '', // Placeholder - integrate with transcript system
+        patientHistory: {}, // Placeholder - integrate with patient data system
+        existingAlerts: existingAlerts.alerts
+      };
+    } catch (error) {
+      console.error('Failed to build real-time context:', error);
+      return null;
+    }
   }
 
   private async buildPostConsultationContext(patientId: string, encounterId: string): Promise<PostConsultationAlertContext | null> {
-    // Implementation would fetch comprehensive consultation data
-    return {
-      patientId,
-      encounterId,
-      fullTranscript: '',
-      patientHistory: {},
-      realTimeAlerts: []
-    };
+    try {
+      // Get real-time alerts from this consultation
+      const realTimeAlerts = await this.getAlerts({
+        patientId,
+        encounterId,
+        isRealTime: true
+      });
+
+      // TODO: In production, this would fetch:
+      // - Complete consultation transcript
+      // - Generated SOAP note
+      // - Diagnostic results
+      // - Treatment decisions
+      // - Patient medical history
+      
+      return {
+        patientId,
+        encounterId,
+        fullTranscript: '', // Placeholder - integrate with transcript system
+        patientHistory: {}, // Placeholder - integrate with patient data system
+        realTimeAlerts: realTimeAlerts.alerts
+      };
+    } catch (error) {
+      console.error('Failed to build post-consultation context:', error);
+      return null;
+    }
   }
 
   private buildAIProcessingContext(context: RealTimeAlertContext | PostConsultationAlertContext): AIProcessingContext {
+    const existingAlerts = 'existingAlerts' in context ? context.existingAlerts : context.realTimeAlerts || [];
+    
     return {
       patientId: context.patientId,
       encounterId: context.encounterId,
@@ -428,28 +465,41 @@ export class UnifiedAlertsService {
         full: context.fullTranscript,
         segment: 'transcriptSegment' in context ? context.transcriptSegment : undefined
       },
-      existingAlerts: context.existingAlerts || []
+      existingAlerts: existingAlerts.map(alert => ({
+        id: alert.id,
+        type: alert.alertType,
+        message: alert.message,
+        createdAt: alert.createdAt
+      }))
     };
   }
 
-  private async refreshRealTimeAlerts(patientId: string, encounterId: string, newAlerts: any[]): Promise<void> {
-    // Mark real-time alerts as resolved if they've been addressed
-    const realTimeAlerts = await this.getAlerts({
-      patientId,
-      encounterId,
-      isRealTime: true,
-      statuses: [AlertStatus.ACTIVE]
-    });
-
-    for (const alert of realTimeAlerts.alerts) {
-      // Logic to determine if alert has been addressed
-      // For now, mark all as resolved - this should be more sophisticated
-      await this.updateAlert(alert.id, {
-        status: AlertStatus.RESOLVED
+  private async refreshRealTimeAlerts(patientId: string, encounterId: string, newAlerts: AIAlertResult[]): Promise<void> {
+    try {
+      // Mark real-time alerts as resolved if they've been addressed
+      const realTimeAlerts = await this.getAlerts({
+        patientId,
+        encounterId,
+        isRealTime: true,
+        statuses: [AlertStatus.ACTIVE]
       });
+
+      for (const alert of realTimeAlerts.alerts) {
+        // TODO: More sophisticated logic to determine if alert has been addressed
+        // For now, mark all as resolved - this should be enhanced with:
+        // - Checking if the concern mentioned in the alert was addressed in the consultation
+        // - Comparing alert content with new post-consultation alerts
+        // - Using AI to determine if the alert is still relevant
+        
+        await this.updateAlert(alert.id, {
+          status: AlertStatus.RESOLVED
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refresh real-time alerts:', error);
     }
   }
 }
 
-// Singleton instance
+// Export singleton instance
 export const unifiedAlertsService = new UnifiedAlertsService(); 
