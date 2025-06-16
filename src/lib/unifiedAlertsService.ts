@@ -34,6 +34,12 @@ export class UnifiedAlertsService {
   private isProcessing: boolean = false;
   private realTimeInterval: NodeJS.Timeout | null = null;
   private supabase = getSupabaseClient();
+  
+  // Transcript tracking for real-time processing
+  private transcriptState: Map<string, {
+    lastProcessedLength: number;
+    fullTranscript: string;
+  }> = new Map();
 
   constructor() {
     // AI clients are now lazy-loaded to prevent initialization errors
@@ -260,6 +266,12 @@ export class UnifiedAlertsService {
       const context = await this.buildRealTimeContext(patientId, encounterId);
       if (!context) return;
 
+      // Only process if there's new transcript content
+      if (!context.transcriptSegment || context.transcriptSegment.trim().length < 50) {
+        // Not enough new content to process
+        return;
+      }
+
       // Check if AI client is available
       const client = this.getRealtimeClient();
       if (!client) {
@@ -472,10 +484,13 @@ export class UnifiedAlertsService {
         existingAlerts: patientData.patient.alerts || []
       };
       
+      // Get new transcript segment for real-time processing
+      const transcriptSegment = this.getNewTranscriptSegment(patientId, encounterId);
+      
       return {
         patientId,
         encounterId,
-        transcriptSegment: '', // Will be populated by real-time processing
+        transcriptSegment,
         fullTranscript: encounter?.transcript || '',
         patientHistory,
         existingAlerts: existingAlerts.alerts
@@ -603,6 +618,60 @@ export class UnifiedAlertsService {
     } catch (error) {
       console.error('Failed to refresh real-time alerts:', error);
     }
+  }
+
+  // ==================== TRANSCRIPT INTEGRATION ====================
+
+  /**
+   * Update transcript for real-time processing
+   * This should be called whenever new transcript content is available
+   */
+  async updateTranscript(patientId: string, encounterId: string, newTranscript: string): Promise<void> {
+    const contextKey = `${patientId}_${encounterId}`;
+    
+    // Update transcript state
+    this.transcriptState.set(contextKey, {
+      lastProcessedLength: this.transcriptState.get(contextKey)?.lastProcessedLength || 0,
+      fullTranscript: newTranscript
+    });
+
+    // Update the encounter in the database
+    try {
+      await supabaseDataService.updateEncounterTranscript(patientId, encounterId, newTranscript);
+    } catch (error) {
+      console.warn('Failed to update encounter transcript:', error);
+    }
+  }
+
+  /**
+   * Get the new transcript segment that hasn't been processed yet
+   */
+  private getNewTranscriptSegment(patientId: string, encounterId: string): string {
+    const contextKey = `${patientId}_${encounterId}`;
+    const state = this.transcriptState.get(contextKey);
+    
+    if (!state) return '';
+    
+    const newSegment = state.fullTranscript.substring(state.lastProcessedLength);
+    
+    // Update processed length
+    this.transcriptState.set(contextKey, {
+      ...state,
+      lastProcessedLength: state.fullTranscript.length
+    });
+    
+    return newSegment;
+  }
+
+  /**
+   * Reset transcript tracking (call when consultation starts)
+   */
+  resetTranscriptTracking(patientId: string, encounterId: string): void {
+    const contextKey = `${patientId}_${encounterId}`;
+    this.transcriptState.set(contextKey, {
+      lastProcessedLength: 0,
+      fullTranscript: ''
+    });
   }
 
   // ==================== DEVELOPMENT HELPERS ====================

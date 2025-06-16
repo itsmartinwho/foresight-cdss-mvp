@@ -69,6 +69,9 @@ export class RealTimeProcessor {
     this.activeSessions.set(sessionKey, session);
     console.log(`Started real-time processing session: ${sessionKey}`);
 
+    // Initialize transcript tracking in the unified alerts service
+    this.alertsService.resetTranscriptTracking(patientId, encounterId);
+
     // Start processing if this is the first session
     if (this.activeSessions.size === 1) {
       this.startProcessing();
@@ -94,7 +97,7 @@ export class RealTimeProcessor {
     }
   }
 
-  updateTranscript(patientId: string, encounterId: string, transcript: string): void {
+  async updateTranscript(patientId: string, encounterId: string, transcript: string): Promise<void> {
     const sessionKey = `${patientId}:${encounterId}`;
     const session = this.activeSessions.get(sessionKey);
     
@@ -104,6 +107,9 @@ export class RealTimeProcessor {
     }
 
     session.currentTranscript = transcript;
+    
+    // Update transcript in the unified alerts service
+    await this.alertsService.updateTranscript(patientId, encounterId, transcript);
   }
 
   // ==================== PROCESSING CONTROL ====================
