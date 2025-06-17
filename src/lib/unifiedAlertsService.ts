@@ -23,14 +23,12 @@ import {
   AIAlertResult
 } from '@/types/ai-models';
 
-import { OpenAIClient, AIModelFactory } from './ai/gpt-models';
+import { getModelForUseCase, DEFAULT_REALTIME_MODEL, DEFAULT_POST_CONSULTATION_MODEL } from './ai/gpt-models';
 import { getRealTimeTemplate } from './ai/prompt-templates';
 import { getSupabaseClient } from './supabaseClient';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 
 export class UnifiedAlertsService {
-  private realTimeClient: OpenAIClient | null = null;
-  private postConsultationClient: OpenAIClient | null = null;
   private isProcessing: boolean = false;
   private realTimeInterval: NodeJS.Timeout | null = null;
   private supabase = getSupabaseClient();
@@ -76,33 +74,38 @@ export class UnifiedAlertsService {
     this.startBackgroundProcessing();
   }
 
-  // Lazy initialization of AI clients
-  private getRealtimeClient(): OpenAIClient | null {
-    if (!this.realTimeClient) {
-      try {
-        this.realTimeClient = new OpenAIClient(
-          AIModelFactory.getRecommendedConfigForUseCase('real_time')
-        );
-      } catch (error) {
-        console.warn('OpenAI real-time client not available:', error);
-        return null;
-      }
+  // OpenAI API helper methods
+  private async callOpenAI(model: string, messages: any[], maxTokens: number = 2000): Promise<any> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.warn('OpenAI API key not available');
+      return null;
     }
-    return this.realTimeClient;
-  }
 
-  private getPostConsultationClient(): OpenAIClient | null {
-    if (!this.postConsultationClient) {
-      try {
-        this.postConsultationClient = new OpenAIClient(
-          AIModelFactory.getRecommendedConfigForUseCase('post_consultation')
-        );
-      } catch (error) {
-        console.warn('OpenAI post-consultation client not available:', error);
-        return null;
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: maxTokens,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
       }
+
+      return await response.json();
+    } catch (error) {
+      console.error('OpenAI API call failed:', error);
+      return null;
     }
-    return this.postConsultationClient;
   }
 
   // ==================== CORE ALERT MANAGEMENT ====================
@@ -337,29 +340,30 @@ export class UnifiedAlertsService {
         segmentPreview: context.transcriptSegment.substring(0, 100) + '...'
       });
 
-      // Check if AI client is available
-      const client = this.getRealtimeClient();
-      if (!client) {
-        console.log('[UnifiedAlertsService] AI client not available for real-time processing');
-        return;
-      }
-
-      // Process with AI
-      const aiContext = this.buildAIProcessingContext(context);
-      const request: AIProcessingRequest = {
-        model: AIModel.GPT_4O_MINI,
-        context: aiContext,
-        promptTemplate: getRealTimeTemplate(),
-        isRealTime: true,
-        maxAlerts: 3,
-        confidenceThreshold: 0.8
-      };
-
-      const response = await client.processAlerts(request);
+      // Process with AI using real-time model
+      const model = getModelForUseCase('real-time');
+      const template = getRealTimeTemplate();
       
-      if (response?.success) {
+      const systemPrompt = template.systemPrompt
+        .replace('{ALERT_TYPES}', template.alertTypes.join(', '))
+        .replace('{CONFIDENCE_THRESHOLD}', '0.8')
+        .replace('{IS_REAL_TIME}', 'true');
+
+      const userPrompt = `Patient Context: ${JSON.stringify(context.patientHistory)}
+Transcript: ${context.transcriptSegment}
+Existing Alerts: ${JSON.stringify(context.existingAlerts)}`;
+
+      const response = await this.callOpenAI(model, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ], 2000);
+      
+      if (response?.choices?.[0]?.message?.content) {
+        // Parse AI response to extract alerts
+        const alerts = this.parseAIResponse(response.choices[0].message.content);
+        
         // Create alerts from AI response
-        for (const aiAlert of response.alerts) {
+        for (const aiAlert of alerts) {
           const createRequest: CreateAlertRequest = {
             patientId,
             encounterId,

@@ -1,23 +1,31 @@
 // AI Model Integration Types
 // Defines types for integrating with OpenAI models for alert processing
 
-export enum AIModel {
-  GPT_4O_MINI = 'gpt-4o-mini', // Fast and cost-effective for real-time
-  GPT_4O = 'gpt-4o', // More comprehensive for post-consultation
-  GPT_4_TURBO = 'gpt-4-turbo', // Alternative option
-  GPT_3_5_TURBO = 'gpt-3.5-turbo' // Fallback option
+export enum AIModelType {
+  GPT_4O_MINI = 'gpt-4o-mini',
+  GPT_4O = 'gpt-4o',
+  GPT_4_TURBO = 'gpt-4-turbo',
+  GPT_3_5_TURBO = 'gpt-3.5-turbo',
+  O4_MINI = 'o4-mini-2025-04-16',
+  GPT_4_1_MINI = 'gpt-4.1-mini-2025-04-14',
+  O3_MINI = 'o3-mini'
 }
 
 export interface AIModelConfig {
-  model: AIModel;
-  maxTokens?: number;
-  temperature?: number;
-  topP?: number;
-  frequencyPenalty?: number;
-  presencePenalty?: number;
-  timeout?: number; // in milliseconds
-  retryAttempts?: number;
-  retryDelay?: number; // in milliseconds
+  name: string;
+  displayName: string;
+  maxTokens: number;
+  costPer1000Tokens: number;
+  capabilities: AIModelCapability[];
+  description: string;
+}
+
+export enum AIModelCapability {
+  TEXT_GENERATION = 'text_generation',
+  REASONING = 'reasoning',
+  CODE_GENERATION = 'code_generation',
+  MULTIMODAL = 'multimodal',
+  FUNCTION_CALLING = 'function_calling'
 }
 
 export interface AIModelResponse {
@@ -114,7 +122,7 @@ export interface AIAlertResult {
 }
 
 export interface AIProcessingRequest {
-  model: AIModel;
+  model: AIModelType;
   context: AIProcessingContext;
   promptTemplate: AIPromptTemplate;
   isRealTime: boolean;
@@ -137,7 +145,7 @@ export interface AIProcessingResponse {
 
 // Real-time specific configurations
 export interface RealTimeAIConfig extends AIModelConfig {
-  model: AIModel.GPT_4O_MINI;
+  model: AIModelType.GPT_4O_MINI;
   processingInterval: number; // in seconds (60 for minute-by-minute)
   maxContextTokens: number;
   priorityThreshold: number; // Confidence threshold for immediate alerts
@@ -145,7 +153,7 @@ export interface RealTimeAIConfig extends AIModelConfig {
 
 // Post-consultation specific configurations
 export interface PostConsultationAIConfig extends AIModelConfig {
-  model: AIModel.GPT_4O;
+  model: AIModelType.GPT_4O;
   comprehensiveAnalysis: boolean;
   includeRealTimeAlerts: boolean;
   alertRefreshLogic: boolean;
@@ -199,42 +207,119 @@ export interface PromptBuilder {
 }
 
 // Model configuration presets
-export const AI_MODEL_PRESETS: Record<string, AIModelConfig> = {
-  REAL_TIME_FAST: {
-    model: AIModel.GPT_4O_MINI,
-    maxTokens: 1000,
-    temperature: 0.1,
-    timeout: 30000,
-    retryAttempts: 2
+export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
+  [AIModelType.GPT_4O_MINI]: {
+    name: 'gpt-4o-mini',
+    displayName: 'GPT-4o Mini',
+    maxTokens: 128000,
+    costPer1000Tokens: 0.15,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.MULTIMODAL,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'Compact multimodal model with vision capabilities'
   },
-  POST_CONSULTATION_COMPREHENSIVE: {
-    model: AIModel.GPT_4O,
-    maxTokens: 4000,
-    temperature: 0.2,
-    timeout: 120000,
-    retryAttempts: 3
+  [AIModelType.GPT_4O]: {
+    name: 'gpt-4o',
+    displayName: 'GPT-4o',
+    maxTokens: 128000,
+    costPer1000Tokens: 2.5,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.MULTIMODAL,
+      AIModelCapability.FUNCTION_CALLING,
+      AIModelCapability.CODE_GENERATION
+    ],
+    description: 'Advanced multimodal model with enhanced reasoning'
   },
-  FALLBACK_RELIABLE: {
-    model: AIModel.GPT_3_5_TURBO,
-    maxTokens: 2000,
-    temperature: 0.1,
-    timeout: 45000,
-    retryAttempts: 3
+  [AIModelType.GPT_4_TURBO]: {
+    name: 'gpt-4-turbo',
+    displayName: 'GPT-4 Turbo',
+    maxTokens: 128000,
+    costPer1000Tokens: 1.0,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.CODE_GENERATION,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'Fast and efficient GPT-4 variant'
+  },
+  [AIModelType.GPT_3_5_TURBO]: {
+    name: 'gpt-3.5-turbo',
+    displayName: 'GPT-3.5 Turbo',
+    maxTokens: 16385,
+    costPer1000Tokens: 0.5,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'Fast and cost-effective language model'
+  },
+  [AIModelType.O4_MINI]: {
+    name: 'o4-mini-2025-04-16',
+    displayName: 'o4-mini',
+    maxTokens: 200000,
+    costPer1000Tokens: 1.16,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.REASONING,
+      AIModelCapability.CODE_GENERATION,
+      AIModelCapability.MULTIMODAL,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'Compact reasoning model with multimodal capabilities and tool integration - ideal for post-consultation analysis'
+  },
+  [AIModelType.GPT_4_1_MINI]: {
+    name: 'gpt-4.1-mini-2025-04-14',
+    displayName: 'GPT-4.1 Mini',
+    maxTokens: 1047576,
+    costPer1000Tokens: 0.3,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.CODE_GENERATION,
+      AIModelCapability.MULTIMODAL,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'Latest small LLM with multimodal input and function calling - ideal for real-time alerts'
+  },
+  [AIModelType.O3_MINI]: {
+    name: 'o3-mini',
+    displayName: 'o3-mini',
+    maxTokens: 200000,
+    costPer1000Tokens: 1.155,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.REASONING,
+      AIModelCapability.CODE_GENERATION
+    ],
+    description: 'Advanced reasoning model designed for efficient reasoning tasks'
   }
 };
+
+// Default model selections for different use cases
+export const AI_MODEL_PRESETS = {
+  FAST_RESPONSE: AIModelType.GPT_4_1_MINI, // Real-time alerts
+  BALANCED: AIModelType.GPT_4O,
+  REASONING: AIModelType.O4_MINI, // Post-consultation analysis
+  COST_EFFECTIVE: AIModelType.GPT_3_5_TURBO,
+  ADVANCED_REASONING: AIModelType.O3_MINI
+};
+
+export type AIModel = keyof typeof AI_MODEL_CONFIGS;
 
 // API client interfaces
 export interface AIAPIClient {
   processAlerts(request: AIProcessingRequest): Promise<AIProcessingResponse>;
   validateApiKey(): Promise<boolean>;
-  getModelStatus(model: AIModel): Promise<'available' | 'unavailable' | 'rate_limited'>;
+  getModelStatus(model: AIModelType): Promise<'available' | 'unavailable' | 'rate_limited'>;
   estimateTokens(text: string): number;
 }
 
 export interface AIModelFactory {
   createClient(config: AIModelConfig): AIAPIClient;
-  getAvailableModels(): AIModel[];
-  getModelCapabilities(model: AIModel): {
+  getAvailableModels(): AIModelType[];
+  getModelCapabilities(model: AIModelType): {
     maxContextLength: number;
     maxOutputTokens: number;
     supportsRealTime: boolean;
