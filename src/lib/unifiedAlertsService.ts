@@ -83,18 +83,28 @@ export class UnifiedAlertsService {
     }
 
     try {
+      // Use appropriate parameters based on model
+      const requestBody: any = {
+        model,
+        messages
+      };
+
+      // o4-mini models have specific parameter requirements
+      if (model.includes('o4-mini')) {
+        requestBody.max_completion_tokens = maxTokens;
+        // o4-mini only supports default temperature (1), don't set temperature parameter
+      } else {
+        requestBody.max_tokens = maxTokens;
+        requestBody.temperature = 0.1;
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          max_tokens: maxTokens,
-          temperature: 0.1
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
