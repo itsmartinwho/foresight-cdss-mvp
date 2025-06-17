@@ -444,7 +444,11 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         draggableConfig={{
           id: 'new-consultation-patients',
           title: 'New Consultation',
-          persistent: true
+          persistent: true,
+          defaultPosition: typeof window !== 'undefined' ? {
+            x: Math.max(50, Math.round((window.innerWidth - 672) / 2)),
+            y: Math.max(50, Math.round((window.innerHeight - 600) / 2)),
+          } : { x: 200, y: 100 }
         }}
       />
     </ContentSurface>
