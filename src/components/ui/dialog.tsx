@@ -121,6 +121,7 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName
 // Draggable Dialog Components
 interface DraggableDialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>, 'className'> {
   draggable?: boolean;
+  allowDragging?: boolean;
   draggableConfig?: ModalDragAndMinimizeConfig;
   className?: string;
   onClose?: () => void;
@@ -135,6 +136,7 @@ const DraggableDialogContent = React.forwardRef<
   className, 
   children, 
   draggable = false,
+  allowDragging = true,
   draggableConfig,
   onClose,
   showMinimizeButton = true,
@@ -179,6 +181,7 @@ const DraggableDialogContent = React.forwardRef<
         ref={ref}
         className={className}
         draggableConfig={draggableConfig}
+        allowDragging={allowDragging}
         showMinimizeButton={showMinimizeButton}
         showCloseButton={showCloseButton}
         {...props}
@@ -192,7 +195,7 @@ const DraggableDialogContent = React.forwardRef<
 DraggableDialogContent.displayName = "DraggableDialogContent";
 
 interface DraggablePositionedContentProps extends DraggableDialogContentProps {
-  // Add any specific props if needed
+  allowDragging?: boolean;
 }
 
 const DraggablePositionedContent = React.forwardRef<
@@ -202,13 +205,14 @@ const DraggablePositionedContent = React.forwardRef<
   className,
   children,
   draggableConfig,
+  allowDragging = true,
   showMinimizeButton,
   showCloseButton,
   onInteractOutside,
   ...props
 }, ref) => {
   // Always call hooks first, before any conditional logic
-  const modalDragResult = useModalDragAndMinimize(draggableConfig);
+  const modalDragResult = useModalDragAndMinimize(draggableConfig, allowDragging);
   
   // Memoize props to prevent infinite re-renders - always call useMemo
   const stableContainerProps = React.useMemo(() => {
@@ -225,16 +229,16 @@ const DraggablePositionedContent = React.forwardRef<
   const stableDragHandleProps = React.useMemo(() => {
     if (!draggableConfig || !modalDragResult.dragHandleProps) {
       return {
-        className: "modal-title-bar flex items-center justify-between p-4 border-b border-white/10 cursor-move",
+        className: `modal-title-bar flex items-center justify-between p-4 border-b border-white/10 ${allowDragging ? 'cursor-move' : 'cursor-default'}`,
         'data-testid': "modal-title-bar"
       };
     }
     return {
       ...modalDragResult.dragHandleProps,
-      className: "modal-title-bar flex items-center justify-between p-4 border-b border-white/10 cursor-move",
+      className: `modal-title-bar flex items-center justify-between p-4 border-b border-white/10 ${allowDragging ? 'cursor-move' : 'cursor-default'}`,
       'data-testid': "modal-title-bar"
     };
-  }, [draggableConfig, modalDragResult.dragHandleProps]);
+  }, [draggableConfig, modalDragResult.dragHandleProps, allowDragging]);
   
   const handleClose = React.useCallback(() => {
     const trigger = document.querySelector(`[aria-controls="${props['aria-describedby']}"]`);

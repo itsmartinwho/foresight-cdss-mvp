@@ -54,6 +54,8 @@ interface ConsultationPanelProps {
   isDemoGeneratingPlan?: boolean;
   /** Enable draggable functionality */
   draggable?: boolean;
+  /** Allow dragging behavior (separate from modal functionality) */
+  allowDragging?: boolean;
   /** Configuration for drag and minimize behavior */
   draggableConfig?: ModalDragAndMinimizeConfig;
 }
@@ -87,6 +89,7 @@ export default function ConsultationPanel({
   onDemoClinicalPlanClick,
   isDemoGeneratingPlan = false,
   draggable = false,
+  allowDragging = false,
   draggableConfig,
 }: ConsultationPanelProps) {
   // Debug demo mode detection
@@ -1146,6 +1149,7 @@ export default function ConsultationPanel({
     <DraggableModalWrapper
       onClose={handleCloseRequest}
       config={mergedDraggableConfig}
+      allowDragging={allowDragging}
       className="w-[95%] max-w-6xl max-h-[90vh]"
       showCloseButton={!isSaving}
     >

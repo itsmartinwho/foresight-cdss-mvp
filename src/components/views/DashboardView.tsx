@@ -234,7 +234,8 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}
-        draggable={false}
+        draggable={true}
+        allowDragging={false}
         draggableConfig={{
           id: 'new-consultation-dashboard',
           title: 'New Consultation',
@@ -247,7 +248,8 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
           <DraggableDialogContent 
             className="sm:max-w-[750px] max-h-[650px] p-8"
-            draggable={false}
+            draggable={true}
+            allowDragging={false}
             draggableConfig={stableDemoDraggableConfig}
           >
             <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">

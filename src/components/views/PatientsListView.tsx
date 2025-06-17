@@ -451,7 +451,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
             fetchData();
           }
         }}
-        draggable={false}
+        draggable={true}
+        allowDragging={false}
         draggableConfig={stableDraggableConfig}
       />
     </ContentSurface>

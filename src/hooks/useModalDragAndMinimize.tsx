@@ -31,7 +31,8 @@ function getCenterPosition(estimatedWidth: number = 512, estimatedHeight: number
 }
 
 export function useModalDragAndMinimize(
-  config: ModalDragAndMinimizeConfig | null
+  config: ModalDragAndMinimizeConfig | null,
+  allowDragging: boolean = true
 ): UseModalDragAndMinimizeReturn {
   const pathname = usePathname();
   // Always call hooks first, then handle null config
@@ -283,12 +284,14 @@ export function useModalDragAndMinimize(
 
     return {
       className: 'modal-drag-handle',
-      onMouseDown: handleDragStart,
+      onMouseDown: allowDragging ? handleDragStart : () => {}, // Only enable dragging if allowed
       style: {
-        cursor: dragState.isDragging ? 'grabbing' : 'grab',
+        cursor: allowDragging 
+          ? (dragState.isDragging ? 'grabbing' : 'grab')
+          : 'default',
       },
     };
-  }, [isValidConfig, handleDragStart, dragState.isDragging]);
+  }, [isValidConfig, handleDragStart, dragState.isDragging, allowDragging]);
 
 
 

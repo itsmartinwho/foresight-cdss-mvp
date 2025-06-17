@@ -26,6 +26,8 @@ interface Props {
   onConsultationCreated?: (patient: Patient | null, newEncounter: Encounter | null) => void;
   /** Enable draggable functionality */
   draggable?: boolean;
+  /** Allow dragging behavior (separate from modal functionality) */
+  allowDragging?: boolean;
   /** Configuration for drag and minimize behavior */
   draggableConfig?: ModalDragAndMinimizeConfig;
 }
@@ -64,7 +66,7 @@ const StyledDatePicker = forwardRef<DatePicker, any>(({ value, onClick, onChange
 });
 StyledDatePicker.displayName = 'StyledDatePicker';
 
-export default function NewConsultationModal({ open, onOpenChange, onConsultationCreated, draggable, draggableConfig }: Props) {
+export default function NewConsultationModal({ open, onOpenChange, onConsultationCreated, draggable, allowDragging, draggableConfig }: Props) {
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const router = useRouter();
 
@@ -230,6 +232,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         onOpenAutoFocus={(e) => e.preventDefault()}
         className={`max-w-4xl max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
+        allowDragging={allowDragging}
         draggableConfig={stableDraggableConfig}
       >
         <DialogHeader>

@@ -11,6 +11,7 @@ interface DraggableModalWrapperProps {
   onClose?: () => void;
   showMinimizeButton?: boolean;
   showCloseButton?: boolean;
+  allowDragging?: boolean;
   className?: string;
   children: React.ReactNode;
   'data-testid'?: string;
@@ -22,6 +23,7 @@ export const DraggableModalWrapper: React.FC<DraggableModalWrapperProps> = ({
   onClose, 
   showMinimizeButton = true, 
   showCloseButton = true,
+  allowDragging = true,
   className,
   children,
   'data-testid': testId,
@@ -33,7 +35,7 @@ export const DraggableModalWrapper: React.FC<DraggableModalWrapperProps> = ({
     minimize,
     containerProps,
     dragHandleProps,
-  } = useModalDragAndMinimize(config);
+  } = useModalDragAndMinimize(config, allowDragging);
 
   // Don't render if minimized
   if (isMinimized) {
@@ -60,7 +62,7 @@ export const DraggableModalWrapper: React.FC<DraggableModalWrapperProps> = ({
         {...dragHandleProps}
         className={cn(
           "modal-title-bar flex items-center justify-between p-4 border-b border-white/10",
-          "cursor-move", // Make the entire title bar show move cursor
+          allowDragging ? "cursor-move" : "cursor-default", // Make the entire title bar show move cursor only if dragging is allowed
           dragHandleProps.className
         )}
         data-testid="modal-title-bar"

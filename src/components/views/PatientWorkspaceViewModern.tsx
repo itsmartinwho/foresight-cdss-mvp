@@ -563,7 +563,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         patient={patient}
         onConsultationCreated={handleConsultationCreated}
         isDemoMode={false}
-        draggable={false}
+        draggable={true}
+        allowDragging={false}
         draggableConfig={regularConsultationConfig}
       />
 
@@ -585,7 +586,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           demoSoapNote={demoConsultation.demoSoapNote}
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
           onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
-          draggable={false}
+          draggable={true}
+          allowDragging={false}
           draggableConfig={demoConsultationConfig}
         />
       )}
