@@ -1121,9 +1121,9 @@ export default function ConsultationPanel({
     </>
   );
 
-  // Memoize the merged config to prevent infinite loops
+  // Always call useMemo - even if not draggable (React hooks rule)
   const mergedDraggableConfig = useMemo(() => {
-    if (!draggableConfig) return undefined;
+    if (!draggableConfig || !draggable) return undefined;
     return {
       id: draggableConfig.id || `consultation-panel-${patient.id}`,
       title: draggableConfig.title || "New Consultation",
@@ -1131,7 +1131,7 @@ export default function ConsultationPanel({
       defaultPosition: draggableConfig.defaultPosition,
       icon: draggableConfig.icon,
     };
-  }, [draggableConfig?.id, draggableConfig?.title, draggableConfig?.persistent, draggableConfig?.defaultPosition, draggableConfig?.icon, patient.id]);
+  }, [draggableConfig?.id, draggableConfig?.title, draggableConfig?.persistent, draggableConfig?.defaultPosition, draggableConfig?.icon, patient.id, draggable]);
 
   const panelContent = draggable && mergedDraggableConfig ? (
     <DraggableModalWrapper
