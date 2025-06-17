@@ -187,6 +187,7 @@ export default function ConsultationPanel({
   // ---------- Real-time Alerts Integration ----------
   const [showRealTimeAlerts, setShowRealTimeAlerts] = useState(false);
   const [alertToasts, setAlertToasts] = useState<any[]>([]);
+  const [demoAlertToasts, setDemoAlertToasts] = useState<any[]>([]);
   
   // Real-time alerts hook (without auto-start/stop to avoid dependency loops)
   const realTimeAlerts = useRealTimeAlerts({
@@ -244,7 +245,20 @@ export default function ConsultationPanel({
   // Update transcript for real-time alert processing
   useEffect(() => {
     if (started && transcriptText && shouldStartAlertsRef.current) {
-      realTimeAlerts.updateTranscript(transcriptText);
+      if (isDemoMode) {
+        // Use demo alerts service instead of real alerts for demo mode
+        import('@/services/demo/DemoAlertsService').then(({ demoAlertsService, DemoAlertsService }) => {
+          const newAlerts = demoAlertsService.checkForAlerts(transcriptText);
+          // Trigger alerts immediately for demo
+          newAlerts.forEach(alert => {
+            console.log('[Demo Alert Triggered]:', alert.title);
+            const formattedAlert = DemoAlertsService.formatDemoAlert(alert);
+            addDemoAlertToast(formattedAlert);
+          });
+        });
+      } else {
+        realTimeAlerts.updateTranscript(transcriptText);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcriptText, started, isDemoMode]); // realTimeAlerts intentionally excluded to prevent dependency loops
@@ -258,6 +272,15 @@ export default function ConsultationPanel({
   // Remove alert toast
   const removeAlertToast = useCallback((alertId: string) => {
     setAlertToasts(prev => prev.filter(alert => alert.id !== alertId));
+  }, []);
+
+  // Demo alert toast functions
+  const addDemoAlertToast = useCallback((alert: any) => {
+    setDemoAlertToasts(prev => [...prev.slice(-2), alert]); // Keep max 3 toasts
+  }, []);
+
+  const removeDemoAlertToast = useCallback((alertId: string) => {
+    setDemoAlertToasts(prev => prev.filter(alert => alert.id !== alertId));
   }, []);
 
   // --- LIFECYCLE & SETUP ---
@@ -892,6 +915,11 @@ export default function ConsultationPanel({
       // Start real-time alerts session for demo mode
       if (!shouldStartAlertsRef.current && patient?.id) {
         shouldStartAlertsRef.current = true;
+        // Reset demo alerts when starting a new demo consultation
+        setDemoAlertToasts([]);
+        import('@/services/demo/DemoAlertsService').then(({ demoAlertsService }) => {
+          demoAlertsService.resetAlerts();
+        });
         try {
           realTimeAlerts.startSession();
         } catch (error) {
@@ -1148,21 +1176,23 @@ export default function ConsultationPanel({
                           <h3 className="text-lg font-medium">Consultation Transcript</h3>
                           <div className="flex items-center gap-2">
                             {/* Real-time Alerts Button */}
-                            {!isDemoMode && started && (
+                            {started && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setShowRealTimeAlerts(!showRealTimeAlerts)}
                                 className="h-8 w-8 hover:bg-muted transition-all relative"
-                                title={`Real-time alerts ${realTimeAlerts.isSessionActive ? 'active' : 'inactive'}`}
+                                title={isDemoMode ? `Demo alerts ${demoAlertToasts.length > 0 ? 'triggered' : 'ready'}` : `Real-time alerts ${realTimeAlerts.isSessionActive ? 'active' : 'inactive'}`}
                               >
                                 <Bell className={cn(
                                   "h-4 w-4", 
-                                  realTimeAlerts.isSessionActive ? "text-green-500" : "text-muted-foreground"
+                                  isDemoMode 
+                                    ? (demoAlertToasts.length > 0 ? "text-orange-500" : "text-green-500")
+                                    : (realTimeAlerts.isSessionActive ? "text-green-500" : "text-muted-foreground")
                                 )} />
-                                {alertToasts.length > 0 && (
+                                {(alertToasts.length > 0 || (isDemoMode && demoAlertToasts.length > 0)) && (
                                   <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[8px] text-white flex items-center justify-center">
-                                    {alertToasts.length}
+                                    {isDemoMode ? demoAlertToasts.length : alertToasts.length}
                                   </div>
                                 )}
                               </Button>
@@ -1321,6 +1351,21 @@ export default function ConsultationPanel({
                 alert={alert}
                 onClose={() => removeAlertToast(alert.id)}
                 duration={8000}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Demo Alert Toasts */}
+      {isDemoMode && demoAlertToasts.length > 0 && (
+        <div className="fixed top-4 right-4 z-[10001] space-y-2 pointer-events-none">
+          {demoAlertToasts.map((alert) => (
+            <div key={alert.id} className="pointer-events-auto">
+              <AlertToast
+                alert={alert}
+                onClose={() => removeDemoAlertToast(alert.id)}
+                duration={12000}
               />
             </div>
           ))}

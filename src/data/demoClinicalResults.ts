@@ -30,42 +30,42 @@ export interface DemoClinicalData {
 export const demoClinicalResults: DemoClinicalData = {
   // Primary diagnosis from clinical engine
   primaryDiagnosis: {
-    name: "Fecal impaction",
-    code: "K56.41",
-    confidence: 90,
-    description: "Fecal impaction with severe constipation requiring aggressive bowel regimen and medical intervention"
+    name: "Type 2 diabetes mellitus, poorly controlled",
+    code: "E11.9",
+    confidence: 95,
+    description: "Type 2 diabetes mellitus without complications, currently poorly controlled with drug interaction requiring medication adjustment and monitoring"
   },
   
   // Differential diagnoses from clinical engine
   differentialDiagnoses: [
     {
-      name: "Opioid-Induced Constipation",
-      likelihood: "High (90%)",
-      keyFactors: "Recent hydrocodone use post-dental surgery, 6-day constipation history",
+      name: "Drug-Drug Interaction: Glyburide + Warfarin",
+      likelihood: "High (95%)",
+      keyFactors: "Recent glyburide initiation with existing warfarin therapy, bleeding symptoms",
       priority: 1
     },
     {
-      name: "Fecal Impaction", 
-      likelihood: "Medium (60%)",
-      keyFactors: "Abdominal distension, hard stool on rectal exam, radiographic findings",
+      name: "Uncontrolled Type 2 Diabetes Mellitus", 
+      likelihood: "High (90%)",
+      keyFactors: "Polyuria, polydipsia, no recent monitoring, broken glucometer",
       priority: 2
     },
     {
-      name: "Dehydration Related Functional Constipation",
-      likelihood: "Medium (70%)",
-      keyFactors: "Poor fluid intake (1 glass water/day), low-fiber diet (fast food)",
+      name: "Supratherapeutic Anticoagulation",
+      likelihood: "High (85%)",
+      keyFactors: "Easy bruising, prolonged nosebleed, INR overdue by 2 months",
       priority: 3
     },
     {
-      name: "Partial Large Bowel Obstruction",
-      likelihood: "Low (30%)", 
-      keyFactors: "Colonic fecal retention on imaging, no complete obstruction signs",
+      name: "Diabetic Ketoacidosis (DKA)",
+      likelihood: "Moderate (40%)", 
+      keyFactors: "Dehydration, polyuria, polydipsia, but no known ketosis symptoms",
       priority: 4
     },
     {
-      name: "Secondary Constipation Due to AML History",
-      likelihood: "Low (10%)",
-      keyFactors: "History of acute myelomonocytic leukemia, potential medication effects",
+      name: "Hyperosmolar Hyperglycemic State (HHS)",
+      likelihood: "Moderate (35%)",
+      keyFactors: "Dehydration, altered mental status, elderly patient with Type 2 DM",
       priority: 5
     }
   ],
@@ -73,29 +73,29 @@ export const demoClinicalResults: DemoClinicalData = {
   // Treatment recommendations from clinical engine
   treatments: [
     {
-      drug: "Polyethylene glycol 3350 17g every 6 hours until bowel movement, then 17g nightly for 14 days",
-      status: "Prescribed",
-      rationale: "Osmotic laxative for severe fecal impaction with maintenance therapy to prevent recurrence"
+      drug: "Discontinue glyburide immediately",
+      status: "Discontinued",
+      rationale: "High risk drug interaction with warfarin causing increased bleeding risk"
     },
     {
-      drug: "Docusate sodium 200mg twice daily",
-      status: "Prescribed", 
-      rationale: "Stool softener to facilitate easier bowel movements and reduce straining"
+      drug: "Continue metformin 1000mg twice daily",
+      status: "Continued", 
+      rationale: "Well-tolerated first-line diabetes medication, safer with anticoagulation"
     },
     {
-      drug: "Glycerin suppository every 12 hours as needed",
-      status: "As needed",
-      rationale: "Rectal stimulant if no bowel movement occurs within 12 hours"
+      drug: "Start insulin glargine 10 units subcutaneous daily",
+      status: "New prescription",
+      rationale: "Long-acting insulin for better glucose control without warfarin interaction"
     },
     {
-      drug: "High-fiber diet with 25-30g fiber daily",
-      status: "Patient education",
-      rationale: "Dietary modification to prevent future constipation episodes and promote regular bowel function"
+      drug: "Hold warfarin pending INR results",
+      status: "Held temporarily",
+      rationale: "Evaluate current anticoagulation level due to bleeding symptoms"
     },
     {
-      drug: "Increased fluid intake to 8-10 glasses of water daily", 
-      status: "Patient education",
-      rationale: "Adequate hydration essential for preventing constipation and supporting treatment effectiveness"
+      drug: "STAT labs: BMP, HbA1c, PT/INR, CBC with differential", 
+      status: "Ordered",
+      rationale: "Essential monitoring for diabetes control and bleeding risk assessment"
     }
   ]
 };
