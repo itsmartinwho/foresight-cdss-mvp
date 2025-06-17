@@ -650,4 +650,46 @@ The investigation involved database queries, data service testing, and UI compon
 *   `scripts/find_real_transcripts.js`: Identifies encounters with substantial transcript text.
 *   `scripts/test_data_service_simple.js`: A basic test for the data service logic.
 *   `scripts/get_patient_with_transcript.js`: Retrieves test patient details with associated transcripts.
-*   `debug_transcript_issue.js`: A more comprehensive script for debugging transcript-related issues. 
+*   `debug_transcript_issue.js`: A more comprehensive script for debugging transcript-related issues.
+
+### Phase 5: Draggability Disabled (June 2025)
+
+**Problem:**
+Multiple recurring issues with modal draggability were causing significant user experience problems:
+- Modal positioning conflicts and off-center displays that kept resurfacing
+- Centering calculations failing when drag infrastructure was enabled
+- User confusion about inconsistent drag behavior across different modal types
+- Development time being spent repeatedly fixing drag-related positioning bugs
+- Complex interactions between drag events and other modal functionality
+
+**Decision:**
+On June 17, 2025 (commit `471a66f`), draggability was **disabled across all modals** while preserving the minimize/restore functionality that users found valuable.
+
+**Implementation:**
+- Added `allowDragging` parameter to all modal components, set to `false` by default
+- Updated `useModalDragAndMinimize` hook to respect the `allowDragging` flag  
+- Modified title bar cursors to show `default` instead of `grab` when dragging is disabled
+- Maintained complete drag infrastructure for potential future re-enablement
+- Kept minimize/restore functionality fully operational
+- Updated all modal implementations across the application to use `allowDragging={false}`
+
+**Files Modified:**
+- `src/components/modals/ConsultationPanel.tsx`
+- `src/components/modals/NewConsultationModal.tsx`
+- `src/components/ui/dialog.tsx`
+- `src/components/ui/draggable-modal-wrapper.tsx`
+- `src/components/views/DashboardView.tsx`
+- `src/components/views/PatientWorkspaceViewModern.tsx`
+- `src/components/views/PatientsListView.tsx`
+- `src/hooks/useModalDragAndMinimize.tsx`
+
+**Benefits Achieved:**
+- Eliminated recurring modal centering and positioning issues
+- Simplified modal behavior for consistent user experience
+- Reduced development overhead from drag-related bug fixes
+- Maintained popular minimize/restore functionality
+- Preserved technical infrastructure for potential future improvements
+- Focused user experience on the core value proposition: minimize/restore for workspace management
+
+**Current State:**
+All modals in the application now use minimizable functionality without draggability. The infrastructure remains in place and can be re-enabled in the future if the underlying positioning issues are resolved. 

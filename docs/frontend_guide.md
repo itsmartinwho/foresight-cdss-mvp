@@ -482,19 +482,18 @@ The system maintains backward compatibility with existing modal implementations:
 
 ```tsx
 interface ModalDragAndMinimizeConfig {
-  modalId: string;                    // Unique identifier (required)
-  defaultPosition: { x: number; y: number };
-  canMinimize?: boolean;              // Default: true
-  canMaximize?: boolean;              // Default: false (not implemented)
-  persistPosition?: boolean;          // Default: true
-  title?: string;                     // For minimized display
+  id: string;                         // Unique identifier (required)
+  title: string;                      // For title bar and minimized display
   icon?: ComponentType | string;      // For minimized display
-  constraints?: {
-    minX?: number;
-    maxX?: number;
-    minY?: number;
-    maxY?: number;
-  };
+  defaultPosition?: { x: number; y: number }; // Auto-calculated if not provided
+  persistent?: boolean;               // Default: false
+}
+
+// Component props
+interface ModalProps {
+  draggable?: boolean;                // Enables modal wrapper (default: false)
+  allowDragging?: boolean;            // Controls drag functionality (default: false)
+  draggableConfig?: ModalDragAndMinimizeConfig;
 }
 ```
 
@@ -504,11 +503,11 @@ interface ModalDragAndMinimizeConfig {
 ```tsx
 <DraggableDialogContent 
   draggable={true}
+  allowDragging={false}  // Dragging disabled
   draggableConfig={{
-    modalId: 'new-consultation',
-    defaultPosition: getCenterPosition(),
+    id: 'new-consultation',
     title: 'New Consultation',
-    canMinimize: true,
+    persistent: false,
   }}
 >
   {/* Form content */}
@@ -518,12 +517,11 @@ interface ModalDragAndMinimizeConfig {
 **Consultation Panel (Complex Clinical Workflow):**
 ```tsx
 <DraggableModalWrapper
-  draggableConfig={{
-    modalId: `consultation-${encounterId}`,
-    defaultPosition: { x: 200, y: 100 },
+  allowDragging={false}  // Dragging disabled
+  config={{
+    id: `consultation-${encounterId}`,
     title: `Consultation - ${patient?.full_name}`,
-    canMinimize: true,
-    persistPosition: true,
+    persistent: false,
   }}
 >
   <Card className="w-full max-w-6xl bg-background/95">
@@ -548,13 +546,13 @@ interface ModalDragAndMinimizeConfig {
 
 ### Best Practices
 
-**1. Unique Modal IDs:** Always provide a unique `modalId` for proper state management
+**1. Unique Modal IDs:** Always provide a unique `id` for proper state management
 ```tsx
 // Good
-modalId: `consultation-${encounterId}`
+id: `consultation-${encounterId}`
 
-// Avoid
-modalId: 'consultation' // Multiple instances conflict
+// Avoid  
+id: 'consultation' // Multiple instances conflict
 ```
 
 **2. Meaningful Titles:** Use descriptive titles for minimized display
@@ -580,22 +578,25 @@ title: `Consultation - ${patient?.full_name}`
 </div>
 ```
 
-**4. Position Calculations:** Use appropriate default positions based on modal size
+**4. Disable Dragging:** Always set `allowDragging={false}` to prevent positioning issues
 ```tsx
-// For standard modals (512x400)
-defaultPosition: getCenterPosition(512, 400)
+// Correct - dragging disabled
+<DraggableDialogContent 
+  draggable={true}
+  allowDragging={false}
+  draggableConfig={{ id: 'modal-id', title: 'Modal Title' }}
+/>
 
-// For large modals (800x600)
-defaultPosition: getCenterPosition(800, 600)
+// Note: Automatic centering handles positioning without manual calculations
 ```
 
 ### Performance Optimizations
 
 **Efficient Event Handling:**
-- Throttled position updates during drag operations (16ms intervals)
 - Automatic event listener cleanup on component unmount
-- Minimal DOM manipulations using CSS transforms
-- Background position persistence without blocking UI
+- Minimal DOM manipulations using CSS transforms  
+- Background state persistence without blocking UI
+- Focus management and keyboard accessibility optimizations
 
 **Memory Management:**
 - SessionStorage data automatically expires after 24 hours
