@@ -68,16 +68,6 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const router = useRouter();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[NewConsultationModal] Props:', {
-      open,
-      draggable,
-      configId: draggableConfig?.id,
-      hasOnOpenChange: !!onOpenChange,
-    });
-  });
-
   // Existing patients search
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,7 +213,14 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       persistent: draggableConfig.persistent ?? false,
       defaultPosition: draggableConfig.defaultPosition,
     };
-  }, [draggable, draggableConfig]);
+  }, [
+    draggable, 
+    draggableConfig?.id, 
+    draggableConfig?.title, 
+    draggableConfig?.persistent,
+    draggableConfig?.icon,
+    // Note: Not including defaultPosition since it can contain unstable window calculations
+  ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

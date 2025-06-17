@@ -57,6 +57,17 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
   const { getModalState } = useModalManager();
   const pendingRestoredPatientsModal = getModalState('new-consultation-patients');
 
+  // Stabilize draggableConfig to prevent infinite re-renders
+  const stableDraggableConfig = useMemo(() => ({
+    id: 'new-consultation-patients',
+    title: 'New Consultation',
+    persistent: true,
+    defaultPosition: typeof window !== 'undefined' ? {
+      x: Math.max(50, Math.round((window.innerWidth - 672) / 2)),
+      y: Math.max(50, Math.round((window.innerHeight - 600) / 2)),
+    } : { x: 200, y: 100 }
+  }), []); // Empty dependency array since window dimensions are stable for each session
+
   const fetchData = async () => {
     setIsLoading(true);
     await supabaseDataService.loadPatientData();
@@ -441,15 +452,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           }
         }}
         draggable={true}
-        draggableConfig={{
-          id: 'new-consultation-patients',
-          title: 'New Consultation',
-          persistent: true,
-          defaultPosition: typeof window !== 'undefined' ? {
-            x: Math.max(50, Math.round((window.innerWidth - 672) / 2)),
-            y: Math.max(50, Math.round((window.innerHeight - 600) / 2)),
-          } : { x: 200, y: 100 }
-        }}
+        draggableConfig={stableDraggableConfig}
       />
     </ContentSurface>
   );
