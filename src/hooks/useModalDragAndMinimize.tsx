@@ -38,10 +38,6 @@ function getCenterPosition(): ModalPosition {
 export function useModalDragAndMinimize(
   config: ModalDragAndMinimizeConfig | null
 ): UseModalDragAndMinimizeReturn {
-  if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
-    console.count('useModalDragAndMinimize renders');
-  }
   const pathname = usePathname();
   // Always call hooks first, then handle null config
   const { 
@@ -150,42 +146,20 @@ export function useModalDragAndMinimize(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isValidConfig, config, handleDragMove, updateModalPosition]); // dragState.currentPosition intentionally excluded to prevent ref churn
 
-  const handleDragStart = useCallback((event: React.MouseEvent<HTMLElement>) => {
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
     if (!isValidConfig) return;
-    if (event.button !== 0) return; // Only handle left click
-    const target = event.target as HTMLElement;
-
-    // Prevent starting drag on interactive elements inside the title bar
-    if (target.closest('button, input, select, textarea, [role="button"]')) return;
-
-    event.preventDefault();
-    bringToFront(config!.id);
-
-    const currentPos = positionRef.current;
-
-    const offset = {
-      x: event.clientX - currentPos.x,
-      y: event.clientY - currentPos.y,
-    };
-    dragOffsetRef.current = offset;
-
-    setDragState(prev => {
-      // Guard against unnecessary state updates to prevent infinite loops
-      if (prev.isDragging === true) {
-        return prev;
-      }
-      return {
-        isDragging: true,
-        dragOffset: offset,
-        startPosition: currentPos,
-        currentPosition: currentPos,
-      };
-    });
-
-    document.addEventListener('mousemove', handleDragMove);
-    document.addEventListener('mouseup', handleDragEnd);
-    document.body.style.userSelect = 'none';
-  }, [isValidConfig, config, bringToFront, handleDragMove, handleDragEnd]);
+    
+    e.preventDefault();
+    setDragState(prev => ({
+      ...prev,
+      isDragging: true,
+      dragOffset: {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      },
+      currentPosition: position
+    }));
+  }, [isValidConfig, position.x, position.y]);
 
   // Register modal with manager
   useEffect(() => {
@@ -201,22 +175,19 @@ export function useModalDragAndMinimize(
 
   // Modal management functions
   const minimize = useCallback(() => {
-    if (isValidConfig) {
-      minimizeModal(config!.id);
-    }
-  }, [config, isValidConfig, minimizeModal]);
+    if (!isValidConfig) return;
+    minimizeModal(config!.id);
+  }, [isValidConfig, minimizeModal, config?.id]);
   
   const restore = useCallback(() => {
-    if (isValidConfig) {
-      restoreModal(config!.id);
-    }
-  }, [config, isValidConfig, restoreModal]);
+    if (!isValidConfig) return;
+    restoreModal(config!.id);
+  }, [isValidConfig, restoreModal, config?.id]);
   
   const close = useCallback(() => {
-    if (isValidConfig) {
-      unregisterModal(config!.id);
-    }
-  }, [config, isValidConfig, unregisterModal]);
+    if (!isValidConfig) return;
+    unregisterModal(config!.id);
+  }, [isValidConfig, unregisterModal, config?.id]);
 
   // Keyboard shortcut support
   useEffect(() => {
@@ -295,6 +266,35 @@ export function useModalDragAndMinimize(
       },
     };
   }, [isValidConfig, handleDragStart, dragState.isDragging]);
+
+  // Handle mouse events for dragging
+  useEffect(() => {
+    if (!dragState.isDragging || !isValidConfig) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newX = e.clientX - dragState.dragOffset.x;
+      const newY = e.clientY - dragState.dragOffset.y;
+      
+      setDragState(prev => ({
+        ...prev,
+        currentPosition: { x: newX, y: newY }
+      }));
+    };
+
+    const handleMouseUp = () => {
+      const finalPosition = dragState.currentPosition;
+      updateModalPosition(config!.id, finalPosition);
+      setDragState(prev => ({ ...prev, isDragging: false }));
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragState.isDragging, dragState.dragOffset, dragState.currentPosition, updateModalPosition, config?.id, isValidConfig]);
 
   // Memoize the return object to ensure stable object identity and prevent infinite re-renders
   return useMemo(() => ({

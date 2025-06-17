@@ -559,11 +559,6 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     subscribe,
   ]);
 
-  if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
-    console.count('ModalManagerProvider renders');
-  }
-
   return (
     <ModalManagerContext.Provider value={contextValue}>
       {children}
