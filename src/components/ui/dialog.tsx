@@ -186,20 +186,23 @@ const DraggableDialogContent = React.forwardRef<
 DraggableDialogContent.displayName = "DraggableDialogContent";
 
 // Internal component for draggable dialogs - completely independent from Radix Dialog system
-const DraggableDialogContentInternal: React.FC<{
-  className?: string;
-  children: React.ReactNode;
-  draggableConfig: ModalDragAndMinimizeConfig;
-  showMinimizeButton?: boolean;
-  showCloseButton?: boolean;
-} & React.ComponentPropsWithoutRef<'div'>> = ({ 
+const DraggableDialogContentInternal = React.forwardRef<
+  HTMLDivElement,
+  {
+    className?: string;
+    children: React.ReactNode;
+    draggableConfig: ModalDragAndMinimizeConfig;
+    showMinimizeButton?: boolean;
+    showCloseButton?: boolean;
+  } & React.ComponentPropsWithoutRef<'div'>
+>(({ 
   className, 
   children, 
   draggableConfig,
   showMinimizeButton = true,
   showCloseButton = true,
   ...props 
-}) => {
+}, ref) => {
   // Use the drag hook directly without any memoization that could cause issues
   const {
     isMinimized,
@@ -300,7 +303,9 @@ const DraggableDialogContentInternal: React.FC<{
     </>,
     document.body
   );
-};
+});
+
+DraggableDialogContentInternal.displayName = 'DraggableDialogContentInternal';
 
 export {
   Dialog,

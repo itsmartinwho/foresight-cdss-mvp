@@ -126,24 +126,18 @@ export function saveModalPosition(
  * Updates the minimized order for a modal
  */
 export function updateMinimizedOrder(modalId: string, isMinimized: boolean): void {
-  const currentData = loadModalPositions() || {
-    version: STORAGE_VERSION,
-    modals: {},
-    minimizedOrder: [],
-  };
+  const data = loadModalPositions();
+  if (!data) return;
 
-  if (isMinimized) {
-    // Remove from current position and add to front
-    currentData.minimizedOrder = [
-      modalId,
-      ...currentData.minimizedOrder.filter(id => id !== modalId)
-    ];
-  } else {
+  if (isMinimized && !data.minimizedOrder.includes(modalId)) {
+    // Add to minimized order at the front
+    data.minimizedOrder = [modalId, ...data.minimizedOrder];
+  } else if (!isMinimized && data.minimizedOrder.includes(modalId)) {
     // Remove from minimized order
-    currentData.minimizedOrder = currentData.minimizedOrder.filter(id => id !== modalId);
+    data.minimizedOrder = data.minimizedOrder.filter((id) => id !== modalId);
   }
 
-  saveModalPositions(currentData);
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 /**
@@ -248,4 +242,12 @@ export function constrainToViewport(
  */
 export function generateModalId(prefix = 'modal'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-} 
+}
+
+// Clear all stored modals - useful for debugging and fixing stuck modals
+export const clearAllStoredModals = (): void => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(STORAGE_KEY);
+    console.log('✅ All stored modals cleared from sessionStorage');
+  }
+}; 
