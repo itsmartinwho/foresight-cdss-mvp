@@ -243,7 +243,7 @@ export default function ConsultationPanel({
 
   // Update transcript for real-time alert processing
   useEffect(() => {
-    if (started && transcriptText && !isDemoMode && shouldStartAlertsRef.current) {
+    if (started && transcriptText && shouldStartAlertsRef.current) {
       realTimeAlerts.updateTranscript(transcriptText);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -888,6 +888,16 @@ export default function ConsultationPanel({
       setSoapNote(demoSoapNote || null);
       setPlanGenerated(!!(demoDiagnosis || demoTreatment || demoDifferentialDiagnoses));
       setStarted(true);
+      
+      // Start real-time alerts session for demo mode
+      if (!shouldStartAlertsRef.current && patient?.id) {
+        shouldStartAlertsRef.current = true;
+        try {
+          realTimeAlerts.startSession();
+        } catch (error) {
+          console.warn('[ConsultationPanel] Failed to start demo real-time alerts:', error);
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]); // Only depend on isOpen to prevent loops - demo props are init values only

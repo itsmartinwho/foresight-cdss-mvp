@@ -72,92 +72,107 @@ const dorothyRobinsonEncounterJSON: Omit<DemoEncounterData, 'diagnosis'> = {
   encounterIdentifier: "ENC-0681FA35-A794-4684-97BD-00B88370DB41-003",
   actualStart: "2025-05-17T14:11:57.063Z",
   actualEnd: "2025-05-17T14:56:57.063Z",
-  reasonCode: "K59.00",
-  reasonDisplayText: "Constipation, unspecified",
-  transcript: `Resident (Dr. Ramos): Buenas tardes, Señorita Robinson. Usted fue admitida anoche desde urgencias por estreñimiento severo y dolor abdominal. ¿Cuándo fue su última evacuación intestinal?
+  reasonCode: "E11.9",
+  reasonDisplayText: "Type 2 diabetes mellitus without complications",
+  transcript: `Dr. Chen: Good afternoon, Ms. Robinson. I'm Dr. Chen. I see you're here for your diabetes follow-up. How have you been feeling lately?
 
-Patient (en español): Hace seis días. He intentado usar senna y supositorios de glicerina en casa, pero no he podido defecar.
+Patient: Hi doctor. I've been having some issues. My blood sugars have been all over the place, and I've been getting these dizzy spells, especially when I stand up.
 
-Resident: ¿Ha tenido náuseas, vómitos o sangrado rectal?
-Patient: Un poco de náuseas después de comer, pero no he vomitado y no hay sangre en las heces.
+Dr. Chen: I see. Tell me about your current medications. What are you taking for your diabetes?
 
-Resident: ¿Cómo está su dieta e ingesta de líquidos últimamente?
-Patient: He estado comiendo comida rápida y solo bebo alrededor de un vaso de agua al día.
+Patient: Well, I'm taking metformin 1000mg twice a day, and my family doctor just started me on glyburide about three weeks ago. Oh, and I'm also taking warfarin because I had that blood clot last year.
 
-Resident: Entiendo. Revisemos su abdomen. (Palpa abdomen.)
+Dr. Chen: Warfarin and glyburide together - that's something we need to be careful about. Have you noticed any unusual bleeding or bruising?
 
-—Examen físico breve:
-Abdomen: Blando, distendido, ligero dolor en fosa iliaca izquierda sin rebote ni rigidez. Ruidos hidroaéreos hiporreactivos.
-Signos vitales: Temp 37.0 °C, PA 116/74 mmHg, FC 80 lpm, FR 16/min.
+Patient: Actually, yes. I had a nosebleed yesterday that took forever to stop, and I've been bruising really easily. Is that related?
 
-Resident: Le hicimos una radiografía abdominal en urgencias. Dr. Chen viene a verla para el plan.
+Dr. Chen: It could be. When was your last INR check for the warfarin?
 
-—Dr. Chen (turno de la mañana): Veo fecalomas en colon ascendente y transverso, sin niveles hidroaéreos ni signo de obstrucción completa. Sus electrolitos están dentro de límites normales y TSH normal.
+Patient: Um, I think it was about two months ago? My primary care doctor said it was fine then.
 
-Patient: Me preocupa que sea algo más serio.
+Dr. Chen: And when was your last hemoglobin A1C and comprehensive metabolic panel?
 
-Dr. Chen: Dado que tuvo un breve curso de opioides tras cirugía dental hace dos semanas, sospechamos estreñimiento por disminución del tránsito intestinal inducido por medicamentos y baja ingesta de fibra.
+Patient: I'm not sure what that is. I haven't had any blood work in probably four months.
 
-Patient: ¿Qué haremos?
+Dr. Chen: Okay, we definitely need to get some labs today. With your diabetes and being on warfarin, we need to monitor things more closely. Tell me about your symptoms - the dizziness, when does it happen?
 
-Dr. Chen: Admitiremos para hidratación y régimen de evacuación agresivo. Le explico en español: 
-• Manténgase NPO por 6 horas más, luego líquidos claros. 
-• Le administraremos polietilenglicol 17 g en 240 mL cada 6 horas hasta que evacúe. 
-• Docusato sodio 200 mg PO BID para ablandar heces. 
-• Supositorio de glicerina PR cada 12 horas según necesidad. 
-• IV suero salino 0.9% 1000 mL en 8 horas y luego evaluamos si tolera vía oral. 
-• Dieta alta en fibra cuando tolere.
-• Consultaremos a nutrición para plan de 25–30 g de fibra diaria y al fisioterapeuta para movilidad.
+Patient: Mostly when I get up from sitting or lying down. Sometimes I feel like I might faint. And I've been really thirsty lately and urinating a lot more than usual.
 
-Patient: Entendido.
+Dr. Chen: Those symptoms suggest your blood sugar might not be well controlled. Are you checking your blood sugar at home?
 
-Dr. Chen: Evite medicamentos que constipen. Su hidrocodona se suspendió en urgencias. Esperamos que evacúe hoy o mañana. Si no, haremos enema.
+Patient: I was, but my meter broke last month and I haven't gotten a new one yet.
 
-Patient: Gracias, doctor.`,
-  soapNote: `S: 46-year-old female admitted for 6-day history of constipation and mild diffuse abdominal discomfort. Reports low fiber diet and recent short-course opioid use (hydrocodone) post-dental surgery. No fever, no hematochezia, no weight loss.
+Dr. Chen: Let me check your vital signs. Your blood pressure today is 95/60, which is lower than normal. Heart rate is 88. Let me examine you.
 
-O: Temp 37.0 °C, BP 116/74 mmHg, HR 80 bpm, RR 16/min. Abdomen soft, distended, mild LLQ tenderness, no rebound, hypoactive bowel sounds. Rectal exam: hard stool in vault, brown, guaiac-negative. Abdominal X-ray: diffuse colonic fecal retention, no SBO or perforation. Labs: Na 137 mmol/L, TSH 2.1 µIU/mL.
+[Physical Examination]
+General: Alert but appears mildly dehydrated
+HEENT: Dry mucous membranes noted
+Cardiovascular: Regular rate and rhythm, no murmurs
+Extremities: Multiple small bruises on both arms, no peripheral edema
+Neurologic: Positive orthostatic changes - blood pressure drops to 85/55 when standing
+
+Dr. Chen: Ms. Robinson, I'm concerned about several things. First, the combination of glyburide and warfarin can increase your bleeding risk significantly. Second, your symptoms and examination suggest your diabetes may not be well controlled, and you might be dehydrated.
+
+Patient: Oh no, is that dangerous?
+
+Dr. Chen: We can manage this, but we need to make some changes. I'm going to order some urgent lab work - we need to check your blood sugar, kidney function, hemoglobin A1C, and your INR to see how thin your blood is.
+
+Patient: Okay, whatever you think is best.
+
+Dr. Chen: I'm also going to hold your glyburide for now and switch you to a different diabetes medication that's safer with warfarin. We'll need to coordinate with your primary care doctor about your warfarin dosing.
+
+Patient: Will I be okay? I'm worried about my cancer history too - I had leukemia a few years ago.
+
+Dr. Chen: Your leukemia history is important to consider, especially with the bleeding issues. We'll need to be extra careful with your blood counts. I'm going to admit you for observation so we can stabilize your blood sugar, adjust your medications safely, and get your bleeding risk under control.
+
+Patient: I understand. Thank you for taking good care of me.
+
+Dr. Chen: Of course. The nurse will get your lab work started, and I'll be back to discuss the results and our plan once we have them.`,
+  soapNote: `S: 46-year-old female with Type 2 diabetes mellitus presents with orthostatic dizziness, increased urination, thirst, and easy bruising. Currently taking metformin 1000mg BID and glyburide (started 3 weeks ago) for diabetes, plus warfarin for history of DVT. Reports recent nosebleed and multiple bruises. Last INR check 2 months ago, no recent diabetes monitoring labs. Broken glucometer, not checking blood sugars at home.
+
+O: Vital signs: BP 95/60 (orthostatic to 85/55), HR 88, Temp 98.6°F, RR 16. General: Alert, mildly dehydrated appearance. HEENT: Dry mucous membranes. CVS: RRR, no murmurs. Extremities: Multiple small bruises on bilateral arms, no edema. Neurologic: Positive orthostatic vital signs.
 
 A:
-1. K59.00 Functional constipation, likely opioid-induced + low-fiber diet.
-2. Z85.6 Personal history of leukemia.
-3. E86.0 Mild dehydration.
+1. E11.9 Type 2 diabetes mellitus, poorly controlled - based on polyuria, polydipsia, and lack of monitoring
+2. Drug interaction risk: Glyburide + Warfarin - increased bleeding risk
+3. Z87.891 Personal history of nicotine dependence (leukemia)
+4. Orthostatic hypotension, likely multifactorial (dehydration, medications)
+5. Supratherapeutic anticoagulation suspected - easy bruising, nosebleed
 
 P:
-• Admit for bowel regimen and hydration.
-• NPO 6 h → clear liquids → advance to high-fiber diet when BM occurs.
-• Polyethylene glycol 3350 17 g PO q6h until BM, luego 17 g nightly × 14 days.
-• Docusate sodium 200 mg PO BID.
-• Glycerin suppository PR q12h PRN si no defeca en 12 h.
-• IV 0.9% NaCl 1000 mL over 8 h, luego evaluar estado hídrico y pasar a PO.
-• Suspender hidrocodona; controlar dolor con acetaminofén.
-• Consultas: Nutrición (plan de fibra 25–30 g/día), Fisioterapia promotora de movilidad.
-• Dar de alta cuando pase 2 movimientos intestinales y tolera dieta.`,
+• STAT labs: BMP, HbA1c, PT/INR, CBC with diff
+• Hold glyburide immediately due to drug interaction with warfarin
+• Admit for observation and medication adjustment
+• IV hydration with NS at 100 mL/hr
+• Fingerstick glucose q6h
+• Coordinate with primary care for warfarin management
+• Endocrine consult for diabetes management
+• New glucometer and diabetes education before discharge`,
   treatments: [
     { 
-      drug: "Polyethylene glycol 3350 17g every 6 hours until bowel movement, then 17g nightly for 14 days", 
-      status: "Prescribed", 
-      rationale: "Osmotic laxative for severe fecal impaction with maintenance therapy to prevent recurrence" 
+      drug: "Discontinue glyburide immediately", 
+      status: "Discontinued", 
+      rationale: "High risk drug interaction with warfarin causing increased bleeding risk" 
     },
     { 
-      drug: "Docusate sodium 200mg twice daily", 
-      status: "Prescribed", 
-      rationale: "Stool softener to facilitate easier bowel movements and reduce straining" 
+      drug: "Continue metformin 1000mg twice daily", 
+      status: "Continued", 
+      rationale: "Well-tolerated first-line diabetes medication, safer with anticoagulation" 
     },
     { 
-      drug: "Glycerin suppository every 12 hours as needed", 
-      status: "As needed", 
-      rationale: "Rectal stimulant if no bowel movement occurs within 12 hours" 
+      drug: "Start insulin glargine 10 units subcutaneous daily", 
+      status: "New prescription", 
+      rationale: "Long-acting insulin for better glucose control without warfarin interaction" 
     },
     { 
-      drug: "High-fiber diet with 25-30g fiber daily", 
-      status: "Patient education", 
-      rationale: "Dietary modification to prevent future constipation episodes and promote regular bowel function" 
+      drug: "Normal saline IV at 100 mL/hour", 
+      status: "Inpatient", 
+      rationale: "Correct dehydration and orthostatic hypotension" 
     },
     { 
-      drug: "Increased fluid intake to 8-10 glasses of water daily", 
-      status: "Patient education", 
-      rationale: "Adequate hydration essential for preventing constipation and supporting treatment effectiveness" 
+      drug: "Hold warfarin pending INR results", 
+      status: "Held temporarily", 
+      rationale: "Evaluate current anticoagulation level due to bleeding symptoms" 
     }
   ]
 };
@@ -165,8 +180,8 @@ P:
 const dorothyRobinsonDiagnosisJSON: DemoDiagnosisData = {
   patientId: DEMO_PATIENT_ID,
   encounterId: DEMO_ENCOUNTER_ID,
-  code: "K56.41",
-  description: "Fecal impaction with severe constipation requiring aggressive bowel regimen and medical intervention"
+  code: "E11.9",
+  description: "Type 2 diabetes mellitus without complications, currently poorly controlled with drug interaction requiring medication adjustment and monitoring"
 };
 
 export const demoEncounterData: DemoEncounterData = {
@@ -209,15 +224,15 @@ export class DemoDataService {
    */
   static getSoapNotes(): SoapNote {
     return {
-      subjective: "46-year-old Hispanic female presents with a 6-day history of severe constipation and mild diffuse abdominal discomfort. Patient reports her last bowel movement was 6 days ago despite trying senna and glycerin suppositories at home. She experiences some nausea after eating but denies vomiting or rectal bleeding. Recent history of hydrocodone use following dental surgery 2 weeks ago. Patient admits to poor dietary habits with frequent fast food consumption and minimal water intake (approximately 1 glass per day). No fever, no hematochezia, no significant weight loss.\n\nAdditional history reveals chronic constipation issues dating back several years, typically manageable with over-the-counter medications. Patient has a history of leukemia in remission for the past 3 years. She takes no regular medications except for occasional ibuprofen for headaches. Family history is significant for colorectal cancer in her father at age 65. Social history includes working as an office manager, married with two teenage children. She denies tobacco, alcohol, or illicit drug use. Patient expresses concern about missing work and the impact on her family responsibilities.\n\nReview of systems is positive for mild fatigue, decreased appetite, and feeling bloated. Patient denies urinary symptoms, gynecologic issues, or respiratory complaints. She reports sleeping poorly due to abdominal discomfort but denies night sweats or fever. Patient states this episode feels more severe than her usual constipation episodes.",
+      subjective: "46-year-old Hispanic female with Type 2 diabetes mellitus presents with orthostatic dizziness, polyuria, polydipsia, and easy bruising. Patient reports blood sugars have been 'all over the place' and experiences dizziness when standing. Currently taking metformin 1000mg BID and glyburide (started 3 weeks ago) for diabetes, plus warfarin for history of DVT. Reports recent prolonged nosebleed and increased bruising. Last INR check approximately 2 months ago, no recent diabetes monitoring labs for 4 months. Home glucometer broken for 1 month, not monitoring blood sugars.\n\nPatient has history of acute myelomonocytic leukemia, currently in remission for 3 years. Expresses concern about cancer history in relation to current bleeding symptoms. Social history includes working as an office manager, married with two teenage children. She denies tobacco, alcohol, or illicit drug use but admits to poor medication adherence monitoring.\n\nReview of systems positive for orthostatic symptoms, polyuria, polydipsia, fatigue, and easy bruising. Denies chest pain, shortness of breath, abdominal pain, nausea, vomiting, or neurologic symptoms other than dizziness with position changes.",
       
-      objective: "Vital signs: Temperature 37.0°C, Blood pressure 116/74 mmHg, Heart rate 80 bpm, Respiratory rate 16/min, Oxygen saturation 98% on room air, Weight 68 kg, Height 165 cm, BMI 25.0. General appearance: Alert, oriented, appears mildly uncomfortable but in no acute distress. HEENT: Normocephalic, atraumatic, PERRLA, EOMI, mucous membranes slightly dry, no lymphadenopathy. Cardiovascular: Regular rate and rhythm, no murmurs, rubs, or gallops, peripheral pulses intact. Pulmonary: Clear to auscultation bilaterally, no wheezes, rales, or rhonchi. Abdomen: Soft, moderately distended, mild left lower quadrant tenderness to palpation, no rebound tenderness or guarding, hypoactive bowel sounds throughout, no masses palpable, tympanitic to percussion. Rectal examination: Hard stool in vault, brown in color, guaiac-negative, no masses or hemorrhoids. Extremities: No edema, cyanosis, or clubbing. Neurological: Alert and oriented x3, cranial nerves II-XII intact, motor strength 5/5 throughout, reflexes symmetric.\n\nLaboratory results: CBC shows mild leukocytosis (WBC 11.2), normal hemoglobin and hematocrit. Comprehensive metabolic panel reveals sodium 137 mmol/L, potassium 3.8 mmol/L, chloride 102 mmol/L, CO2 24 mmol/L, BUN 18 mg/dL, creatinine 0.9 mg/dL, glucose 95 mg/dL. Liver function tests within normal limits. TSH 2.1 µIU/mL within normal range. Urinalysis shows mild dehydration with specific gravity 1.025, otherwise normal. Abdominal X-ray demonstrates diffuse colonic fecal retention with moderate amount of stool throughout colon, no evidence of obstruction, perforation, or free air.",
+      objective: "Vital signs: Temperature 98.6°F, Blood pressure 95/60 mmHg supine, 85/55 mmHg standing, Heart rate 88 bpm, Respiratory rate 16/min, Oxygen saturation 98% on room air, Weight 68 kg, Height 165 cm, BMI 25.0. General appearance: Alert, oriented, appears mildly dehydrated but in no acute distress. HEENT: Normocephalic, atraumatic, PERRLA, EOMI, dry mucous membranes noted, no lymphadenopathy. Cardiovascular: Regular rate and rhythm, no murmurs, rubs, or gallops, peripheral pulses intact. Pulmonary: Clear to auscultation bilaterally, no wheezes, rales, or rhonchi. Abdomen: Soft, non-distended, no tenderness, normal bowel sounds, no masses palpable. Extremities: Multiple small bruises noted on bilateral arms, no edema, cyanosis, or clubbing. Neurological: Alert and oriented x3, cranial nerves II-XII intact, motor strength 5/5 throughout, positive orthostatic vital signs with symptomatic dizziness on standing.\n\nLaboratory results pending: STAT basic metabolic panel, hemoglobin A1C, PT/INR, and complete blood count with differential have been ordered but results not yet available at time of initial assessment.",
       
-      assessment: "1. K59.00 Functional constipation, likely opioid-induced combined with low-fiber diet - High likelihood\n   - Patient has classic presentation with 6-day history of no bowel movements\n   - Recent opioid use (hydrocodone) is a known precipitating factor\n   - Poor dietary habits and inadequate fluid intake contribute to severity\n   - Physical exam and imaging consistent with fecal retention\n\n2. Z85.6 Personal history of leukemia in remission - Established\n   - Patient reports 3 years in remission, no active oncologic issues\n   - No current hematologic abnormalities noted\n   - Requires monitoring but not directly related to current presentation\n\n3. E86.0 Mild dehydration secondary to poor fluid intake - Moderate likelihood\n   - Dry mucous membranes on physical exam\n   - Elevated urine specific gravity\n   - Poor reported fluid intake history\n   - Contributing factor to constipation severity\n\n4. K56.41 Fecal impaction - High likelihood\n   - Hard stool palpable on rectal examination\n   - Abdominal distension and discomfort\n   - Imaging shows significant fecal retention\n   - May require more aggressive intervention if simple measures fail\n\n5. Rule out intestinal obstruction - Low likelihood\n   - No evidence of mechanical obstruction on imaging\n   - Patient passing some flatus\n   - No vomiting or severe cramping\n   - Continue to monitor closely",
+      assessment: "1. E11.9 Type 2 diabetes mellitus, poorly controlled - High likelihood\n   - Classic symptoms of polyuria, polydipsia, and dizziness\n   - No recent glucose monitoring or hemoglobin A1C for 4 months\n   - Broken glucometer preventing home monitoring\n   - Requires immediate assessment and optimization\n\n2. T88.7 Drug interaction: Glyburide + Warfarin - High likelihood\n   - Recently started glyburide (3 weeks ago) with existing warfarin therapy\n   - Known significant interaction increasing bleeding risk\n   - Patient reporting easy bruising and prolonged nosebleed\n   - Requires immediate medication review and adjustment\n\n3. Z87.2 Personal history of venous thromboembolism - Established\n   - On warfarin therapy for previous DVT\n   - INR monitoring overdue (last check 2 months ago)\n   - Current bleeding symptoms concerning for supratherapeutic levels\n\n4. Z85.6 Personal history of leukemia in remission - Established\n   - 3 years in remission from acute myelomonocytic leukemia\n   - Bleeding symptoms require consideration of hematologic causes\n   - Close monitoring needed due to cancer history\n\n5. I95.1 Orthostatic hypotension - Moderate likelihood\n   - Positive orthostatic vital signs with symptoms\n   - Likely multifactorial: dehydration, medication effects, poor diabetes control\n   - Requires fluid management and medication adjustment",
       
-      plan: "Immediate management:\n• Admit to medical ward for comprehensive bowel regimen and close monitoring\n• NPO for 6 hours initially, then advance to clear liquids as tolerated\n• Progress to high-fiber diet (25-30g daily) once bowel movement occurs\n• Strict intake and output monitoring\n\nMedications:\n• Polyethylene glycol 3350 (MiraLAX) 17g PO every 6 hours until bowel movement, then 17g nightly for 14 days for maintenance\n• Docusate sodium (Colace) 200mg PO twice daily as stool softener\n• Glycerin suppository per rectum every 12 hours as needed if no bowel movement within 12 hours\n• Consider bisacodyl (Dulcolax) 10mg suppository if glycerin ineffective\n• IV 0.9% normal saline 1000mL over 8 hours for hydration, then reassess fluid status and transition to oral intake\n• Discontinue hydrocodone immediately; transition to acetaminophen 650mg every 6 hours as needed for pain\n• If no bowel movement within 24 hours, consider phosphate enema or manual disimpaction\n\nDiagnostic monitoring:\n• Daily abdominal examinations to assess for improvement\n• Monitor for signs of bowel obstruction or perforation\n• Repeat abdominal X-ray in 24-48 hours if no clinical improvement\n• Daily weights and fluid balance assessment\n• Monitor electrolytes daily while on aggressive bowel regimen\n\nConsultations:\n• Nutrition consultation for comprehensive fiber intake plan and dietary education\n• Physical therapy for mobility promotion and core strengthening exercises\n• Consider gastroenterology consultation if no improvement within 48 hours\n• Social work consultation for discharge planning and home support assessment\n\nPatient education:\n• Detailed discussion about opioid-induced constipation and prevention strategies\n• Importance of adequate fluid intake (8-10 glasses water daily)\n• High-fiber diet education with specific food recommendations\n• Recognition of warning signs requiring immediate medical attention\n• Importance of regular bowel regimen and not delaying urges\n\nDischarge planning:\n• Patient may be discharged when she has at least 2 spontaneous bowel movements\n• Must tolerate regular diet without nausea or vomiting\n• Adequate pain control with non-opioid medications\n• Home medications reconciled and patient educated on proper use\n• Follow-up appointment scheduled with primary care provider within 1 week\n• Return precautions provided for severe abdominal pain, vomiting, or inability to have bowel movements\n\nLong-term management:\n• Establish regular primary care follow-up for chronic constipation management\n• Consider referral to gastroenterology for chronic constipation evaluation if recurrent episodes\n• Annual screening colonoscopy due to family history of colorectal cancer\n• Continued monitoring of leukemia remission status with oncology",
+      plan: "Immediate management:\n• Admit to medical ward for observation and medication optimization\n• STAT laboratory studies: BMP, HbA1c, PT/INR, CBC with differential\n• IV hydration with normal saline at 100 mL/hour\n• Fingerstick glucose monitoring every 6 hours\n• Strict intake and output monitoring\n\nMedication management:\n• HOLD glyburide immediately due to warfarin interaction and bleeding risk\n• Continue metformin 1000mg BID if kidney function normal\n• HOLD warfarin pending INR results and bleeding assessment\n• Start sliding scale insulin if glucose >250 mg/dL\n• Consider insulin glargine once glucose patterns established\n\nDiagnostic monitoring:\n• Monitor for signs of bleeding (hemoglobin, hematocrit trends)\n• Orthostatic vital signs every 8 hours\n• Daily weights and fluid balance assessment\n• Glucose monitoring q6h until stable\n• Repeat INR in 24 hours after holding warfarin\n\nConsultations:\n• Endocrinology for diabetes management optimization\n• Hematology if INR significantly elevated or bleeding worsens\n• Pharmacy for medication reconciliation and interaction review\n• Diabetes educator for glucometer training and education\n\nPatient education:\n• Drug interaction awareness between glyburide and warfarin\n• Importance of regular INR monitoring on warfarin\n• Signs and symptoms of bleeding to report immediately\n• Diabetes management and importance of regular monitoring\n• Proper use of glucometer and when to check blood sugars\n\nDischarge planning:\n• Patient may be discharged when glucose stable, orthostatic symptoms resolved\n• INR in therapeutic range or bleeding risk minimized\n• New glucometer provided with education completed\n• Medication reconciliation completed with safer alternatives\n• Follow-up appointments: Primary care in 1 week, Endocrine in 2 weeks\n• Return precautions for bleeding, severe hypoglycemia, or uncontrolled hyperglycemia\n\nLong-term management:\n• Establish regular endocrinology follow-up for diabetes management\n• Consider diabetes education classes for comprehensive management\n• Regular INR monitoring per anticoagulation clinic\n• Annual ophthalmology and podiatry screening for diabetes complications\n• Continued monitoring of leukemia remission status with oncology",
       
-      rawTranscriptSnippet: "Hace seis días. He intentado usar senna y supositorios de glicerina en casa..."
+      rawTranscriptSnippet: "Well, I'm taking metformin 1000mg twice a day, and my family doctor just started me on glyburide about three weeks ago. Oh, and I'm also taking warfarin because I had that blood clot last year."
     };
   }
 } 
