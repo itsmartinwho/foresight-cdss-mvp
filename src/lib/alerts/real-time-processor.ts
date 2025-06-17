@@ -37,10 +37,10 @@ export class RealTimeProcessor {
 
   constructor(config: Partial<RealTimeProcessorConfig> = {}) {
     this.config = {
-      intervalMs: config.intervalMs || 60000, // 1 minute
+      intervalMs: config.intervalMs || 10000, // Process every 10 seconds for more responsive alerts (was 60000)
       maxAlertsPerCycle: config.maxAlertsPerCycle || 3,
       confidenceThreshold: config.confidenceThreshold || 0.8,
-      batchSize: config.batchSize || 500 // characters
+      batchSize: config.batchSize || 200 // Reduced batch size for more frequent processing (was 500)
     };
 
     this.alertsService = new UnifiedAlertsService();
@@ -158,10 +158,15 @@ export class RealTimeProcessor {
       // Check if there's new transcript content to process
       const newContent = this.getNewTranscriptContent(session);
       
-      if (!newContent || newContent.trim().length < 50) {
-        // Not enough new content to warrant processing
+      if (!newContent || newContent.trim().length < 20) {
+        // Not enough new content to warrant processing (reduced from 50 to 20 characters)
         return;
       }
+
+      console.log(`[RealTimeProcessor] Processing new content for ${session.patientId}:${session.encounterId}`, {
+        newContentLength: newContent.length,
+        newContentPreview: newContent.substring(0, 100) + '...'
+      });
 
       console.log(`Processing new content for session ${session.patientId}:${session.encounterId}`);
 

@@ -166,12 +166,17 @@ export class AlertEngine {
   ): Promise<CreateAlertRequest[]> {
     const client = isRealTime ? this.realTimeClient : this.postConsultationClient;
     
+    console.log(`[AlertEngine] Processing ${isRealTime ? 'real-time' : 'post-consultation'} alerts`, {
+      patientId: context.patientId,
+      encounterId: context.encounterId,
+      hasClient: !!client,
+      enableMockAlerts: process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS,
+      transcriptLength: context.fullTranscript?.length || 0
+    });
+    
     // If OpenAI client is not available we cannot process alerts.
     if (!client) {
-      // Optionally allow mock alerts during local development to validate the UI
-      if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
-        return this.generateMockAlerts(context, isRealTime);
-      }
+      console.log(`[AlertEngine] No ${isRealTime ? 'real-time' : 'post-consultation'} client available, cannot process alerts`);
       return [];
     }
 
@@ -206,15 +211,9 @@ export class AlertEngine {
         }));
       }
 
-      if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
-        return this.generateMockAlerts(context, isRealTime);
-      }
       return [];
     } catch (error) {
       console.error('AI processing failed:', error);
-      if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
-        return this.generateMockAlerts(context, isRealTime);
-      }
       return [];
     }
   }
@@ -397,37 +396,92 @@ export class AlertEngine {
     context: RealTimeAlertContext | PostConsultationAlertContext,
     isRealTime: boolean
   ): CreateAlertRequest[] {
-    // Generate mock alerts for development/testing
+    // Generate mock alerts for development/testing based on transcript content
     const alerts: CreateAlertRequest[] = [];
+    const transcript = context.fullTranscript?.toLowerCase() || '';
+
+    console.log('[AlertEngine] Generating mock alerts for transcript:', transcript.substring(0, 200) + '...');
 
     if (isRealTime) {
-      alerts.push({
-        patientId: context.patientId,
-        encounterId: context.encounterId,
-        alertType: AlertType.DRUG_INTERACTION,
-        severity: AlertSeverity.WARNING,
-        title: 'Mock Real-time Alert',
-        message: 'This is a simulated real-time alert for development purposes.',
-        suggestion: 'This alert is generated for testing the real-time system.',
-        confidenceScore: 0.85,
-        sourceReasoning: 'Mock alert for development',
-        processingModel: 'mock-model'
-      });
+      // Real-time alerts - look for specific patterns in the transcript
+      if (transcript.includes('methotrexate') && transcript.includes('paracetamol')) {
+        alerts.push({
+          patientId: context.patientId,
+          encounterId: context.encounterId,
+          alertType: AlertType.DRUG_INTERACTION,
+          severity: AlertSeverity.CRITICAL,
+          title: 'Potential Drug Interaction Detected',
+          message: 'Methotrexate combined with paracetamol may increase hepatotoxicity risk. Monitor liver function closely.',
+          suggestion: 'Consider alternative pain management or reduce paracetamol dose. Monitor AST/ALT levels.',
+          confidenceScore: 0.92,
+          sourceReasoning: 'Pattern matching identified concurrent use of methotrexate and paracetamol',
+          processingModel: 'mock-pattern-matcher'
+        });
+      }
+
+      if (transcript.includes('fatigue') && transcript.includes('joint') && transcript.includes('pain')) {
+        alerts.push({
+          patientId: context.patientId,
+          encounterId: context.encounterId,
+          alertType: AlertType.MISSING_LAB_RESULT,
+          severity: AlertSeverity.WARNING,
+          title: 'Rheumatological Workup Recommended',
+          message: 'Patient presents with fatigue and joint pain. Consider rheumatoid factor, anti-CCP, and inflammatory markers.',
+          suggestion: 'Order RF, anti-CCP antibodies, ESR, CRP, and ANA to evaluate for autoimmune conditions.',
+          confidenceScore: 0.87,
+          sourceReasoning: 'Symptom pattern suggests possible rheumatological condition requiring laboratory evaluation',
+          processingModel: 'mock-pattern-matcher'
+        });
+      }
+
+      // Add a general mock alert if no specific patterns match
+      if (alerts.length === 0 && transcript.length > 50) {
+        alerts.push({
+          patientId: context.patientId,
+          encounterId: context.encounterId,
+          alertType: AlertType.CLINICAL_GUIDELINE,
+          severity: AlertSeverity.INFO,
+          title: 'Real-time Clinical Monitoring',
+          message: 'Mock alert system is active and monitoring consultation in real-time.',
+          suggestion: 'This demonstrates the real-time alert capabilities during live consultations.',
+          confidenceScore: 0.75,
+          sourceReasoning: 'Mock alert for development and testing purposes',
+          processingModel: 'mock-model'
+        });
+      }
     } else {
+      // Post-consultation alerts - more comprehensive analysis
+      if (transcript.includes('rheumatoid') || transcript.includes('arthritis')) {
+        alerts.push({
+          patientId: context.patientId,
+          encounterId: context.encounterId,
+          alertType: AlertType.COMORBIDITY,
+          severity: AlertSeverity.WARNING,
+          title: 'Rheumatoid Arthritis Management Review',
+          message: 'Patient may have rheumatoid arthritis. Ensure DMARD therapy is optimized and monitoring is current.',
+          suggestion: 'Review current DMARD therapy, order quarterly labs, and consider rheumatology referral if not already under care.',
+          confidenceScore: 0.88,
+          sourceReasoning: 'Post-consultation analysis identified possible rheumatoid arthritis requiring specialized management',
+          processingModel: 'mock-comprehensive-analyzer'
+        });
+      }
+
+      // Add a general post-consultation mock alert
       alerts.push({
         patientId: context.patientId,
         encounterId: context.encounterId,
-        alertType: AlertType.COMORBIDITY,
+        alertType: AlertType.ASSESSMENT_QUESTION,
         severity: AlertSeverity.INFO,
-        title: 'Mock Post-consultation Alert',
-        message: 'This is a simulated post-consultation alert for development purposes.',
-        suggestion: 'This alert is generated for testing the comprehensive analysis system.',
-        confidenceScore: 0.75,
-        sourceReasoning: 'Mock alert for development',
-        processingModel: 'mock-model'
+        title: 'Post-consultation Analysis Complete',
+        message: 'Comprehensive review of consultation completed. Consider follow-up plan optimization.',
+        suggestion: 'Review consultation summary and ensure all clinical issues have been addressed appropriately.',
+        confidenceScore: 0.70,
+        sourceReasoning: 'Mock post-consultation analysis for development purposes',
+        processingModel: 'mock-comprehensive-analyzer'
       });
     }
 
+    console.log(`[AlertEngine] Generated ${alerts.length} mock alerts:`, alerts.map(a => a.title));
     return alerts;
   }
 }

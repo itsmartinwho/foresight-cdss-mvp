@@ -375,4 +375,294 @@ The consolidation maintains backward compatibility:
 - **Data Structures:** No changes to underlying data models
 - **Component Reuse:** Original tab components preserved for potential future use
 
-Components like `DiagnosisTab`, `TreatmentTab`, etc. remain in the codebase but are no longer imported into the main workspace view. 
+Components like `DiagnosisTab`, `TreatmentTab`, etc. remain in the codebase but are no longer imported into the main workspace view.
+
+---
+
+## Draggable and Minimizable Modals - Complete Implementation
+
+### Overview
+
+The Foresight CDSS includes a comprehensive draggable and minimizable modal system that enhances user productivity by allowing modals to be repositioned, minimized to a taskbar, and restored on demand. This system is fully integrated across all modal components in the application.
+
+### Core Features
+
+**1. Drag and Drop Functionality**
+- Click and drag modals by their title bars
+- Smooth drag animations with visual feedback
+- Viewport boundary constraints prevent modals from being dragged off-screen
+- Mouse and touch event handling for cross-device compatibility
+
+**2. Minimize and Restore System**
+- Minimize modals to a bottom taskbar with one-click operation
+- Restore from minimized state maintaining original position
+- Multiple modal management with organized taskbar display
+- Persistent minimize state across page navigation
+
+**3. Position Persistence**
+- Modal positions automatically saved to sessionStorage
+- Automatic restoration on page reload
+- 24-hour data expiration prevents stale data accumulation
+- Unique modal identification system prevents conflicts
+
+**4. Keyboard Accessibility**
+- `Ctrl+M` to minimize/restore active modal
+- `Escape` to close modals
+- Full keyboard navigation support
+- Screen reader compatibility with proper ARIA labels
+
+**5. Cross-Page Persistence**
+- Minimized modals persist when navigating between pages
+- Smart state management distinguishes between component unmounting and user actions
+- Seamless restoration from any page in the application
+
+### Technical Architecture
+
+**File Structure:**
+```
+src/
+├── types/modal.ts                           # TypeScript interfaces
+├── hooks/useModalDragAndMinimize.tsx        # Core drag/minimize logic
+├── lib/modalPersistence.ts                 # SessionStorage utilities
+├── components/ui/
+│   ├── modal-manager.tsx                    # Global state management
+│   ├── minimized-modal-bar.tsx             # Bottom taskbar component
+│   ├── draggable-modal-wrapper.tsx         # Higher-order wrapper
+│   ├── dialog.tsx                          # Enhanced Dialog component
+│   ├── alert-dialog.tsx                    # Enhanced AlertDialog component
+│   └── sheet.tsx                           # Enhanced Sheet component
+├── styles/modal-drag.css                   # CSS animations and styling
+└── tests/e2e/modal-drag-minimize.spec.ts   # Comprehensive test suite
+```
+
+**Component Integration Pattern:**
+
+The system maintains backward compatibility with existing modal implementations:
+
+```tsx
+// Before
+<DialogContent>
+  {/* content */}
+</DialogContent>
+
+// After (with draggable support)
+<DraggableDialogContent 
+  draggable={true}
+  draggableConfig={{ modalId: 'unique-id' }}
+>
+  {/* content */}
+</DraggableDialogContent>
+```
+
+### State Management
+
+**Global State Architecture:**
+- **ModalManagerProvider**: React Context + useReducer for modal coordination
+- **Local State**: Individual hooks for drag/minimize behavior per modal
+- **Persistence Layer**: SessionStorage with automatic cleanup
+- **Performance**: Throttled position updates, efficient event handling
+
+**Key Actions:**
+- `REGISTER_MODAL`: Register new modal with system
+- `UNREGISTER_MODAL`: Remove modal from system
+- `SET_MODAL_VISIBILITY`: Hide/show modal without unregistering
+- `MINIMIZE_MODAL`: Move modal to minimized state
+- `RESTORE_MODAL`: Return modal to active state
+- `UPDATE_POSITION`: Update modal position during drag
+
+### Configuration Options
+
+```tsx
+interface ModalDragAndMinimizeConfig {
+  modalId: string;                    // Unique identifier (required)
+  defaultPosition: { x: number; y: number };
+  canMinimize?: boolean;              // Default: true
+  canMaximize?: boolean;              // Default: false (not implemented)
+  persistPosition?: boolean;          // Default: true
+  title?: string;                     // For minimized display
+  icon?: ComponentType | string;      // For minimized display
+  constraints?: {
+    minX?: number;
+    maxX?: number;
+    minY?: number;
+    maxY?: number;
+  };
+}
+```
+
+### Implementation Examples
+
+**New Consultation Modal:**
+```tsx
+<DraggableDialogContent 
+  draggable={true}
+  draggableConfig={{
+    modalId: 'new-consultation',
+    defaultPosition: getCenterPosition(),
+    title: 'New Consultation',
+    canMinimize: true,
+  }}
+>
+  {/* Form content */}
+</DraggableDialogContent>
+```
+
+**Consultation Panel (Complex Clinical Workflow):**
+```tsx
+<DraggableModalWrapper
+  draggableConfig={{
+    modalId: `consultation-${encounterId}`,
+    defaultPosition: { x: 200, y: 100 },
+    title: `Consultation - ${patient?.full_name}`,
+    canMinimize: true,
+    persistPosition: true,
+  }}
+>
+  <Card className="w-full max-w-6xl bg-background/95">
+    {/* Clinical interface content */}
+  </Card>
+</DraggableModalWrapper>
+```
+
+### Visual Design
+
+**Glass Morphism Styling:**
+- Semi-transparent backgrounds with backdrop blur effects
+- Subtle shadows and border styling for depth
+- Smooth CSS transitions for state changes
+- Consistent with application's overall design language
+
+**Animation System:**
+- CSS transitions for smooth movement during drag operations
+- Entrance/exit animations for minimize/restore actions
+- Hover effects for interactive elements (minimize button, taskbar items)
+- Performance-optimized using CSS transforms
+
+### Best Practices
+
+**1. Unique Modal IDs:** Always provide a unique `modalId` for proper state management
+```tsx
+// Good
+modalId: `consultation-${encounterId}`
+
+// Avoid
+modalId: 'consultation' // Multiple instances conflict
+```
+
+**2. Meaningful Titles:** Use descriptive titles for minimized display
+```tsx
+title: `Consultation - ${patient?.full_name}`
+// Better than: title: 'Modal'
+```
+
+**3. Container Architecture:** Render `DraggableModalWrapper` directly without intermediate containers
+```tsx
+// Correct
+<DraggableModalWrapper>
+  <Card>Content</Card>
+</DraggableModalWrapper>
+
+// Incorrect - breaks coordinate system
+<div className="fixed inset-0">
+  <div>
+    <DraggableModalWrapper>
+      <Card>Content</Card>
+    </DraggableModalWrapper>
+  </div>
+</div>
+```
+
+**4. Position Calculations:** Use appropriate default positions based on modal size
+```tsx
+// For standard modals (512x400)
+defaultPosition: getCenterPosition(512, 400)
+
+// For large modals (800x600)
+defaultPosition: getCenterPosition(800, 600)
+```
+
+### Performance Optimizations
+
+**Efficient Event Handling:**
+- Throttled position updates during drag operations (16ms intervals)
+- Automatic event listener cleanup on component unmount
+- Minimal DOM manipulations using CSS transforms
+- Background position persistence without blocking UI
+
+**Memory Management:**
+- SessionStorage data automatically expires after 24 hours
+- Modal state cleaned up on component unmount
+- Efficient React context usage prevents unnecessary re-renders
+- No memory leaks in drag event handling
+
+### Browser Compatibility
+
+**Supported Browsers:**
+- Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+- Progressive enhancement for older browsers
+- Core modal functionality works without drag features as fallback
+- Touch device support for mobile and tablet usage
+
+### Testing
+
+**Comprehensive Test Suite:**
+- End-to-end tests with Playwright (`tests/e2e/modal-drag-minimize.spec.ts`)
+- Tests cover drag operations, minimize/restore, keyboard shortcuts
+- Cross-page persistence validation
+- Multiple modal scenarios and edge cases
+- Accessibility compliance verification
+
+**Test Coverage Includes:**
+- Modal dragging to different viewport positions
+- Minimize and restore operations
+- Keyboard shortcuts (`Ctrl+M`, `Escape`)
+- Position persistence across page reloads
+- Cross-page navigation with minimized modals
+- Multiple modal management
+- Viewport constraint enforcement
+
+### Troubleshooting Common Issues
+
+**Modal Not Centering:**
+- Verify `defaultPosition` calculation matches actual modal dimensions
+- Ensure parent containers don't interfere with positioning
+
+**Minimize Button Not Working:**
+- Check that `canMinimize` is set to `true` in config
+- Verify `ModalManagerProvider` is included in app layout
+
+**Position Not Persisting:**
+- Confirm `persistPosition` is enabled (default: true)
+- Check browser sessionStorage is not disabled
+- Verify unique `modalId` is provided
+
+**Drag Not Working:**
+- Ensure `draggable` prop is set to `true`
+- Check that drag handle area (title bar) is properly configured
+- Verify no CSS interference with pointer events
+
+### Integration Requirements
+
+**App Layout Setup:**
+```tsx
+// Required in layout.tsx or root component
+import { ModalManagerProvider } from '@/components/ui/modal-manager';
+import MinimizedModalBar from '@/components/ui/minimized-modal-bar';
+
+export default function RootLayout({ children }) {
+  return (
+    <ModalManagerProvider>
+      {children}
+      <MinimizedModalBar />
+    </ModalManagerProvider>
+  );
+}
+```
+
+**CSS Dependencies:**
+```css
+/* Required styles in styles/modal-drag.css */
+@import './modal-drag.css';
+```
+
+This implementation provides a robust, accessible, and user-friendly modal system that significantly enhances the clinical workflow experience by allowing clinicians to manage multiple consultation windows effectively. 

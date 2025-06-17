@@ -55,8 +55,15 @@ export function useRealTimeAlerts(options: UseRealTimeAlertsOptions) {
   // Start real-time session
   const startSession = useCallback(async () => {
     if (!patientId || !encounterId || sessionStartedRef.current) {
+      console.log('[useRealTimeAlerts] Start session skipped:', {
+        patientId: !!patientId,
+        encounterId: !!encounterId,
+        sessionAlreadyStarted: sessionStartedRef.current
+      });
       return;
     }
+
+    console.log('[useRealTimeAlerts] Starting real-time alert session:', { patientId, encounterId });
 
     try {
       setState(prev => ({ ...prev, isProcessing: true, error: null }));
@@ -86,10 +93,11 @@ export function useRealTimeAlerts(options: UseRealTimeAlertsOptions) {
         stats: result.stats
       }));
 
-      console.log('Real-time alert session started:', result.sessionKey);
+      console.log('[useRealTimeAlerts] Real-time alert session started successfully:', result);
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Unknown error');
+      console.error('[useRealTimeAlerts] Failed to start session:', err);
       setState(prev => ({ 
         ...prev, 
         error: err.message, 
@@ -150,8 +158,20 @@ export function useRealTimeAlerts(options: UseRealTimeAlertsOptions) {
   // Update transcript
   const updateTranscript = useCallback(async (transcript: string) => {
     if (!patientId || !encounterId || !sessionStartedRef.current) {
+      console.log('[useRealTimeAlerts] Update transcript skipped:', {
+        patientId: !!patientId,
+        encounterId: !!encounterId,
+        sessionStarted: sessionStartedRef.current
+      });
       return;
     }
+
+    console.log('[useRealTimeAlerts] Updating transcript:', {
+      patientId,
+      encounterId,
+      transcriptLength: transcript.length,
+      transcriptPreview: transcript.substring(0, 100) + '...'
+    });
 
     try {
       const response = await fetch('/api/alerts/real-time', {
@@ -169,9 +189,13 @@ export function useRealTimeAlerts(options: UseRealTimeAlertsOptions) {
         throw new Error(`Failed to update transcript: ${response.statusText}`);
       }
 
+      const result = await response.json();
+      console.log('[useRealTimeAlerts] Transcript update response:', result);
+
       // Don't need to process the response for transcript updates
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Unknown error');
+      console.error('[useRealTimeAlerts] Transcript update error:', err);
       setState(prev => ({ ...prev, error: err.message }));
       onError?.(err);
     }

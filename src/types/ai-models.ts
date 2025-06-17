@@ -2,10 +2,10 @@
 // Defines types for integrating with OpenAI models for alert processing
 
 export enum AIModel {
-  GPT_4_1_MINI = 'gpt-4.1-mini',
-  GPT_O3 = 'o3',
-  GPT_4O_MINI = 'gpt-4o-mini', // Fallback option
-  GPT_4O = 'gpt-4o' // Another fallback option
+  GPT_4O_MINI = 'gpt-4o-mini', // Fast and cost-effective for real-time
+  GPT_4O = 'gpt-4o', // More comprehensive for post-consultation
+  GPT_4_TURBO = 'gpt-4-turbo', // Alternative option
+  GPT_3_5_TURBO = 'gpt-3.5-turbo' // Fallback option
 }
 
 export interface AIModelConfig {
@@ -137,7 +137,7 @@ export interface AIProcessingResponse {
 
 // Real-time specific configurations
 export interface RealTimeAIConfig extends AIModelConfig {
-  model: AIModel.GPT_4_1_MINI;
+  model: AIModel.GPT_4O_MINI;
   processingInterval: number; // in seconds (60 for minute-by-minute)
   maxContextTokens: number;
   priorityThreshold: number; // Confidence threshold for immediate alerts
@@ -145,7 +145,7 @@ export interface RealTimeAIConfig extends AIModelConfig {
 
 // Post-consultation specific configurations
 export interface PostConsultationAIConfig extends AIModelConfig {
-  model: AIModel.GPT_O3;
+  model: AIModel.GPT_4O;
   comprehensiveAnalysis: boolean;
   includeRealTimeAlerts: boolean;
   alertRefreshLogic: boolean;
@@ -201,21 +201,21 @@ export interface PromptBuilder {
 // Model configuration presets
 export const AI_MODEL_PRESETS: Record<string, AIModelConfig> = {
   REAL_TIME_FAST: {
-    model: AIModel.GPT_4_1_MINI,
+    model: AIModel.GPT_4O_MINI,
     maxTokens: 1000,
     temperature: 0.1,
     timeout: 30000,
     retryAttempts: 2
   },
   POST_CONSULTATION_COMPREHENSIVE: {
-    model: AIModel.GPT_O3,
+    model: AIModel.GPT_4O,
     maxTokens: 4000,
     temperature: 0.2,
     timeout: 120000,
     retryAttempts: 3
   },
   FALLBACK_RELIABLE: {
-    model: AIModel.GPT_4O_MINI,
+    model: AIModel.GPT_3_5_TURBO,
     maxTokens: 2000,
     temperature: 0.1,
     timeout: 45000,

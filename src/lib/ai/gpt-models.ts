@@ -310,14 +310,14 @@ export class OpenAIClient implements AIAPIClient {
 
   private getMaxContextTokens(model: AIModel): number {
     switch (model) {
-      case AIModel.GPT_4_1_MINI:
-        return 1000000; // 1M tokens
-      case AIModel.GPT_O3:
-        return 200000; // Estimated, adjust based on actual limits
       case AIModel.GPT_4O_MINI:
         return 128000;
       case AIModel.GPT_4O:
         return 128000;
+      case AIModel.GPT_4_TURBO:
+        return 128000;
+      case AIModel.GPT_3_5_TURBO:
+        return 16000;
       default:
         return 4000; // Conservative fallback
     }
@@ -336,20 +336,6 @@ export class AIModelFactory {
 
   static getModelCapabilities(model: AIModel) {
     switch (model) {
-      case AIModel.GPT_4_1_MINI:
-        return {
-          maxContextLength: 1000000,
-          maxOutputTokens: 32000,
-          supportsRealTime: true,
-          costPerToken: 0.0000004 // $0.40 per 1M tokens
-        };
-      case AIModel.GPT_O3:
-        return {
-          maxContextLength: 200000,
-          maxOutputTokens: 16000,
-          supportsRealTime: false,
-          costPerToken: 0.000015 // Estimated
-        };
       case AIModel.GPT_4O_MINI:
         return {
           maxContextLength: 128000,
@@ -363,6 +349,20 @@ export class AIModelFactory {
           maxOutputTokens: 16000,
           supportsRealTime: true,
           costPerToken: 0.000005
+        };
+      case AIModel.GPT_4_TURBO:
+        return {
+          maxContextLength: 128000,
+          maxOutputTokens: 4000,
+          supportsRealTime: true,
+          costPerToken: 0.00001
+        };
+      case AIModel.GPT_3_5_TURBO:
+        return {
+          maxContextLength: 16000,
+          maxOutputTokens: 4000,
+          supportsRealTime: true,
+          costPerToken: 0.0000015
         };
       default:
         return {
@@ -400,8 +400,8 @@ export function selectOptimalModel(context: any, isRealTime: boolean): AIModel {
   );
 
   if (isRealTime) {
-    return estimatedTokens < 500000 ? AIModel.GPT_4_1_MINI : AIModel.GPT_4O_MINI;
+    return estimatedTokens < 50000 ? AIModel.GPT_4O_MINI : AIModel.GPT_3_5_TURBO;
   } else {
-    return estimatedTokens < 150000 ? AIModel.GPT_O3 : AIModel.GPT_4O;
+    return estimatedTokens < 100000 ? AIModel.GPT_4O : AIModel.GPT_4O_MINI;
   }
 } 

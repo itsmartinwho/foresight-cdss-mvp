@@ -2,20 +2,18 @@
 
 ## Overview
 
-Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and the initial version of its AI features. It uses a Supabase backend (PostgreSQL) to manage and serve realistic mock patient data, simulating functionalities like patient dashboards, lists, and workspaces.
+Foresight CDSS is a browser-based clinical decision support system prototype. This MVP (Minimum Viable Product) focuses on demonstrating core UI/UX concepts and functional AI features. It uses a Supabase backend (PostgreSQL) to manage and serve realistic patient data, providing a comprehensive platform for patient dashboards, consultation workflows, and AI-powered clinical assistance.
 
 The system currently features:
-*   **Tool A (Advisor):** An AI-powered chatbot for general medical questions.
-*   **Tool B (Clinical Engine):** A functional AI diagnostic pipeline that processes patient data, generates diagnoses with differentials, creates SOAP notes, and produces referral/prior authorization documents.
-
-The vision includes additional advanced AI tools (C, D, F) that are planned for future development.
+*   **Tool A (Advisor):** An AI-powered chatbot for general medical questions using OpenAI's API.
+*   **Tool B (Clinical Engine):** A functional AI diagnostic pipeline that processes patient data, generates diagnoses with differentials, creates SOAP notes, and produces document drafts.
+*   **Tool C (Medical Co-pilot):** A real-time AI alerts system that provides intelligent clinical decision support during consultations, including complex condition detection, drug interaction alerts, and comprehensive post-consultation analysis.
 
 **Note:** This is a prototype. For detailed architecture, AI tool status, frontend and development guidelines, please refer to the comprehensive documentation in the `/docs` directory:
 *   **[System Architecture](./docs/architecture.md):** The primary source of truth for system design, AI tools, data layer, application flow, and tech stack.
 *   **[Frontend Guide](./docs/frontend_guide.md):** Detailed frontend development guidelines, styling conventions, component structure, and UI patterns.
 *   **[Development Guide](./docs/development_guide.md):** Rules for development process, coding standards, version control, testing strategy, and more.
 *   **[Clinical Engine Guide](./docs/clinical-engine.md):** Detailed documentation of the Clinical Engine (Tool B), including its V3 architecture and batch processing capabilities.
-*   **[Plasma Background Effect](./docs/frontend_guide.md#plasma-background-effect):** Explanation of the animated background effect.
 
 ## Features (Current Prototype Highlights)
 
@@ -30,15 +28,29 @@ The vision includes additional advanced AI tools (C, D, F) that are planned for 
     *   Differential diagnoses with likelihood assessment
     *   SOAP note generation
     *   Treatment recommendations
-    *   Referral and prior authorization document generation
-*   **Placeholder UI for Future AI Tools (C, D, F):** UI elements exist with mock data or empty.
-*   **Live Voice Transcription:** In consultation workspace.
+    *   Referral document generation (in development)
+*   **Tool C - Medical Co-pilot:** Real-time AI alerts system with:
+    *   Real-time consultation monitoring and alerts
+    *   Complex condition detection (autoimmune, inflammatory, oncology patterns)
+    *   Drug interaction alerts
+    *   Missing assessment suggestions
+    *   Comorbidity identification
+    *   Post-consultation comprehensive analysis
+    *   Unified alert management with persistence
+*   **Live Voice Transcription:** Real-time conversation capture using Deepgram integration.
+*   **Advanced Modal System:** Draggable, minimizable modals with cross-page persistence.
+*   **Clinical Guidelines Integration:** Searchable clinical guidelines with semantic search.
 *   **Modular UI Components & Glassmorphism UI.**
 *   **Client-Side Routing (Next.js).**
 
-## Target State Features (Vision)
+## Target State Features (Future Development)
 
-_The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed in **[docs/architecture.md#ai-tool-roadmap](./docs/architecture.md#ai-tool-roadmap)**._
+*   **Enhanced Clinical Trial Matching:** Automated patient-trial matching based on diagnoses and eligibility criteria.
+*   **Advanced Prior Authorization:** Automated prior authorization document generation with insurance integration.
+*   **Multi-provider Collaboration:** Team-based clinical workflows and communication features.
+*   **Advanced Analytics:** Clinical outcome tracking and performance analytics.
+*   **EHR Integration:** Seamless integration with external electronic health record systems.
+*   **Mobile Application:** Point-of-care mobile access for clinical decision support.
 
 ## Getting Started
 
@@ -49,7 +61,7 @@ _The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed i
 | Node.js                  | 18 LTS (e.g., 18.x)  | [https://nodejs.org/](https://nodejs.org/) (20.x also fine) |
 | pnpm (CLI)               | 8                    | `npm install -g pnpm`                                 |
 | Supabase Account         | N/A                  | Required for your own database instance.   |
-| OpenAI API Key           | N/A                  | Required for Tool A (Advisor).          |
+| OpenAI API Key           | N/A                  | Required for Tool A (Advisor) and Tool C (Alerts).          |
 | Python (Optional)        | 3.9+                 | For the Clinical Engine prototype (Tool B), located in `src/clinical_engine_prototype/` |
 
 ### Installation & Setup
@@ -62,6 +74,7 @@ _The long-term vision, centered around AI Tools A, B, C, D, and F, is detailed i
 4.  **Set up Supabase Database:**
     *   Create a project on [Supabase](https://supabase.com/).
     *   Run schema from `scripts/schema.sql`.
+    *   Run the unified alerts migration from `supabase/migrations/20250113000000_unified_alerts_system.sql`.
 5.  **(Optional) Python Prototype Setup (Clinical Engine - Tool B):**
     *   The prototype code is located in `src/clinical_engine_prototype/`.
     *   To run it, navigate to that directory: `cd src/clinical_engine_prototype/`
@@ -104,5 +117,7 @@ For a comprehensive understanding of the project, please refer to the following 
 *   **[Advisor Guide](./docs/advisor.md):** Guide to the Advisor feature (Tool A), including its integration with OpenAI's Code Interpreter.
 *   **[Transcription System](./docs/transcription.md):** Comprehensive documentation of the transcription system, including its architecture and development best practices.
 *   **[Demo System](./docs/demo_system.md):** Guide to the demo system, including its architecture and testing procedures.
+*   **[Clinical Guidelines](./docs/clinical-guidelines.md):** Documentation of the clinical guidelines system and integration.
+*   **[History](./docs/history.md):** Log of notable incidents, bug fixes, and data recovery operations.
 
 The `README.md` provides a high-level overview and setup instructions. For in-depth information, consult the specialized documents above.

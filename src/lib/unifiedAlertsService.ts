@@ -321,26 +321,33 @@ export class UnifiedAlertsService {
       if (!context) return;
 
       // Only process if there's new transcript content
-      if (!context.transcriptSegment || context.transcriptSegment.trim().length < 50) {
-        // Not enough new content to process
+      if (!context.transcriptSegment || context.transcriptSegment.trim().length < 20) {
+        // Not enough new content to process (reduced from 50 to 20 characters)
+        console.log(`[UnifiedAlertsService] Insufficient transcript content for processing:`, {
+          segmentLength: context.transcriptSegment?.trim().length || 0,
+          required: 20
+        });
         return;
       }
+
+      console.log(`[UnifiedAlertsService] Processing real-time alerts for transcript segment:`, {
+        patientId,
+        encounterId,
+        segmentLength: context.transcriptSegment.length,
+        segmentPreview: context.transcriptSegment.substring(0, 100) + '...'
+      });
 
       // Check if AI client is available
       const client = this.getRealtimeClient();
       if (!client) {
-        console.log('AI processing not available - using mock alerts for development');
-        // Fallback to mock alerts only when explicitly enabled via env var
-        if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
-          await this.createMockAlert(patientId, encounterId, 'real_time');
-        }
+        console.log('[UnifiedAlertsService] AI client not available for real-time processing');
         return;
       }
 
       // Process with AI
       const aiContext = this.buildAIProcessingContext(context);
       const request: AIProcessingRequest = {
-        model: AIModel.GPT_4_1_MINI,
+        model: AIModel.GPT_4O_MINI,
         context: aiContext,
         promptTemplate: getRealTimeTemplate(),
         isRealTime: true,
@@ -392,18 +399,14 @@ export class UnifiedAlertsService {
       // Check if AI client is available
       const client = this.getPostConsultationClient();
       if (!client) {
-        console.log('AI processing not available - using mock alerts for development');
-        // Fallback to mock alerts only when explicitly enabled via env var
-        if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
-          await this.createMockAlert(patientId, encounterId, 'post_consultation');
-        }
+        console.log('[UnifiedAlertsService] AI client not available for post-consultation processing');
         return;
       }
 
       // Process with comprehensive AI analysis
       const aiContext = this.buildAIProcessingContext(context);
       const request: AIProcessingRequest = {
-        model: AIModel.GPT_O3,
+        model: AIModel.GPT_4O,
         context: aiContext,
         promptTemplate: getRealTimeTemplate(), // Use comprehensive template
         isRealTime: false,

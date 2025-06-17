@@ -199,6 +199,277 @@ Through extensive browser testing, a fundamental architectural issue was identif
 **Root Cause Analysis:**
 The hook calculated position relative to viewport but applied it within a full-screen container, causing the centering logic to be offset incorrectly.
 
+**Solution Implemented:**
+- **ConsultationPanel**: Removed all container wrapper divs around `DraggableModalWrapper`
+- **Architecture Rule**: `DraggableModalWrapper` must be rendered directly as the topmost modal component without intermediate containers
+
+### Phase 3: Cross-Page Persistence Issues
+
+**Modal Cross-Page Persistence Problem:**
+Minimized modals were not persisting across page navigation. When users minimized a modal on one page and navigated to another page, the minimized modal would disappear from the minimized modal bar and be lost.
+
+**Root Cause Analysis:**
+The issue was in the modal lifecycle management:
+1. **Modal Registration Lifecycle**: When navigating between pages, modal components unmount and remount
+2. **Unregistration on Unmount**: The original code completely unregistered modals when components unmounted
+3. **Lost Minimized State**: This caused minimized modals to be completely removed from the global state
+4. **Storage vs. State Mismatch**: While sessionStorage correctly persisted the minimized state, the in-memory state was reset
+
+**Solution Implementation:**
+
+*Enhanced Modal Manager Actions:*
+Added a new action `SET_MODAL_VISIBILITY` to allow modals to be marked as invisible without being fully unregistered:
+
+```typescript
+type ModalManagerAction = 
+  | { type: 'SET_MODAL_VISIBILITY'; payload: { id: string; isVisible: boolean } };
+```
+
+*Smart Unmount Behavior:*
+Modified `useModalDragAndMinimize` hook to handle component unmounting differently based on modal state:
+
+```typescript
+// When component unmounts, mark modal as not visible but don't unregister
+// This allows minimized modals to persist across page navigation
+const modalState = getModalState(config!.id);
+if (modalState && modalState.isMinimized) {
+  // If modal is minimized, just mark as not visible
+  setModalVisibility(config!.id, false);
+} else {
+  // If modal is not minimized, fully unregister it
+  unregisterModal(config!.id);
+}
+```
+
+*Enhanced Persistence Layer:*
+Updated the persistence layer to store modal metadata (title, icon) required for minimized modal display:
+
+```typescript
+interface PersistedModalData {
+  position: ModalPosition;
+  zIndex: number;
+  isMinimized: boolean;
+  timestamp: number;
+  title?: string;
+  icon?: React.ComponentType<{ className?: string }> | string;
+}
+```
+
+**Testing and Validation:**
+Created comprehensive end-to-end tests (`tests/e2e/modal-cross-page-persistence.spec.ts`) to verify:
+- Minimized modals persist across navigation
+- Restored modals appear in correct positions
+- Multiple modal scenarios work correctly
+
+### Phase 4: Infinite Loop and Render Issues
+
+**Modal Infinite Loop Problem:**
+The NewConsultationModal was causing a "Maximum update depth exceeded" error when opened from the dashboard and patients tab. This was due to an infinite render loop caused by the interaction between Radix UI's focus management system and our draggable modal implementation.
+
+**Root Causes Identified:**
+
+*Focus Event Propagation:*
+- Radix UI's `@radix-ui/react-compose-refs` was triggering setState calls continuously
+- The `onOpenAutoFocus` and `onCloseAutoFocus` handlers were being recreated on every render
+- This caused the focus-scope to continuously update, triggering more renders
+
+*Unstable Object References in Drag Hook:*
+- `containerProps` and `dragHandleProps` were being recreated with new object identity on every render
+- This caused components using these props to re-render infinitely
+- The drag offset state was being updated unnecessarily
+
+*Duplicate Event Handlers:*
+- Mouse event handlers were being registered both in `handleDragStart` and in a separate `useEffect`
+- This caused conflicting state updates and race conditions
+
+**Solution Applied:**
+
+*Focus Event Isolation:*
+```tsx
+// Extract focus handlers to prevent re-renders
+const { onOpenAutoFocus, onCloseAutoFocus, ...restProps } = props;
+
+// Use refs to store callbacks
+const onOpenAutoFocusRef = React.useRef(onOpenAutoFocus);
+const onCloseAutoFocusRef = React.useRef(onCloseAutoFocus);
+```
+
+*Stabilized Drag State Management:*
+```tsx
+// Update ref directly to avoid state updates
+dragOffsetRef.current = offset;
+
+// Guard against unnecessary state updates
+setDragState(prev => {
+  if (prev.currentPosition.x === constrainedPosition.x && 
+      prev.currentPosition.y === constrainedPosition.y) {
+    return prev;
+  }
+  return { ...prev, currentPosition: constrainedPosition };
+});
+```
+
+*Consolidated Event Handling:*
+- Removed duplicate mouse event handlers in `useEffect`
+- All event handling now managed through `handleDragStart`, `handleDragMove`, and `handleDragEnd`
+- Used `setTimeout` for position updates to ensure state consistency
+
+*Registration Safeguards:*
+```tsx
+const isMountedRef = useRef(false);
+
+useEffect(() => {
+  if (isValidConfig && !isMountedRef.current) {
+    isMountedRef.current = true;
+    registerModal(config!, pathname);
+  }
+  // ... cleanup
+}, [isValidConfig, config?.id, registerModal, unregisterModal, pathname]);
+```
+
+---
+
+## Enhanced Medical Copilot Alerts System - Testing and Implementation Fixes (2025)
+
+### Critical System Stability Issues Resolved
+
+**Problem Summary:**
+The Enhanced Medical Copilot Alerts System (Tool C) experienced multiple critical issues that prevented stable operation, including infinite rendering loops, component display failures, and React Hook dependency warnings that made the system unusable.
+
+### 1. Infinite Loop in Consultation Modal
+
+**Problem**: "Maximum update depth exceeded" error when starting consultations, preventing users from accessing the consultation workflow.
+
+**Root Cause**: Multiple dependency loops in ConsultationPanel:
+1. `startVoiceInput` useCallback had dependencies `[isTranscribing, isPaused, ...]` but changes those states when called
+2. `useEffect` updating `startVoiceInputRef` with dependency `[startVoiceInput]` recreated constantly  
+3. Auto-start `useEffect` with dependencies `[..., startVoiceInput, isTranscribing, ...]` caused loops
+4. Real-time alerts session management in `useEffect` triggered more re-renders
+5. Modal drag callbacks recreating on every position change
+
+**Solution Implemented**: 
+- Removed state dependencies from `startVoiceInput` useCallback (lines 385-387)
+- Removed `startVoiceInput` from `useEffect` dependencies (lines 357-358) 
+- Removed `realTimeAlerts` from consultation management `useEffect` (lines 239-241)
+- Fixed modal drag callbacks to prevent recreation (lines 133, 243)
+- Added `shouldStartAlertsRef` to prevent state-based re-renders
+
+### 2. Alerts Tab Dashboard Integration
+
+**Problem**: Alerts tab showed legacy view instead of enhanced AlertDashboard, breaking the unified alerts system.
+
+**Root Cause**: AlertsScreenView was importing old AlertList instead of new AlertDashboard.
+
+**Solution**: Updated import and component usage in `AlertsScreenView.tsx` (line 8) to use the new AlertDashboard component with unified alerts functionality.
+
+### 3. Alerts Tab Infinite Reload (404 Loop)
+
+**Problem**: Alerts tab continuously reloaded with 404 errors and wouldn't stay open, making the alerts system completely inaccessible.
+
+**Root Cause**: AlertDashboard had dependency loop causing constant re-renders and re-fetches.
+
+**Solution**: 
+- Removed `loadAlerts` from useEffect dependencies (line 307)
+- Added `fetchAttemptRef` tracking to prevent duplicate fetches
+- Used refs to manage fetch state instead of state variables causing re-renders
+
+### 4. React Hook Dependency Management
+
+**Problem**: Multiple ESLint warnings about missing dependencies in useEffect and useCallback hooks throughout the alerts system.
+
+**Solution**: Added strategic `eslint-disable-next-line react-hooks/exhaustive-deps` comments with explanatory notes for intentional dependency exclusions, following the established pattern for preventing infinite loops while maintaining code clarity.
+
+### 5. API Route Build Errors
+
+**Problem**: Guidelines search and enhanced search routes failing during build with dynamic server usage errors, breaking the clinical guidelines integration.
+
+**Solution**: Added `export const dynamic = 'force-dynamic';` to API routes using `request.url` to ensure proper server-side handling.
+
+### 6. Three.js Bundling Error
+
+**Problem**: "Cannot find module './vendor-chunks/three@0.164.1.js'" error on patients page due to SSR conflicts.
+
+**Root Cause**: PlasmaBackground component using Three.js was imported directly causing SSR issues.
+
+**Solution**: Converted to dynamic import with `ssr: false` in layout.tsx to prevent server-side rendering conflicts.
+
+### 7. Maximum Update Depth with Radix UI Ref Composition
+
+**Problem**: "Maximum update depth exceeded" error when starting consultations, with stack trace showing @radix-ui/react-compose-refs conflicts.
+
+**Root Cause**: Ref composition conflict between DraggableModalWrapper's forwardRef and Radix UI's internal ref handling.
+
+**Solution**:
+- Removed forwardRef from DraggableModalWrapper to prevent ref composition conflicts
+- Restructured ConsultationPanel effects with stable dependencies only
+- Separated modal initialization from encounter creation into distinct effects
+- Added proper cleanup for auto-start timeouts
+- Used stable draft ID with useMemo to prevent recreations
+- Added ESLint disable comments for intentional dependency exclusions
+
+**Key Architecture Changes**:
+- `DraggableModalWrapper`: Removed forwardRef, now a regular functional component
+- `ConsultationPanel`: Split single large useEffect into focused effects with minimal dependencies
+- Auto-start effect: Added timeout cleanup and stable dependency array
+- Draft persistence: Debounced saves and stable draft ID generation
+
+### Major Implementation Achievements
+
+**1. Patient Data Integration**: Replaced TODO placeholders with real database queries using SupabaseDataService, enabling actual patient data-driven alert processing instead of mock data.
+
+**2. Transcript Integration**: Implemented real-time transcript tracking and segment processing for alerts, with updateTranscript method for real-time updates and incremental processing of new content.
+
+**3. Performance Optimization**: Added caching and background processing with patient data caching (10-minute TTL), alerts caching (5-minute TTL), and background processing queue with priority system.
+
+**Development Guidelines Established:**
+
+*Dependency Management Strategy:*
+1. **Refs for Callbacks**: Use refs (e.g., `isTranscribingRef`) to access current state in callbacks without causing re-renders
+2. **Minimal Dependencies**: Keep useEffect dependency arrays minimal to prevent loops
+3. **Stable References**: Use useCallback with empty or minimal deps for functions passed to child components
+4. **Separate Effects**: Split large effects into focused, single-purpose effects
+
+*Real-time Alerts Architecture:*
+- Manual session management (no auto-start/stop in hooks)
+- Refs for state tracking to prevent dependency loops
+- Transcript updates handled separately from alert processing
+
+**System Status**: ✅ STABLE - All critical issues resolved, successful production builds, comprehensive test coverage implemented.
+
+---
+
+## Current Documentation Structure (2025)
+
+### Documentation Consolidation Project
+
+As of 2025, the documentation structure has been streamlined to eliminate redundancy and focus on high-level, product-focused documentation. The following changes were implemented:
+
+**Removed Files:**
+- `docs/README.md` - Duplicate of root README, removed to maintain single source of truth
+- `docs/modal-infinite-loop-fix.md` - Consolidated into history.md
+- `docs/modal-cross-page-persistence-fix.md` - Consolidated into history.md  
+- `docs/modal-implementation-summary.md` - Consolidated into frontend_guide.md
+- `docs/TESTING_FIXES_COPILOT.md` - Consolidated into history.md
+- `docs/TESTING.md` - Merged into development_guide.md
+
+**Current Documentation Structure:**
+- **[architecture.md](./architecture.md)** - System design, AI tools, and technical architecture
+- **[frontend_guide.md](./frontend_guide.md)** - Frontend development, styling, and component guidelines
+- **[development_guide.md](./development_guide.md)** - Development process, testing, and coding standards
+- **[clinical-engine.md](./clinical-engine.md)** - Clinical Engine (Tool B) documentation
+- **[advisor.md](./advisor.md)** - Advisor (Tool A) documentation
+- **[clinical-guidelines.md](./clinical-guidelines.md)** - Clinical guidelines system
+- **[transcription.md](./transcription.md)** - Transcription system architecture
+- **[demo_system.md](./demo_system.md)** - Demo system implementation
+- **[history.md](./history.md)** - This file - incident reports and project history
+
+**Documentation Philosophy:**
+- High-level documents focus on product functionality and user-facing features
+- Technical implementation details are consolidated into history.md for historical reference
+- Verbose descriptors help developers understand context and rationale
+- Single source of truth principle eliminates duplicate information
+- Architecture reflects current state rather than aspirational features
+
 **Solution Applied:**
 Removed all container wrapper patterns for draggable modals and ensured direct rendering of `DraggableModalWrapper`, following the correct pattern established in working modals.
 
