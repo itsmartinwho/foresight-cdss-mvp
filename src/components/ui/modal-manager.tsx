@@ -83,15 +83,15 @@ function modalManagerReducer(state: ModalManagerState, action: ModalManagerActio
       if (modalPersistedData && !modalPersistedData.isMinimized) {
         // Use persisted position, constrained to current viewport
         // Use different dimensions based on modal type
-        const modalWidth = id.includes('demo') ? 750 : 512;
+        const modalWidth = id.includes('demo') ? 750 : (id.includes('new-consultation') || id.includes('consultation')) ? 800 : 512;
         const modalHeight = id.includes('demo') ? 650 : 
-                           (id.includes('new-consultation') || id.includes('consultation')) ? 400 : 500;
+                           (id.includes('new-consultation') || id.includes('consultation')) ? 600 : 500;
         position = constrainToViewport(modalPersistedData.position, modalWidth, modalHeight);
       } else if (defaultPosition) {
         // Use different dimensions based on modal type  
-        const modalWidth = id.includes('demo') ? 750 : 512;
+        const modalWidth = id.includes('demo') ? 750 : (id.includes('new-consultation') || id.includes('consultation')) ? 800 : 512;
         const modalHeight = id.includes('demo') ? 650 : 
-                           (id.includes('new-consultation') || id.includes('consultation')) ? 400 : 500;
+                           (id.includes('new-consultation') || id.includes('consultation')) ? 600 : 500;
         position = constrainToViewport(defaultPosition, modalWidth, modalHeight);
       } else {
         // No specific position provided, use centered position
