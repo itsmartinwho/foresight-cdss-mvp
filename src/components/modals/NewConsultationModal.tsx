@@ -68,6 +68,16 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const router = useRouter();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[NewConsultationModal] Props:', {
+      open,
+      draggable,
+      configId: draggableConfig?.id,
+      hasOnOpenChange: !!onOpenChange,
+    });
+  });
+
   // Existing patients search
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -213,7 +223,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       persistent: draggableConfig.persistent ?? false,
       defaultPosition: draggableConfig.defaultPosition,
     };
-  }, [draggable, draggableConfig?.id, draggableConfig?.title, draggableConfig?.icon, draggableConfig?.persistent, draggableConfig?.defaultPosition]);
+  }, [draggable, draggableConfig?.id]); // Only depend on id, not the entire config object
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -221,6 +231,12 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       <DraggableDialogContent
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside if we're creating
+          if (isCreating) {
+            e.preventDefault();
+          }
+        }}
         className={`max-w-lg max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
         draggableConfig={stableDraggableConfig}

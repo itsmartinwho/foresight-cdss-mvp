@@ -242,7 +242,7 @@ export function constrainToViewport(
  */
 export function generateModalId(prefix = 'modal'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
+} 
 
 // Clear all stored modals - useful for debugging and fixing stuck modals
 export const clearAllStoredModals = (): void => {

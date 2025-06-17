@@ -47,6 +47,7 @@ export function useModalDragAndMinimize(
 
   // Store initial position only once on first mount
   const initialPositionRef = useRef<ModalPosition | null>(null);
+  const isMountedRef = useRef(false);
   
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
@@ -123,67 +124,87 @@ export function useModalDragAndMinimize(
   }, [isValidConfig]);
 
   const handleDragEnd = useCallback(() => {
-    // Get current position from state
-    const finalPosition = dragState.currentPosition;
-    
     setDragState(prev => {
       // Guard against unnecessary state updates to prevent infinite loops
       if (prev.isDragging === false) {
         return prev;
       }
+      
+      // Get current position from state
+      const finalPosition = prev.currentPosition;
+      
+      // Update modal position after state update
+      if (isValidConfig && config) {
+        // Use setTimeout to ensure state updates are complete
+        setTimeout(() => {
+          updateModalPosition(config.id, finalPosition);
+        }, 0);
+      }
+      
       return { ...prev, isDragging: false };
     });
+    
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = '';
-
-    if (isValidConfig && config) {
-      updateModalPosition(config.id, finalPosition);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isValidConfig, config, handleDragMove, updateModalPosition]); // dragState.currentPosition intentionally excluded to prevent ref churn
+  }, [isValidConfig, config, handleDragMove, updateModalPosition]);
 
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     if (!isValidConfig) return;
     
     e.preventDefault();
+    
+    // Update the ref directly to avoid state updates
+    const offset = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+    dragOffsetRef.current = offset;
+    
     setDragState(prev => ({
       ...prev,
       isDragging: true,
-      dragOffset: {
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      },
+      dragOffset: offset,
       currentPosition: position
     }));
-  }, [isValidConfig, position.x, position.y]);
+    
+    // Add event listeners
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+    document.body.style.userSelect = 'none';
+  }, [isValidConfig, position.x, position.y, handleDragMove, handleDragEnd]);
 
   // Register modal with manager
   useEffect(() => {
-    if (isValidConfig) {
+    if (isValidConfig && !isMountedRef.current) {
+      isMountedRef.current = true;
       registerModal(config!, pathname);
-      return () => {
+    }
+    
+    return () => {
+      if (isValidConfig && isMountedRef.current) {
         // Simple cleanup - just unregister when component unmounts
         // The modal manager will handle persistence for minimized modals
+        isMountedRef.current = false;
         unregisterModal(config!.id);
-      };
-    }
-  }, [isValidConfig, config, registerModal, unregisterModal, pathname]);
+      }
+    };
+  }, [isValidConfig, config?.id, registerModal, unregisterModal, pathname]); // Only essential deps
 
   // Modal management functions
   const minimize = useCallback(() => {
     if (!isValidConfig) return;
-    minimizeModal(config!.id);
+      minimizeModal(config!.id);
   }, [isValidConfig, minimizeModal, config?.id]);
   
   const restore = useCallback(() => {
     if (!isValidConfig) return;
-    restoreModal(config!.id);
+      restoreModal(config!.id);
   }, [isValidConfig, restoreModal, config?.id]);
   
   const close = useCallback(() => {
     if (!isValidConfig) return;
-    unregisterModal(config!.id);
+      unregisterModal(config!.id);
   }, [isValidConfig, unregisterModal, config?.id]);
 
   // Keyboard shortcut support
@@ -264,34 +285,7 @@ export function useModalDragAndMinimize(
     };
   }, [isValidConfig, handleDragStart, dragState.isDragging]);
 
-  // Handle mouse events for dragging
-  useEffect(() => {
-    if (!dragState.isDragging || !isValidConfig) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const newX = e.clientX - dragState.dragOffset.x;
-      const newY = e.clientY - dragState.dragOffset.y;
-      
-      setDragState(prev => ({
-        ...prev,
-        currentPosition: { x: newX, y: newY }
-      }));
-    };
-
-    const handleMouseUp = () => {
-      const finalPosition = dragState.currentPosition;
-      updateModalPosition(config!.id, finalPosition);
-      setDragState(prev => ({ ...prev, isDragging: false }));
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragState.isDragging, dragState.dragOffset, dragState.currentPosition, updateModalPosition, config?.id, isValidConfig]);
 
   // Memoize the return object to ensure stable object identity and prevent infinite re-renders
   return useMemo(() => ({

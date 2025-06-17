@@ -141,6 +141,21 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
+  // Debug logging
+  React.useEffect(() => {
+    if (draggable && draggableConfig) {
+      console.log('[DraggableDialogContent] Mount/Update:', {
+        modalId: draggableConfig.id,
+        draggable,
+        hasConfig: !!draggableConfig,
+        props: Object.keys(props)
+      });
+    }
+  });
+
+  // Extract focus handlers to prevent them from causing re-renders
+  const { onOpenAutoFocus, onCloseAutoFocus, ...restProps } = props;
+
   // Early return for non-draggable dialogs to avoid any hook conflicts
   if (!draggable || !draggableConfig) {
     return (
@@ -154,7 +169,9 @@ const DraggableDialogContent = React.forwardRef<
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
               className
             )} 
-            {...props}
+            onOpenAutoFocus={onOpenAutoFocus}
+            onCloseAutoFocus={onCloseAutoFocus}
+            {...restProps}
           >
             {children}
             <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
@@ -176,7 +193,9 @@ const DraggableDialogContent = React.forwardRef<
         draggableConfig={draggableConfig}
         showMinimizeButton={showMinimizeButton}
         showCloseButton={showCloseButton}
-        {...props}
+        onOpenAutoFocus={onOpenAutoFocus}
+        onCloseAutoFocus={onCloseAutoFocus}
+        {...restProps}
       >
         {children}
       </DraggableDialogContentInternal>
@@ -194,6 +213,8 @@ const DraggableDialogContentInternal = React.forwardRef<
     draggableConfig: ModalDragAndMinimizeConfig;
     showMinimizeButton?: boolean;
     showCloseButton?: boolean;
+    onOpenAutoFocus?: (event: Event) => void;
+    onCloseAutoFocus?: (event: Event) => void;
   } & React.ComponentPropsWithoutRef<'div'>
 >(({ 
   className, 
@@ -201,6 +222,8 @@ const DraggableDialogContentInternal = React.forwardRef<
   draggableConfig,
   showMinimizeButton = true,
   showCloseButton = true,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props 
 }, ref) => {
   // Use the drag hook directly without any memoization that could cause issues
@@ -212,10 +235,54 @@ const DraggableDialogContentInternal = React.forwardRef<
     dragHandleProps,
   } = useModalDragAndMinimize(draggableConfig);
 
+  // Use refs to store callbacks to prevent re-renders
+  const onOpenAutoFocusRef = React.useRef(onOpenAutoFocus);
+  const onCloseAutoFocusRef = React.useRef(onCloseAutoFocus);
+  
+  React.useLayoutEffect(() => {
+    onOpenAutoFocusRef.current = onOpenAutoFocus;
+    onCloseAutoFocusRef.current = onCloseAutoFocus;
+  });
+
+  // Handle focus events to prevent infinite loops
+  React.useEffect(() => {
+    if (!isMinimized && onOpenAutoFocusRef.current) {
+      // Create a synthetic event to pass to the handler
+      const event = new Event('focus');
+      onOpenAutoFocusRef.current(event);
+    }
+  }, [isMinimized]); // Only depend on isMinimized
+
+  React.useEffect(() => {
+    return () => {
+      if (onCloseAutoFocusRef.current) {
+        const event = new Event('blur');
+        onCloseAutoFocusRef.current(event);
+      }
+    };
+  }, []); // Run only on unmount
+
   // Don't render if minimized
   if (isMinimized) {
     return null;
   }
+
+  // Find the DialogClose component to trigger close
+  const handleClose = React.useCallback(() => {
+    // Find the Radix dialog close trigger and click it
+    const closeButton = document.querySelector('[data-radix-dialog-close]');
+    if (closeButton instanceof HTMLElement) {
+      closeButton.click();
+    } else {
+      // Fallback: dispatch escape key event
+      const escapeEvent = new KeyboardEvent('keydown', { 
+        key: 'Escape',
+        code: 'Escape',
+        bubbles: true 
+      });
+      document.dispatchEvent(escapeEvent);
+    }
+  }, []);
 
   // Draggable dialog - completely independent, no Radix components at all
   return ReactDOM.createPortal(
@@ -233,72 +300,63 @@ const DraggableDialogContentInternal = React.forwardRef<
         aria-modal="true"
         aria-labelledby={`${draggableConfig.id}-title`}
         aria-describedby={`${draggableConfig.id}-drag-instructions`}
-        {...props}
-      >
-        {/* Title bar with drag handle */}
-        <div 
-          {...dragHandleProps}
-          className={cn(
-            "modal-title-bar flex items-center justify-between p-4 border-b border-white/10",
-            "cursor-move", // Make the entire title bar show move cursor
-            dragHandleProps.className
-          )}
-          data-testid="modal-title-bar"
+          {...props}
         >
-          {/* Title */}
-          <div className="pointer-events-none">
+          {/* Title bar with drag handle */}
+          <div 
+            {...dragHandleProps}
+            className={cn(
+              "modal-title-bar flex items-center justify-between p-4 border-b border-white/10",
+              "cursor-move", // Make the entire title bar show move cursor
+              dragHandleProps.className
+            )}
+            data-testid="modal-title-bar"
+          >
+            {/* Title */}
+            <div className="pointer-events-none">
             <h3 id={`${draggableConfig.id}-title`} className="text-lg font-semibold m-0">
-              {draggableConfig?.title || ''}
-            </h3>
-          </div>
-          
-          {/* Buttons - positioned with higher z-index and pointer-events */}
-          <div className="flex items-center gap-2 ml-4 relative z-20">
-            {showMinimizeButton && (
-              <button
+                {draggableConfig?.title || ''}
+              </h3>
+            </div>
+            
+            {/* Buttons - positioned with higher z-index and pointer-events */}
+            <div className="flex items-center gap-2 ml-4 relative z-20">
+              {showMinimizeButton && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering drag
+                    minimize();
+                  }}
+                  className="modal-minimize-btn pointer-events-auto"
+                  aria-label="Minimize modal"
+                  title="Minimize"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              )}
+            <button
+                className="modal-minimize-btn pointer-events-auto"
+                aria-label="Close modal"
+                title="Close"
                 onClick={(e) => {
                   e.stopPropagation(); // Prevent triggering drag
-                  minimize();
+                  handleClose();
                 }}
-                className="modal-minimize-btn pointer-events-auto"
-                aria-label="Minimize modal"
-                title="Minimize"
               >
-                <Minus className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              className="modal-minimize-btn pointer-events-auto"
-              aria-label="Close modal"
-              title="Close"
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering drag
-                // Close modal by setting open state to false
-                // This will be handled by the parent Dialog's onOpenChange
-                const dialogTrigger = document.querySelector('[data-state="open"]');
-                if (dialogTrigger) {
-                  dialogTrigger.dispatchEvent(new KeyboardEvent('keydown', { 
-                    key: 'Escape',
-                    code: 'Escape',
-                    bubbles: true 
-                  }));
-                }
-              }}
-            >
-              <X className="w-4 h-4" />
+                <X className="w-4 h-4" />
             </button>
+            </div>
           </div>
-        </div>
 
         {/* Modal content - plain div, no Radix DialogPrimitive.Content */}
-        <div className="flex-1 overflow-auto p-6">
-          {children}
-        </div>
+          <div className="flex-1 overflow-auto p-6">
+            {children}
+          </div>
 
-        {/* Screen reader instructions */}
-        <div id={`${draggableConfig.id}-drag-instructions`} className="sr-only">
-          Drag the title bar to move this modal. Press Control+M to minimize or Escape to close.
-        </div>
+          {/* Screen reader instructions */}
+          <div id={`${draggableConfig.id}-drag-instructions`} className="sr-only">
+            Drag the title bar to move this modal. Press Control+M to minimize or Escape to close.
+          </div>
       </div>
     </>,
     document.body
