@@ -215,6 +215,15 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }, [isDemoRoute, demoState, demoPanelForceOpen]);
 
   useEffect(() => {
+    if (demoState.demoStage === 'consultationPanelReady') {
+      const timer = setTimeout(() => {
+        demoState.advanceDemoStage('animatingTranscript');
+      }, 500); // Small delay to allow panel to render
+      return () => clearTimeout(timer);
+    }
+  }, [demoState.demoStage, demoState.advanceDemoStage]);
+
+  useEffect(() => {
     if (
       pendingRestoredConsultModal &&
       !pendingRestoredConsultModal.isMinimized &&
@@ -554,7 +563,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         patient={patient}
         onConsultationCreated={handleConsultationCreated}
         isDemoMode={false}
-        draggable={true}
+        draggable={false}
         draggableConfig={regularConsultationConfig}
       />
 
@@ -576,7 +585,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           demoSoapNote={demoConsultation.demoSoapNote}
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
           onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
-          draggable={true}
+          draggable={false}
           draggableConfig={demoConsultationConfig}
         />
       )}
