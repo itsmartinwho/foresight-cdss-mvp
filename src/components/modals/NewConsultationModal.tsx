@@ -231,13 +231,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       <DraggableDialogContent
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          // Prevent closing when clicking outside if we're creating
-          if (isCreating) {
-            e.preventDefault();
-          }
-        }}
-        className={`max-w-lg max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
+        className={`max-w-2xl max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
         draggableConfig={stableDraggableConfig}
       >
