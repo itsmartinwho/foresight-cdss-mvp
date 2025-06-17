@@ -1,7 +1,7 @@
 import { ModalPosition, ModalState } from '@/types/modal';
 
-const STORAGE_KEY = 'foresight-modal-positions';
-const STORAGE_VERSION = '2.0'; // Force cache invalidation for modal width fix
+const STORAGE_KEY = 'modal-positions';
+const STORAGE_VERSION = '2.2'; // Bump to clear cached positions with wrong width
 
 interface PersistedModalData {
   position: ModalPosition;
