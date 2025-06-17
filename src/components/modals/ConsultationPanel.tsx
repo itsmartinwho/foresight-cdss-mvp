@@ -1151,27 +1151,7 @@ export default function ConsultationPanel({
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-center space-y-4">
-                    <p className="text-muted-foreground">Setting up consultation...</p>
-                    {encounter && !started && mounted && (
-                      <Button 
-                        onClick={async () => {
-                          try {
-                            await startVoiceInput();
-                            setStarted(true);
-                          } catch (error) {
-                            console.error('Manual transcription start failed:', error);
-                            toast({ title: "Error", description: "Could not start transcription. Please check your microphone permissions.", variant: "destructive" });
-                          }
-                        }}
-                        variant="default"
-                        className="gap-2"
-                      >
-                        <PlayCircle className="h-4 w-4" />
-                        Start Transcription
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-muted-foreground">Setting up consultation...</p>
                 </div>
               )}
             </div>
