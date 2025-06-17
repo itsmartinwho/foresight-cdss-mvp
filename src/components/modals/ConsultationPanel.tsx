@@ -1121,15 +1121,22 @@ export default function ConsultationPanel({
     </>
   );
 
-  const panelContent = draggable ? (
+  // Memoize the merged config to prevent infinite loops
+  const mergedDraggableConfig = useMemo(() => {
+    if (!draggableConfig) return undefined;
+    return {
+      id: draggableConfig.id || `consultation-panel-${patient.id}`,
+      title: draggableConfig.title || "New Consultation",
+      persistent: draggableConfig.persistent ?? true,
+      defaultPosition: draggableConfig.defaultPosition,
+      icon: draggableConfig.icon,
+    };
+  }, [draggableConfig?.id, draggableConfig?.title, draggableConfig?.persistent, draggableConfig?.defaultPosition, draggableConfig?.icon, patient.id]);
+
+  const panelContent = draggable && mergedDraggableConfig ? (
     <DraggableModalWrapper
       onClose={handleCloseRequest}
-      config={{
-        id: `consultation-panel-${patient.id}`,
-        title: "New Consultation",
-        persistent: true,
-        ...draggableConfig,
-      }}
+      config={mergedDraggableConfig}
       className="w-[95%] max-w-6xl max-h-[90vh]"
       showCloseButton={!isSaving}
     >

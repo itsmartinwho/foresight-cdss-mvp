@@ -201,32 +201,19 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
     }
   };
 
-  // If draggable, ensure we pass a centered defaultPosition when one isn't provided
-  const mergedDraggableConfig = useMemo(() => {
-    if (!draggable) return draggableConfig; // not draggable, return as-is
-
-    const hasDefault = draggableConfig?.defaultPosition !== undefined;
-    if (hasDefault) return draggableConfig;
-
-    // Calculate centered position based on an estimated modal size (max-w-lg ~= 512px wide, ~600px tall)
-    if (typeof window === 'undefined') {
-      return {
-        ...draggableConfig,
-        defaultPosition: { x: 200, y: 100 },
-      };
-    }
-    const estimatedWidth = 512;
-    const estimatedHeight = Math.min(window.innerHeight * 0.8, 900);
-    const x = Math.max(50, Math.round((window.innerWidth - estimatedWidth) / 2));
-    const y = Math.round((window.innerHeight - estimatedHeight) / 2);
-    // Ensure we have at least 20px margin top
-    const safeY = Math.max(20, y);
-
+  // Stable draggable config to prevent infinite loops
+  const stableDraggableConfig = useMemo(() => {
+    if (!draggable || !draggableConfig) return undefined;
+    
+    // Return a stable config object
     return {
-      ...draggableConfig,
-      defaultPosition: { x, y: safeY },
+      id: draggableConfig.id,
+      title: draggableConfig.title || 'New Consultation',
+      icon: draggableConfig.icon,
+      persistent: draggableConfig.persistent ?? false,
+      defaultPosition: draggableConfig.defaultPosition,
     };
-  }, [draggable, draggableConfig]);
+  }, [draggable, draggableConfig?.id, draggableConfig?.title, draggableConfig?.icon, draggableConfig?.persistent, draggableConfig?.defaultPosition]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -236,7 +223,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         onOpenAutoFocus={(e) => e.preventDefault()}
         className={`max-w-lg max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
-        draggableConfig={mergedDraggableConfig}
+        draggableConfig={stableDraggableConfig}
       >
         <DialogHeader>
           <DialogTitle>Start New Consultation</DialogTitle>

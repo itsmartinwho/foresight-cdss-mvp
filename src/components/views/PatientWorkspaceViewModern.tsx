@@ -307,6 +307,21 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     setShowDeleteConfirmation(true);
   };
 
+  // Memoize draggableConfig objects to prevent infinite loops
+  const regularConsultationConfig = useMemo(() => ({
+    id: `consultation-panel-patient-${patient.id}`,
+    title: "New Consultation",
+    defaultPosition: { x: 150, y: 80 },
+    persistent: true
+  }), [patient.id]);
+  
+  const demoConsultationConfig = useMemo(() => ({
+    id: `demo-consultation-panel-${patient.id}`,
+    title: "Demo Consultation",
+    defaultPosition: { x: 200, y: 120 },
+    persistent: false
+  }), [patient.id]);
+
   const calculateAge = (dateOfBirth: string): number => {
     if (!dateOfBirth) return 0;
     const birthDate = new Date(dateOfBirth);
@@ -540,12 +555,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         onConsultationCreated={handleConsultationCreated}
         isDemoMode={false}
         draggable={true}
-        draggableConfig={{
-          id: `consultation-panel-patient-${patient.id}`,
-          title: "New Consultation",
-          defaultPosition: { x: 150, y: 80 },
-          persistent: true
-        }}
+        draggableConfig={regularConsultationConfig}
       />
 
       {/* Demo Consultation Panel - separate instance for demo */}
@@ -567,12 +577,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           isDemoGeneratingPlan={demoConsultation.isDemoGeneratingPlan}
           onDemoClinicalPlanClick={demoConsultation.onDemoClinicalPlanClick}
           draggable={true}
-          draggableConfig={{
-            id: `demo-consultation-panel-${patient.id}`,
-            title: "Demo Consultation",
-            defaultPosition: { x: 200, y: 120 },
-            persistent: false
-          }}
+          draggableConfig={demoConsultationConfig}
         />
       )}
     </ContentSurface>

@@ -10,7 +10,7 @@ import { usePathname } from 'next/navigation';
 
 const DRAG_THRESHOLD = 5; // Minimum pixels to move before starting drag
 
-function getCenterPosition(): ModalPosition {
+function getCenterPosition(estimatedWidth: number = 512, estimatedHeight: number = 600): ModalPosition {
   if (typeof window === 'undefined') return { x: 200, y: 100 };
   
   // Get viewport dimensions
@@ -18,15 +18,10 @@ function getCenterPosition(): ModalPosition {
     width: window.innerWidth,
     height: window.innerHeight,
   };
-
-  // For larger modals (like ConsultationPanel), we want them more centered
-  // These values work well for both small and large modals
-  const modalWidth = 800; // Assume larger modal width
-  const modalHeight = 600; // Assume larger modal height
   
   // Calculate position to center the modal
-  const centerX = Math.round((viewport.width - modalWidth) / 2);
-  const centerY = Math.round((viewport.height - modalHeight) / 2);
+  const centerX = Math.round((viewport.width - estimatedWidth) / 2);
+  const centerY = Math.round((viewport.height - estimatedHeight) / 2);
 
   // Ensure modal stays within viewport bounds with some padding
   const x = Math.max(50, centerX);
@@ -73,14 +68,16 @@ export function useModalDragAndMinimize(
     } else if (config!.defaultPosition) {
       initialPositionRef.current = config!.defaultPosition;
     } else {
-      // Default to center position
-      initialPositionRef.current = getCenterPosition();
+      // Default to center position based on modal type
+      const estimatedWidth = config!.id.includes('consultation') ? 800 : 512;
+      const estimatedHeight = config!.id.includes('consultation') ? 900 : 600;
+      initialPositionRef.current = getCenterPosition(estimatedWidth, estimatedHeight);
     }
   }
 
   const modalState = isValidConfig ? getModalState(config!.id) : undefined;
   const isMinimized = modalState?.isMinimized ?? false;
-  const position = modalState?.position ?? initialPositionRef.current ?? getCenterPosition();
+  const position = modalState?.position ?? initialPositionRef.current ?? getCenterPosition(512, 600);
   const zIndex = modalState?.zIndex ?? 1000;
 
   // Keep a ref with the latest position so callbacks don't re-create when position changes

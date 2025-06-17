@@ -168,15 +168,20 @@ const DraggableDialogContent = React.forwardRef<
   }
 
   // For draggable dialogs, create a separate internal component to avoid ref conflicts
-  return <DraggableDialogContentInternal 
-    className={className}
-    draggableConfig={draggableConfig}
-    showMinimizeButton={showMinimizeButton}
-    showCloseButton={showCloseButton}
-    {...props}
-  >
-    {children}
-  </DraggableDialogContentInternal>;
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DraggableDialogContentInternal 
+        className={className}
+        draggableConfig={draggableConfig}
+        showMinimizeButton={showMinimizeButton}
+        showCloseButton={showCloseButton}
+        {...props}
+      >
+        {children}
+      </DraggableDialogContentInternal>
+    </DialogPortal>
+  );
 });
 DraggableDialogContent.displayName = "DraggableDialogContent";
 
@@ -212,10 +217,7 @@ const DraggableDialogContentInternal: React.FC<{
   // Draggable dialog - completely independent, no Radix components at all
   return ReactDOM.createPortal(
     <>
-      {/* Independent backdrop */}
-      <div className="fixed inset-0 z-[9998] glass-backdrop" />
-      
-      {/* Independent modal container */}
+      {/* Modal container - no backdrop, that's handled by DialogOverlay in parent */}
       <div 
         {...containerProps}
         className={cn(
