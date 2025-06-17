@@ -665,7 +665,7 @@ export default function AdvisorView() {
             }}
           >
             <div
-              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-3 py-2 flex flex-col gap-2 pointer-events-auto shadow-lg"
+              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-3 py-1 flex flex-col gap-1 pointer-events-auto shadow-lg"
             >
               {/* Textarea input */}
               <Textarea
@@ -678,7 +678,7 @@ export default function AdvisorView() {
                   ? "Reasoning mode selected for your harder medical queries"
                   : "Ask anything"}
                 rows={1}
-                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-2 py-1 min-h-[2.5rem] max-h-32 overflow-y-auto"
+                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-2 py-0.5 min-h-[2.5rem] max-h-32 overflow-y-auto"
                 style={{ 
                   height: 'auto',
                   minHeight: '2.5rem'
@@ -698,7 +698,7 @@ export default function AdvisorView() {
 
               {/* Specialty Suggestion Banner */}
               {showSuggestion && suggestedSpecialty && (
-                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 border border-teal-200 dark:border-teal-700 rounded-lg p-3 mb-2">
+                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/30 dark:to-cyan-900/30 border border-teal-200 dark:border-teal-700 rounded-lg p-3">
                   <div className="flex items-center gap-3">
                     <div className="flex-shrink-0">
                       <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
