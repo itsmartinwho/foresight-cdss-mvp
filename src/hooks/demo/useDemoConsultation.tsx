@@ -56,8 +56,13 @@ export function useDemoConsultation({
       return encounterData.transcript || undefined;
     }
     
-    // Before animation starts, return empty or undefined
-    return undefined;
+    // When consultation panel is ready to open, start with empty string to show the editor
+    if (demoStage === 'consultationPanelReady') {
+      return '';
+    }
+    
+    // Before animation starts, return empty string to initialize the transcript area
+    return '';
   };
   
   // Demo diagnosis based on stage - use real enriched data

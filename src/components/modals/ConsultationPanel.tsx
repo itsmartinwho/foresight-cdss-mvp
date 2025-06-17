@@ -825,6 +825,43 @@ export default function ConsultationPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]); // Only depend on isOpen to prevent loops - demo props are init values only
   
+  // Update demo content when props change (for animated transcript)
+  useEffect(() => {
+    if (!isDemoMode || !isOpen) return;
+    
+    console.log('[ConsultationPanel] Demo props update:', {
+      initialDemoTranscript: initialDemoTranscript?.length || 0,
+      demoDiagnosis: demoDiagnosis?.length || 0,
+      demoTreatment: demoTreatment?.length || 0,
+      demoDifferentialDiagnoses: demoDifferentialDiagnoses?.length || 0
+    });
+    
+    // Update transcript content during animation
+    if (initialDemoTranscript !== undefined) {
+      setTranscriptText(initialDemoTranscript);
+    }
+    
+    // Update other demo content
+    if (demoDiagnosis !== undefined) {
+      setDiagnosisText(demoDiagnosis);
+    }
+    
+    if (demoTreatment !== undefined) {
+      setTreatmentText(demoTreatment);
+    }
+    
+    if (demoDifferentialDiagnoses !== undefined) {
+      setDifferentialDiagnoses(demoDifferentialDiagnoses);
+    }
+    
+    if (demoSoapNote !== undefined) {
+      setSoapNote(demoSoapNote);
+    }
+    
+    // Update plan generation state
+    setPlanGenerated(!!(demoDiagnosis || demoTreatment || demoDifferentialDiagnoses));
+  }, [isDemoMode, isOpen, initialDemoTranscript, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, demoSoapNote]);
+  
   // Create encounter for non-demo mode - separate effect with stable dependencies
   useEffect(() => {
     if (!isDemoMode && isOpen && !encounter && !isCreating && mounted) {

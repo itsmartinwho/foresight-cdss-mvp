@@ -104,13 +104,21 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
 
   // Animation management
   useEffect(() => {
+    console.log('[DemoOrchestrator] Animation effect triggered:', { isDemoActive, demoStage });
     if (isDemoActive && demoStage === 'animatingTranscript') {
       const transcriptLines = DemoDataService.getTranscriptLines();
+      console.log('[DemoOrchestrator] Starting transcript animation with lines:', transcriptLines.length);
       
       DemoAnimationService.startTranscriptAnimation(
         transcriptLines,
-        setAnimatedTranscript,
-        () => advanceDemoStage('simulatingPlanGeneration')
+        (animatedText) => {
+          console.log('[DemoOrchestrator] Updating animated transcript, length:', animatedText.length);
+          setAnimatedTranscript(animatedText);
+        },
+        () => {
+          console.log('[DemoOrchestrator] Animation completed, advancing to simulatingPlanGeneration');
+          advanceDemoStage('simulatingPlanGeneration');
+        }
       );
     }
 

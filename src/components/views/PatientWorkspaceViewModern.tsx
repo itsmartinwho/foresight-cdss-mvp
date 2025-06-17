@@ -204,8 +204,15 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }, [patient?.id, loadPatientData]);
 
   useEffect(() => {
+    console.log('[PatientWorkspace] Demo route effect triggered:', {
+      isDemoRoute,
+      isDemoActive: demoState.isDemoActive,
+      demoPanelForceOpen,
+      currentStage: demoState.demoStage
+    });
     if (isDemoRoute && demoState.isDemoActive) {
       if (!demoPanelForceOpen) {
+        console.log('[PatientWorkspace] Setting demo panel force open and advancing from navigatingToWorkspace');
         setDemoPanelForceOpen(true);
         if (demoState.demoStage === 'navigatingToWorkspace') {
           demoState.advanceDemoStage('consultationPanelReady');
@@ -215,13 +222,24 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }, [isDemoRoute, demoState, demoPanelForceOpen]);
 
   useEffect(() => {
+    console.log('[PatientWorkspace] Demo stage advancement effect triggered:', {
+      currentStage: demoState.demoStage,
+      advanceDemoStage: !!demoState.advanceDemoStage,
+      isDemoActive: demoState.isDemoActive,
+      animatedTranscriptLength: demoState.animatedTranscript?.length || 0
+    });
     if (demoState.demoStage === 'consultationPanelReady') {
+      console.log('[PatientWorkspace] Stage is consultationPanelReady, setting timer to advance to animatingTranscript');
       const timer = setTimeout(() => {
+        console.log('[PatientWorkspace] Timer executed, advancing to animatingTranscript');
         demoState.advanceDemoStage('animatingTranscript');
       }, 500); // Small delay to allow panel to render
-      return () => clearTimeout(timer);
+      return () => {
+        console.log('[PatientWorkspace] Clearing demo stage advancement timer');
+        clearTimeout(timer);
+      };
     }
-  }, [demoState.demoStage, demoState.advanceDemoStage]);
+  }, [demoState.demoStage, demoState.advanceDemoStage, demoState.isDemoActive, demoState.animatedTranscript]);
 
   useEffect(() => {
     if (

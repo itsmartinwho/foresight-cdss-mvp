@@ -51,16 +51,25 @@ export function useDemoWorkspace({
 
   // Handle demo lifecycle and panel visibility
   useEffect(() => {
+    console.log('[useDemoWorkspace] Effect triggered:', {
+      isDemoRouteActive,
+      isDemoActive,
+      demoStage,
+      isDemoPanelOpen
+    });
+    
     // Simplified logic: if we're on demo route and in the right stage, open panel
     if (isDemoRouteActive && isDemoActive) {
       if (demoStage === 'consultationPanelReady') {
-        console.log('Opening demo consultation panel');
+        console.log('[useDemoWorkspace] Opening demo consultation panel');
         setIsDemoPanelOpen(true);
-        advanceDemoStage('animatingTranscript');
+        // Don't advance stage here - let PatientWorkspaceViewModern handle it with delay
       } else if (demoStage === 'finished' || !isDemoActive) {
+        console.log('[useDemoWorkspace] Closing demo consultation panel - demo finished or inactive');
         setIsDemoPanelOpen(false);
       }
     } else if (isDemoPanelOpen) {
+      console.log('[useDemoWorkspace] Closing demo consultation panel - conditions not met');
       // If demo conditions are no longer met, close panel
       setIsDemoPanelOpen(false);
     }
