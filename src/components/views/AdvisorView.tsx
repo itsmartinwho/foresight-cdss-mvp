@@ -665,19 +665,8 @@ export default function AdvisorView() {
             }}
           >
             <div
-              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-3 py-2 flex flex-col gap-3 pointer-events-auto shadow-lg"
+              className="w-full max-w-5xl bg-[rgba(255,255,255,0.35)] backdrop-blur-lg border border-white/25 rounded-2xl px-3 py-2 flex flex-col gap-2 pointer-events-auto shadow-lg"
             >
-              {/* Patient context attachment tag */}
-              {selectedPatientForContext && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center bg-muted/20 text-step--1 rounded-full px-3 py-1">
-                    {selectedPatientForContext.name || `${selectedPatientForContext.firstName ?? ''} ${selectedPatientForContext.lastName ?? ''}`.trim() || selectedPatientForContext.id}
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-2" onClick={() => setSelectedPatientForContext(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </div>
-              )}
               {/* Textarea input */}
               <Textarea
                 ref={textareaRef}
@@ -798,6 +787,15 @@ export default function AdvisorView() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Patient context attachment tag */}
+                  {selectedPatientForContext && (
+                    <span className="inline-flex items-center bg-muted/20 text-step--1 rounded-full px-3 py-1">
+                      {selectedPatientForContext.name || `${selectedPatientForContext.firstName ?? ''} ${selectedPatientForContext.lastName ?? ''}`.trim() || selectedPatientForContext.id}
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 ml-2" onClick={() => setSelectedPatientForContext(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  )}
                   {/* Context and File Upload Dropdown */}
                   <TooltipProvider>
                     <Tooltip>
