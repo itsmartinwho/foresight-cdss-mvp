@@ -140,45 +140,14 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
-  // Create an internal ref for DialogPrimitive.Content
-  const contentRef = React.useRef<React.ElementRef<typeof DialogPrimitive.Content>>(null);
-  
-  // Expose imperative ref through useImperativeHandle only when parent provides a ref
-  React.useImperativeHandle(ref, () => contentRef.current!, []);
-
-  // Generate a stable ID for non-draggable dialogs (only once per component instance)
-  const stableId = React.useMemo(() => `dialog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
-  
-  // For draggable dialogs, use the full drag hook
-  const hookResult = useModalDragAndMinimize(draggable ? draggableConfig : null);
-  
-  // Memoize the hook result to prevent object recreation on every render
-  const {
-    isMinimized,
-    isDragging,
-    minimize,
-    containerProps,
-    dragHandleProps,
-  } = React.useMemo(() => hookResult, [
-    hookResult, // eslint-disable-line react-hooks/exhaustive-deps
-    hookResult.isMinimized,
-    hookResult.isDragging,
-    hookResult.minimize,
-    hookResult.containerProps,
-    hookResult.dragHandleProps,
-  ]);
-
-  // NOTE: Removed useModalOverlay call - regular dialogs should NOT register with ModalManager
-  // They have their own overlay through DialogOverlay component
-
+  // Early return for non-draggable dialogs to avoid any hook conflicts
   if (!draggable || !draggableConfig) {
-    // Return regular dialog when not draggable - uses its own overlay via DialogOverlay
     return (
       <DialogPortal>
         <DialogOverlay />
         <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
           <DialogPrimitive.Content 
-            ref={contentRef} 
+            ref={ref}
             className={cn(
               "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -196,6 +165,46 @@ const DraggableDialogContent = React.forwardRef<
       </DialogPortal>
     );
   }
+
+  // For draggable dialogs, create a separate internal component to avoid ref conflicts
+  return <DraggableDialogContentInternal 
+    className={className}
+    draggableConfig={draggableConfig}
+    showMinimizeButton={showMinimizeButton}
+    showCloseButton={showCloseButton}
+    {...props}
+  >
+    {children}
+  </DraggableDialogContentInternal>;
+});
+DraggableDialogContent.displayName = "DraggableDialogContent";
+
+// Internal component for draggable dialogs - no forwardRef to prevent composition issues
+const DraggableDialogContentInternal: React.FC<{
+  className?: string;
+  children: React.ReactNode;
+  draggableConfig: ModalDragAndMinimizeConfig;
+  showMinimizeButton?: boolean;
+  showCloseButton?: boolean;
+} & React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>> = ({ 
+  className, 
+  children, 
+  draggableConfig,
+  showMinimizeButton = true,
+  showCloseButton = true,
+  ...props 
+}) => {
+  // Use the drag hook directly without any memoization that could cause issues
+  const {
+    isMinimized,
+    isDragging,
+    minimize,
+    containerProps,
+    dragHandleProps,
+  } = useModalDragAndMinimize(draggableConfig);
+
+  // Create a single stable ref for the DialogPrimitive.Content
+  const contentRef = React.useRef<React.ElementRef<typeof DialogPrimitive.Content>>(null);
 
   // Don't render if minimized
   if (isMinimized) {
@@ -215,7 +224,7 @@ const DraggableDialogContent = React.forwardRef<
         )}
       >
         <DialogPrimitive.Content 
-          ref={contentRef} 
+          ref={contentRef}
           className="flex flex-col flex-1"
           {...props}
         >
@@ -277,8 +286,7 @@ const DraggableDialogContent = React.forwardRef<
       </div>
     </DialogPortal>
   );
-});
-DraggableDialogContent.displayName = "DraggableDialogContent";
+};
 
 export {
   Dialog,
