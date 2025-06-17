@@ -358,9 +358,7 @@ export class UnifiedAlertsService {
         .replace('{CONFIDENCE_THRESHOLD}', '0.8')
         .replace('{IS_REAL_TIME}', 'true');
 
-      const userPrompt = `Patient Context: ${JSON.stringify(context.patientHistory)}
-Transcript: ${context.transcriptSegment}
-Existing Alerts: ${JSON.stringify(context.existingAlerts)}`;
+      const userPrompt = `Patient Context: ${JSON.stringify(context.patientHistory)}\nTranscript Segment: ${context.transcriptSegment}\nExisting Alerts: ${JSON.stringify(context.existingAlerts)}`;
 
       const response = await this.callOpenAI(model, [
         { role: 'system', content: systemPrompt },
@@ -409,31 +407,29 @@ Existing Alerts: ${JSON.stringify(context.existingAlerts)}`;
       const context = await this.buildPostConsultationContext(patientId, encounterId);
       if (!context) return;
 
-      // Check if AI client is available
-      const client = this.getPostConsultationClient();
-      if (!client) {
-        console.log('[UnifiedAlertsService] AI client not available for post-consultation processing');
-        return;
-      }
+      // Prepare AI prompts
+      const model = getModelForUseCase('post-consultation');
+      const template = getRealTimeTemplate(); // Re-use existing template for now
 
-      // Process with comprehensive AI analysis
-      const aiContext = this.buildAIProcessingContext(context);
-      const request: AIProcessingRequest = {
-        model: GPT_4_1,
-        context: aiContext,
-        promptTemplate: getRealTimeTemplate(), // Use comprehensive template
-        isRealTime: false,
-        confidenceThreshold: 0.7
-      };
+      const systemPrompt = template.systemPrompt
+        .replace('{ALERT_TYPES}', template.alertTypes.join(', '))
+        .replace('{CONFIDENCE_THRESHOLD}', '0.7')
+        .replace('{IS_REAL_TIME}', 'false');
 
-      const response = await client.processAlerts(request);
-      
-      if (response?.success) {
-        // First, mark relevant real-time alerts as resolved
-        await this.refreshRealTimeAlerts(patientId, encounterId, response.alerts);
+      const userPrompt = `Patient Context: ${JSON.stringify(context.patientHistory)}\nFull Transcript: ${context.fullTranscript}\nReal-time Alerts: ${JSON.stringify(context.realTimeAlerts)}`;
 
-        // Create new post-consultation alerts
-        for (const aiAlert of response.alerts) {
+      const response = await this.callOpenAI(model, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ], 4000);
+
+      if (response?.choices?.[0]?.message?.content) {
+        const alerts = this.parseAIResponse(response.choices[0].message.content);
+
+        // Mark relevant real-time alerts as resolved before creating new ones
+        await this.refreshRealTimeAlerts(patientId, encounterId, alerts);
+
+        for (const aiAlert of alerts) {
           const createRequest: CreateAlertRequest = {
             patientId,
             encounterId,
@@ -445,7 +441,7 @@ Existing Alerts: ${JSON.stringify(context.existingAlerts)}`;
             suggestion: aiAlert.suggestion,
             confidenceScore: aiAlert.confidence,
             sourceReasoning: aiAlert.reasoning,
-            processingModel: response.model,
+            processingModel: model,
             relatedData: aiAlert.relatedData,
             navigationTarget: aiAlert.navigationTarget,
             proposedEdit: aiAlert.proposedEdit,
@@ -458,6 +454,45 @@ Existing Alerts: ${JSON.stringify(context.existingAlerts)}`;
     } catch (error) {
       console.error('Post-consultation processing error:', error);
     }
+  }
+
+  // ==================== AI RESPONSE PARSING ====================
+
+  /**
+   * Attempt to parse the AI response content into a list of structured alerts.
+   * Supports strict JSON as well as JSON embedded within markdown or text.
+   */
+  private parseAIResponse(content: string): AIAlertResult[] {
+    if (!content) return [];
+
+    // Helper to safely parse JSON
+    const tryParse = (text: string): any => {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
+    };
+
+    // 1) Direct JSON (array or object with alerts field)
+    let parsed = tryParse(content.trim());
+    if (parsed) {
+      if (Array.isArray(parsed)) return parsed as AIAlertResult[];
+      if (parsed.alerts && Array.isArray(parsed.alerts)) return parsed.alerts as AIAlertResult[];
+    }
+
+    // 2) JSON inside markdown/code block
+    const jsonMatch = content.match(/```(?:json)?[\s\n]*([\s\S]+?)```/i);
+    if (jsonMatch) {
+      parsed = tryParse(jsonMatch[1]);
+      if (parsed) {
+        if (Array.isArray(parsed)) return parsed as AIAlertResult[];
+        if (parsed.alerts && Array.isArray(parsed.alerts)) return parsed.alerts as AIAlertResult[];
+      }
+    }
+
+    console.warn('[UnifiedAlertsService] Unable to parse AI response into alerts. Raw content:', content);
+    return [];
   }
 
   // ==================== HELPER METHODS ====================
