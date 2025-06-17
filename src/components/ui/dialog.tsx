@@ -194,6 +194,11 @@ const DraggableDialogContentInternal: React.FC<{
   showCloseButton = true,
   ...props 
 }) => {
+  // Debug: count renders in development
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.count('DraggableDialogContentInternal renders');
+  }
   // Use the drag hook directly without any memoization that could cause issues
   const {
     isMinimized,
@@ -202,6 +207,21 @@ const DraggableDialogContentInternal: React.FC<{
     containerProps,
     dragHandleProps,
   } = useModalDragAndMinimize(draggableConfig);
+
+  // Debug: track prop identity churn
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('containerProps changed');
+    }
+  }, [containerProps]);
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('dragHandleProps changed');
+    }
+  }, [dragHandleProps]);
 
   // Create a single stable ref for the DialogPrimitive.Content
   const contentRef = React.useRef<React.ElementRef<typeof DialogPrimitive.Content>>(null);

@@ -38,6 +38,10 @@ function getCenterPosition(): ModalPosition {
 export function useModalDragAndMinimize(
   config: ModalDragAndMinimizeConfig | null
 ): UseModalDragAndMinimizeReturn {
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.count('useModalDragAndMinimize renders');
+  }
   const pathname = usePathname();
   // Always call hooks first, then handle null config
   const { 
