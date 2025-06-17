@@ -328,16 +328,43 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream; // Store original stream for waveform
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      const wsInstance = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true',
-        ['token', apiKey]
-      );
+      
+      // Enhanced Deepgram WebSocket URL with better silence handling and speech detection
+      const wsUrl = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
+        model: 'nova-3-medical',
+        punctuate: 'true',
+        interim_results: 'true',
+        smart_format: 'true',
+        diarize: 'true',
+        utterance_end_ms: '3000', // Detect utterance end after 3 seconds of silence
+        endpointing: 'false', // Disable automatic endpointing to prevent premature closures
+        vad_events: 'true' // Enable voice activity detection events
+      }).toString();
+      
+      const wsInstance = new WebSocket(wsUrl, ['token', apiKey]);
       socketRef.current = wsInstance;
       mediaRecorderRef.current = mediaRecorder;
+
+      // KeepAlive mechanism to prevent connection timeouts during silence
+      let keepAliveInterval: NodeJS.Timeout | null = null;
 
       wsInstance.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
+          
+          // Handle UtteranceEnd events
+          if (data.type === 'UtteranceEnd') {
+            console.log("ConsultationTab: Received UtteranceEnd event", data);
+            return;
+          }
+
+          // Handle speech events
+          if (data.type === 'SpeechStarted') {
+            console.log("ConsultationTab: Speech detected");
+            return;
+          }
+
+          // Handle transcription results
           if (data && data.channel && data.is_final && data.channel.alternatives[0]?.transcript) {
             const newTextChunk = data.channel.alternatives[0].transcript.trim();
             const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
@@ -389,6 +416,14 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       };
 
       wsInstance.onopen = () => {
+        // Start KeepAlive messages every 5 seconds to prevent 10-second timeout
+        keepAliveInterval = setInterval(() => {
+          if (wsInstance.readyState === WebSocket.OPEN) {
+            wsInstance.send(JSON.stringify({ type: "KeepAlive" }));
+            console.log("ConsultationTab: Sent KeepAlive message");
+          }
+        }, 5000);
+
         mediaRecorder.addEventListener('dataavailable', (event) => {
           if (event.data.size > 0 && wsInstance.readyState === WebSocket.OPEN) {
             wsInstance.send(event.data);
@@ -401,12 +436,40 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
       };
 
       wsInstance.onclose = (event) => {
-        console.log("WebSocket closed", event.reason, event.code);
-        stopTranscription(false); // Don't reset paused state on connection issues
+        console.log("WebSocket closed", event.code, event.reason);
+        
+        // Clear KeepAlive interval
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+
+        // Only attempt reconnection if the transcription is still supposed to be active
+        // and it wasn't a user-initiated close (code 1000) or going away (code 1001)
+        if (transcriptionActiveRef.current && !isPausedRef.current && event.code !== 1000 && event.code !== 1001) {
+          console.log('[ConsultationTab] Connection lost unexpectedly, attempting reconnection...');
+          
+          // Wait a short time before reconnecting to avoid rapid reconnection loops
+          setTimeout(() => {
+            if (transcriptionActiveRef.current && !isPausedRef.current) {
+              console.log('[ConsultationTab] Attempting automatic reconnection...');
+              startTranscription(); // Recursive call to restart transcription
+            }
+          }, 2000);
+        } else {
+          stopTranscription(false); // Don't reset paused state on normal connection close
+        }
       };
 
       wsInstance.onerror = (error) => {
         console.error("WebSocket error:", error);
+        
+        // Clear KeepAlive interval
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+        
         stopTranscription(false); // Don't reset paused state on connection issues
       }
 

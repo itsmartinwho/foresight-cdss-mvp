@@ -603,11 +603,35 @@ export default function ConsultationPanel({
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const mediaRecorder = mediaRecorderRef.current;
       
-      const ws = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-3-medical&punctuate=true&interim_results=true&smart_format=true&diarize=true', ['token', apiKey]);
+      // Enhanced Deepgram WebSocket URL with better silence handling and speech detection
+      const wsUrl = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
+        model: 'nova-3-medical',
+        punctuate: 'true',
+        interim_results: 'true',
+        smart_format: 'true',
+        diarize: 'true',
+        utterance_end_ms: '3000', // Detect utterance end after 3 seconds of silence
+        endpointing: 'false', // Disable automatic endpointing to prevent premature closures
+        vad_events: 'true' // Enable voice activity detection events
+      }).toString();
+      
+      const ws = new WebSocket(wsUrl, ['token', apiKey]);
       socketRef.current = ws;
+
+      // KeepAlive mechanism to prevent connection timeouts during silence
+      let keepAliveInterval: NodeJS.Timeout | null = null;
 
       ws.onopen = () => {
         console.log("ConsultationPanel: WebSocket opened successfully");
+        
+        // Start KeepAlive messages every 5 seconds to prevent 10-second timeout
+        keepAliveInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "KeepAlive" }));
+            console.log("ConsultationPanel: Sent KeepAlive message");
+          }
+        }, 5000);
+
         mediaRecorder.addEventListener('dataavailable', event => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
         });
@@ -620,6 +644,20 @@ export default function ConsultationPanel({
       ws.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
+          
+          // Handle UtteranceEnd events
+          if (data.type === 'UtteranceEnd') {
+            console.log("ConsultationPanel: Received UtteranceEnd event", data);
+            return;
+          }
+
+          // Handle speech events
+          if (data.type === 'SpeechStarted') {
+            console.log("ConsultationPanel: Speech detected");
+            return;
+          }
+
+          // Handle transcription results
           if (data && data.channel && data.is_final && data.channel.alternatives[0]?.transcript) {
             const chunk = data.channel.alternatives[0].transcript.trim();
             if (chunk) {
@@ -662,13 +700,42 @@ export default function ConsultationPanel({
         }
       };
 
-      ws.onclose = () => {
-        console.log('[ConsultationPanel] WebSocket closed - cleaning up audio resources');
-        cleanupAllAudioResources();
+      ws.onclose = (event) => {
+        console.log('[ConsultationPanel] WebSocket closed:', event.code, event.reason);
+        
+        // Clear KeepAlive interval
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+
+        // Only attempt reconnection if the transcription is still supposed to be active
+        // and it wasn't a user-initiated close (code 1000) or going away (code 1001)
+        if (transcriptionActiveRef.current && !isPausedRef.current && event.code !== 1000 && event.code !== 1001) {
+          console.log('[ConsultationPanel] Connection lost unexpectedly, attempting reconnection...');
+          
+          // Wait a short time before reconnecting to avoid rapid reconnection loops
+          setTimeout(() => {
+            if (transcriptionActiveRef.current && !isPausedRef.current && isOpen) {
+              console.log('[ConsultationPanel] Attempting automatic reconnection...');
+              startVoiceInput(); // Recursive call to restart transcription
+            }
+          }, 2000);
+        } else {
+          cleanupAllAudioResources();
+        }
       };
-      ws.onerror = () => {
+      
+      ws.onerror = (error) => {
+        console.error('[ConsultationPanel] WebSocket error:', error);
+        
+        // Clear KeepAlive interval
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+
         toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
-        console.log('[ConsultationPanel] WebSocket error - cleaning up audio resources');
         cleanupAllAudioResources();
       };
     } catch (err) {
