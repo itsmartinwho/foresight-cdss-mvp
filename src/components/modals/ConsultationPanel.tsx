@@ -1129,6 +1129,43 @@ export default function ConsultationPanel({
     // Note: Not including defaultPosition since it can contain unstable window calculations
   ]);
 
+  // --- Transcript auto-scroll state --
+  const transcriptScrollRef = useRef<HTMLDivElement>(null);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+  const userHasScrolledUpRef = useRef(false);
+  const SCROLL_THRESHOLD = 20; // px considered "at bottom"
+
+  // Keep ref in sync with state to avoid stale closures
+  useEffect(() => {
+    userHasScrolledUpRef.current = userHasScrolledUp;
+  }, [userHasScrolledUp]);
+
+  // Attach scroll listener once to detect manual scrolls
+  useEffect(() => {
+    const el = transcriptScrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+      setUserHasScrolledUp(distanceToBottom > SCROLL_THRESHOLD);
+    };
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Auto-scroll when new transcript content arrives (unless user scrolled up)
+  useEffect(() => {
+    const el = transcriptScrollRef.current;
+    if (!el) return;
+
+    if (!userHasScrolledUpRef.current) {
+      // Use rAF for smoother feel; smooth behaviour emulates gentle scroll
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      });
+    }
+  }, [transcriptText]);
+
   if (!mounted || !isOpen) return null;
 
   const modalContent = (
@@ -1226,16 +1263,22 @@ export default function ConsultationPanel({
                           </div>
                         </div>
                         <div className="relative flex-1">
-                          <RichTextEditor
-                            ref={transcriptEditorRef}
-                            content={transcriptText}
-                            onContentChange={handleTranscriptChange}
-                            placeholder="Transcription will appear here..."
-                            disabled={isDemoMode || isTranscribing}
-                            showToolbar={!isDemoMode && !isTranscribing}
-                            minHeight="300px"
-                            className="h-full"
-                          />
+                          {/* Scrollable transcript container */}
+                          <div
+                            ref={transcriptScrollRef}
+                            className="h-full overflow-y-auto pr-2 pb-24"
+                          >
+                            <RichTextEditor
+                              ref={transcriptEditorRef}
+                              content={transcriptText}
+                              onContentChange={handleTranscriptChange}
+                              placeholder="Transcription will appear here..."
+                              disabled={isDemoMode || isTranscribing}
+                              showToolbar={!isDemoMode && !isTranscribing}
+                              minHeight="300px"
+                              className="h-full"
+                            />
+                          </div>
                           {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
                           {!isDemoMode && (
                             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
