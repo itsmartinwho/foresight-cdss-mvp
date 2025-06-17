@@ -65,15 +65,27 @@ export function useModalDragAndMinimize(
   // Initialize position only for valid configs
   if (isValidConfig && initialPositionRef.current === null) {
     const persistedState = getModalState(config!.id);
+    console.log('[DEBUG] Modal position debug:', {
+      modalId: config!.id,
+      persistedState,
+      hasPersistedPosition: !!(persistedState?.position),
+      isMinimized: persistedState?.isMinimized,
+      defaultPosition: config!.defaultPosition
+    });
+    
     if (persistedState?.position && !persistedState.isMinimized) {
+      console.log('[DEBUG] Using persisted position:', persistedState.position);
       initialPositionRef.current = persistedState.position;
     } else if (config!.defaultPosition) {
+      console.log('[DEBUG] Using default position:', config!.defaultPosition);
       initialPositionRef.current = config!.defaultPosition;
     } else {
       // Default to center position based on modal type
-      const estimatedWidth = config!.id.includes('new-consultation') ? 896 : config!.id.includes('consultation') ? 800 : 512;
+      const estimatedWidth = config!.id.includes('new-consultation') ? 672 : config!.id.includes('consultation') ? 800 : 512;
       const estimatedHeight = (config!.id.includes('consultation') || config!.id.includes('new-consultation')) ? 600 : 600;
-      initialPositionRef.current = getCenterPosition(estimatedWidth, estimatedHeight);
+      const centerPos = getCenterPosition(estimatedWidth, estimatedHeight);
+      console.log('[DEBUG] Calculating center position:', { estimatedWidth, estimatedHeight, centerPos });
+      initialPositionRef.current = centerPos;
     }
   }
 
