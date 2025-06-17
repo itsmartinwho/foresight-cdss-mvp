@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -64,6 +64,17 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
   // Automatically show New Consultation modal if it was restored from another page
   const { getModalState } = useModalManager();
   const pendingRestoredDashboardModal = getModalState('new-consultation-dashboard');
+
+  // Stabilize demo modal draggableConfig to prevent infinite re-renders
+  const stableDemoDraggableConfig = useMemo(() => ({
+    id: 'demo-intro-modal',
+    title: '',
+    defaultPosition: typeof window !== 'undefined' ? {
+      x: Math.max(50, Math.round((window.innerWidth - 750) / 2)),
+      y: Math.round((window.innerHeight - Math.min(window.innerHeight * 0.85, 700)) / 2),
+    } : { x: 200, y: 100 },
+    persistent: false
+  }), []); // Empty dependency array since window dimensions are stable per session
 
   useEffect(() => {
     if (
@@ -237,15 +248,7 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
           <DraggableDialogContent 
             className="sm:max-w-[750px] max-h-[650px] p-8"
             draggable={true}
-            draggableConfig={{
-              id: 'demo-intro-modal',
-              title: '',
-              defaultPosition: typeof window !== 'undefined' ? {
-                x: Math.max(50, Math.round((window.innerWidth - 750) / 2)),
-                y: Math.round((window.innerHeight - Math.min(window.innerHeight * 0.85, 700)) / 2),
-              } : { x: 200, y: 100 },
-              persistent: false
-            }}
+            draggableConfig={stableDemoDraggableConfig}
           >
             <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
               <DialogHeader className="space-y-0">
