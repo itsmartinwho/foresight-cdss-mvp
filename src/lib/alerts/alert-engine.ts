@@ -166,9 +166,13 @@ export class AlertEngine {
   ): Promise<CreateAlertRequest[]> {
     const client = isRealTime ? this.realTimeClient : this.postConsultationClient;
     
+    // If OpenAI client is not available we cannot process alerts.
     if (!client) {
-      // Fallback to mock alerts for development
-      return this.generateMockAlerts(context, isRealTime);
+      // Optionally allow mock alerts during local development to validate the UI
+      if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
+        return this.generateMockAlerts(context, isRealTime);
+      }
+      return [];
     }
 
     try {
@@ -202,10 +206,16 @@ export class AlertEngine {
         }));
       }
 
+      if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
+        return this.generateMockAlerts(context, isRealTime);
+      }
       return [];
     } catch (error) {
       console.error('AI processing failed:', error);
-      return this.generateMockAlerts(context, isRealTime);
+      if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
+        return this.generateMockAlerts(context, isRealTime);
+      }
+      return [];
     }
   }
 

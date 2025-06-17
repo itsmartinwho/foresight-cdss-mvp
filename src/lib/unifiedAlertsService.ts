@@ -330,8 +330,10 @@ export class UnifiedAlertsService {
       const client = this.getRealtimeClient();
       if (!client) {
         console.log('AI processing not available - using mock alerts for development');
-        // In development mode without API key, we can still create mock alerts
-        await this.createMockAlert(patientId, encounterId, 'real_time');
+        // Fallback to mock alerts only when explicitly enabled via env var
+        if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
+          await this.createMockAlert(patientId, encounterId, 'real_time');
+        }
         return;
       }
 
@@ -391,8 +393,10 @@ export class UnifiedAlertsService {
       const client = this.getPostConsultationClient();
       if (!client) {
         console.log('AI processing not available - using mock alerts for development');
-        // In development mode without API key, we can still create mock alerts
-        await this.createMockAlert(patientId, encounterId, 'post_consultation');
+        // Fallback to mock alerts only when explicitly enabled via env var
+        if (process.env.NEXT_PUBLIC_ENABLE_MOCK_ALERTS === 'true') {
+          await this.createMockAlert(patientId, encounterId, 'post_consultation');
+        }
         return;
       }
 
