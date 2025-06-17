@@ -129,10 +129,20 @@ export default function AdvisorView() {
   // Use a ref to store the ID of the current assistant message being streamed to.
   // This helps manage state updates correctly within the EventSource callbacks.
   const currentAssistantMessageIdRef = useRef<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-resize textarea when input changes programmatically
+  useEffect(() => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
+    }
+  }, [input]);
 
   // Sync userHasScrolledUp state to ref
   useEffect(() => {
@@ -670,6 +680,7 @@ export default function AdvisorView() {
               )}
               {/* Textarea input */}
               <Textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={includePapers
@@ -678,7 +689,16 @@ export default function AdvisorView() {
                   ? "Reasoning mode selected for your harder medical queries"
                   : "Ask anything"}
                 rows={1}
-                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-2 py-1"
+                className="resize-none bg-transparent border-0 shadow-none outline-none ring-0 ring-transparent focus:outline-none focus:ring-0 focus:ring-transparent focus-visible:ring-0 focus-visible:ring-transparent text-base px-2 py-1 min-h-[2.5rem] max-h-32 overflow-y-auto"
+                style={{ 
+                  height: 'auto',
+                  minHeight: '2.5rem'
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -695,11 +715,8 @@ export default function AdvisorView() {
                       <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-teal-900 dark:text-teal-100">
-                        Suggested specialty: <span className="font-semibold">{suggestedSpecialty}</span>
-                      </p>
-                      <p className="text-xs text-teal-700 dark:text-teal-300 mt-1 truncate">
-                        {suggestionReason}
+                      <p className="text-sm font-medium text-teal-900 dark:text-teal-100 truncate">
+                        Suggested specialty based on patient profile: <span className="font-semibold">{suggestedSpecialty}</span>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
