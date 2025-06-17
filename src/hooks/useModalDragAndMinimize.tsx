@@ -172,7 +172,7 @@ export function useModalDragAndMinimize(
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = 'none';
-  }, [isValidConfig, position.x, position.y, handleDragMove, handleDragEnd]);
+  }, [isValidConfig, position, handleDragMove, handleDragEnd]);
 
   // Register modal with manager
   useEffect(() => {
@@ -189,23 +189,28 @@ export function useModalDragAndMinimize(
         unregisterModal(config!.id);
       }
     };
-  }, [isValidConfig, config?.id, registerModal, unregisterModal, pathname]); // Only essential deps
+  }, [isValidConfig, config, registerModal, unregisterModal, pathname]);
 
   // Modal management functions
   const minimize = useCallback(() => {
-    if (!isValidConfig) return;
-      minimizeModal(config!.id);
-  }, [isValidConfig, minimizeModal, config?.id]);
+    if (!isValidConfig || !config) return;
+      minimizeModal(config.id);
+  }, [isValidConfig, minimizeModal, config]);
   
   const restore = useCallback(() => {
-    if (!isValidConfig) return;
-      restoreModal(config!.id);
-  }, [isValidConfig, restoreModal, config?.id]);
+    if (!isValidConfig || !config) return;
+    restoreModal(config.id);
+  }, [isValidConfig, restoreModal, config]);
   
+  const bringModalToFront = useCallback(() => {
+    if (!isValidConfig || !config) return;
+    bringToFront(config.id);
+  }, [isValidConfig, bringToFront, config]);
+
   const close = useCallback(() => {
-    if (!isValidConfig) return;
-      unregisterModal(config!.id);
-  }, [isValidConfig, unregisterModal, config?.id]);
+    if (!isValidConfig || !config) return;
+    unregisterModal(config.id);
+  }, [isValidConfig, unregisterModal, config]);
 
   // Keyboard shortcut support
   useEffect(() => {
@@ -263,7 +268,7 @@ export function useModalDragAndMinimize(
     dragState.isDragging,
     dragState.currentPosition.x,
     dragState.currentPosition.y,
-    config?.id
+    config
   ]);
 
   // Drag handle props for the title bar
@@ -293,6 +298,7 @@ export function useModalDragAndMinimize(
     isDragging: dragState.isDragging,
     minimize,
     restore,
+    bringModalToFront,
     close,
     containerProps,
     dragHandleProps,
@@ -301,6 +307,7 @@ export function useModalDragAndMinimize(
     dragState.isDragging,
     minimize,
     restore,
+    bringModalToFront,
     close,
     containerProps,
     dragHandleProps,

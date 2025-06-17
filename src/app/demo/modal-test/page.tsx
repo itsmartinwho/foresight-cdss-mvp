@@ -11,7 +11,7 @@ export default function ModalTestPage() {
 
   React.useEffect(() => {
     setRenderCount(prev => prev + 1);
-  });
+  }, []);
 
   console.log('[ModalTestPage] Render count:', renderCount);
 

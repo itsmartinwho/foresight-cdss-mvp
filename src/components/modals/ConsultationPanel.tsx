@@ -960,7 +960,7 @@ export default function ConsultationPanel({
       defaultPosition: draggableConfig.defaultPosition,
       icon: draggableConfig.icon,
     };
-  }, [draggableConfig?.id, draggableConfig?.title, draggableConfig?.persistent, draggableConfig?.defaultPosition, draggableConfig?.icon, patient.id, draggable]);
+  }, [draggableConfig, patient.id, draggable]);
 
   if (!mounted || !isOpen) return null;
 

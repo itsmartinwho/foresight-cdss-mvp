@@ -223,7 +223,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       persistent: draggableConfig.persistent ?? false,
       defaultPosition: draggableConfig.defaultPosition,
     };
-  }, [draggable, draggableConfig?.id]); // Only depend on id, not the entire config object
+  }, [draggable, draggableConfig]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -207,28 +207,34 @@ const DraggablePositionedContent = React.forwardRef<
   onInteractOutside,
   ...props
 }, ref) => {
-  if (!draggableConfig) return null;
-
-  const {
-    isMinimized,
-    isDragging,
-    minimize,
-    containerProps,
-    dragHandleProps,
-  } = useModalDragAndMinimize(draggableConfig);
+  // Always call hooks first, before any conditional logic
+  const modalDragResult = useModalDragAndMinimize(draggableConfig);
   
-  // Memoize props to prevent infinite re-renders
-  const stableContainerProps = React.useMemo(() => ({
-    ...containerProps,
-    className: "fixed",
-    style: { ...containerProps.style }
-  }), [containerProps.style?.transform, containerProps.style?.zIndex]);
+  // Memoize props to prevent infinite re-renders - always call useMemo
+  const stableContainerProps = React.useMemo(() => {
+    if (!draggableConfig || !modalDragResult.containerProps) {
+      return { className: "fixed", style: {} };
+    }
+    return {
+      ...modalDragResult.containerProps,
+      className: "fixed",
+      style: { ...modalDragResult.containerProps.style }
+    };
+  }, [draggableConfig, modalDragResult.containerProps]);
 
-  const stableDragHandleProps = React.useMemo(() => ({
-    ...dragHandleProps,
-    className: "modal-title-bar flex items-center justify-between p-4 border-b border-white/10 cursor-move",
-    'data-testid': "modal-title-bar"
-  }), [dragHandleProps.onMouseDown]);
+  const stableDragHandleProps = React.useMemo(() => {
+    if (!draggableConfig || !modalDragResult.dragHandleProps) {
+      return {
+        className: "modal-title-bar flex items-center justify-between p-4 border-b border-white/10 cursor-move",
+        'data-testid': "modal-title-bar"
+      };
+    }
+    return {
+      ...modalDragResult.dragHandleProps,
+      className: "modal-title-bar flex items-center justify-between p-4 border-b border-white/10 cursor-move",
+      'data-testid': "modal-title-bar"
+    };
+  }, [draggableConfig, modalDragResult.dragHandleProps]);
   
   const handleClose = React.useCallback(() => {
     const trigger = document.querySelector(`[aria-controls="${props['aria-describedby']}"]`);
@@ -236,6 +242,11 @@ const DraggablePositionedContent = React.forwardRef<
       trigger.click();
     }
   }, [props]);
+
+  // Early return after all hooks are called
+  if (!draggableConfig) return null;
+
+  const { isMinimized, isDragging, minimize } = modalDragResult;
 
   if (isMinimized) {
     return null;
