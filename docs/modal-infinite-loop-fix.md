@@ -1,141 +1,98 @@
-# Modal Infinite Loop Fix Summary
+# Modal Infinite Loop Fix Documentation
 
-## Date: June 17, 2025
+## Problem Summary
+The NewConsultationModal was causing a "Maximum update depth exceeded" error when opened from the dashboard and patients tab. This was due to an infinite render loop caused by the interaction between Radix UI's focus management system and our draggable modal implementation.
 
-## Overview
-This document summarizes the fixes applied to resolve infinite loop errors and other modal-related issues in the draggable consultation modals across the application.
+## Root Causes Identified
 
-## Issues Identified
+### 1. Focus Event Propagation
+- Radix UI's `@radix-ui/react-compose-refs` was triggering setState calls continuously
+- The `onOpenAutoFocus` and `onCloseAutoFocus` handlers were being recreated on every render
+- This caused the focus-scope to continuously update, triggering more renders
 
-### 1. **Double Overlay Issue**
-- **Problem**: The draggable modal was rendering two backdrops/overlays
-- **Location**: `src/components/ui/dialog.tsx`
-- **Root Cause**: `DraggableDialogContentInternal` was wrapped in `DialogPortal` and `DialogOverlay` when already rendered through `DraggableModalWrapper`
+### 2. Unstable Object References in Drag Hook
+- `containerProps` and `dragHandleProps` were being recreated with new object identity on every render
+- This caused components using these props to re-render infinitely
+- The drag offset state was being updated unnecessarily
 
-### 2. **Modal Off-Center**
-- **Problem**: Modals were not properly centered on screen
-- **Location**: `src/hooks/useModalDragAndMinimize.tsx`
-- **Root Cause**: Default position calculation didn't account for actual modal dimensions
+### 3. Duplicate Event Handlers
+- Mouse event handlers were being registered both in `handleDragStart` and in a separate `useEffect`
+- This caused conflicting state updates and race conditions
 
-### 3. **Infinite Loop - Maximum Update Depth Exceeded**
-- **Problem**: Clicking "New Consultation" from patient workspace caused infinite re-render loop
-- **Locations**: 
-  - `src/components/ui/dialog.tsx`
-  - `src/components/modals/ConsultationPanel.tsx`
-  - `src/components/views/PatientWorkspaceViewModern.tsx`
-- **Root Causes**:
-  - React ref composition issues in Radix UI
-  - Hooks being called after conditional returns
-  - Non-memoized draggableConfig objects causing re-renders
+### 4. Modal Registration Issues
+- The modal could be registered multiple times if the hook re-ran
+- Missing safeguards for preventing multiple registrations
 
-## Fixes Applied
+## Solution Applied
 
-### 1. Fixed Double Overlay
-```typescript
-// In DraggableDialogContent - only render overlay for non-draggable dialogs
-return (
-  <DialogPortal>
-    <DialogOverlay />
-    <DraggableDialogContentInternal ... />
-  </DialogPortal>
-);
+### 1. Focus Event Isolation
+```tsx
+// Extract focus handlers to prevent re-renders
+const { onOpenAutoFocus, onCloseAutoFocus, ...restProps } = props;
+
+// Use refs to store callbacks
+const onOpenAutoFocusRef = React.useRef(onOpenAutoFocus);
+const onCloseAutoFocusRef = React.useRef(onCloseAutoFocus);
 ```
 
-### 2. Fixed Modal Centering
-```typescript
-// Updated getCenterPosition to accept modal dimensions
-function getCenterPosition(estimatedWidth: number = 512, estimatedHeight: number = 600): ModalPosition {
-  // Calculate center position based on viewport and modal size
-  const centerX = Math.max(50, Math.round((viewport.width - estimatedWidth) / 2));
-  const centerY = Math.max(20, Math.round((viewport.height - estimatedHeight) / 2));
-  return { x: centerX, y: centerY };
-}
-```
+### 2. Stabilized Drag State Management
+```tsx
+// Update ref directly to avoid state updates
+dragOffsetRef.current = offset;
 
-### 3. Fixed Infinite Loop Issues
-
-#### a. Added forwardRef to DraggableDialogContentInternal
-```typescript
-const DraggableDialogContentInternal = React.forwardRef<HTMLDivElement, Props>(
-  ({ ... }, ref) => {
-    // Component implementation
+// Guard against unnecessary state updates
+setDragState(prev => {
+  if (prev.currentPosition.x === constrainedPosition.x && 
+      prev.currentPosition.y === constrainedPosition.y) {
+    return prev;
   }
-);
-DraggableDialogContentInternal.displayName = 'DraggableDialogContentInternal';
+  return { ...prev, currentPosition: constrainedPosition };
+});
 ```
 
-#### b. Fixed Hook Order in ConsultationPanel
-```typescript
-// Moved useMemo before conditional returns
-const mergedDraggableConfig = useMemo(() => {
-  if (!draggableConfig || !draggable) return undefined;
-  return { ... };
-}, [...dependencies]);
+### 3. Consolidated Event Handling
+- Removed duplicate mouse event handlers in `useEffect`
+- All event handling now managed through `handleDragStart`, `handleDragMove`, and `handleDragEnd`
+- Used `setTimeout` for position updates to ensure state consistency
 
-// AFTER the hook
-if (!mounted || !isOpen) return null;
-```
+### 4. Registration Safeguards
+```tsx
+const isMountedRef = useRef(false);
 
-#### c. Memoized draggableConfig Objects in PatientWorkspaceViewModern
-```typescript
-const regularConsultationConfig = useMemo(() => ({
-  id: `consultation-panel-patient-${patient.id}`,
-  title: "New Consultation",
-  defaultPosition: { x: 150, y: 80 },
-  persistent: true
-}), [patient.id]);
-```
-
-### 4. Added Utility Function for Debugging
-```typescript
-// In modalPersistence.ts
-export const clearAllStoredModals = (): void => {
-  if (typeof window !== 'undefined') {
-    sessionStorage.removeItem(STORAGE_KEY);
-    console.log('✅ All stored modals cleared from sessionStorage');
+useEffect(() => {
+  if (isValidConfig && !isMountedRef.current) {
+    isMountedRef.current = true;
+    registerModal(config!, pathname);
   }
-};
+  // ... cleanup
+}, [isValidConfig, config?.id, registerModal, unregisterModal, pathname]);
 ```
 
-## Testing Results
+## Testing Instructions
 
-### ✅ Dashboard Page
-- New Consultation modal opens without errors
-- Modal is properly centered
-- No double overlay
-- Dragging works correctly
+1. Navigate to the dashboard
+2. Click "New Consultation" button
+3. Modal should open without errors
+4. Close and reopen multiple times
+5. Test from patients tab as well
+6. Check console for any "Maximum update depth exceeded" errors
 
-### ✅ Patients Tab
-- New Consultation modal opens without errors
-- No infinite loop when navigating to page with stored modals
+## Additional Safeguards
 
-### ✅ Patient Workspace
-- New Consultation modal opens without errors
-- No "Rendered more hooks than during the previous render" error
-- Proper modal centering and dragging
+1. Added `onInteractOutside` handler to prevent closing during creation
+2. Debug logging to track component renders
+3. Proper cleanup of event listeners and refs
 
-## Key Learnings
+## Known Limitations
 
-1. **React Hooks Rules**: Always call hooks in the same order - never after conditional returns
-2. **Ref Composition**: Be careful with multiple refs being composed, especially with Radix UI components
-3. **Object Identity**: Non-memoized objects in React dependencies can cause infinite re-renders
-4. **forwardRef**: Components receiving refs from parent components must use `React.forwardRef`
+This fix addresses the infinite loop issue but does not solve the underlying architectural mismatch between Radix UI's focus management and custom draggable implementations. Future improvements could include:
 
-## Prevention Tips
+1. Using a dedicated draggable library that's compatible with Radix UI
+2. Implementing a custom focus management system
+3. Upgrading to newer versions of Radix UI that may have fixes for these issues
 
-1. Always memoize objects passed as props or used in dependencies
-2. Place all hooks before any conditional returns
-3. Use `forwardRef` for components that might receive refs
-4. Test modals across all entry points (dashboard, patient list, patient workspace)
-5. Clear sessionStorage when debugging persistent modal issues
+## Related Issues
 
-## Related Files
-- `/docs/modal-implementation-summary.md`
-- `/docs/modal-cross-page-persistence-fix.md`
-- `/docs/history.md`
-
-## Commits
-- Fix modal issues: remove double overlay, fix centering, prevent infinite loops with memoized configs
-- Fix modal issues: add missing useMemo import and clearAllStoredModals utility
-- Fix React hooks rule violation in ConsultationPanel - always call useMemo
-- Fix React hooks order in ConsultationPanel - move useMemo before conditional returns 
+- Radix UI Issue #2717: Maximum update depth exceeded with HoverCard/Popover
+- Known issue with `@radix-ui/react-popper` and `onAnchorChange` missing dependencies
+- Focus management conflicts when combining Radix primitives with custom implementations 
