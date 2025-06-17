@@ -70,8 +70,8 @@ export function useModalDragAndMinimize(
       initialPositionRef.current = config!.defaultPosition;
     } else {
       // Default to center position based on modal type
-      const estimatedWidth = (config!.id.includes('consultation') || config!.id.includes('new-consultation')) ? 800 : 512;
-      const estimatedHeight = (config!.id.includes('consultation') || config!.id.includes('new-consultation')) ? 900 : 600;
+      const estimatedWidth = config!.id.includes('new-consultation') ? 672 : config!.id.includes('consultation') ? 800 : 512;
+      const estimatedHeight = (config!.id.includes('consultation') || config!.id.includes('new-consultation')) ? 600 : 600;
       initialPositionRef.current = getCenterPosition(estimatedWidth, estimatedHeight);
     }
   }
