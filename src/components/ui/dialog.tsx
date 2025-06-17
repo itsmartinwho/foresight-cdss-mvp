@@ -140,17 +140,33 @@ const DraggableDialogContent = React.forwardRef<
   showCloseButton = true,
   ...props 
 }, ref) => {
+  // Create an internal ref for DialogPrimitive.Content
+  const contentRef = React.useRef<React.ElementRef<typeof DialogPrimitive.Content>>(null);
+  
+  // Expose imperative ref through useImperativeHandle only when parent provides a ref
+  React.useImperativeHandle(ref, () => contentRef.current!, []);
+
   // Generate a stable ID for non-draggable dialogs (only once per component instance)
   const stableId = React.useMemo(() => `dialog-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
   
   // For draggable dialogs, use the full drag hook
+  const hookResult = useModalDragAndMinimize(draggable ? draggableConfig : null);
+  
+  // Memoize the hook result to prevent object recreation on every render
   const {
     isMinimized,
     isDragging,
     minimize,
     containerProps,
     dragHandleProps,
-  } = useModalDragAndMinimize(draggable ? draggableConfig : null);
+  } = React.useMemo(() => hookResult, [
+    hookResult, // eslint-disable-line react-hooks/exhaustive-deps
+    hookResult.isMinimized,
+    hookResult.isDragging,
+    hookResult.minimize,
+    hookResult.containerProps,
+    hookResult.dragHandleProps,
+  ]);
 
   // NOTE: Removed useModalOverlay call - regular dialogs should NOT register with ModalManager
   // They have their own overlay through DialogOverlay component
@@ -162,7 +178,7 @@ const DraggableDialogContent = React.forwardRef<
         <DialogOverlay />
         <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none">
           <DialogPrimitive.Content 
-            ref={ref} 
+            ref={contentRef} 
             className={cn(
               "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto",
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -199,7 +215,7 @@ const DraggableDialogContent = React.forwardRef<
         )}
       >
         <DialogPrimitive.Content 
-          ref={ref} 
+          ref={contentRef} 
           className="flex flex-col flex-1"
           {...props}
         >

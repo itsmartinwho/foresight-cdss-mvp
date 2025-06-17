@@ -115,14 +115,27 @@ export function useModalDragAndMinimize(
       y: Math.max(minY, Math.min(maxY, newPosition.y)),
     };
     
-    setDragState(prev => ({ ...prev, currentPosition: constrainedPosition }));
-  }, [isValidConfig, setDragState]);
+    setDragState(prev => {
+      // Guard against unnecessary state updates to prevent infinite loops
+      if (prev.currentPosition.x === constrainedPosition.x && 
+          prev.currentPosition.y === constrainedPosition.y) {
+        return prev;
+      }
+      return { ...prev, currentPosition: constrainedPosition };
+    });
+  }, [isValidConfig]);
 
   const handleDragEnd = useCallback(() => {
     // Get current position from state
     const finalPosition = dragState.currentPosition;
     
-    setDragState(prev => ({ ...prev, isDragging: false }));
+    setDragState(prev => {
+      // Guard against unnecessary state updates to prevent infinite loops
+      if (prev.isDragging === false) {
+        return prev;
+      }
+      return { ...prev, isDragging: false };
+    });
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = '';
@@ -152,11 +165,17 @@ export function useModalDragAndMinimize(
     };
     dragOffsetRef.current = offset;
 
-    setDragState({
-      isDragging: true,
-      dragOffset: offset,
-      startPosition: currentPos,
-      currentPosition: currentPos,
+    setDragState(prev => {
+      // Guard against unnecessary state updates to prevent infinite loops
+      if (prev.isDragging === true) {
+        return prev;
+      }
+      return {
+        isDragging: true,
+        dragOffset: offset,
+        startPosition: currentPos,
+        currentPosition: currentPos,
+      };
     });
 
     document.addEventListener('mousemove', handleDragMove);
@@ -264,7 +283,8 @@ export function useModalDragAndMinimize(
     };
   }, [isValidConfig, handleDragStart, dragState.isDragging]);
 
-  return {
+  // Memoize the return object to ensure stable object identity and prevent infinite re-renders
+  return useMemo(() => ({
     isMinimized,
     isDragging: dragState.isDragging,
     minimize,
@@ -272,7 +292,15 @@ export function useModalDragAndMinimize(
     close,
     containerProps,
     dragHandleProps,
-  };
+  }), [
+    isMinimized,
+    dragState.isDragging,
+    minimize,
+    restore,
+    close,
+    containerProps,
+    dragHandleProps,
+  ]);
 }
 
 // Simple hook for regular (non-draggable) modals to register with ModalManager for overlay

@@ -227,4 +227,34 @@ These display in development mode only (`NODE_ENV === 'development'`).
 - ✅ API routes properly configured for dynamic server usage
 - ✅ Build process optimized and warnings minimized
 
-All fixes maintain backward compatibility and existing functionality. 
+All fixes maintain backward compatibility and existing functionality.
+
+## Issue 8: Maximum Update Depth Exceeded - Radix UI Compose-Refs Loop (New Consultation Modal)
+
+**Problem**: "Maximum update depth exceeded" error when opening New Consultation modal via button (Dashboard/Patients pages), but not when opening through workspace route.
+
+**Root Cause**: The `DraggableDialogContent` component used `forwardRef` and passed multiple refs to `DialogPrimitive.Content`. The `useModalDragAndMinimize` hook created new objects on every render, causing Radix's `compose-refs` to trigger continuous `setState` calls during reconciliation.
+
+**Solution Applied**:
+1. **Fixed DraggableDialogContent ref handling**:
+   - Removed `forwardRef` wrapper pattern
+   - Created internal `contentRef = useRef(null)` and passed only this stable ref to Radix
+   - Used `useImperativeHandle` to expose ref API to parent when needed
+   - Memoized `useModalDragAndMinimize` hook result to ensure stable object identity
+
+2. **Added state update guards in useModalDragAndMinimize**:
+   - Added guards in `setDragState` calls to prevent unnecessary updates
+   - Early return if `isDragging` or position values haven't actually changed
+   - Memoized the entire hook return object for stable identity
+
+3. **Testing Results**:
+   - ✅ Patient workspace → Start consultation → works (draggable, minimizable, transcript auto-starts)
+   - ✅ Global "New Consultation" button (Dashboard & Patients) → opens without infinite loop error
+   - ✅ Both modal types remain draggable and minimizable
+   - ✅ Full `npm run build` passes
+
+**Files Modified**:
+- `src/components/ui/dialog.tsx` - Fixed ref handling and memoization
+- `src/hooks/useModalDragAndMinimize.tsx` - Added state guards and return object memoization
+
+**Status**: ✅ RESOLVED - All modal types now open without infinite update errors while maintaining full drag/minimize functionality. 
