@@ -19,9 +19,18 @@ function getCenterPosition(estimatedWidth: number = 512, estimatedHeight: number
     height: window.innerHeight,
   };
   
+  // Constants to fine-tune centering relative to chrome (top nav) and the fixed right panel on dashboard
+  const TOP_NAV_OFFSET = 32; // shift upward half of nav height (~64px)
+  const RIGHT_SIDEBAR_WIDTH = 320; // width of the fixed "New Consultation" sidebar on dashboard
+  
   // Calculate position to center the modal
-  const centerX = Math.round((viewport.width - estimatedWidth) / 2);
-  const centerY = Math.round((viewport.height - estimatedHeight) / 2);
+  let centerX = Math.round((viewport.width - estimatedWidth) / 2);
+  let centerY = Math.round((viewport.height - estimatedHeight) / 2) - TOP_NAV_OFFSET;
+
+  // If we detect the dashboard sidebar, shift the modal slightly right so it appears centered within main content
+  if (typeof document !== 'undefined' && document.querySelector('.fixed.right-6.w-80')) {
+    centerX = Math.round((viewport.width - RIGHT_SIDEBAR_WIDTH - estimatedWidth) / 2);
+  }
 
   // Ensure modal stays within viewport bounds with some padding
   const x = Math.max(50, centerX);

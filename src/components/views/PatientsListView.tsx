@@ -64,7 +64,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
     persistent: true,
     defaultPosition: typeof window !== 'undefined' ? {
       x: Math.max(50, Math.round((window.innerWidth - 672) / 2)),
-      y: Math.max(50, Math.round((window.innerHeight - 600) / 2)),
+      y: Math.max(50, Math.round((window.innerHeight - 600) / 2) - 32),
     } : { x: 200, y: 100 }
   }), []); // Empty dependency array since window dimensions are stable for each session
 

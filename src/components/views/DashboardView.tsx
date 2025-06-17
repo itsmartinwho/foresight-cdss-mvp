@@ -239,7 +239,11 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         draggableConfig={{
           id: 'new-consultation-dashboard',
           title: 'New Consultation',
-          persistent: true
+          persistent: true,
+          defaultPosition: typeof window !== 'undefined' ? {
+            x: Math.max(50, Math.round((window.innerWidth - 320 - 672) / 2)), // center within content area
+            y: Math.max(50, Math.round((window.innerHeight - 600) / 2) - 32), // account for nav bar height/2
+          } : { x: 200, y: 100 }
         }}
       />
 
