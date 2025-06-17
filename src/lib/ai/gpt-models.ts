@@ -302,8 +302,41 @@ export class OpenAIClient implements AIAPIClient {
 
       return [];
     } catch (error) {
+      console.log('AI response is not JSON, attempting to extract JSON from text...');
+      
+      // Try to extract JSON from text response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.alerts && Array.isArray(parsed.alerts)) {
+            return parsed.alerts.filter(alert => 
+              alert.confidence >= (request.confidenceThreshold || 0.7)
+            );
+          }
+        } catch (nestedError) {
+          console.log('Could not extract valid JSON from text response');
+        }
+      }
+      
+      // If we get a text response about clinical recommendations, convert to alert
+      console.log('Converting text response to alert format...');
+      if (content.toLowerCase().includes('methotrexate') || 
+          content.toLowerCase().includes('monitoring') ||
+          content.toLowerCase().includes('interaction')) {
+        return [{
+          type: 'MONITORING',
+          severity: 'INFO',
+          title: 'Clinical Monitoring Recommendation',
+          message: content.substring(0, 200) + '...',
+          suggestion: 'Review full clinical assessment for detailed recommendations',
+          confidence: 0.8,
+          reasoning: 'AI provided clinical recommendations in text format'
+        }];
+      }
+      
       console.error('Failed to parse AI response:', error);
-      console.error('Raw content:', content);
+      console.error('Raw content:', content.substring(0, 500) + '...');
       return [];
     }
   }

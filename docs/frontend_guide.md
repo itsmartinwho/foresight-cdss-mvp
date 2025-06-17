@@ -379,39 +379,46 @@ Components like `DiagnosisTab`, `TreatmentTab`, etc. remain in the codebase but 
 
 ---
 
-## Draggable and Minimizable Modals - Complete Implementation
+## Modal System - Minimizable Modals Implementation
 
 ### Overview
 
-The Foresight CDSS includes a comprehensive draggable and minimizable modal system that enhances user productivity by allowing modals to be repositioned, minimized to a taskbar, and restored on demand. This system is fully integrated across all modal components in the application.
+The Foresight CDSS includes a comprehensive modal system with minimization functionality that enhances user productivity by allowing modals to be minimized to a taskbar and restored on demand. This system is fully integrated across all modal components in the application.
+
+**Note: Draggability was disabled** due to recurring issues with modal positioning, centering, and user experience conflicts. The system now focuses on robust minimize/restore functionality while maintaining proper modal centering and stability.
 
 ### Core Features
 
-**1. Drag and Drop Functionality**
-- Click and drag modals by their title bars
-- Smooth drag animations with visual feedback
-- Viewport boundary constraints prevent modals from being dragged off-screen
-- Mouse and touch event handling for cross-device compatibility
+**1. Minimize and Restore Functionality**
+- Minimize modals to a bottom taskbar for better workspace management
+- One-click restore from minimized state
+- Visual minimize/restore animations for smooth user experience
+- Maintains modal state and content during minimization cycles
 
-**2. Minimize and Restore System**
+**2. Drag Infrastructure (Disabled)**
+- Complete drag and drop infrastructure exists but is disabled via `allowDragging={false}`
+- Infrastructure remains in place for potential future re-enablement if issues are resolved
+- Title bars show default cursor instead of grab cursor to indicate dragging is disabled
+
+**3. Minimize and Restore System**
 - Minimize modals to a bottom taskbar with one-click operation
-- Restore from minimized state maintaining original position
+- Restore from minimized state maintaining original centered position
 - Multiple modal management with organized taskbar display
 - Persistent minimize state across page navigation
 
-**3. Position Persistence**
-- Modal positions automatically saved to sessionStorage
-- Automatic restoration on page reload
-- 24-hour data expiration prevents stale data accumulation
-- Unique modal identification system prevents conflicts
+**4. Position Management**
+- Modals automatically center on screen when opened
+- Proper centering calculations account for navigation bar and sidebar
+- Smart positioning prevents modals from appearing off-screen
+- Fixed positioning system eliminates previous centering issues
 
-**4. Keyboard Accessibility**
+**5. Keyboard Accessibility**
 - `Ctrl+M` to minimize/restore active modal
 - `Escape` to close modals
 - Full keyboard navigation support
 - Screen reader compatibility with proper ARIA labels
 
-**5. Cross-Page Persistence**
+**6. Cross-Page Persistence**
 - Minimized modals persist when navigating between pages
 - Smart state management distinguishes between component unmounting and user actions
 - Seamless restoration from any page in the application
@@ -422,12 +429,12 @@ The Foresight CDSS includes a comprehensive draggable and minimizable modal syst
 ```
 src/
 ├── types/modal.ts                           # TypeScript interfaces
-├── hooks/useModalDragAndMinimize.tsx        # Core drag/minimize logic
-├── lib/modalPersistence.ts                 # SessionStorage utilities
+├── hooks/useModalDragAndMinimize.tsx        # Core minimize logic (drag disabled)
+├── lib/modalPersistence.ts                 # SessionStorage utilities  
 ├── components/ui/
 │   ├── modal-manager.tsx                    # Global state management
 │   ├── minimized-modal-bar.tsx             # Bottom taskbar component
-│   ├── draggable-modal-wrapper.tsx         # Higher-order wrapper
+│   ├── draggable-modal-wrapper.tsx         # Modal wrapper (drag disabled)
 │   ├── dialog.tsx                          # Enhanced Dialog component
 │   ├── alert-dialog.tsx                    # Enhanced AlertDialog component
 │   └── sheet.tsx                           # Enhanced Sheet component
@@ -445,10 +452,11 @@ The system maintains backward compatibility with existing modal implementations:
   {/* content */}
 </DialogContent>
 
-// After (with draggable support)
+// After (with minimize support, dragging disabled)
 <DraggableDialogContent 
-  draggable={true}
-  draggableConfig={{ modalId: 'unique-id' }}
+  draggable={true}           // Enables modal wrapper
+  allowDragging={false}      // Disables actual dragging
+  draggableConfig={{ id: 'unique-id' }}
 >
   {/* content */}
 </DraggableDialogContent>

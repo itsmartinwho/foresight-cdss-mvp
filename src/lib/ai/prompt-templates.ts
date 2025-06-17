@@ -16,7 +16,7 @@ CRITICAL INSTRUCTIONS:
 
 ALERT TYPES TO CONSIDER: {ALERT_TYPES}
 
-OUTPUT FORMAT: Return a JSON array of alert objects with this structure:
+OUTPUT FORMAT: You must respond with valid JSON only. Return a JSON object with an "alerts" array containing alert objects with this structure:
 {
   "alerts": [
     {
@@ -27,16 +27,14 @@ OUTPUT FORMAT: Return a JSON array of alert objects with this structure:
       "suggestion": "Specific recommended action",
       "confidence": 0.0-1.0,
       "reasoning": "Clinical justification for this alert",
-      "relatedData": {
-        // Relevant clinical data that triggered this alert
-      },
+      "relatedData": {},
       "navigationTarget": "UI route for one-click navigation (if applicable)",
-      "proposedEdit": {
-        // Suggested changes for one-click editing (if applicable)
-      }
+      "proposedEdit": {}
     }
   ]
-}`;
+}
+
+IMPORTANT: Return only valid JSON. Do not include any explanatory text outside of the JSON response.`;
 
 // Drug Interaction Alert Template
 export const DRUG_INTERACTION_TEMPLATE: AIPromptTemplate = {
