@@ -265,8 +265,17 @@ export function useModalDragAndMinimize(
       "aria-labelledby": `${config!.id}-title`,
       "aria-describedby": `${config!.id}-drag-instructions`,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isValidConfig, position, zIndex, isMinimized, dragState.isDragging, config]); // dragState position values intentionally excluded to prevent ref churn
+  }, [
+    isValidConfig, 
+    position.x, 
+    position.y, 
+    zIndex, 
+    isMinimized, 
+    dragState.isDragging,
+    dragState.currentPosition.x,
+    dragState.currentPosition.y,
+    config?.id
+  ]);
 
   // Drag handle props for the title bar
   const dragHandleProps = useMemo(() => {

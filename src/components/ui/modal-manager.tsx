@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, useRef, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   ModalManagerState, 
@@ -391,6 +391,7 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const listeners = useRef<Listener[]>([]);
+  const isInitialized = useRef(false);
 
   // Notify listeners on state change
   useEffect(() => {
@@ -399,8 +400,11 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     }
   }, [state]);
 
-  // Initialize from storage on mount
+  // Initialize from storage on mount - only run once
   useEffect(() => {
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+    
     const persistedData = loadModalPositions();
     if (persistedData) {
       dispatch({ type: 'INITIALIZE_FROM_STORAGE', payload: { persistedData } });
@@ -506,7 +510,8 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
 
     // For immediate restoration on the same page, check if modal becomes visible
     setTimeout(() => {
-      const updatedModal = getModalState(id);
+      // Access modal state directly to avoid circular dependency with getModalState
+      const updatedModal = state.modals[id];
       console.log(`🔍 Immediate restore check for modal ${id}:`, {
         exists: !!updatedModal,
         isMinimized: updatedModal?.isMinimized,
@@ -517,7 +522,7 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
         console.warn(`⚠️ Modal ${id} component not mounted for immediate restoration. This indicates the component may not be available on this page.`);
       }
     }, 100);
-  }, [state.modals, getModalState, pathname, router]);
+  }, [state.modals, pathname, router]);
 
   const bringToFront = useCallback((id: string) => {
     dispatch({ type: 'BRING_TO_FRONT', payload: { id } });
@@ -527,7 +532,8 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     dispatch({ type: 'SET_MODAL_VISIBILITY', payload: { id, isVisible } });
   }, []);
 
-  const contextValue: ModalManagerContextType = {
+  // Memoize the context value to prevent infinite re-renders
+  const contextValue = useMemo(() => ({
     state,
     registerModal,
     unregisterModal,
@@ -539,7 +545,19 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
     getModalState,
     getMinimizedModals,
     subscribe,
-  };
+  }), [
+    state,
+    registerModal,
+    unregisterModal,
+    minimizeModal,
+    restoreModal,
+    updateModalPosition,
+    bringToFront,
+    setModalVisibility,
+    getModalState,
+    getMinimizedModals,
+    subscribe,
+  ]);
 
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console

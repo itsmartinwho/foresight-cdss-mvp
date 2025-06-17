@@ -244,7 +244,7 @@ const DraggableDialogContentInternal: React.FC<{
         )}
       >
         <DialogPrimitive.Content 
-          ref={contentRef}
+          /* ref intentionally omitted to avoid ref composition loops */
           className="flex flex-col flex-1"
           {...props}
         >

@@ -224,17 +224,12 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
         <NewConsultationModal 
           open={showNewConsultModal} 
           onOpenChange={setShowNewConsultModal}
-          draggable={true}
-          draggableConfig={{
-            id: 'new-consultation-dashboard',
-            title: 'New Consultation',
-            persistent: true
-          }}
+          draggable={false}
         />
       )}
 
       {/* Demo Modal */}
-      {demoStage === 'introModal' && isDemoModalOpen && (
+      {false && demoStage === 'introModal' && isDemoModalOpen && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
           <DraggableDialogContent 
             className="sm:max-w-[750px] max-h-[650px] p-8"
