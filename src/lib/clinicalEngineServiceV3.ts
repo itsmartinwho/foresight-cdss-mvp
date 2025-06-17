@@ -16,6 +16,7 @@ import {
 import { supabaseDataService } from './supabaseDataService';
 import { getSupabaseClient } from './supabaseClient';
 import OpenAI from 'openai';
+import { GPT_4_1_MINI } from './ai/gpt-models';
 
 // Clinical Engine Assistant ID
 const CLINICAL_ENGINE_ASSISTANT_ID = process.env.CLINICAL_ENGINE_ASSISTANT_ID;
@@ -347,7 +348,7 @@ Latest Encounter Transcript: ${transcript}
 Please generate differential diagnoses based on this information.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4.1-mini", // Corrected: Using the actual model name you specified
+        model: GPT_4_1_MINI,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -441,7 +442,7 @@ Differential Diagnoses from Colleague: ${JSON.stringify(differentialDiagnoses, n
 Please provide your primary diagnosis and treatment plan.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: "o4-mini", // Corrected: Using the actual model name you specified
+        model: GPT_4_1_MINI,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -545,7 +546,7 @@ Please provide your primary diagnosis and treatment plan.`;
   ): Promise<string> {
     try {
       const completion = await this.openai.chat.completions.create({
-        model: "o4-mini", // Corrected: Using the actual model name you specified
+        model: GPT_4_1_MINI,
         messages: [
           { 
             role: "system", 
@@ -657,7 +658,7 @@ Generate a concise, professional Subjective section (2-4 sentences) that capture
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: GPT_4_1_MINI,
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 300,
         temperature: 0.3
@@ -705,7 +706,7 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: GPT_4_1_MINI,
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 300,
         temperature: 0.3

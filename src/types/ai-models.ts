@@ -2,10 +2,8 @@
 // Defines types for integrating with OpenAI models for alert processing
 
 export enum AIModelType {
-  GPT_4O_MINI = 'gpt-4o-mini',
   GPT_4O = 'gpt-4o',
-  GPT_4_TURBO = 'gpt-4-turbo',
-  GPT_3_5_TURBO = 'gpt-3.5-turbo',
+  GPT_4_1 = 'gpt-4.1',
   O4_MINI = 'o4-mini-2025-04-16',
   GPT_4_1_MINI = 'gpt-4.1-mini-2025-04-14',
   O3_MINI = 'o3-mini'
@@ -145,7 +143,7 @@ export interface AIProcessingResponse {
 
 // Real-time specific configurations
 export interface RealTimeAIConfig extends AIModelConfig {
-  model: AIModelType.GPT_4O_MINI;
+  model: AIModelType.GPT_4_1_MINI;
   processingInterval: number; // in seconds (60 for minute-by-minute)
   maxContextTokens: number;
   priorityThreshold: number; // Confidence threshold for immediate alerts
@@ -153,7 +151,7 @@ export interface RealTimeAIConfig extends AIModelConfig {
 
 // Post-consultation specific configurations
 export interface PostConsultationAIConfig extends AIModelConfig {
-  model: AIModelType.GPT_4O;
+  model: AIModelType.O4_MINI;
   comprehensiveAnalysis: boolean;
   includeRealTimeAlerts: boolean;
   alertRefreshLogic: boolean;
@@ -208,18 +206,6 @@ export interface PromptBuilder {
 
 // Model configuration presets
 export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
-  [AIModelType.GPT_4O_MINI]: {
-    name: 'gpt-4o-mini',
-    displayName: 'GPT-4o Mini',
-    maxTokens: 128000,
-    costPer1000Tokens: 0.15,
-    capabilities: [
-      AIModelCapability.TEXT_GENERATION,
-      AIModelCapability.MULTIMODAL,
-      AIModelCapability.FUNCTION_CALLING
-    ],
-    description: 'Compact multimodal model with vision capabilities'
-  },
   [AIModelType.GPT_4O]: {
     name: 'gpt-4o',
     displayName: 'GPT-4o',
@@ -233,28 +219,18 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
     ],
     description: 'Advanced multimodal model with enhanced reasoning'
   },
-  [AIModelType.GPT_4_TURBO]: {
-    name: 'gpt-4-turbo',
-    displayName: 'GPT-4 Turbo',
-    maxTokens: 128000,
-    costPer1000Tokens: 1.0,
+  [AIModelType.GPT_4_1]: {
+    name: 'gpt-4.1',
+    displayName: 'GPT-4.1',
+    maxTokens: 1047576,
+    costPer1000Tokens: 0.3,
     capabilities: [
       AIModelCapability.TEXT_GENERATION,
       AIModelCapability.CODE_GENERATION,
+      AIModelCapability.MULTIMODAL,
       AIModelCapability.FUNCTION_CALLING
     ],
-    description: 'Fast and efficient GPT-4 variant'
-  },
-  [AIModelType.GPT_3_5_TURBO]: {
-    name: 'gpt-3.5-turbo',
-    displayName: 'GPT-3.5 Turbo',
-    maxTokens: 16385,
-    costPer1000Tokens: 0.5,
-    capabilities: [
-      AIModelCapability.TEXT_GENERATION,
-      AIModelCapability.FUNCTION_CALLING
-    ],
-    description: 'Fast and cost-effective language model'
+    description: 'Latest small LLM with multimodal input and function calling - ideal for real-time alerts'
   },
   [AIModelType.O4_MINI]: {
     name: 'o4-mini-2025-04-16',
@@ -300,10 +276,10 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
 // Default model selections for different use cases
 export const AI_MODEL_PRESETS = {
   FAST_RESPONSE: AIModelType.GPT_4_1_MINI, // Real-time alerts
-  BALANCED: AIModelType.GPT_4O,
+  BALANCED: AIModelType.GPT_4_1,
   REASONING: AIModelType.O4_MINI, // Post-consultation analysis
-  COST_EFFECTIVE: AIModelType.GPT_3_5_TURBO,
-  ADVANCED_REASONING: AIModelType.O3_MINI
+  COST_EFFECTIVE: AIModelType.GPT_4_1_MINI,
+  ADVANCED_REASONING: AIModelType.O4_MINI
 };
 
 export type AIModel = keyof typeof AI_MODEL_CONFIGS;

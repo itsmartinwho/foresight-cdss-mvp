@@ -2,13 +2,12 @@
 import { AIModelType, AIModelConfig, AI_MODEL_CONFIGS, AIModelCapability } from '@/types/ai-models';
 
 // Export the correct model identifiers
-export const GPT_4O_MINI = AIModelType.GPT_4O_MINI;
 export const GPT_4O = AIModelType.GPT_4O;
-export const GPT_4_TURBO = AIModelType.GPT_4_TURBO;
-export const GPT_3_5_TURBO = AIModelType.GPT_3_5_TURBO;
 export const O4_MINI = AIModelType.O4_MINI;
 export const GPT_4_1_MINI = AIModelType.GPT_4_1_MINI;
-export const O3_MINI = AIModelType.O3_MINI;
+
+// Latest GPT-4.1 model (non-mini)
+export const GPT_4_1 = AIModelType.GPT_4_1;
 
 // Default model for real-time alerts processing - using gpt-4.1-mini for speed and efficiency
 export const DEFAULT_REALTIME_MODEL = GPT_4_1_MINI;
@@ -16,8 +15,8 @@ export const DEFAULT_REALTIME_MODEL = GPT_4_1_MINI;
 // Default model for post-consultation alerts processing - using o4-mini for reasoning capabilities
 export const DEFAULT_POST_CONSULTATION_MODEL = O4_MINI;
 
-// Fallback model for when primary models are unavailable
-export const FALLBACK_ALERTS_MODEL = GPT_4O_MINI;
+// Use GPT-4.1-mini as the generic low-cost fallback
+export const FALLBACK_ALERTS_MODEL = GPT_4_1_MINI;
 
 // Model selection based on use case
 export const getModelForUseCase = (useCase: 'real-time' | 'post-consultation' | 'demo'): AIModelType => {
@@ -27,7 +26,7 @@ export const getModelForUseCase = (useCase: 'real-time' | 'post-consultation' | 
     case 'post-consultation':
       return DEFAULT_POST_CONSULTATION_MODEL; // o4-mini-2025-04-16 for reasoning
     case 'demo':
-      return GPT_4O_MINI; // Cost-effective for demos
+      return GPT_4_1_MINI; // Cost-effective for demos
     default:
       return FALLBACK_ALERTS_MODEL;
   }
@@ -95,10 +94,26 @@ export const AVAILABLE_MODELS = Object.values(AIModelType);
 export const MODEL_RECOMMENDATIONS = {
   REAL_TIME_ALERTS: DEFAULT_REALTIME_MODEL,
   POST_CONSULTATION_ANALYSIS: DEFAULT_POST_CONSULTATION_MODEL,
-  COST_OPTIMIZATION: GPT_3_5_TURBO,
-  ADVANCED_REASONING: O3_MINI,
-  MULTIMODAL_ANALYSIS: GPT_4O,
+  COST_OPTIMIZATION: GPT_4_1_MINI,
+  ADVANCED_REASONING: O4_MINI,
+  MULTIMODAL_ANALYSIS: GPT_4_1,
   FALLBACK: FALLBACK_ALERTS_MODEL
 } as const;
+
+// Temporary lightweight OpenAI client wrapper to address missing type inconsistency.
+// TODO: Replace with fully featured implementation or refactor alert engine to use a
+// central AI service abstraction.
+export class OpenAIClient {
+  private config: { model: string; maxTokens?: number; temperature?: number; retryAttempts?: number; timeout?: number };
+
+  constructor(config: { model: string; maxTokens?: number; temperature?: number; retryAttempts?: number; timeout?: number }) {
+    this.config = config;
+  }
+
+  async processAlerts(request: any): Promise<any> {
+    console.warn('[OpenAIClient] processAlerts is using a placeholder implementation.');
+    return { success: false, alerts: [], model: this.config.model };
+  }
+}
 
 export type AvailableModel = typeof AVAILABLE_MODELS[number]; 

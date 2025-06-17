@@ -16,14 +16,13 @@ import {
 } from '@/types/alerts';
 
 import { 
-  AIModel, 
   AIProcessingRequest, 
   AIProcessingResponse,
   AIProcessingContext,
   AIAlertResult
 } from '@/types/ai-models';
 
-import { getModelForUseCase, DEFAULT_REALTIME_MODEL, DEFAULT_POST_CONSULTATION_MODEL } from './ai/gpt-models';
+import { getModelForUseCase, DEFAULT_REALTIME_MODEL, DEFAULT_POST_CONSULTATION_MODEL, GPT_4_1 } from './ai/gpt-models';
 import { getRealTimeTemplate } from './ai/prompt-templates';
 import { getSupabaseClient } from './supabaseClient';
 import { supabaseDataService } from '@/lib/supabaseDataService';
@@ -420,7 +419,7 @@ Existing Alerts: ${JSON.stringify(context.existingAlerts)}`;
       // Process with comprehensive AI analysis
       const aiContext = this.buildAIProcessingContext(context);
       const request: AIProcessingRequest = {
-        model: AIModel.GPT_4O,
+        model: GPT_4_1,
         context: aiContext,
         promptTemplate: getRealTimeTemplate(), // Use comprehensive template
         isRealTime: false,

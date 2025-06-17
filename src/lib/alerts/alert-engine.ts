@@ -15,7 +15,6 @@ import {
 } from '@/types/alerts';
 
 import { 
-  AIModel, 
   AIProcessingRequest, 
   AIProcessingResponse,
   AIProcessingContext 
@@ -24,6 +23,7 @@ import {
 import { OpenAIClient } from '../ai/gpt-models';
 import { getRealTimeTemplate } from '../ai/prompt-templates';
 import { UnifiedAlertsService } from '../unifiedAlertsService';
+import { GPT_4_1_MINI, O4_MINI } from '../ai/gpt-models';
 
 export class AlertEngine {
   private alertsService: UnifiedAlertsService;
@@ -43,7 +43,7 @@ export class AlertEngine {
     try {
       // Real-time client for minute-by-minute processing
       this.realTimeClient = new OpenAIClient({
-        model: AIModel.GPT_4_1_MINI,
+        model: GPT_4_1_MINI,
         maxTokens: 1500,
         temperature: 0.1,
         retryAttempts: 2,
@@ -52,7 +52,7 @@ export class AlertEngine {
 
       // Post-consultation client for comprehensive analysis
       this.postConsultationClient = new OpenAIClient({
-        model: AIModel.GPT_O3,
+        model: O4_MINI,
         maxTokens: 3000,
         temperature: 0.05,
         retryAttempts: 3,
@@ -183,7 +183,7 @@ export class AlertEngine {
     try {
       const aiContext = this.buildAIProcessingContext(context);
       const request: AIProcessingRequest = {
-        model: isRealTime ? AIModel.GPT_4_1_MINI : AIModel.GPT_O3,
+        model: isRealTime ? GPT_4_1_MINI : O4_MINI,
         context: aiContext,
         promptTemplate: getRealTimeTemplate(),
         isRealTime,
