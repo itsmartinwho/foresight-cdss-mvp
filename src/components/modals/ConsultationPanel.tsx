@@ -856,7 +856,17 @@ export default function ConsultationPanel({
     
     // Use setTimeout to break out of the render cycle
     autoStartTimeoutRef.current = setTimeout(async () => {
-      if (!isOpen || !mounted) return; // Double-check modal is still open
+      console.log('[ConsultationPanel] Auto-start timeout executing - checking conditions:', {
+        isOpen,
+        mounted,
+        isTranscribingRef: isTranscribingRef.current,
+        autoStartSessionRef: autoStartSessionRef.current
+      });
+      
+      if (!isOpen || !mounted) {
+        console.log('[ConsultationPanel] Auto-start cancelled: modal not open or not mounted');
+        return;
+      }
       
       console.log('[ConsultationPanel] Attempting auto-start of transcription');
       try {
@@ -867,12 +877,15 @@ export default function ConsultationPanel({
         }
         
         const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+        console.log('[ConsultationPanel] Checking API key availability:', !!apiKey);
         if (!apiKey) {
           console.error('[ConsultationPanel] Missing Deepgram API key, cannot auto-start');
           toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+          setStarted(true); // Set started to true to prevent infinite retry
           return;
         }
         
+        console.log('[ConsultationPanel] Starting voice input...');
         // Call startVoiceInput directly
         await startVoiceInput();
         setStarted(true);
@@ -891,6 +904,7 @@ export default function ConsultationPanel({
       } catch (error) {
         console.error('[ConsultationPanel] Auto-start transcription failed:', error);
         toast({ title: "Auto-start Failed", description: "Could not automatically start transcription.", variant: "destructive" });
+        setStarted(true); // Set started to true to prevent infinite retry
       }
     }, 200); // Slightly longer delay for stability
     
@@ -1136,7 +1150,29 @@ export default function ConsultationPanel({
                   )}
                 </>
               ) : (
-                <div className="flex items-center justify-center h-full"><p className="text-muted-foreground">Setting up consultation...</p></div>
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center space-y-4">
+                    <p className="text-muted-foreground">Setting up consultation...</p>
+                    {encounter && !started && mounted && (
+                      <Button 
+                        onClick={async () => {
+                          try {
+                            await startVoiceInput();
+                            setStarted(true);
+                          } catch (error) {
+                            console.error('Manual transcription start failed:', error);
+                            toast({ title: "Error", description: "Could not start transcription. Please check your microphone permissions.", variant: "destructive" });
+                          }
+                        }}
+                        variant="default"
+                        className="gap-2"
+                      >
+                        <PlayCircle className="h-4 w-4" />
+                        Start Transcription
+                      </Button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </>
