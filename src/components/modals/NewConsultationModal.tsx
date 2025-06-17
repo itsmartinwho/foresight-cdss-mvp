@@ -230,7 +230,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
       <DraggableDialogContent
         onCloseAutoFocus={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className={`max-w-4xl max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
+        className={`min-w-[672px] max-w-2xl max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         draggable={draggable && open}
         allowDragging={allowDragging}
         draggableConfig={stableDraggableConfig}
