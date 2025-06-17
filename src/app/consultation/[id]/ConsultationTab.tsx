@@ -446,12 +446,12 @@ const ConsultationTab: React.FC<ConsultationTabProps> = ({
 
         // Only attempt reconnection if the transcription is still supposed to be active
         // and it wasn't a user-initiated close (code 1000) or going away (code 1001)
-        if (transcriptionActiveRef.current && !isPausedRef.current && event.code !== 1000 && event.code !== 1001) {
+        if (transcriptionActiveRef.current && !isPaused && event.code !== 1000 && event.code !== 1001) {
           console.log('[ConsultationTab] Connection lost unexpectedly, attempting reconnection...');
           
           // Wait a short time before reconnecting to avoid rapid reconnection loops
           setTimeout(() => {
-            if (transcriptionActiveRef.current && !isPausedRef.current) {
+            if (transcriptionActiveRef.current && !isPaused) {
               console.log('[ConsultationTab] Attempting automatic reconnection...');
               startTranscription(); // Recursive call to restart transcription
             }
