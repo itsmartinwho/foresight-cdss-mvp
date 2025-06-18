@@ -194,12 +194,22 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       }
     };
 
+    const handleCustomDataChange = (event: CustomEvent) => {
+      if (event.detail?.patientId === patient?.id) {
+        loadPatientData(true); // Force refresh for the specific patient
+      }
+    };
+
     // Subscribe to changes
     supabaseDataService.subscribe(handleDataChange);
+    
+    // Also listen for custom events from the editable fields
+    window.addEventListener('supabase-data-change', handleCustomDataChange as EventListener);
 
     // Cleanup subscription on unmount
     return () => {
       supabaseDataService.unsubscribe(handleDataChange);
+      window.removeEventListener('supabase-data-change', handleCustomDataChange as EventListener);
     };
   }, [patient?.id, loadPatientData]);
 

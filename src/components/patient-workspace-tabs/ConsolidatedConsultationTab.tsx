@@ -47,6 +47,14 @@ export default function ConsolidatedConsultationTab({
         title: "Success",
         description: "Field updated successfully",
       });
+      // Force a re-render by updating the page timestamp
+      window.dispatchEvent(new CustomEvent('encounter-field-updated', { 
+        detail: { 
+          patientId: patient?.id, 
+          encounterId: selectedEncounter?.id,
+          updatedEncounter 
+        } 
+      }));
     },
     onError: (error) => {
       toast({

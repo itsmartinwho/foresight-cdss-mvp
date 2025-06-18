@@ -184,18 +184,14 @@ export function useEditableEncounterFields({
       // Clear the cached patient data to ensure fresh reload
       supabaseDataService.clearDemoPatientData(patientId); // This clears cache for any patient, not just demo
       
-      // Force a fresh reload from database
-      await supabaseDataService.loadSinglePatientData?.(patientId) || 
-            supabaseDataService.getPatientData(patientId, true); // Force refresh flag if available
-
-      // Emit change event to trigger UI updates
-      supabaseDataService.emitChange?.() || (() => {
-        // Manual change subscription trigger if emitChange is private
-        const changeEvent = new CustomEvent('supabase-data-change', { 
-          detail: { patientId, encounterId, fieldName, newValue } 
-        });
-        window.dispatchEvent(changeEvent);
-      })();
+      // Force a fresh reload from database by clearing and reloading
+      await supabaseDataService.loadPatientData(); // Reload all patient data to refresh cache
+      
+      // Trigger change subscribers to update UI
+      const changeEvent = new CustomEvent('supabase-data-change', { 
+        detail: { patientId, encounterId, fieldName, newValue } 
+      });
+      window.dispatchEvent(changeEvent);
 
       // Get the updated encounter data after refresh
       const updatedPatientData = await supabaseDataService.getPatientData(patientId);
@@ -302,18 +298,14 @@ export function useEditableEncounterFields({
       // CRITICAL FIX: Force clear the data service cache and reload fresh data
       supabaseDataService.clearDemoPatientData(patientId); // This clears cache for any patient
       
-      // Force a fresh reload from database  
-      await supabaseDataService.loadSinglePatientData?.(patientId) || 
-            supabaseDataService.getPatientData(patientId, true); // Force refresh flag if available
-
-      // Emit change event to trigger UI updates
-      supabaseDataService.emitChange?.() || (() => {
-        // Manual change subscription trigger if emitChange is private
-        const changeEvent = new CustomEvent('supabase-data-change', { 
-          detail: { patientId, encounterId, fields } 
-        });
-        window.dispatchEvent(changeEvent);
-      })();
+      // Force a fresh reload from database by clearing and reloading
+      await supabaseDataService.loadPatientData(); // Reload all patient data to refresh cache
+      
+      // Trigger change subscribers to update UI
+      const changeEvent = new CustomEvent('supabase-data-change', { 
+        detail: { patientId, encounterId, fields } 
+      });
+      window.dispatchEvent(changeEvent);
 
       // Get the updated encounter data after refresh
       const updatedPatientData = await supabaseDataService.getPatientData(patientId);
