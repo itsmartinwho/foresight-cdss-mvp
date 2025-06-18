@@ -177,23 +177,21 @@ export function useEditableEncounterFields({
         throw new Error(`Database update failed: ${error.message}`);
       }
 
+      // NEW: Update local cache directly instead of clearing everything
+      if (data) {
+        supabaseDataService.updateEncounterCacheFromDBRow(data);
+      }
+
       // Update extra_data with the latest field values
       await updateExtraData(encounterUuid, { [fieldName]: newValue });
 
-      // CRITICAL FIX: Force clear the data service cache and reload fresh data
-      // Clear the cached patient data to ensure fresh reload
-      supabaseDataService.clearDemoPatientData(patientId); // This clears cache for any patient, not just demo
-      
-      // Force a fresh reload from database by clearing and reloading
-      await supabaseDataService.loadPatientData(); // Reload all patient data to refresh cache
-      
-      // Trigger change subscribers to update UI
+      // Trigger change subscribers to update UI (lightweight)
       const changeEvent = new CustomEvent('supabase-data-change', { 
         detail: { patientId, encounterId, fieldName, newValue } 
       });
       window.dispatchEvent(changeEvent);
 
-      // Get the updated encounter data after refresh
+      // Get the updated encounter data after cache refresh
       const updatedPatientData = await supabaseDataService.getPatientData(patientId);
       const updatedEncounterData = updatedPatientData?.encounters.find(
         ew => ew.encounter.encounterIdentifier === encounterId || ew.encounter.id === encounterId
@@ -292,22 +290,21 @@ export function useEditableEncounterFields({
         throw new Error(`Database update failed: ${error.message}`);
       }
 
+      // NEW: Update local cache directly instead of clearing everything
+      if (data) {
+        supabaseDataService.updateEncounterCacheFromDBRow(data);
+      }
+
       // Update extra_data with the latest field values
       await updateExtraData(encounterUuid, fields);
 
-      // CRITICAL FIX: Force clear the data service cache and reload fresh data
-      supabaseDataService.clearDemoPatientData(patientId); // This clears cache for any patient
-      
-      // Force a fresh reload from database by clearing and reloading
-      await supabaseDataService.loadPatientData(); // Reload all patient data to refresh cache
-      
-      // Trigger change subscribers to update UI
+      // Trigger change subscribers to update UI (lightweight)
       const changeEvent = new CustomEvent('supabase-data-change', { 
         detail: { patientId, encounterId, fields } 
       });
       window.dispatchEvent(changeEvent);
 
-      // Get the updated encounter data after refresh
+      // Get the updated encounter data after cache refresh
       const updatedPatientData = await supabaseDataService.getPatientData(patientId);
       const updatedEncounterData = updatedPatientData?.encounters.find(
         ew => ew.encounter.encounterIdentifier === encounterId || ew.encounter.id === encounterId
