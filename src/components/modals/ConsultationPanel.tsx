@@ -58,6 +58,10 @@ interface ConsultationPanelProps {
   allowDragging?: boolean;
   /** Configuration for drag and minimize behavior */
   draggableConfig?: ModalDragAndMinimizeConfig;
+  /** Optional existing encounter to use instead of creating a new one */
+  selectedEncounter?: Encounter | null;
+  /** Whether to automatically start transcription when opening with an existing encounter */
+  autoStartTranscription?: boolean;
 }
 
 // Styled DatePicker component to match the design
@@ -91,6 +95,8 @@ export default function ConsultationPanel({
   draggable = false,
   allowDragging = false,
   draggableConfig,
+  selectedEncounter,
+  autoStartTranscription = false,
 }: ConsultationPanelProps) {
   // Debug demo mode detection
   useEffect(() => {
@@ -886,21 +892,36 @@ export default function ConsultationPanel({
       return;
     }
     
-    // Modal is opening - reset state
-    setEncounter(null);
-    setReason('');
-    setScheduledDate(new Date());
-    setDuration(30);
+    // Modal is opening - reset or set state based on whether we have a selected encounter
+    if (selectedEncounter) {
+      // Use existing encounter
+      setEncounter(selectedEncounter);
+      setReason(selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode || '');
+      setScheduledDate(selectedEncounter.scheduledStart ? new Date(selectedEncounter.scheduledStart) : new Date());
+      setDuration(30); // Default duration
+      setTranscriptText(selectedEncounter.transcript || '');
+      setStarted(true); // Mark as started since we have an existing encounter
+      console.log('[ConsultationPanel] Modal opened with existing encounter:', selectedEncounter.id);
+    } else {
+      // Creating new encounter - reset state
+      setEncounter(null);
+      setReason('');
+      setScheduledDate(new Date());
+      setDuration(30);
+      setTranscriptText('');
+      setStarted(false);
+      console.log('[ConsultationPanel] Modal opened for new consultation');
+    }
+    
+    // Common state resets
     setActiveTab('transcript');
     setTabBarVisible(false);
     setIsGeneratingPlan(false);
-    setStarted(false);
     setIsGeneratingSoap(false);
     setIsLoadingDifferentials(false);
     setShowConfirmationDialog(false);
     setEditedWhilePaused(false);
     autoStartSessionRef.current = false;
-    console.log('[ConsultationPanel] Modal opened, state reset');
     
     // Handle demo mode initialization
     if (isDemoMode) {
@@ -928,7 +949,35 @@ export default function ConsultationPanel({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]); // Only depend on isOpen to prevent loops - demo props are init values only
+  }, [isOpen, selectedEncounter]); // Include selectedEncounter dependency
+
+  // Auto-start transcription when requested
+  useEffect(() => {
+    if (isOpen && autoStartTranscription && selectedEncounter && encounter && started && !isTranscribing && !autoStartSessionRef.current) {
+      console.log('[ConsultationPanel] Auto-starting transcription for existing encounter:', selectedEncounter.id);
+      autoStartSessionRef.current = true;
+      
+      // Small delay to ensure the modal is fully rendered
+      const timer = setTimeout(() => {
+        if (startVoiceInputRef.current) {
+          startVoiceInputRef.current()
+            .then(() => {
+              console.log('[ConsultationPanel] Auto-start transcription successful');
+            })
+            .catch((error) => {
+              console.error('[ConsultationPanel] Auto-start transcription failed:', error);
+              toast({ 
+                title: "Auto-start Failed", 
+                description: "Could not automatically start transcription. You can start it manually.", 
+                variant: "destructive" 
+              });
+            });
+        }
+      }, 1000); // 1 second delay to ensure full initialization
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, autoStartTranscription, selectedEncounter, encounter, started, isTranscribing, toast]);
   
   // Update demo content when props change (for animated transcript)
   useEffect(() => {

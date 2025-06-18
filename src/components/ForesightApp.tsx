@@ -78,10 +78,7 @@ function ForesightApp() {
     router.push(`/patients/${patientId}?tab=diagnosis`);
   };
 
-  const handleStartConsult = (patient: Patient) => {
-    setSelectedPatientTab("consultation");
-    router.push(`/patients/${patient.id}`);
-  };
+
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatientTab("consultation");
@@ -99,7 +96,7 @@ function ForesightApp() {
   let currentView;
   switch (activeView) {
     case "dashboard":
-      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
+      currentView = <DashboardView onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
       break;
     case "patients":
       if (patientIdFromPath) {
@@ -137,7 +134,7 @@ function ForesightApp() {
       currentView = <SettingsScreenView />;
       break;
     default:
-      currentView = <DashboardView onStartConsult={handleStartConsult} onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
+      currentView = <DashboardView onAlertClick={handleAlertClick} allAlerts={complexCaseAlerts} />;
   }
 
   return (

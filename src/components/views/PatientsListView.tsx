@@ -333,6 +333,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   if (onSelect && patient) {
                     onSelect(patient);
                   } else if (patient?.id && encounter.id) {
+                    // Navigate to patient workspace without auto-starting consultation
                     router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`);
                   }
                 }} className="cursor-pointer hover:bg-muted/50 transition-colors">
@@ -354,12 +355,34 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent row click
                       if (patient?.id && encounter.id) {
-                        router.push(`/patients/${patient?.id}?tab=consultation&encounterId=${encounter.id}`);
+                        // Check if this is an upcoming consultation to determine auto-start behavior
+                        const now = new Date();
+                        const scheduledTime = encounter.scheduledStart ? new Date(encounter.scheduledStart) : null;
+                        const isUpcoming = scheduledTime && scheduledTime > now;
+                        
+                        if (isUpcoming) {
+                          // For upcoming consultations, navigate with auto-start
+                          router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
+                        } else {
+                          // For past consultations, just navigate normally
+                          router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`);
+                        }
                       }
                     }}
-                    title="Go to Consultation"
+                    title={(() => {
+                      const now = new Date();
+                      const scheduledTime = encounter.scheduledStart ? new Date(encounter.scheduledStart) : null;
+                      const isUpcoming = scheduledTime && scheduledTime > now;
+                      return isUpcoming ? "Start Consultation" : "Go to Consultation";
+                    })()}
                   >
-                    <PlayCircle size={20} className="mr-1" /> Go to Consult
+                    <PlayCircle size={20} className="mr-1" /> 
+                    {(() => {
+                      const now = new Date();
+                      const scheduledTime = encounter.scheduledStart ? new Date(encounter.scheduledStart) : null;
+                      const isUpcoming = scheduledTime && scheduledTime > now;
+                      return isUpcoming ? "Start" : "Go to Consult";
+                    })()}
                   </Button>
                 </TableCell>
               </TableRow>

@@ -98,6 +98,14 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       const foundEncounter = activeEncounterDetails.find(ew => ew.encounter.id === encounterId)?.encounter;
       if (foundEncounter) {
         setSelectedEncounterForConsultation(foundEncounter);
+        
+        // Check if we should auto-start the consultation
+        const autoStart = searchParams.get('autoStart');
+        if (autoStart === 'true') {
+          // Save current selection to restore if modal is discarded
+          previousEncounterRef.current = foundEncounter;
+          setShowConsultationPanel(true);
+        }
       }
     }
   }, [searchParams, activeEncounterDetails]);
@@ -334,9 +342,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
 
     setSelectedEncounterForConsultation(encounter);
     setActiveTab('consultation');
+    
+    // Clear autoStart parameter and navigate
+    const url = new URL(window.location.href);
+    url.searchParams.delete('autoStart');
+    url.searchParams.set('encounterId', encounter.id);
+    url.searchParams.set('tab', 'consultation');
+    window.history.replaceState({}, '', url.toString());
+    
     // NOTE: Don't close the panel automatically - let user manually close when done
     // The panel should remain open for consultation content entry
-    router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
   };
 
   const openDeleteConfirmation = (encounterId: string) => {
@@ -589,6 +604,11 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           setShowConsultationPanel(false);
           setSelectedEncounterForConsultation(previousEncounterRef.current);
           previousEncounterRef.current = null;
+          
+          // Remove autoStart parameter from URL to prevent re-triggering
+          const url = new URL(window.location.href);
+          url.searchParams.delete('autoStart');
+          window.history.replaceState({}, '', url.toString());
         }}
         patient={patient}
         onConsultationCreated={handleConsultationCreated}
@@ -596,6 +616,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         draggable={true}
         allowDragging={false}
         draggableConfig={regularConsultationConfig}
+        selectedEncounter={selectedEncounterForConsultation}
+        autoStartTranscription={searchParams.get('autoStart') === 'true'}
       />
 
       {/* Demo Consultation Panel - separate instance for demo */}

@@ -11,6 +11,7 @@ import LoadingAnimation from '@/components/LoadingAnimation';
 import ContentSurface from '@/components/layout/ContentSurface';
 // No Progress import needed for this change
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 // No BarChart imports needed for this change
 
 // Import shared UI components
@@ -40,12 +41,12 @@ import { useModalManager } from "@/components/ui/modal-manager";
 type UpcomingEntry = { patient: Patient; encounter: Encounter };
 
 interface DashboardViewProps {
-  onStartConsult: (p: Patient) => void;
   onAlertClick: (patientId: string) => void;
   allAlerts: Array<ComplexCaseAlert & { patientName?: string }>;
 }
 
-export default function DashboardView({ onStartConsult, onAlertClick, allAlerts }: DashboardViewProps) {
+export default function DashboardView({ onAlertClick, allAlerts }: DashboardViewProps) {
+  const router = useRouter();
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingEntry[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [isAlertPanelOpen, setIsAlertPanelOpen] = useState(false);
@@ -143,7 +144,10 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                 <TableRow
                   key={`upcoming_dashboard_${p.id}_${encounter.id}`}
                   className="mobile-card:relative mobile-card:rounded-xl mobile-card:bg-glass mobile-card:backdrop-blur-sm mobile-card:overflow-hidden mobile-card:mb-3 mobile-card:grid mobile-card:grid-cols-2 mobile-card:gap-x-2 mobile-card:p-4 sm:table-row cursor-pointer hover:bg-white/10 hover:backdrop-blur-md transition-all duration-200 hover:shadow-md"
-                  onClick={() => onStartConsult(p)}
+                  onClick={() => {
+                    // Navigate to patient workspace without auto-starting consultation
+                    router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}`);
+                  }}
                 >
                   <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
@@ -167,7 +171,8 @@ export default function DashboardView({ onStartConsult, onAlertClick, allAlerts 
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent row click when button is clicked
-                        onStartConsult(p);
+                        // Navigate to patient workspace WITH auto-start consultation
+                        router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
                       }}
                       className="gap-1 w-full mobile-card:w-full"
                     >
