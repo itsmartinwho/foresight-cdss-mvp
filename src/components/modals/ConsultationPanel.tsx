@@ -1275,8 +1275,8 @@ export default function ConsultationPanel({
                               placeholder="Transcription will appear here..."
                               disabled={isDemoMode || isTranscribing}
                               showToolbar={!isDemoMode && !isTranscribing}
-                              minHeight="300px"
-                              className="h-full"
+                              minHeight="100px"
+                              className=""
                             />
                           </div>
                           {/* Always render pillbox container; AudioWaveform itself controls content visibility */}
