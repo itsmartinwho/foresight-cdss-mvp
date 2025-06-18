@@ -1262,7 +1262,7 @@ export default function ConsultationPanel({
                             )}
                           </div>
                         </div>
-                        <div className="relative flex-1">
+                        <div className="relative flex-1 min-h-0 overflow-hidden">
                           {/* Scrollable transcript container */}
                           <div
                             ref={transcriptScrollRef}
