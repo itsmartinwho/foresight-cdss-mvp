@@ -166,7 +166,9 @@ export default function PatientDetail({ patientId }: PatientDetailProps) {
                     <SelectValue placeholder="Select encounter" />
                   </SelectTrigger>
                   <SelectContent>
-                    {encounterDetails.map((ew: EncounterDetailsWrapper) => (
+                    {encounterDetails
+                      .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+                      .map((ew: EncounterDetailsWrapper) => (
                       <SelectItem
                         key={ew.encounter.id}
                         value={ew.encounter.id}

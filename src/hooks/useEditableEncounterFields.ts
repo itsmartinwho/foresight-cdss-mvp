@@ -180,10 +180,24 @@ export function useEditableEncounterFields({
       // Update extra_data with the latest field values
       await updateExtraData(encounterUuid, { [fieldName]: newValue });
 
-      // Force refresh the data service cache by reloading patient data
-      await supabaseDataService.getPatientData(patientId);
+      // CRITICAL FIX: Force clear the data service cache and reload fresh data
+      // Clear the cached patient data to ensure fresh reload
+      supabaseDataService.clearDemoPatientData(patientId); // This clears cache for any patient, not just demo
+      
+      // Force a fresh reload from database
+      await supabaseDataService.loadSinglePatientData?.(patientId) || 
+            supabaseDataService.getPatientData(patientId, true); // Force refresh flag if available
 
-      // Get the updated encounter data
+      // Emit change event to trigger UI updates
+      supabaseDataService.emitChange?.() || (() => {
+        // Manual change subscription trigger if emitChange is private
+        const changeEvent = new CustomEvent('supabase-data-change', { 
+          detail: { patientId, encounterId, fieldName, newValue } 
+        });
+        window.dispatchEvent(changeEvent);
+      })();
+
+      // Get the updated encounter data after refresh
       const updatedPatientData = await supabaseDataService.getPatientData(patientId);
       const updatedEncounterData = updatedPatientData?.encounters.find(
         ew => ew.encounter.encounterIdentifier === encounterId || ew.encounter.id === encounterId
@@ -285,10 +299,23 @@ export function useEditableEncounterFields({
       // Update extra_data with the latest field values
       await updateExtraData(encounterUuid, fields);
 
-      // Force refresh the data service cache by reloading patient data
-      await supabaseDataService.getPatientData(patientId);
+      // CRITICAL FIX: Force clear the data service cache and reload fresh data
+      supabaseDataService.clearDemoPatientData(patientId); // This clears cache for any patient
+      
+      // Force a fresh reload from database  
+      await supabaseDataService.loadSinglePatientData?.(patientId) || 
+            supabaseDataService.getPatientData(patientId, true); // Force refresh flag if available
 
-      // Get the updated encounter data
+      // Emit change event to trigger UI updates
+      supabaseDataService.emitChange?.() || (() => {
+        // Manual change subscription trigger if emitChange is private
+        const changeEvent = new CustomEvent('supabase-data-change', { 
+          detail: { patientId, encounterId, fields } 
+        });
+        window.dispatchEvent(changeEvent);
+      })();
+
+      // Get the updated encounter data after refresh
       const updatedPatientData = await supabaseDataService.getPatientData(patientId);
       const updatedEncounterData = updatedPatientData?.encounters.find(
         ew => ew.encounter.encounterIdentifier === encounterId || ew.encounter.id === encounterId

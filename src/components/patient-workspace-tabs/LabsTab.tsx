@@ -42,7 +42,9 @@ export default function LabsTab({ patient, allEncounters }: LabsTabProps) {
 
   return (
     <div className="space-y-4">
-      {encountersWithLabs.map(({ encounter, labResults }) => (
+      {encountersWithLabs
+        .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+        .map(({ encounter, labResults }) => (
         <div key={encounter.id} className="glass-dense rounded-lg p-4 space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">

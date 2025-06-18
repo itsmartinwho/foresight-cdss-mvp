@@ -124,7 +124,9 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
       {/* Active Encounters History */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Encounters History</h2>
-        {encounters.filter(ew => !ew.encounter.isDeleted).map((encounterWrapper: EncounterDetailsWrapper, index: number) => {
+        {encounters.filter(ew => !ew.encounter.isDeleted)
+          .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+          .map((encounterWrapper: EncounterDetailsWrapper, index: number) => {
           const { encounter, diagnoses, labResults } = encounterWrapper;
 
           return (

@@ -499,7 +499,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                   <SelectValue placeholder="Select consultation..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {activeEncounterDetails.map((ew) => (
+                  {activeEncounterDetails
+                    .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+                    .map((ew) => (
                     <SelectItem key={ew.encounter.id} value={ew.encounter.id}>
                       {new Date(ew.encounter.scheduledStart).toLocaleDateString()} - {ew.encounter.reasonDisplayText || ew.encounter.reasonCode || 'Encounter'}
                     </SelectItem>

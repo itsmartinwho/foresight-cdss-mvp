@@ -135,7 +135,9 @@ export default function DiagnosisTab({ patient, allEncounters }: DiagnosisTabPro
             </div>
           ) : (
             <div className="space-y-4">
-              {encountersWithDiagnoses.map(({ encounter, diagnoses }) => (
+              {encountersWithDiagnoses
+                .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+                .map(({ encounter, diagnoses }) => (
                 <div key={encounter.id} className="glass-dense rounded-lg p-4 space-y-3">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-1">

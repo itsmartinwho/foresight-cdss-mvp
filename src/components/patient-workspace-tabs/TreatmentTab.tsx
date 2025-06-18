@@ -42,7 +42,9 @@ export default function TreatmentTab({ patient, allEncounters }: TreatmentTabPro
 
   return (
     <div className="space-y-4">
-      {encountersWithTreatments.map(({ encounter }) => (
+      {encountersWithTreatments
+        .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+        .map(({ encounter }) => (
         <div key={encounter.id} className="glass-dense rounded-lg p-4 space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">

@@ -67,7 +67,9 @@ export default function PriorAuthTab({ patient: currentPatientInfo, allEncounter
             <SelectValue placeholder="Select an encounter..." />
           </SelectTrigger>
           <SelectContent>
-            {allEncounters.map(({ encounter }) => (
+            {allEncounters
+              .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
+              .map(({ encounter }) => (
               <SelectItem key={encounter.id} value={encounter.id}>
                 {new Date(encounter.scheduledStart).toLocaleDateString()} - {encounter.reasonDisplayText || encounter.reasonCode || 'Encounter'}
               </SelectItem>
