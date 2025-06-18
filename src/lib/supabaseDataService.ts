@@ -1317,6 +1317,92 @@ class SupabaseDataService {
       throw error;
     }
   }
+
+  // ======================= NEW CACHE REFRESH HELPERS =======================
+  /**
+   * Update (or insert) a single encounter in the in-memory cache using a freshly-fetched
+   * database row. This avoids the heavy-handed clear→reload cycle and enables very fast
+   * UI updates after inline edits.
+   */
+  public updateEncounterCacheFromDBRow(row: any): void {
+    if (!row) return;
+
+    const encounterSupabaseUUID = row.id;
+    const encounterBusinessKey = row.encounter_id;
+    const patientSupabaseUUID = row.patient_supabase_id;
+
+    if (!encounterBusinessKey || !patientSupabaseUUID) {
+      console.warn('updateEncounterCacheFromDBRow: missing encounter_id or patient_supabase_id');
+      return;
+    }
+
+    const patientPublicId = this.patientUuidToOriginalId[patientSupabaseUUID];
+    if (!patientPublicId) {
+      console.warn(`updateEncounterCacheFromDBRow: patient UUID ${patientSupabaseUUID} not mapped to public id`);
+      return;
+    }
+
+    const compositeKey = `${patientPublicId}_${encounterBusinessKey}`;
+
+    const newEncounter: Encounter = {
+      id: encounterSupabaseUUID,
+      encounterIdentifier: encounterBusinessKey,
+      patientId: patientPublicId,
+      scheduledStart: row.scheduled_start_datetime ? new Date(row.scheduled_start_datetime).toISOString() : '',
+      scheduledEnd: row.scheduled_end_datetime ? new Date(row.scheduled_end_datetime).toISOString() : '',
+      actualStart: row.actual_start_datetime ? new Date(row.actual_start_datetime).toISOString() : undefined,
+      actualEnd: row.actual_end_datetime ? new Date(row.actual_end_datetime).toISOString() : undefined,
+      reasonCode: row.reason_code,
+      reasonDisplayText: row.reason_display_text,
+      transcript: row.transcript,
+      observations: row.observations || undefined,
+      soapNote: row.soap_note,
+      treatments: row.treatments || undefined,
+      priorAuthJustification: row.prior_auth_justification,
+      insuranceStatus: row.insurance_status,
+      isDeleted: !!row.is_deleted,
+      deletedAt: row.updated_at && row.is_deleted ? new Date(row.updated_at).toISOString() : undefined,
+      extra_data: row.extra_data || undefined,
+    } as Encounter;
+
+    this.encounters[compositeKey] = newEncounter;
+    if (!this.encountersByPatient[patientPublicId]) {
+      this.encountersByPatient[patientPublicId] = [];
+    }
+    if (!this.encountersByPatient[patientPublicId].includes(compositeKey)) {
+      this.encountersByPatient[patientPublicId].push(compositeKey);
+    }
+
+    this.emitChange();
+  }
+
+  /**
+   * Restore (un-delete) every encounter for the given patient that was soft-deleted on the
+   * specified calendar day. Returns the number of encounters successfully restored.
+   */
+  public async restoreDeletedEncountersForPatientOnDate(patientId: string, isoDate: string): Promise<number> {
+    const datePart = isoDate.split('T')[0]; // YYYY-MM-DD
+
+    // Ensure we have fresh data for the patient
+    try {
+      await this.loadSinglePatientData(patientId);
+    } catch (e) {
+      // Fallback to full reload if single-patient fetch fails
+      await this.loadPatientData();
+    }
+
+    const encounters = this.getPatientEncounters(patientId, true /* includeDeleted */);
+    let restored = 0;
+    for (const enc of encounters) {
+      if (!enc.isDeleted || !enc.deletedAt) continue;
+      if (!enc.deletedAt.startsWith(datePart)) continue;
+
+      const ok = await this.restoreEncounter(patientId, enc.id);
+      if (ok) restored++;
+    }
+
+    return restored;
+  }
 }
 
 // Export as singleton consistent with legacy implementation
