@@ -4,6 +4,25 @@ This document establishes frontend development guidelines, styling conventions, 
 
 **For the overall system architecture, AI tool implementation, and backend details, refer to [`architecture.md`](./architecture.md).**
 
+## Upcoming Consultations Navigation
+
+The application supports differentiated behavior when interacting with upcoming consultations in both the Dashboard and Patients tab:
+
+### Dashboard View
+- **Start Button**: Clicking the "Start" button on an upcoming consultation navigates to the patient's workspace, automatically opens the consultation modal, and starts transcription with the consultation metadata pre-loaded
+- **Row Click**: Clicking anywhere else in the consultation row navigates to the patient's workspace without auto-starting the consultation
+
+### Patients Tab (All Consultations view)
+- **Start Button (Upcoming)**: For upcoming consultations, the button shows "Start" and navigates with auto-start behavior
+- **Go to Consult Button (Past)**: For past consultations, the button shows "Go to Consult" and navigates normally without auto-start
+- **Row Click**: Clicking elsewhere in any consultation row navigates to the patient's workspace without auto-starting
+
+### Technical Implementation
+- Uses `autoStart=true` URL parameter to trigger automatic consultation modal opening
+- ConsultationPanel supports `selectedEncounter` and `autoStartTranscription` props
+- URL parameters are automatically cleaned up after modal interaction
+- Consultation metadata (date, reason, etc.) is preserved during auto-start
+
 ## Code Organization
 
 The project follows a standard Next.js project structure. For details on the directory structure and component architecture, refer to the "Frontend Architecture" section in [`architecture.md`](./architecture.md).
