@@ -278,7 +278,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                                 size="sm"
                                 iconLeft={<Calendar />}
                                 className="truncate text-xs"
-                                onClick={() => router.push(`/patients/${patient.id}?encounterId=${encounter.id}`)}
+                                onClick={() => router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`)}
                                 title={new Date(encounter.scheduledStart).toLocaleString()}
                               >
                                 {new Date(encounter.scheduledStart).toLocaleDateString()}
@@ -333,7 +333,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   if (onSelect && patient) {
                     onSelect(patient);
                   } else if (patient?.id && encounter.id) {
-                    router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
+                    router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`);
                   }
                 }} className="cursor-pointer hover:bg-muted/50 transition-colors">
                 <TableCell>
