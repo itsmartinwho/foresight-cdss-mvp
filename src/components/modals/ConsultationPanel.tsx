@@ -1202,7 +1202,7 @@ export default function ConsultationPanel({
                 </div>
               </div>
             )}
-            <div className="flex-1 overflow-hidden p-4 flex flex-col">
+            <div className="flex-1 overflow-hidden p-4 flex flex-col min-h-0">
               {started ? (
                 <>
                   {(!planGenerated || activeTab === 'transcript') && (
@@ -1274,6 +1274,7 @@ export default function ConsultationPanel({
                               placeholder="Transcription will appear here..."
                               disabled={isDemoMode || isTranscribing}
                               showToolbar={!isDemoMode && !isTranscribing}
+                              minHeight="100px"
                               className=""
                             />
                           </div>
