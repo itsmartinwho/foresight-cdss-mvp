@@ -77,6 +77,177 @@ const DEMO_ALERTS: DemoAlert[] = [
       "Order CBC with differential"
     ],
     createdAt: new Date().toISOString()
+  },
+  // COMPLEX CASE ALERTS - Autoimmune Conditions
+  {
+    id: "demo_complex_autoimmune_lupus",
+    patientId: DEMO_PATIENT_ID,
+    encounterId: DEMO_ENCOUNTER_ID,
+    alertType: AlertType.COMPLEX_CONDITION,
+    severity: AlertSeverity.CRITICAL,
+    category: AlertCategory.POST_CONSULTATION,
+    title: "Possible Systemic Lupus Erythematosus",
+    message: "Patient presents with classic lupus triad: photosensitive malar rash, polyarthritis, and constitutional symptoms. Combined with positive ANA and low complement levels, this strongly suggests SLE requiring urgent rheumatology evaluation.",
+    triggerPhrase: "rash on my face that gets worse in the sun",
+    confidence: 88,
+    likelihood: 5,
+    triggeringFactors: [
+      "Photosensitive facial rash",
+      "Polyarthritis (hands, wrists, knees)",
+      "Constitutional symptoms (fatigue, fever)",
+      "Positive ANA (1:320, homogeneous pattern)",
+      "Low complement levels (C3, C4)"
+    ],
+    suggestedActions: [
+      "URGENT rheumatology referral (within 1-2 weeks)",
+      "Order anti-dsDNA, anti-Sm antibodies",
+      "Complete urinalysis with microscopy",
+      "Baseline CBC, CMP, ESR, CRP",
+      "Consider antimalarial therapy initiation"
+    ],
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "demo_complex_autoimmune_ra",
+    patientId: DEMO_PATIENT_ID,
+    encounterId: DEMO_ENCOUNTER_ID,
+    alertType: AlertType.COMPLEX_CONDITION,
+    severity: AlertSeverity.WARNING,
+    category: AlertCategory.POST_CONSULTATION,
+    title: "Probable Rheumatoid Arthritis",
+    message: "Prolonged morning stiffness (>2 hours), symmetric polyarthritis, and positive rheumatoid factor suggest early rheumatoid arthritis. Early intervention with DMARDs is crucial to prevent joint damage.",
+    triggerPhrase: "morning stiffness in my hands lasts about two hours",
+    confidence: 85,
+    likelihood: 4,
+    triggeringFactors: [
+      "Morning stiffness >1 hour",
+      "Symmetric polyarthritis",
+      "Small joint involvement (MCPs, PIPs)",
+      "Positive rheumatoid factor",
+      "Elevated ESR/CRP"
+    ],
+    suggestedActions: [
+      "Rheumatology referral within 3-6 weeks",
+      "Order anti-CCP antibodies",
+      "Joint X-rays (hands, feet) for baseline",
+      "Consider methotrexate initiation",
+      "Patient education on RA"
+    ],
+    createdAt: new Date().toISOString()
+  },
+  // COMPLEX CASE ALERTS - Oncology Concerns
+  {
+    id: "demo_complex_oncology_lung",
+    patientId: DEMO_PATIENT_ID,
+    encounterId: DEMO_ENCOUNTER_ID,
+    alertType: AlertType.COMPLEX_CONDITION,
+    severity: AlertSeverity.CRITICAL,
+    category: AlertCategory.POST_CONSULTATION,
+    title: "Lung Cancer Red Flags",
+    message: "Concerning constellation: 30-pack-year smoking history, persistent cough with hemoptysis, 15-lb weight loss over 3 months, and new-onset dyspnea. Requires urgent imaging and oncology evaluation.",
+    triggerPhrase: "coughing up blood occasionally",
+    confidence: 92,
+    likelihood: 5,
+    triggeringFactors: [
+      "Heavy smoking history (30 pack-years)",
+      "Hemoptysis",
+      "Unintentional weight loss (15 lbs/3 months)",
+      "Progressive dyspnea",
+      "Persistent cough >8 weeks"
+    ],
+    suggestedActions: [
+      "URGENT chest CT with contrast",
+      "CBC, CMP, LDH",
+      "Oncology referral (within 1 week)",
+      "Pulmonology consultation",
+      "Consider bronchoscopy if mass identified"
+    ],
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "demo_complex_oncology_hematologic",
+    patientId: DEMO_PATIENT_ID,
+    encounterId: DEMO_ENCOUNTER_ID,
+    alertType: AlertType.COMPLEX_CONDITION,
+    severity: AlertSeverity.WARNING,
+    category: AlertCategory.POST_CONSULTATION,
+    title: "Hematologic Malignancy Concern",
+    message: "B-symptoms triad (fever, night sweats, weight loss) with lymphadenopathy and unexplained fatigue in young adult suggests possible lymphoma. Requires prompt hematologic evaluation.",
+    triggerPhrase: "soaking night sweats and swollen lymph nodes",
+    confidence: 80,
+    likelihood: 4,
+    triggeringFactors: [
+      "B-symptoms (fever, night sweats, weight loss)",
+      "Generalized lymphadenopathy",
+      "Severe fatigue",
+      "Age 25-40 (lymphoma risk group)",
+      "No obvious infectious cause"
+    ],
+    suggestedActions: [
+      "CBC with differential immediately",
+      "Comprehensive metabolic panel",
+      "LDH, uric acid levels",
+      "CT chest/abdomen/pelvis",
+      "Hematology/oncology referral"
+    ],
+    createdAt: new Date().toISOString()
+  },
+  // COMPLEX CASE ALERTS - Rare/Complex Conditions
+  {
+    id: "demo_complex_rare_sarcoidosis",
+    patientId: DEMO_PATIENT_ID,
+    encounterId: DEMO_ENCOUNTER_ID,
+    alertType: AlertType.COMPLEX_CONDITION,
+    severity: AlertSeverity.WARNING,
+    category: AlertCategory.POST_CONSULTATION,
+    title: "Possible Sarcoidosis",
+    message: "Multi-system involvement with hilar lymphadenopathy, skin lesions, and elevated ACE levels suggests sarcoidosis. This inflammatory condition requires specialized evaluation and monitoring.",
+    triggerPhrase: "shortness of breath and these skin bumps",
+    confidence: 75,
+    likelihood: 3,
+    triggeringFactors: [
+      "Bilateral hilar lymphadenopathy",
+      "Skin lesions (erythema nodosum pattern)",
+      "Progressive dyspnea",
+      "Elevated ACE level",
+      "Multi-system involvement"
+    ],
+    suggestedActions: [
+      "Pulmonology referral",
+      "High-resolution chest CT",
+      "Skin biopsy of lesions",
+      "Ophthalmology evaluation",
+      "Consider bronchoscopy with BAL"
+    ],
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "demo_complex_endocrine_thyroid",
+    patientId: DEMO_PATIENT_ID,
+    encounterId: DEMO_ENCOUNTER_ID,
+    alertType: AlertType.COMPLEX_CONDITION,
+    severity: AlertSeverity.WARNING,
+    category: AlertCategory.POST_CONSULTATION,
+    title: "Hyperthyroidism with Cardiac Manifestations",
+    message: "Classic hyperthyroid symptoms with atrial fibrillation and heart failure features require urgent cardiology and endocrinology co-management. Risk of thyroid storm with current presentation.",
+    triggerPhrase: "heart racing and can't sleep",
+    confidence: 90,
+    likelihood: 4,
+    triggeringFactors: [
+      "Tachycardia >120 bpm at rest",
+      "New-onset atrial fibrillation",
+      "Weight loss despite increased appetite",
+      "Heat intolerance and diaphoresis",
+      "Thyromegaly on exam"
+    ],
+    suggestedActions: [
+      "STAT TSH, free T4, free T3",
+      "ECG and echo immediately",
+      "Cardiology consultation",
+      "Endocrinology referral",
+      "Consider beta-blocker therapy"
+    ],
+    createdAt: new Date().toISOString()
   }
 ];
 
