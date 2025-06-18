@@ -1263,10 +1263,9 @@ export default function ConsultationPanel({
                           </div>
                         </div>
                         <div className="relative flex-1 min-h-0 overflow-hidden">
-                          {/* Scrollable transcript container */}
                           <div
                             ref={transcriptScrollRef}
-                            className="h-full overflow-y-auto pr-2 pb-24"
+                            className="h-full overflow-y-auto relative pr-2 pb-24"
                           >
                             <RichTextEditor
                               ref={transcriptEditorRef}
@@ -1275,7 +1274,6 @@ export default function ConsultationPanel({
                               placeholder="Transcription will appear here..."
                               disabled={isDemoMode || isTranscribing}
                               showToolbar={!isDemoMode && !isTranscribing}
-                              minHeight="100px"
                               className=""
                             />
                           </div>
