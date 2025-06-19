@@ -1,0 +1,167 @@
+import React, { useEffect, useRef } from 'react';
+import { DecisionTreeNode } from '@/lib/types';
+
+interface DecisionTreeRendererProps {
+  tree: DecisionTreeNode;
+  editable?: boolean;
+  onNodeClick?: (nodeId: string) => void;
+}
+
+export const DecisionTreeRenderer: React.FC<DecisionTreeRendererProps> = ({
+  tree,
+  editable = false,
+  onNodeClick
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !tree) return;
+
+    // For now, render as a simple tree structure
+    // In a production system, you could use Mermaid.js, D3, or another visualization library
+    renderSimpleTree(containerRef.current, tree, onNodeClick);
+  }, [tree, onNodeClick]);
+
+  return (
+    <div className="decision-tree-container bg-white border border-gray-200 rounded-lg p-4">
+      <div className="mb-2 text-sm font-medium text-gray-700">Treatment Decision Tree</div>
+      <div ref={containerRef} className="decision-tree overflow-auto" />
+    </div>
+  );
+};
+
+// Simple tree renderer (could be replaced with more sophisticated visualization)
+function renderSimpleTree(
+  container: HTMLElement, 
+  node: DecisionTreeNode, 
+  onNodeClick?: (nodeId: string) => void,
+  level: number = 0
+) {
+  container.innerHTML = ''; // Clear previous content
+  
+  const treeElement = document.createElement('div');
+  treeElement.className = 'tree-structure';
+  
+  renderNode(treeElement, node, onNodeClick, level);
+  container.appendChild(treeElement);
+}
+
+function renderNode(
+  container: HTMLElement,
+  node: DecisionTreeNode,
+  onNodeClick?: (nodeId: string) => void,
+  level: number = 0
+) {
+  const nodeElement = document.createElement('div');
+  nodeElement.className = `tree-node level-${level}`;
+  nodeElement.style.marginLeft = `${level * 20}px`;
+  
+  // Node content
+  const nodeContent = document.createElement('div');
+  nodeContent.className = getNodeClassName(node.type);
+  nodeContent.innerHTML = `
+    <div class="node-label">${node.label}</div>
+    ${node.action ? `<div class="node-action">${node.action}</div>` : ''}
+    ${node.condition ? `<div class="node-condition">${node.condition}</div>` : ''}
+    ${node.guidelines_reference ? `<div class="node-reference">📋 ${node.guidelines_reference}</div>` : ''}
+  `;
+  
+  if (onNodeClick) {
+    nodeContent.style.cursor = 'pointer';
+    nodeContent.addEventListener('click', () => onNodeClick(node.id));
+  }
+  
+  nodeElement.appendChild(nodeContent);
+  
+  // Render children
+  if (node.children && node.children.length > 0) {
+    const childrenContainer = document.createElement('div');
+    childrenContainer.className = 'tree-children';
+    
+    node.children.forEach(child => {
+      renderNode(childrenContainer, child, onNodeClick, level + 1);
+    });
+    
+    nodeElement.appendChild(childrenContainer);
+  }
+  
+  container.appendChild(nodeElement);
+}
+
+function getNodeClassName(type: 'condition' | 'action' | 'outcome'): string {
+  const baseClass = 'tree-node-content p-3 mb-2 rounded-md border-l-4';
+  
+  switch (type) {
+    case 'condition':
+      return `${baseClass} border-l-yellow-500 bg-yellow-50 text-yellow-800`;
+    case 'action':
+      return `${baseClass} border-l-blue-500 bg-blue-50 text-blue-800`;
+    case 'outcome':
+      return `${baseClass} border-l-green-500 bg-green-50 text-green-800`;
+    default:
+      return `${baseClass} border-l-gray-500 bg-gray-50 text-gray-800`;
+  }
+}
+
+// Add CSS styles
+const treeStyles = `
+  .tree-structure {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  .tree-node {
+    position: relative;
+  }
+  
+  .tree-node-content {
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  
+  .tree-node-content:hover {
+    shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+  }
+  
+  .node-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  
+  .node-action, .node-condition {
+    font-size: 0.9em;
+    margin-bottom: 2px;
+  }
+  
+  .node-reference {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-top: 4px;
+  }
+  
+  .tree-children {
+    margin-left: 16px;
+    border-left: 2px dashed #e5e7eb;
+    padding-left: 16px;
+  }
+  
+  .tree-node::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 20px;
+    width: 10px;
+    height: 2px;
+    background: #e5e7eb;
+  }
+`;
+
+// Inject styles if not already present
+if (typeof document !== 'undefined' && !document.getElementById('decision-tree-styles')) {
+  const styleElement = document.createElement('style');
+  styleElement.id = 'decision-tree-styles';
+  styleElement.textContent = treeStyles;
+  document.head.appendChild(styleElement);
+}
+
+export default DecisionTreeRenderer; 

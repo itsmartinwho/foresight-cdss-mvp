@@ -33,10 +33,10 @@ Based on PRD: `prd-structured-treatment-plans-with-decision-trees.md`
   - [ ] 2.7 Test clinical engine with various input formats
 
 - [ ] 3.0 Rich Content Rendering and Streaming
-  - [ ] 3.1 Create treatment-specific streaming markdown renderer extending smd.js
-  - [ ] 3.2 Implement decision tree rendering component using Mermaid.js or similar
-  - [ ] 3.3 Create rich text editor component for diagnosis and treatment sections
-  - [ ] 3.4 Add chart and table deletion functionality with single-block selection
+  - [x] 3.1 Create treatment-specific streaming markdown renderer extending smd.js
+  - [x] 3.2 Implement decision tree rendering component using Mermaid.js or similar
+  - [x] 3.3 Create rich text editor component for diagnosis and treatment sections
+  - [x] 3.4 Add chart and table deletion functionality with single-block selection
   - [ ] 3.5 Implement streaming for diagnosis and treatment tabs (not differentials)
   - [ ] 3.6 Test rich content rendering with various markdown formats
 
