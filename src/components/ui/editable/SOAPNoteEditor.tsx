@@ -201,11 +201,11 @@ export default function SOAPNoteEditor({
                   <div className="min-h-[60px]">
                     {section.content ? (
                       <div 
-                        className="text-xs max-w-none text-foreground whitespace-pre-wrap"
+                        className="text-sm max-w-none text-foreground whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{ __html: section.content }}
                       />
                     ) : (
-                      <p className="text-xs text-muted-foreground/70">
+                      <p className="text-sm text-muted-foreground/70">
                         No {section.title.toLowerCase()} information recorded
                       </p>
                     )}

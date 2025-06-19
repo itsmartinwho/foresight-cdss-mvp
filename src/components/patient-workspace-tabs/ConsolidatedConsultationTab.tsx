@@ -135,57 +135,61 @@ export default function ConsolidatedConsultationTab({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Scheduled Start</label>
+            <h3 className="text-lg font-medium text-foreground">Scheduled Start</h3>
             <EditableDateTimeField
               value={selectedEncounter.scheduledStart || ''}
               onSave={(value) => updateField('scheduledStart', value)}
+              displayClassName="text-sm"
             />
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Scheduled End</label>
+            <h3 className="text-lg font-medium text-foreground">Scheduled End</h3>
             <EditableDateTimeField
               value={selectedEncounter.scheduledEnd || ''}
               onSave={(value) => updateField('scheduledEnd', value)}
+              displayClassName="text-sm"
             />
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Actual Start</label>
+            <h3 className="text-lg font-medium text-foreground">Actual Start</h3>
             <EditableDateTimeField
               value={selectedEncounter.actualStart || ''}
               onSave={(value) => updateField('actualStart', value)}
+              displayClassName="text-sm"
             />
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Actual End</label>
+            <h3 className="text-lg font-medium text-foreground">Actual End</h3>
             <EditableDateTimeField
               value={selectedEncounter.actualEnd || ''}
               onSave={(value) => updateField('actualEnd', value)}
+              displayClassName="text-sm"
             />
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Reason for Visit</label>
+            <h3 className="text-lg font-medium text-foreground">Reason for Visit</h3>
             <EditableTextField
               value={selectedEncounter.reasonDisplayText || selectedEncounter.reasonCode || ''}
               onSave={(value) => updateField('reasonDisplayText', value)}
               placeholder="Enter reason for consultation"
               multiline
-              displayClassName="text-xs"
+              displayClassName="text-sm"
             />
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Insurance Status</label>
+            <h3 className="text-lg font-medium text-foreground">Insurance Status</h3>
             <EditableTextField
               value={selectedEncounter.insuranceStatus || ''}
               onSave={(value) => updateField('insuranceStatus', value)}
               placeholder="Enter insurance status"
-              displayClassName="text-xs"
+              displayClassName="text-sm"
             />
           </div>
         </div>
@@ -232,7 +236,7 @@ export default function ConsolidatedConsultationTab({
                   {/* Full Diagnosis Description - prominently displayed */}
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Diagnosis</h4>
-                    <p className="text-xs leading-relaxed">
+                    <p className="text-sm leading-relaxed">
                       {dx.description || "No description available"}
                     </p>
                   </div>
@@ -252,7 +256,7 @@ export default function ConsolidatedConsultationTab({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground/70">No final diagnosis recorded for this consultation</p>
+            <p className="text-sm text-muted-foreground/70">No final diagnosis recorded for this consultation</p>
           )}
           
           <div className="mt-6 pt-6 border-t border-border/50">
@@ -291,7 +295,7 @@ export default function ConsolidatedConsultationTab({
               columnAccessors={['name', 'value', 'units', 'dateTime', 'referenceRange', 'flag']} 
             />
           ) : (
-            <p className="text-xs text-muted-foreground/70">No lab results recorded for this consultation</p>
+            <p className="text-sm text-muted-foreground/70">No lab results recorded for this consultation</p>
           )}
         </CardContent>
       </Card>
@@ -333,7 +337,7 @@ export default function ConsolidatedConsultationTab({
                 onSave={(value) => updateField('priorAuthJustification', value)}
                 placeholder="Enter clinical justification for prior authorization..."
                 multiline
-                displayClassName="text-xs"
+                displayClassName="text-sm"
               />
             </div>
 
@@ -366,7 +370,7 @@ export default function ConsolidatedConsultationTab({
             />
           ) : (
             <div className="text-center space-y-2 py-8">
-              <p className="text-xs text-muted-foreground/70">No clinical trial information available for this patient</p>
+              <p className="text-sm text-muted-foreground/70">No clinical trial information available for this patient</p>
               <p className="text-sm text-muted-foreground/60">Trial recommendations will appear here based on patient diagnosis and treatment history</p>
             </div>
           )}
@@ -393,7 +397,7 @@ export default function ConsolidatedConsultationTab({
               <h3 className="text-lg font-medium text-foreground">
                 Delete This Consultation
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 This will mark the consultation as deleted. It can be restored later from the &quot;All Data&quot; tab
               </p>
             </div>
