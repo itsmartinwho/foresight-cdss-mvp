@@ -1151,6 +1151,11 @@ class SupabaseDataService {
   }
 
   // Differential Diagnoses methods
+  getDifferentialDiagnoses(): DifferentialDiagnosisRecord[] {
+    // Return all differential diagnoses across all patients for the API
+    return Object.values(this.differentialDiagnoses).flat();
+  }
+
   getPatientDifferentialDiagnoses(patientId: string): DifferentialDiagnosisRecord[] {
     return this.differentialDiagnoses[patientId] || [];
   }

@@ -222,31 +222,35 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   }, [patient?.id, loadPatientData]);
 
   useEffect(() => {
-    console.log('[PatientWorkspace] Demo route effect triggered:', {
-      isDemoRoute,
-      isDemoActive: demoState.isDemoActive,
-      demoPanelForceOpen,
-      currentStage: demoState.demoStage
-    });
-    if (isDemoRoute && demoState.isDemoActive) {
-      if (!demoPanelForceOpen) {
-        console.log('[PatientWorkspace] Setting demo panel force open and advancing from navigatingToWorkspace');
-        setDemoPanelForceOpen(true);
-        if (demoState.demoStage === 'navigatingToWorkspace') {
-          demoState.advanceDemoStage('consultationPanelReady');
-        }
+    // Only log when there are significant changes
+    if (isDemoRoute && demoState.isDemoActive && !demoPanelForceOpen) {
+      console.log('[PatientWorkspace] Demo route effect triggered:', {
+        isDemoRoute,
+        isDemoActive: demoState.isDemoActive,
+        demoPanelForceOpen,
+        currentStage: demoState.demoStage
+      });
+    }
+    
+    if (isDemoRoute && demoState.isDemoActive && !demoPanelForceOpen) {
+      console.log('[PatientWorkspace] Setting demo panel force open and advancing from navigatingToWorkspace');
+      setDemoPanelForceOpen(true);
+      if (demoState.demoStage === 'navigatingToWorkspace') {
+        demoState.advanceDemoStage('consultationPanelReady');
       }
     }
-  }, [isDemoRoute, demoState, demoPanelForceOpen]);
+  }, [isDemoRoute, demoState.isDemoActive, demoState.demoStage]); // Remove demoPanelForceOpen to prevent loops
 
   useEffect(() => {
-    console.log('[PatientWorkspace] Demo stage advancement effect triggered:', {
-      currentStage: demoState.demoStage,
-      advanceDemoStage: !!demoState.advanceDemoStage,
-      isDemoActive: demoState.isDemoActive,
-      animatedTranscriptLength: demoState.animatedTranscript?.length || 0
-    });
+    // Only log when entering consultationPanelReady stage
     if (demoState.demoStage === 'consultationPanelReady') {
+      console.log('[PatientWorkspace] Demo stage advancement effect triggered:', {
+        currentStage: demoState.demoStage,
+        advanceDemoStage: !!demoState.advanceDemoStage,
+        isDemoActive: demoState.isDemoActive,
+        animatedTranscriptLength: demoState.animatedTranscript?.length || 0
+      });
+      
       console.log('[PatientWorkspace] Stage is consultationPanelReady, setting timer to advance to animatingTranscript');
       const timer = setTimeout(() => {
         console.log('[PatientWorkspace] Timer executed, advancing to animatingTranscript');
@@ -257,7 +261,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         clearTimeout(timer);
       };
     }
-  }, [demoState.demoStage, demoState.advanceDemoStage, demoState.isDemoActive, demoState.animatedTranscript]);
+  }, [demoState.demoStage]); // Remove extra dependencies that cause loops
 
   useEffect(() => {
     if (

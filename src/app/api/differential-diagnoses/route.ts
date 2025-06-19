@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { SupabaseDataService } from '@/lib/supabaseDataService';
+import { supabaseDataService } from '@/lib/supabaseDataService';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,13 +23,12 @@ export async function GET(request: NextRequest) {
 
     console.log('[Differential Diagnoses API] Fetching for:', { patientId, encounterId });
 
-    // Use SupabaseDataService to fetch differential diagnoses
-    const dataService = SupabaseDataService.getInstance();
-    const differentialDiagnoses = await dataService.getDifferentialDiagnoses();
+    // Use supabaseDataService singleton to fetch differential diagnoses
+    const differentialDiagnoses = supabaseDataService.getDifferentialDiagnoses();
 
     // Filter by patient if needed (for now return all since demo uses synthetic data)
     const filteredDiagnoses = differentialDiagnoses.filter(diagnosis => 
-      diagnosis.patientId === patientId || 
+      diagnosis.patient_id === patientId || 
       diagnosis.patient_id === patientId
     );
 

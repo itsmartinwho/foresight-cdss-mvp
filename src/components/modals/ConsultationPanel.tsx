@@ -124,24 +124,33 @@ export default function ConsultationPanel({
   // Development render count guard with circuit breaker
   const renderCountRef = useRef(0);
   const circuitBreakerRef = useRef(false);
+  const lastResetTimeRef = useRef(Date.now());
   
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && !circuitBreakerRef.current) {
-      renderCountRef.current++;
-      if (renderCountRef.current > 20) {
-        console.error('[ConsultationPanel] Excessive renders detected (>20), enabling circuit breaker!');
-        console.trace();
-        circuitBreakerRef.current = true;
-        
-        // Reset after a delay to allow normal operation
-        setTimeout(() => {
-          renderCountRef.current = 0;
-          circuitBreakerRef.current = false;
-          console.log('[ConsultationPanel] Circuit breaker reset');
-        }, 2000);
-      }
+  // Only count renders in development mode and implement circuit breaker
+  if (process.env.NODE_ENV === 'development' && !circuitBreakerRef.current) {
+    renderCountRef.current++;
+    
+    // Reset counter every 5 seconds to handle normal re-renders during user interactions
+    const now = Date.now();
+    if (now - lastResetTimeRef.current > 5000) {
+      renderCountRef.current = 1;
+      lastResetTimeRef.current = now;
     }
-  });
+    
+    if (renderCountRef.current > 15) {
+      console.error('[ConsultationPanel] Excessive renders detected (>15), enabling circuit breaker!');
+      console.trace();
+      circuitBreakerRef.current = true;
+      
+      // Reset after a delay to allow normal operation
+      setTimeout(() => {
+        renderCountRef.current = 0;
+        circuitBreakerRef.current = false;
+        lastResetTimeRef.current = Date.now();
+        console.log('[ConsultationPanel] Circuit breaker reset');
+      }, 3000);
+    }
+  }
   
   // Form state
   const [reason, setReason] = useState('');

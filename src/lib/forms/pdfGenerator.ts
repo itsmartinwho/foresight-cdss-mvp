@@ -177,11 +177,11 @@ export class PDFGenerator {
     
     const htmlContent = this.generateHTMLContent(sections, options);
     
-    // For now, we'll create a blob with HTML content that looks like a PDF
+    // Create blob with HTML content that looks like a PDF
     // In production, this would be converted to actual PDF
     const blob = new Blob([htmlContent], { type: 'text/html' });
     
-    // Return the blob without triggering download here - let the component handle it
+    // Return the blob for the client to handle download
     return blob;
   }
 

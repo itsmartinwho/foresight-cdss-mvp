@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Patient } from '@/lib/types';
 import { DEMO_PATIENT_ID } from '@/services/demo/DemoDataService';
@@ -32,40 +32,51 @@ export function useDemoWorkspace({
   const searchParams = useSearchParams();
   const isDemoRouteActive = searchParams.get('demo') === 'true';
   const [isDemoPanelOpen, setIsDemoPanelOpen] = useState(false);
+  const lastDebugKeyRef = useRef<string>('');
 
   // Determine if we should run demo UI
   const shouldRunDemoUi = isDemoActive && 
                          isDemoRouteActive && 
                          demoPatient?.id === patient.id;
 
-  // Debug logging
-  console.log('useDemoWorkspace debug:', {
-    isDemoActive,
-    isDemoRouteActive,
-    demoPatientId: demoPatient?.id,
-    patientId: patient.id,
-    shouldRunDemoUi,
-    demoStage,
-    isDemoPanelOpen
-  });
+  // Debug logging - only in development and throttled
+  if (process.env.NODE_ENV === 'development') {
+    const debugKey = `${isDemoActive}-${isDemoRouteActive}-${demoStage}-${isDemoPanelOpen}`;
+    if (lastDebugKeyRef.current !== debugKey) {
+      console.log('useDemoWorkspace debug:', {
+        isDemoActive,
+        isDemoRouteActive,
+        demoPatientId: demoPatient?.id,
+        patientId: patient.id,
+        shouldRunDemoUi,
+        demoStage,
+        isDemoPanelOpen
+      });
+      lastDebugKeyRef.current = debugKey;
+    }
+  }
 
-  // Handle demo lifecycle and panel visibility
+  // Handle demo lifecycle and panel visibility - only run when necessary conditions change
   useEffect(() => {
-    console.log('[useDemoWorkspace] Effect triggered:', {
-      isDemoRouteActive,
-      isDemoActive,
-      demoStage,
-      isDemoPanelOpen
-    });
+    // Only log when significant changes occur
+    const shouldLog = demoStage === 'consultationPanelReady' || demoStage === 'finished';
+    if (shouldLog) {
+      console.log('[useDemoWorkspace] Effect triggered:', {
+        isDemoRouteActive,
+        isDemoActive,
+        demoStage,
+        isDemoPanelOpen
+      });
+    }
     
     // Simplified logic: if we're on demo route and in the right stage, open panel
     if (isDemoRouteActive && isDemoActive) {
-      if (demoStage === 'consultationPanelReady') {
+      if (demoStage === 'consultationPanelReady' && !isDemoPanelOpen) {
         console.log('[useDemoWorkspace] Opening demo consultation panel');
         setIsDemoPanelOpen(true);
         // Don't advance stage here - let PatientWorkspaceViewModern handle it with delay
-      } else if (demoStage === 'finished' || !isDemoActive) {
-        console.log('[useDemoWorkspace] Closing demo consultation panel - demo finished or inactive');
+      } else if (demoStage === 'finished' && isDemoPanelOpen) {
+        console.log('[useDemoWorkspace] Closing demo consultation panel - demo finished');
         setIsDemoPanelOpen(false);
       }
     } else if (isDemoPanelOpen) {
@@ -73,7 +84,7 @@ export function useDemoWorkspace({
       // If demo conditions are no longer met, close panel
       setIsDemoPanelOpen(false);
     }
-  }, [demoStage, isDemoRouteActive, isDemoActive, advanceDemoStage, isDemoPanelOpen]);
+  }, [demoStage, isDemoRouteActive, isDemoActive]); // Remove isDemoPanelOpen to prevent loops
   
   // Exit demo if patient ID mismatches or demo is no longer active on this route
   useEffect(() => {
