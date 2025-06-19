@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { UnifiedAlert, AlertType, AlertSeverity, AlertStatus, AlertCategory } from '@/types/alerts';
 import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import AlertList from './AlertList';
-import { Button } from '@/components/ui/button';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
   const [selectedType, setSelectedType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'severity' | 'type'>('date');
   const [alertsService] = useState(() => new UnifiedAlertsService());
-  const [refreshing, setRefreshing] = useState(false);
+
   
   // Track fetch attempts to prevent infinite loops
   const fetchAttemptRef = useRef(0);
@@ -347,16 +347,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     }
   }, [patientId, consultationId, alertsService, mockAlerts]);
 
-  const refreshAlerts = async () => {
-    // Reset fetch tracking for manual refresh
-    fetchAttemptRef.current = 0;
-    hasFetchedRef.current = false;
-    fetchFailedRef.current = false;
-    
-    setRefreshing(true);
-    await loadAlerts();
-    setRefreshing(false);
-  };
+
 
   // Load alerts only once on mount or when key props change
   useEffect(() => {
@@ -416,15 +407,28 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Statistics Cards with Integrated Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Alerts</p>
-                <p className="text-2xl font-bold">{totalAlerts}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Alerts</p>
+                  <p className="text-2xl font-bold">{totalAlerts}</p>
+                </div>
+              </div>
+              <div className="ml-4">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'date' | 'severity' | 'type')}
+                  className="px-2 py-1 border border-gray-200 rounded text-xs bg-white"
+                >
+                  <option value="date">Sort by Date</option>
+                  <option value="severity">Sort by Severity</option>
+                  <option value="type">Sort by Type</option>
+                </select>
               </div>
             </div>
           </CardContent>
@@ -432,80 +436,34 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Alert Types</p>
-                <p className="text-2xl font-bold">{uniqueTypes}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Alert Types</p>
+                  <p className="text-2xl font-bold">{uniqueTypes}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <RefreshCw className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-600">Last Updated</p>
-                <p className="text-sm text-gray-500">
-                  {alerts.length > 0 
-                    ? new Date(Math.max(...alerts.map(a => new Date(a.createdAt).getTime()))).toLocaleString()
-                    : 'No alerts'
-                  }
-                </p>
+              <div className="ml-4">
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="px-2 py-1 border border-gray-200 rounded text-xs bg-white"
+                >
+                  <option value="all">All Types</option>
+                  {Object.entries(alertTypeConfig).map(([type, config]) => (
+                    <option key={type} value={type}>
+                      {config.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Controls */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">
-              Post-Consultation Alerts
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshAlerts}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-            >
-              <option value="all">All Types</option>
-              {Object.entries(alertTypeConfig).map(([type, config]) => (
-                <option key={type} value={type}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-            
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'date' | 'severity' | 'type')}
-              className="px-3 py-2 border border-gray-200 rounded-md text-sm"
-            >
-              <option value="date">Sort by Date</option>
-              <option value="severity">Sort by Severity</option>
-              <option value="type">Sort by Type</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Alert Content */}
       <Tabs value={selectedType} onValueChange={setSelectedType} className="space-y-4">
