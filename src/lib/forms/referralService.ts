@@ -58,7 +58,7 @@ export class ReferralService {
     return {
       resourceType,
       patientInformation: {
-        name: patient.name || `${patient.firstName} ${patient.lastName}` || '',
+        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || '',
         dateOfBirth: patient.dateOfBirth || '',
         gender: patient.gender || '',
         contactPhone: '', // Placeholder - not available in current system
@@ -84,7 +84,7 @@ export class ReferralService {
         urgency: 'routine' // Default urgency
       },
       clinicalInformation: {
-        historyOfPresentIllness: encounter.soapNote || '', // Use available field
+        historyOfPresentIllness: encounter.soapNote || '', // Use available clinical notes
         relevantPastMedicalHistory: allDiagnoses,
         currentMedications: encounter.treatments?.map(t => `${t.drug} - ${t.status}`) || [],
         allergies: [], // Placeholder - not available in current system

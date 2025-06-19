@@ -41,10 +41,10 @@ export default function FHIRResourceSelector({
               value={resourceType.value}
               className="cursor-pointer"
             >
-              <div className="flex flex-col">
+              <div className="flex items-center gap-2">
                 <span className="font-medium">{resourceType.label}</span>
                 <span className="text-xs text-muted-foreground">
-                  {resourceType.description}
+                  - {resourceType.description}
                 </span>
               </div>
             </SelectItem>

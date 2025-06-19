@@ -25,9 +25,16 @@ export async function POST(request: NextRequest) {
         // Generate PDF (in this implementation, it's an HTML file)
         const blob = await PDFGenerator.generateReferralPDF(pdfData);
         
+        // Convert blob to base64 for transmission
+        const arrayBuffer = await blob.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        
         return NextResponse.json({ 
           success: true, 
           message: 'PDF generated successfully',
+          pdfData: base64,
+          filename: `Referral_${Date.now()}.html`,
+          mimeType: 'text/html',
           fhirData: ReferralService.toFHIRFormat(formData)
         });
 

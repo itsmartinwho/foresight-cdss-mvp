@@ -341,6 +341,20 @@ export default function ConsolidatedConsultationTab({
             const result = await response.json();
             if (!result.success) throw new Error(result.message || 'PDF generation failed');
             
+            // Download the PDF data
+            if (result.pdfData) {
+              const binaryString = atob(result.pdfData);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const blob = new Blob([bytes], { type: result.mimeType || 'text/html' });
+              
+              // Import PDFGenerator for download function
+              const { PDFGenerator } = await import('@/lib/forms/pdfGenerator');
+              PDFGenerator.downloadBlob(blob, result.filename || 'prior_authorization.html');
+            }
+            
           } catch (error) {
             console.error('Error generating prior auth PDF:', error);
             throw error;
@@ -384,6 +398,20 @@ export default function ConsolidatedConsultationTab({
             
             const result = await response.json();
             if (!result.success) throw new Error(result.message || 'PDF generation failed');
+            
+            // Download the PDF data
+            if (result.pdfData) {
+              const binaryString = atob(result.pdfData);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              const blob = new Blob([bytes], { type: result.mimeType || 'text/html' });
+              
+              // Import PDFGenerator for download function
+              const { PDFGenerator } = await import('@/lib/forms/pdfGenerator');
+              PDFGenerator.downloadBlob(blob, result.filename || 'referral.html');
+            }
             
           } catch (error) {
             console.error('Error generating referral PDF:', error);

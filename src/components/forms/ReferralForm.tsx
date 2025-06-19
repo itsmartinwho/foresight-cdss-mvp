@@ -43,7 +43,57 @@ export default function ReferralForm({
   // Auto-populate when resource type changes
   useEffect(() => {
     const newFormData = ReferralService.autoPopulateForm(patient, encounter, diagnoses, labResults, formData.resourceType);
-    setFormData(prev => ({ ...newFormData, ...prev, resourceType: formData.resourceType }));
+    // Only update fields that are currently empty to avoid overriding user input
+    setFormData(prev => ({
+      ...prev,
+      resourceType: formData.resourceType, // Always update resource type
+      // Only populate patient info if it's currently empty
+      patientInformation: {
+        name: prev.patientInformation.name || newFormData.patientInformation.name,
+        dateOfBirth: prev.patientInformation.dateOfBirth || newFormData.patientInformation.dateOfBirth,
+        gender: prev.patientInformation.gender || newFormData.patientInformation.gender,
+        contactPhone: prev.patientInformation.contactPhone || newFormData.patientInformation.contactPhone,
+        insurance: prev.patientInformation.insurance || newFormData.patientInformation.insurance,
+        address: prev.patientInformation.address || newFormData.patientInformation.address,
+      },
+      // Provider info is typically left as manual input
+      referringProvider: prev.referringProvider,
+      // Update specialist suggestion only if type is currently empty
+      specialist: {
+        type: prev.specialist.type || newFormData.specialist.type,
+        facility: prev.specialist.facility || newFormData.specialist.facility,
+        preferredProvider: prev.specialist.preferredProvider || newFormData.specialist.preferredProvider,
+      },
+      // Only populate referral reason if diagnosis/reason are currently empty
+      referralReason: {
+        diagnosis: prev.referralReason.diagnosis || newFormData.referralReason.diagnosis,
+        diagnosisCode: prev.referralReason.diagnosisCode || newFormData.referralReason.diagnosisCode,
+        reasonForReferral: prev.referralReason.reasonForReferral || newFormData.referralReason.reasonForReferral,
+        urgency: prev.referralReason.urgency || newFormData.referralReason.urgency,
+      },
+      // Only populate clinical information if currently empty
+      clinicalInformation: {
+        historyOfPresentIllness: prev.clinicalInformation.historyOfPresentIllness || newFormData.clinicalInformation.historyOfPresentIllness,
+        relevantPastMedicalHistory: prev.clinicalInformation.relevantPastMedicalHistory.length > 0 
+          ? prev.clinicalInformation.relevantPastMedicalHistory 
+          : newFormData.clinicalInformation.relevantPastMedicalHistory,
+        currentMedications: prev.clinicalInformation.currentMedications.length > 0 
+          ? prev.clinicalInformation.currentMedications 
+          : newFormData.clinicalInformation.currentMedications,
+        allergies: prev.clinicalInformation.allergies.length > 0 
+          ? prev.clinicalInformation.allergies 
+          : newFormData.clinicalInformation.allergies,
+        physicalExamination: prev.clinicalInformation.physicalExamination || newFormData.clinicalInformation.physicalExamination,
+        recentLabResults: prev.clinicalInformation.recentLabResults.length > 0 
+          ? prev.clinicalInformation.recentLabResults 
+          : newFormData.clinicalInformation.recentLabResults,
+        vitalSigns: prev.clinicalInformation.vitalSigns || newFormData.clinicalInformation.vitalSigns,
+      },
+      requestedEvaluation: prev.requestedEvaluation.length > 0 
+        ? prev.requestedEvaluation 
+        : newFormData.requestedEvaluation,
+      additionalNotes: prev.additionalNotes || newFormData.additionalNotes,
+    }));
   }, [formData.resourceType, patient, encounter, diagnoses, labResults]);
 
   // Validate form on data changes

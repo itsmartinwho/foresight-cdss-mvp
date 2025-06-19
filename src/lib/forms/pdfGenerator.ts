@@ -177,13 +177,11 @@ export class PDFGenerator {
     
     const htmlContent = this.generateHTMLContent(sections, options);
     
-    // For now, we'll create a blob with HTML content
+    // For now, we'll create a blob with HTML content that looks like a PDF
     // In production, this would be converted to actual PDF
     const blob = new Blob([htmlContent], { type: 'text/html' });
     
-    // Simulate PDF download
-    this.downloadBlob(blob, `${options.title.replace(/\s+/g, '_')}_${Date.now()}.html`);
-    
+    // Return the blob without triggering download here - let the component handle it
     return blob;
   }
 
@@ -299,13 +297,14 @@ export class PDFGenerator {
   }
 
   /**
-   * Download blob as file
+   * Download blob as file (client-side download)
    */
-  private static downloadBlob(blob: Blob, filename: string): void {
+  static downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

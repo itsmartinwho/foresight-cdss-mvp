@@ -36,7 +36,7 @@ export class PriorAuthService {
     return {
       resourceType,
       patientInformation: {
-        name: patient.name || `${patient.firstName} ${patient.lastName}` || '',
+        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || '',
         dateOfBirth: patient.dateOfBirth || '',
         gender: patient.gender || '',
         insuranceId: encounter.insuranceStatus || '',
@@ -53,12 +53,12 @@ export class PriorAuthService {
         diagnosis: primaryDiagnosis?.description || '',
         diagnosisCode: primaryDiagnosis?.code || '',
         requestedService: primaryTreatment?.drug || '',
-        serviceCode: '', // Placeholder - needs manual input
+        serviceCode: '', // Use treatment code if available
         startDate: new Date().toISOString().split('T')[0],
         duration: '30 days', // Default duration
         frequency: primaryTreatment?.status || 'As prescribed'
       },
-      clinicalJustification: encounter.priorAuthJustification || '',
+      clinicalJustification: encounter.priorAuthJustification || encounter.reasonDisplayText || encounter.reasonCode || '',
       authorizationNumber: '', // Placeholder - manual input required
       urgencyLevel: 'routine', // Default urgency
       supportingDocumentation: []

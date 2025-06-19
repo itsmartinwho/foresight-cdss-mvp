@@ -41,7 +41,36 @@ export default function PriorAuthorizationForm({
   // Auto-populate when resource type changes
   useEffect(() => {
     const newFormData = PriorAuthService.autoPopulateForm(patient, encounter, diagnoses, formData.resourceType);
-    setFormData(prev => ({ ...newFormData, ...prev, resourceType: formData.resourceType }));
+    // Only update fields that are currently empty to avoid overriding user input
+    setFormData(prev => ({
+      ...prev,
+      resourceType: formData.resourceType, // Always update resource type
+      // Only populate patient info if it's currently empty
+      patientInformation: {
+        name: prev.patientInformation.name || newFormData.patientInformation.name,
+        dateOfBirth: prev.patientInformation.dateOfBirth || newFormData.patientInformation.dateOfBirth,
+        gender: prev.patientInformation.gender || newFormData.patientInformation.gender,
+        insuranceId: prev.patientInformation.insuranceId || newFormData.patientInformation.insuranceId,
+        memberId: prev.patientInformation.memberId || newFormData.patientInformation.memberId,
+      },
+      // Provider info is typically left as manual input
+      providerInformation: prev.providerInformation,
+      // Only populate service request if diagnosis/service are currently empty
+      serviceRequest: {
+        diagnosis: prev.serviceRequest.diagnosis || newFormData.serviceRequest.diagnosis,
+        diagnosisCode: prev.serviceRequest.diagnosisCode || newFormData.serviceRequest.diagnosisCode,
+        requestedService: prev.serviceRequest.requestedService || newFormData.serviceRequest.requestedService,
+        serviceCode: prev.serviceRequest.serviceCode || newFormData.serviceRequest.serviceCode,
+        startDate: prev.serviceRequest.startDate || newFormData.serviceRequest.startDate,
+        duration: prev.serviceRequest.duration || newFormData.serviceRequest.duration,
+        frequency: prev.serviceRequest.frequency || newFormData.serviceRequest.frequency,
+      },
+      // Only populate clinical justification if empty
+      clinicalJustification: prev.clinicalJustification || newFormData.clinicalJustification,
+      authorizationNumber: prev.authorizationNumber || newFormData.authorizationNumber,
+      urgencyLevel: prev.urgencyLevel || newFormData.urgencyLevel,
+      supportingDocumentation: prev.supportingDocumentation || newFormData.supportingDocumentation,
+    }));
   }, [formData.resourceType, patient, encounter, diagnoses]);
 
   // Validate form on data changes
