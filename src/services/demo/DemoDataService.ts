@@ -415,19 +415,19 @@ export class DemoDataService {
 - Drug interaction requiring immediate medication discontinuation
 - Need for urgent anticoagulation reversal
 
-## Secondary Diagnoses
+# Secondary Diagnoses
 
-### Warfarin-induced Over-anticoagulation with Bleeding Tendency
+## Warfarin-induced Over-anticoagulation with Bleeding Tendency
 - **Risk Level:** High - immediate intervention required
 - **Clinical Signs:** Easy bruising, prolonged bleeding, orthostatic changes
 - **Action Required:** Immediate warfarin discontinuation and reversal
 
-### Hypoglycemia due to Sulfonylurea (Glyburide) Use
+## Hypoglycemia due to Sulfonylurea (Glyburide) Use
 - **Risk Level:** High - compounded by drug interaction
 - **Clinical Signs:** Dizziness, orthostatic hypotension on standing
 - **Action Required:** Immediate glyburide discontinuation
 
-### History of Acute Myelomonocytic Leukemia in Remission
+## History of Acute Myelomonocytic Leukemia in Remission
 - **Status:** Complete remission
 - **Relevance:** Affects bleeding risk assessment and requires careful monitoring for cytopenias
 - **Guidelines Reference:** NCCN 2024 Survivorship Guidelines`,

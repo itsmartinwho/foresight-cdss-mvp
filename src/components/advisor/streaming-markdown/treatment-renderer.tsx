@@ -42,18 +42,44 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
 
   // Simple markdown-to-HTML converter
   const renderMarkdown = (text: string) => {
+    // First, normalize line endings and clean up excessive whitespace
     let html = text
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    html = html
       // Headers
-      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-6 mb-3">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-8 mb-4">$1</h1>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-6 mb-3">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-8 mb-4">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>')
       // Bold
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-      // Lists
-      .replace(/^- (.*$)/gim, '<li class="ml-4 mb-1">• $1</li>')
-      // Line breaks
-      .replace(/\n\n/g, '<br/><br/>')
-      .replace(/\n/g, '<br/>');
+      // Process lists first
+      .replace(/^- (.*$)/gim, '::LIST_ITEM::$1')
+      
+    // Handle paragraphs and line breaks
+    html = html
+      .split('\n\n')
+      .map(paragraph => {
+        paragraph = paragraph.trim();
+        if (!paragraph) return '';
+        
+        // Check if this paragraph contains list items
+        if (paragraph.includes('::LIST_ITEM::')) {
+          const items = paragraph
+            .split('\n')
+            .filter(line => line.includes('::LIST_ITEM::'))
+            .map(line => `<li class="mb-1">${line.replace('::LIST_ITEM::', '• ')}</li>`)
+            .join('');
+          return `<ul class="mb-4 ml-4">${items}</ul>`;
+        }
+        
+        // Regular paragraph
+        return `<p class="mb-4">${paragraph.replace(/\n/g, '<br/>')}</p>`;
+      })
+      .filter(p => p.length > 0)
+      .join('');
 
     return { __html: html };
   };
