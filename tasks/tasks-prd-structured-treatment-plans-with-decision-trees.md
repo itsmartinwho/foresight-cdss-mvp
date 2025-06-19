@@ -23,22 +23,22 @@ Based on PRD: `prd-structured-treatment-plans-with-decision-trees.md`
   - [x] 1.3 Update type definitions in types.ts to include rich content fields
   - [x] 1.4 Test database changes with existing encounter data
 
-- [ ] 2.0 Clinical Engine Restructuring
+- [x] 2.0 Clinical Engine Restructuring
   - [x] 2.1 Create separate treatment generation step in ClinicalEngineServiceV3
   - [x] 2.2 Design treatment-specific prompts with decision tree instructions
   - [x] 2.3 Implement structured JSON output validation for treatments
   - [x] 2.4 Add fallback parsing for non-JSON EHR treatment formats
   - [x] 2.5 Create new /api/clinical-engine/treatments endpoint
   - [x] 2.6 Integrate RAG-based clinical guidelines retrieval for treatments
-  - [ ] 2.7 Test clinical engine with various input formats
+  - [x] 2.7 Test clinical engine with various input formats
 
-- [ ] 3.0 Rich Content Rendering and Streaming
+- [x] 3.0 Rich Content Rendering and Streaming
   - [x] 3.1 Create treatment-specific streaming markdown renderer extending smd.js
   - [x] 3.2 Implement decision tree rendering component using Mermaid.js or similar
   - [x] 3.3 Create rich text editor component for diagnosis and treatment sections
   - [x] 3.4 Add chart and table deletion functionality with single-block selection
-  - [ ] 3.5 Implement streaming for diagnosis and treatment tabs (not differentials)
-  - [ ] 3.6 Test rich content rendering with various markdown formats
+  - [x] 3.5 Implement streaming for diagnosis and treatment tabs (not differentials)
+  - [x] 3.6 Test rich content rendering with various markdown formats
 
 - [ ] 4.0 Frontend Integration and User Experience
   - [ ] 4.1 Update ConsultationPanel to use new rich content editors
