@@ -166,7 +166,7 @@ SELECT
     p.patient_id as patient_identifier,
     p.first_name,
     p.last_name,
-    e.encounter_id,
+    e.encounter_id as encounter_identifier,
     e.status as encounter_status
 FROM public.alerts a
 JOIN public.patients p ON a.patient_id = p.id
