@@ -91,6 +91,17 @@ export default function PriorAuthorizationForm({
       }
       
       current[keys[keys.length - 1]] = value;
+      
+      // Show toast when resource type changes
+      if (path === 'resourceType') {
+        const resourceTypeLabel = PRIOR_AUTH_RESOURCE_TYPES.find(r => r.value === value)?.label;
+        toast({
+          title: "Authorization Type Updated",
+          description: `Form updated for ${resourceTypeLabel}`,
+          variant: "default"
+        });
+      }
+      
       return newData;
     });
 

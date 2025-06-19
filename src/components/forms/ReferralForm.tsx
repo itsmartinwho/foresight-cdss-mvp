@@ -114,6 +114,17 @@ export default function ReferralForm({
       }
       
       current[keys[keys.length - 1]] = value;
+      
+      // Show toast when resource type changes
+      if (path === 'resourceType') {
+        const resourceTypeLabel = REFERRAL_RESOURCE_TYPES.find(r => r.value === value)?.label;
+        toast({
+          title: "Referral Type Updated", 
+          description: `Form updated for ${resourceTypeLabel}`,
+          variant: "default"
+        });
+      }
+      
       return newData;
     });
 
