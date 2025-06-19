@@ -330,3 +330,88 @@ export interface PatientDataPayload {
     labResults: LabResult[];
   }>;
 }
+
+// Form-specific types for Prior Authorization and Referral Forms
+export interface FHIRResourceType {
+  value: string;
+  label: string;
+  description: string;
+}
+
+export interface PriorAuthFormData {
+  resourceType: string;
+  patientInformation: {
+    name: string;
+    dateOfBirth: string;
+    gender: string;
+    insuranceId: string;
+    memberId: string;
+  };
+  providerInformation: {
+    name: string;
+    npi: string;
+    facility: string;
+    contactPhone: string;
+    contactEmail: string;
+  };
+  serviceRequest: {
+    diagnosis: string;
+    diagnosisCode: string;
+    requestedService: string;
+    serviceCode: string;
+    startDate: string;
+    duration: string;
+    frequency: string;
+  };
+  clinicalJustification: string;
+  authorizationNumber: string;
+  urgencyLevel: string;
+  supportingDocumentation: string[];
+}
+
+export interface ReferralFormData {
+  resourceType: string;
+  patientInformation: {
+    name: string;
+    dateOfBirth: string;
+    gender: string;
+    contactPhone: string;
+    insurance: string;
+    address: string;
+  };
+  referringProvider: {
+    name: string;
+    npi: string;
+    facility: string;
+    contactPhone: string;
+    contactEmail: string;
+  };
+  specialist: {
+    type: string;
+    facility: string;
+    preferredProvider: string;
+  };
+  referralReason: {
+    diagnosis: string;
+    diagnosisCode: string;
+    reasonForReferral: string;
+    urgency: string;
+  };
+  clinicalInformation: {
+    historyOfPresentIllness: string;
+    relevantPastMedicalHistory: string[];
+    currentMedications: string[];
+    allergies: string[];
+    physicalExamination: string;
+    recentLabResults: LabResult[];
+    vitalSigns: string;
+  };
+  requestedEvaluation: string[];
+  additionalNotes: string;
+}
+
+export interface FormValidationResult {
+  isValid: boolean;
+  errors: Record<string, string>;
+  warnings: Record<string, string>;
+}

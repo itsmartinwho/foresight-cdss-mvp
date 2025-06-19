@@ -147,9 +147,9 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
 
   return (
     <div className="rich-treatment-editor">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h3 className="text-lg font-medium text-gray-900">{label}</h3>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">{label}</h3>
           {guidelines.length > 0 && (
             <ClinicalGuidelinesIndicator 
               guidelines={guidelines} 
@@ -160,7 +160,7 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
         {!isDemo && (
           <button
             onClick={handleStartEdit}
-            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200"
+            className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 touch-manipulation whitespace-nowrap self-start sm:self-auto"
           >
             Edit
           </button>
@@ -177,13 +177,15 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
         </div>
       )}
 
-      <TreatmentRenderer
-        content={content.text_content}
-        richContent={content}
-        editable={!isDemo}
-        onChartDelete={handleChartDelete}
-        onContentEdit={handleTextContentChange}
-      />
+      <div className="overflow-hidden">
+        <TreatmentRenderer
+          content={content.text_content}
+          richContent={content}
+          editable={!isDemo}
+          onChartDelete={handleChartDelete}
+          onContentEdit={handleTextContentChange}
+        />
+      </div>
     </div>
   );
 };

@@ -23,9 +23,9 @@ export const DecisionTreeRenderer: React.FC<DecisionTreeRendererProps> = ({
   }, [tree, onNodeClick]);
 
   return (
-    <div className="decision-tree-container bg-white border border-gray-200 rounded-lg p-4">
+    <div className="decision-tree-container bg-white border border-gray-200 rounded-lg p-2 sm:p-4">
       <div className="mb-2 text-sm font-medium text-gray-700">Treatment Decision Tree</div>
-      <div ref={containerRef} className="decision-tree overflow-auto" />
+      <div ref={containerRef} className="decision-tree overflow-auto max-h-96 sm:max-h-none" />
     </div>
   );
 };
@@ -54,7 +54,9 @@ function renderNode(
 ) {
   const nodeElement = document.createElement('div');
   nodeElement.className = `tree-node level-${level}`;
-  nodeElement.style.marginLeft = `${level * 20}px`;
+  // Responsive margin: smaller on mobile, larger on desktop
+  const marginSize = window.innerWidth < 640 ? Math.min(level * 12, 32) : level * 20;
+  nodeElement.style.marginLeft = `${marginSize}px`;
   
   // Node content
   const nodeContent = document.createElement('div');
@@ -103,7 +105,7 @@ function getNodeClassName(type: 'condition' | 'action' | 'outcome'): string {
   }
 }
 
-// Add CSS styles
+// Add CSS styles with mobile responsiveness
 const treeStyles = `
   .tree-structure {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -116,43 +118,91 @@ const treeStyles = `
   .tree-node-content {
     position: relative;
     transition: all 0.2s ease;
+    touch-action: manipulation;
   }
   
   .tree-node-content:hover {
-    shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transform: translateY(-1px);
+  }
+  
+  .tree-node-content:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   }
   
   .node-label {
     font-weight: 600;
     margin-bottom: 4px;
+    font-size: 0.9rem;
   }
   
   .node-action, .node-condition {
-    font-size: 0.9em;
+    font-size: 0.8rem;
     margin-bottom: 2px;
+    line-height: 1.4;
   }
   
   .node-reference {
-    font-size: 0.8em;
+    font-size: 0.75rem;
     opacity: 0.8;
     margin-top: 4px;
   }
   
   .tree-children {
-    margin-left: 16px;
+    margin-left: 12px;
     border-left: 2px dashed #e5e7eb;
-    padding-left: 16px;
+    padding-left: 12px;
   }
   
   .tree-node::before {
     content: '';
     position: absolute;
-    left: -10px;
+    left: -8px;
     top: 20px;
-    width: 10px;
+    width: 8px;
     height: 2px;
     background: #e5e7eb;
+  }
+  
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    .tree-node-content {
+      padding: 8px 12px !important;
+      margin-bottom: 8px !important;
+    }
+    
+    .node-label {
+      font-size: 0.85rem;
+    }
+    
+    .node-action, .node-condition {
+      font-size: 0.75rem;
+    }
+    
+    .node-reference {
+      font-size: 0.7rem;
+    }
+    
+    .tree-children {
+      margin-left: 8px;
+      padding-left: 8px;
+    }
+    
+    .tree-node::before {
+      left: -6px;
+      width: 6px;
+    }
+  }
+  
+  /* Touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .tree-node-content {
+      min-height: 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
   }
 `;
 

@@ -74,8 +74,8 @@ export const ClinicalGuidelinesIndicator: React.FC<ClinicalGuidelinesIndicatorPr
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-        <BookOpen className="h-4 w-4" />
-        Clinical Guidelines ({guidelines.length})
+        <BookOpen className="h-4 w-4 flex-shrink-0" />
+        <span className="truncate">Clinical Guidelines ({guidelines.length})</span>
       </div>
       
       <div className="space-y-1">
@@ -83,33 +83,35 @@ export const ClinicalGuidelinesIndicator: React.FC<ClinicalGuidelinesIndicatorPr
           <div
             key={guideline.id}
             className={cn(
-              "flex items-center gap-2 p-2 rounded-md border text-xs",
+              "flex items-start sm:items-center gap-2 p-2 rounded-md border text-xs",
               getLevelColor(guideline.level)
             )}
           >
-            <span className="text-sm">{getTypeIcon(guideline.type)}</span>
+            <span className="text-sm flex-shrink-0 mt-0.5 sm:mt-0">{getTypeIcon(guideline.type)}</span>
             
             <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{guideline.title}</div>
-              <div className="text-xs opacity-75">{guideline.source}</div>
+              <div className="font-medium break-words sm:truncate">{guideline.title}</div>
+              <div className="text-xs opacity-75 break-words sm:truncate">{guideline.source}</div>
             </div>
 
-            {guideline.level && (
-              <Badge variant="secondary" className="text-xs">
-                {guideline.level}
-              </Badge>
-            )}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {guideline.level && (
+                <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                  {guideline.level}
+                </Badge>
+              )}
 
-            {guideline.url && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 p-0"
-                onClick={() => window.open(guideline.url, '_blank')}
-              >
-                <ArrowSquareOut className="h-3 w-3" />
-              </Button>
-            )}
+              {guideline.url && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 p-0 touch-manipulation"
+                  onClick={() => window.open(guideline.url, '_blank')}
+                >
+                  <ArrowSquareOut className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           </div>
         ))}
 

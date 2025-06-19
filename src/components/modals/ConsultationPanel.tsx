@@ -1586,17 +1586,17 @@ export default function ConsultationPanel({
                         </div>
                       ) : (
                         <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-medium">Treatment Plan</h3>
-                            {!isDemoMode && encounter?.id && (
-                              <button
-                                onClick={() => handleGenerateTreatments()}
-                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors"
-                              >
-                                Generate Structured Plan
-                              </button>
-                            )}
-                          </div>
+                                                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                              <h3 className="text-base sm:text-lg font-medium">Treatment Plan</h3>
+                              {!isDemoMode && encounter?.id && (
+                                <button
+                                  onClick={() => handleGenerateTreatments()}
+                                  className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors touch-manipulation whitespace-nowrap self-start sm:self-auto"
+                                >
+                                  Generate Structured Plan
+                                </button>
+                              )}
+                            </div>
                           <RichTextEditor 
                             content={treatmentText} 
                             onContentChange={handleTreatmentTextChange} 
