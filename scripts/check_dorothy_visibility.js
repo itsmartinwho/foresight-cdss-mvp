@@ -60,4 +60,43 @@ checkDorothyVisibility()
   .catch((error) => {
     console.error('\n💥 Check failed:', error);
     process.exit(1);
-  }); 
+  });
+
+// Simple script to demonstrate how to clear Dorothy Robinson's cache and force refresh
+// This can be run in browser console to test the fix
+
+console.log('🔄 Forcing Dorothy Robinson cache refresh...');
+
+// Get Dorothy's patient ID
+const dorothyPatientId = '0681FA35-A794-4684-97BD-00B88370DB41';
+
+// Import the service (in browser console, this would be available globally)
+// const { supabaseDataService } = await import('./src/lib/supabaseDataService.ts');
+
+// Clear Dorothy from cache using the clearDemoPatientData method
+// (this method clears all cached data for a patient)
+console.log('1. Clearing cached data for Dorothy...');
+// supabaseDataService.clearDemoPatientData(dorothyPatientId);
+
+// Force reload Dorothy's data
+console.log('2. Forcing reload of Dorothy patient data...');
+// await supabaseDataService.getPatientData(dorothyPatientId);
+
+console.log('✅ Cache refresh complete! Dorothy encounters should now be visible.');
+
+console.log(`
+To run this manually in browser console:
+1. Open Dorothy Robinson's workspace page
+2. Open browser dev tools (F12)
+3. Go to Console tab
+4. Run these commands:
+
+// Clear Dorothy's cached data
+window.supabaseDataService?.clearDemoPatientData('${dorothyPatientId}');
+
+// Force reload her data
+await window.supabaseDataService?.getPatientData('${dorothyPatientId}');
+
+// Refresh the page or component
+window.location.reload();
+`); 

@@ -1132,6 +1132,52 @@ class SupabaseDataService {
     this.emitChange();
   }
 
+  /**
+   * Force refresh a specific patient's data by clearing their cache and reloading
+   * Useful for debugging or when database changes need to be reflected immediately
+   */
+  async forceRefreshPatient(patientId: string): Promise<void> {
+    console.log(`SupabaseDataService: Force refreshing patient ${patientId}`);
+    
+    // Clear patient from cache (similar to clearDemoPatientData but for any patient)
+    if (this.patients[patientId]) {
+      delete this.patients[patientId];
+    }
+
+    // Remove all encounters for this patient
+    const patientEncounters = this.encountersByPatient[patientId] || [];
+    patientEncounters.forEach(compositeKey => {
+      delete this.encounters[compositeKey];
+    });
+
+    // Clear patient encounter mapping
+    delete this.encountersByPatient[patientId];
+
+    // Clear diagnoses and lab results
+    delete this.diagnoses[patientId];
+    delete this.labResults[patientId];
+    delete this.differentialDiagnoses[patientId];
+
+    // Remove from UUID mapping
+    const uuidToRemove = Object.keys(this.patientUuidToOriginalId).find(
+      uuid => this.patientUuidToOriginalId[uuid] === patientId
+    );
+    if (uuidToRemove) {
+      delete this.patientUuidToOriginalId[uuidToRemove];
+    }
+
+    // Remove any pending load promises to force fresh load
+    this.singlePatientLoadPromises.delete(patientId);
+
+    console.log(`SupabaseDataService: Patient ${patientId} cleared from cache, reloading...`);
+    
+    // Force reload the patient data
+    await this.loadSinglePatientData(patientId);
+    
+    console.log(`SupabaseDataService: Patient ${patientId} successfully refreshed`);
+    this.emitChange();
+  }
+
   getPatientDiagnoses(patientId: string): Diagnosis[] {
     return this.diagnoses[patientId] || [];
   }
@@ -1421,3 +1467,9 @@ class SupabaseDataService {
 
 // Export as singleton consistent with legacy implementation
 export const supabaseDataService = new SupabaseDataService();
+
+// Expose service globally for debugging in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).supabaseDataService = supabaseDataService;
+  (window as any).forceRefreshDorothy = () => supabaseDataService.forceRefreshPatient('0681FA35-A794-4684-97BD-00B88370DB41');
+}
