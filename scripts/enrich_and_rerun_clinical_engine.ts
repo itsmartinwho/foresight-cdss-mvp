@@ -128,11 +128,12 @@ async function main() {
     const { data: encounters, error: eErr } = await supabase
       .from('encounters')
       .select('*')
-      .eq('patient_supabase_id', patient.id);
+      .eq('patient_supabase_id', patient.id)
+      .or('is_deleted.is.null,is_deleted.eq.false'); // Only get non-deleted encounters
       
     if (eErr) throw eErr;
 
-    console.log(`📝 Found ${encounters?.length || 0} encounters`);
+    console.log(`📝 Found ${encounters?.length || 0} active encounters`);
 
     for (const enc of encounters as Encounter[]) {
       console.log(`\n🔍 Processing encounter ${enc.encounter_id}...`);

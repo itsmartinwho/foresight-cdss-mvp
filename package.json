@@ -25,6 +25,7 @@
     "test:guidelines": "tsx scripts/clinical-guidelines/test-guidelines.ts",
     "test:scheduler": "tsx scripts/clinical-guidelines/test-scheduler.ts",
     "enrich-engine": "tsx scripts/enrich_and_rerun_clinical_engine.ts",
+    "process-patient": "tsx scripts/process_single_patient.ts",
     "test-maria": "tsx scripts/create_test_encounter_maria.ts",
     "clean": "rm -rf .next node_modules/.cache .turbo",
     "optimize": "node scripts/optimize-dev.js"

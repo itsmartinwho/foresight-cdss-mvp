@@ -301,6 +301,7 @@ Please:
       
       // Stage 7: Save results to database
       if (currentEncounter?.encounter.id) {
+        console.log('💾 Saving results for encounter UUID:', currentEncounter.encounter.id);
         await this.saveResults(
           patientId, 
           currentEncounter.encounter.id, 
@@ -312,6 +313,9 @@ Please:
           diagnosisResult,
           treatmentResult
         );
+        console.log('💾 Save results completed successfully');
+      } else {
+        console.error('❌ No current encounter found, cannot save results');
       }
       
       // Return complete clinical output package
@@ -1257,21 +1261,37 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
         throw new Error(`Could not find UUID for patient ${patientId}`);
       }
       
-      // 1. Insert primary diagnosis
+      // 1. Insert primary diagnosis (only if not already exists for this encounter)
       if (diagnosticResult.diagnosisCode && diagnosticResult.diagnosisName) {
-        const { error: dxError } = await this.supabase
+        // Check if diagnosis already exists for this encounter
+        const { data: existingDiagnosis } = await this.supabase
           .from('conditions')
-          .insert({
-            patient_id: patientUuid,
-            encounter_id: actualEncounterUuid,
-            code: diagnosticResult.diagnosisCode,
-            description: diagnosticResult.diagnosisName,
-            category: 'encounter-diagnosis',
-            note: `Confidence: ${(diagnosticResult.confidence * 100).toFixed(0)}%`
-          });
+          .select('id')
+          .eq('patient_id', patientUuid)
+          .eq('encounter_id', actualEncounterUuid)
+          .eq('category', 'encounter-diagnosis')
+          .single();
           
-        if (dxError) {
-          console.error('Error inserting diagnosis:', dxError);
+        if (!existingDiagnosis) {
+          // Only insert if no existing diagnosis for this encounter
+          const { error: dxError } = await this.supabase
+            .from('conditions')
+            .insert({
+              patient_id: patientUuid,
+              encounter_id: actualEncounterUuid,
+              code: diagnosticResult.diagnosisCode,
+              description: diagnosticResult.diagnosisName,
+              category: 'encounter-diagnosis',
+              note: `Confidence: ${(diagnosticResult.confidence * 100).toFixed(0)}%`
+            });
+            
+          if (dxError) {
+            console.error('Error inserting diagnosis:', dxError);
+          } else {
+            console.log('✅ Added new primary diagnosis for encounter');
+          }
+        } else {
+          console.log('ℹ️  Primary diagnosis already exists for this encounter, skipping');
         }
       }
       
@@ -1305,16 +1325,36 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
       const diagnosisRichContent = this.createDiagnosisRichContent(diagnosisResult, soapNote);
       const treatmentsRichContent = this.createTreatmentsRichContent(treatmentResult, diagnosticResult);
 
-      // 4. Update encounter with SOAP note, treatments, and rich content
+      // 4. Update encounter with SOAP note, treatments, and rich content (preserve existing data)
+      // First get current encounter data to avoid overwriting existing fields
+      const { data: currentEncounter } = await this.supabase
+        .from('encounters')
+        .select('soap_note, treatments, diagnosis_rich_content, treatments_rich_content, prior_auth_justification')
+        .eq('id', actualEncounterUuid)
+        .single();
+        
+      const updateData: any = {};
+      
+      // Only update fields that are empty or we want to enhance with rich content
+      if (!currentEncounter?.soap_note) {
+        updateData.soap_note = `S: ${soapNote.subjective}\nO: ${soapNote.objective}\nA: ${soapNote.assessment}\nP: ${soapNote.plan}`;
+      }
+      
+      if (!currentEncounter?.treatments || currentEncounter.treatments.length === 0) {
+        updateData.treatments = diagnosticResult.recommendedTreatments;
+      }
+      
+      // Always update rich content (this is what we want to add)
+      updateData.diagnosis_rich_content = diagnosisRichContent;
+      updateData.treatments_rich_content = treatmentsRichContent;
+      
+      if (!currentEncounter?.prior_auth_justification && priorAuthDoc) {
+        updateData.prior_auth_justification = priorAuthDoc.generatedContent.clinicalJustification;
+      }
+      
       const { error: encounterError } = await this.supabase
         .from('encounters')
-        .update({
-          soap_note: `S: ${soapNote.subjective}\nO: ${soapNote.objective}\nA: ${soapNote.assessment}\nP: ${soapNote.plan}`,
-          treatments: diagnosticResult.recommendedTreatments,
-          diagnosis_rich_content: diagnosisRichContent,
-          treatments_rich_content: treatmentsRichContent,
-          prior_auth_justification: priorAuthDoc ? priorAuthDoc.generatedContent.clinicalJustification : null
-        })
+        .update(updateData)
         .eq('id', actualEncounterUuid);
         
       if (encounterError) {
