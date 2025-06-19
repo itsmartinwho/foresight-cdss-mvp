@@ -63,4 +63,30 @@ The system selects encounters that have:
 
 - **Rate Limiting**: 1-second delay between API calls.
 - **Retry Logic**: Up to 3 attempts for failed API calls.
-- **Data Validation**: Validates transcript length and verifies that results were created. 
+- **Data Validation**: Validates transcript length and verifies that results were created.
+
+### Rich Content Workflow (Diagnosis & Treatments)
+
+The Clinical Engine now persists **two parallel representations** for every encounter:
+
+1. **Rich Content** – Stored in the JSONB columns `diagnosis_rich_content` and `treatments_rich_content`. Each object follows the `RichContent` TS interface (see `src/lib/types.ts`) and can embed:
+   - Markdown narrative
+   - Data tables
+   - Interactive charts or images
+   - Decision-tree diagrams (Mermaid)
+
+2. **Simple Fields** – `soap_note` (plain text) and `treatments` (array) remain untouched for interoperability with EHR systems that cannot consume rich formats.
+
+### Migration & Indexing
+
+Migration `20250129_add_rich_content_fields_simple.sql` adds the columns using `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and creates `GIN` indexes (`idx_encounters_*_rich_content`) for efficient JSONB search.
+
+### Generation Flow
+
+`ClinicalEngineServiceV3.saveResults()` constructs the rich content via helper functions `createDiagnosisRichContent()` and `createTreatmentsRichContent()` and writes them to the new columns alongside the existing plain-text fields.
+
+### Front-End Consumption
+
+The `useRichContentEditor` hook (see `src/hooks/useRichContentEditor.ts`) fetches these columns and feeds them into the `TreatmentRenderer` & related components. If the rich fields are `NULL`, the UI gracefully falls back to the simple fields, preserving backward compatibility.
+
+This dual-storage approach enables a modern, highly-readable UI while maintaining safe integration points for downstream systems. 
