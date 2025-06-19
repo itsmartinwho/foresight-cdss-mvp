@@ -128,6 +128,7 @@
     "eslint-config-next": "14.2.5",
     "eslint-plugin-storybook": "^0.12.0",
     "jsdom": "^26.1.0",
+    "node-fetch": "^3.3.2",
     "postcss": "^8",
     "sharp": "^0.34.1",
     "storybook": "^8.6.12",
