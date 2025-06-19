@@ -6,11 +6,10 @@ import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import AlertList from './AlertList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Search, 
   Filter, 
   RefreshCw, 
   BarChart3, 
@@ -41,7 +40,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
   const [filteredAlerts, setFilteredAlerts] = useState<UnifiedAlert[]>([]);
   const [alertsByType, setAlertsByType] = useState<AlertsByType>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+
   const [selectedType, setSelectedType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'severity' | 'type'>('date');
   const [alertsService] = useState(() => new UnifiedAlertsService());
@@ -373,14 +372,6 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
   useEffect(() => {
     let filtered = [...alerts];
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(alert =>
-        alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        alert.message.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
     // Apply type filter
     if (selectedType !== 'all') {
       filtered = filtered.filter(alert => alert.alertType === selectedType);
@@ -402,7 +393,7 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
     });
 
     setFilteredAlerts(filtered);
-  }, [alerts, searchQuery, selectedType, sortBy]);
+  }, [alerts, selectedType, sortBy]);
 
   const getAlertTypeIcon = (type: AlertType) => {
     const config = alertTypeConfig[type];
@@ -488,18 +479,8 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search and Filters */}
+          {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search alerts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}

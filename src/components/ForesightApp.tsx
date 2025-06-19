@@ -116,7 +116,7 @@ function ForesightApp() {
       currentView = (
         <ContentSurface fullBleed className="p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold">Alert Management</h1>
+            <h1 className="text-2xl font-semibold">Post Consultation Alerts</h1>
           </div>
           <AlertDashboard 
             onAlertAction={(alertId, action) => {

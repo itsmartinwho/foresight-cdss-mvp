@@ -130,7 +130,9 @@ export const AlertList: React.FC<AlertListProps> = ({
         <div key={category} className="space-y-3">
           {/* Category Header */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">{category} Alerts</h3>
+            <h3 className="text-lg font-medium text-gray-900">
+              {categoryAlerts[0]?.alertType ? formatAlertType(categoryAlerts[0].alertType) : 'General'}
+            </h3>
             <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
               {categoryAlerts.length} alert{categoryAlerts.length !== 1 ? 's' : ''}
             </span>
