@@ -1,6 +1,7 @@
 // import { supabase } from './supabaseClient'; // Assuming supabase client is initialized here
 import { supabaseDataService } from './supabaseDataService';
 import { Patient, Encounter, Diagnosis, LabResult } from './types'; // Removed FHIRPatientContext and PatientDataPayload
+import { UnifiedAlertsService } from './unifiedAlertsService';
 // import { logger } from './logger'; // Removed logger import
 
 // FHIR-like types for conditions and observations
@@ -163,7 +164,22 @@ export class PatientContextLoader {
   /**
    * Convert the context to a format suitable for the clinical engine
    */
-  static toEngineFormat(context: FHIRPatientContext): Record<string, any> {
+  static async toEngineFormat(context: FHIRPatientContext): Promise<Record<string, any>> {
+    // Fetch alerts from unified alerts service
+    const alertsService = new UnifiedAlertsService();
+    const alertsResult = await alertsService.getAlerts({ patientId: context.patient.id });
+    const legacyFormattedAlerts = alertsResult.alerts?.map(alert => ({
+      id: alert.id,
+      patientId: context.patient.id,
+      type: alert.legacyAlertData?.type || alert.alertType.toLowerCase(),
+      severity: alert.severity,
+      msg: alert.message,
+      triggeringFactors: alert.legacyAlertData?.triggeringFactors || [],
+      suggestedActions: alert.suggestion ? [alert.suggestion] : [],
+      createdAt: alert.createdAt,
+      confidence: alert.confidenceScore
+    })) || [];
+
     return {
       patient: {
         id: context.patient.id,
@@ -176,7 +192,7 @@ export class PatientContextLoader {
         maritalStatus: context.patient.maritalStatus,
         language: context.patient.language,
 
-        alerts: context.patient.alerts || []
+        alerts: legacyFormattedAlerts
       },
       currentEncounter: context.currentEncounter ? {
         id: context.currentEncounter.id,

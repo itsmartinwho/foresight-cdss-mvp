@@ -3,10 +3,10 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 async function testClinicalEngineAPI() {
   console.log('🧪 Testing clinical engine API...');
   
-  // Test data - using a real patient structure from our enrichment work
+  // Test data - using realistic UUIDs for testing rich content generation
   const testPayload = {
-    patientId: 'PAT_0100001', // Maria Gomez from our enrichment work
-    encounterId: 'enc_PAT_0100001_001',  // A test encounter ID
+    patientId: 'patient123', // Simple test patient ID 
+    encounterId: '550e8400-e29b-41d4-a716-446655440000',  // Test encounter UUID format
     transcript: `Clinician: Good morning, Maria. What brings you in today?
 Maria: I've been experiencing persistent headaches over the last two weeks, along with some nausea.
 Clinician: On a scale of 1 to 10, how severe are the headaches?

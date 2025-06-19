@@ -22,7 +22,7 @@ async function checkDorothyVisibility() {
     console.log(`   Gender: ${demoPatient.gender}`);
     console.log(`   Date of Birth: ${demoPatient.dateOfBirth}`);
     console.log(`   Language: ${demoPatient.language}`);
-    console.log(`   Alerts: ${demoPatient.alerts?.length || 0}`);
+    console.log(`   Alerts: ${demoPatient.alerts?.length || 0} (legacy demo data structure)`);
     
     console.log('\n📋 Demo encounter data:');
     console.log(`   Encounter ID: ${demoEncounter.id}`);

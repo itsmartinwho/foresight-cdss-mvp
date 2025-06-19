@@ -1,4 +1,5 @@
-import { Patient, ComplexCaseAlert, Encounter, Diagnosis, Specialty } from '@/lib/types';
+import { Patient, ComplexCaseAlert, Encounter, Diagnosis } from '@/lib/types';
+import { Specialty } from '@/types/guidelines';
 import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
 import { AlertType } from '@/types/alerts';
 
@@ -50,7 +51,38 @@ export class SpecialtySuggestionService {
   }
 
   /**
-   * Map patient alerts to specialty
+   * Map unified alerts to specialty
+   */
+  private static mapUnifiedAlertsToSpecialty(alerts: any[]): Specialty {
+    for (const alert of alerts) {
+      // Check unified alert types
+      switch (alert.alertType) {
+        case 'COMPLEX_CONDITION':
+          // Check the legacy alert data for more specific type
+          if (alert.legacyAlertData?.type === 'oncology') {
+            return 'Oncology';
+          }
+          if (alert.legacyAlertData?.type === 'autoimmune' || alert.legacyAlertData?.type === 'inflammatory') {
+            return 'Rheumatology';
+          }
+          break;
+        case 'DRUG_INTERACTION':
+          return 'Pharmacology';
+        default:
+          // Check alert message content
+          if (alert.message || alert.title) {
+            const specialty = this.mapTermsToSpecialty(alert.message || alert.title);
+            if (specialty !== 'General Medicine') {
+              return specialty;
+            }
+          }
+      }
+    }
+    return 'General Medicine';
+  }
+
+  /**
+   * Map patient alerts to specialty (legacy method for backward compatibility)
    */
   private static mapAlertsToSpecialty(alerts: ComplexCaseAlert[]): Specialty {
     for (const alert of alerts) {
@@ -325,20 +357,24 @@ export class SpecialtySuggestionService {
   /**
    * Get a user-friendly explanation for why a specialty was suggested
    */
-  static getSpecialtySuggestionReason(
+  static async getSpecialtySuggestionReason(
     patient: Patient,
     suggestedSpecialty: Specialty,
     recentEncounters?: Encounter[],
     recentDiagnoses?: Diagnosis[]
-  ): string {
-    // Check alerts
-    if (patient.alerts && patient.alerts.length > 0) {
-      for (const alert of patient.alerts) {
-        if (alert.type === 'oncology' && suggestedSpecialty === 'Oncology') {
+  ): Promise<string> {
+    // Check alerts using unified alerts service
+    const alertsResult = await this.alertsService.getAlerts({ patientId: patient.id });
+    if (alertsResult.alerts && alertsResult.alerts.length > 0) {
+      for (const alert of alertsResult.alerts) {
+        if (alert.legacyAlertData?.type === 'oncology' && suggestedSpecialty === 'Oncology') {
           return 'Based on oncology-related alert';
         }
-        if ((alert.type === 'autoimmune' || alert.type === 'inflammatory') && suggestedSpecialty === 'Rheumatology') {
+        if ((alert.legacyAlertData?.type === 'autoimmune' || alert.legacyAlertData?.type === 'inflammatory') && suggestedSpecialty === 'Rheumatology') {
           return 'Based on autoimmune/inflammatory alert';
+        }
+        if (alert.alertType === 'COMPLEX_CONDITION' && suggestedSpecialty === 'Rheumatology') {
+          return 'Based on complex condition alert';
         }
       }
     }

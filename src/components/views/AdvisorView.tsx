@@ -512,7 +512,7 @@ export default function AdvisorView() {
     // Get specialty suggestion based on patient context
     try {
       const suggested = await SpecialtySuggestionService.suggestSpecialtyFromPatient(patient);
-      const reason = SpecialtySuggestionService.getSpecialtySuggestionReason(patient, suggested);
+      const reason = await SpecialtySuggestionService.getSpecialtySuggestionReason(patient, suggested);
       
       // Only show suggestion if it's not the default/current selection
       if (suggested !== 'All' && suggested !== selectedSpecialty) {

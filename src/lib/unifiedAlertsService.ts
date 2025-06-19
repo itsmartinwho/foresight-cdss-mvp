@@ -590,7 +590,7 @@ export class UnifiedAlertsService {
         labResults: supabaseDataService.getPatientLabResults(patientId),
         allergies: [], // TODO: Add allergies to patient data model if needed
         vitals: [], // TODO: Add vitals to patient data model if needed
-        existingAlerts: patientData.patient.alerts || []
+        existingAlerts: [] // Legacy alerts now handled by unified alerts service
       };
       
       // Get new transcript segment for real-time processing
@@ -650,7 +650,7 @@ export class UnifiedAlertsService {
         labResults: supabaseDataService.getPatientLabResults(patientId),
         allergies: [], // TODO: Add allergies to patient data model if needed
         vitals: [], // TODO: Add vitals to patient data model if needed
-        existingAlerts: patientData.patient.alerts || [],
+        existingAlerts: [], // Legacy alerts now handled by unified alerts service
         consultationOutcome: {
           transcript: encounter?.transcript || '',
           soapNote: encounter?.soapNote || '',

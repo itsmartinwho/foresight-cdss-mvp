@@ -15,6 +15,8 @@ import {
 } from './types';
 import { supabaseDataService } from './supabaseDataService';
 import { getSupabaseClient } from './supabaseClient';
+import { UnifiedAlertsService } from './unifiedAlertsService';
+import { AlertStatus } from '@/types/alerts';
 import OpenAI from 'openai';
 import { GPT_4_1_MINI } from './ai/gpt-models';
 import { getDiagnosisPrompt, getTreatmentPrompt, getTreatmentGuidelinesPrompt } from './ai/prompt-templates';
@@ -30,6 +32,7 @@ const CLINICAL_ENGINE_ASSISTANT_ID = process.env.CLINICAL_ENGINE_ASSISTANT_ID;
 export class ClinicalEngineServiceV3 {
   private supabase = getSupabaseClient();
   private openai: OpenAI;
+  private alertsService = new UnifiedAlertsService();
 
   constructor() {
     this.openai = new OpenAI({
@@ -896,6 +899,29 @@ Generate a concise, professional Subjective section (2-4 sentences) that capture
   }
 
   /**
+   * Get medical history from unified alerts system
+   */
+  private async getMedicalHistoryFromAlerts(patientId: string): Promise<string> {
+    if (!patientId) return 'None documented';
+    
+    try {
+      const alertsResult = await this.alertsService.getAlerts({
+        patientId,
+        statuses: [AlertStatus.ACTIVE, AlertStatus.RESOLVED]
+      });
+      
+      if (alertsResult.alerts.length === 0) {
+        return 'None documented';
+      }
+      
+      return alertsResult.alerts.map(alert => alert.message).join('; ');
+    } catch (error) {
+      console.error('Error fetching medical history from alerts:', error);
+      return 'None documented';
+    }
+  }
+
+  /**
    * Generate Objective section focusing on doctor's findings
    */
   private async generateObjectiveSection(transcript: string, patientData: any): Promise<string> {
@@ -920,7 +946,7 @@ WHAT TO EXCLUDE (Patient's perspective):
 
 Patient Information:
 - Name: ${patientData.patient?.firstName} ${patientData.patient?.lastName}
-- Prior Medical History: ${patientData.patient?.alerts ? patientData.patient.alerts.map((alert: any) => alert.msg).join('; ') : 'None documented'}
+- Prior Medical History: ${await this.getMedicalHistoryFromAlerts(patientData.patient?.patientId || patientData.patient?.id)}
 
 Transcript:
 ${transcript}
