@@ -201,7 +201,7 @@ export default function SOAPNoteEditor({
                   <div className="min-h-[60px]">
                     {section.content ? (
                       <div 
-                        className="prose prose-sm max-w-none text-foreground"
+                        className="text-base max-w-none text-foreground whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{ __html: section.content }}
                       />
                     ) : (

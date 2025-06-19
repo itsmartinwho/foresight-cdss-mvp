@@ -25,7 +25,7 @@ export default function RenderDetailTable({ title, dataArray, headers, columnAcc
   return (
     <div className="mt-2">
       <h4 className="text-lg font-medium text-foreground mb-2">{title}</h4>
-      <Table className="text-xs mobile-card:block sm:table">
+      <Table className="text-base mobile-card:block sm:table">
         <TableHeader className="mobile-card:hidden sm:table-header-group">
           <TableRow>
             {displayHeaders.map(header => <TableHead key={header}>{header}</TableHead>)}

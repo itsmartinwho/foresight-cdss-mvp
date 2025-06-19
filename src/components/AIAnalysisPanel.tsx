@@ -161,7 +161,7 @@ export default function AIAnalysisPanel({ patientId, encounterId, onSave }: AIAn
           {analysisResult.soapNote && (
             <div>
               <h3 className="text-lg font-semibold mb-2">Draft SOAP Note</h3>
-              <div className="p-4 bg-gray-50 rounded-lg font-mono text-sm whitespace-pre-wrap">
+              <div className="p-4 bg-gray-50 rounded-lg text-base whitespace-pre-wrap">
                 <div className="mb-2"><strong>S:</strong> {analysisResult.soapNote.subjective}</div>
                 <div className="mb-2"><strong>O:</strong> {analysisResult.soapNote.objective}</div>
                 <div className="mb-2"><strong>A:</strong> {analysisResult.soapNote.assessment}</div>

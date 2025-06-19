@@ -274,7 +274,7 @@ export function EditableTable({
                   <div className="col-span-5">Rationale</div>
                 </div>
                 {normalizedTreatments.map((treatment, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-4 text-sm">
+                  <div key={index} className="grid grid-cols-12 gap-4 text-base">
                     <div className="col-span-4 font-medium">
                       {treatment.drug || 'No medication specified'}
                     </div>

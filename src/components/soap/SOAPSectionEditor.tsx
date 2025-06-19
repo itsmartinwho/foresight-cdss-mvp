@@ -145,11 +145,11 @@ export function SOAPSectionEditor({
         ) : (
           <div
             className={cn(
-              "min-h-[100px] p-3 rounded-md text-sm whitespace-pre-wrap",
+              "min-h-[100px] p-3 rounded-md text-base whitespace-pre-wrap",
               isReadOnly 
                 ? "bg-muted/30 text-foreground" 
                 :             "bg-muted/20 hover:bg-muted/30 cursor-pointer border border-transparent hover:border-border/50 transition-colors",
-              !content && "text-base text-muted-foreground/70"
+              !content && "text-muted-foreground/70"
             )}
             onClick={!isReadOnly ? handleEdit : undefined}
           >
