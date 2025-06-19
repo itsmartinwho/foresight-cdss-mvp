@@ -121,14 +121,24 @@ export default function ConsultationPanel({
   const isCurrentlyCreatingEncounter = useRef(false);
   const [mounted, setMounted] = useState(false);
   
-  // Development render count guard
+  // Development render count guard with circuit breaker
   const renderCountRef = useRef(0);
+  const circuitBreakerRef = useRef(false);
+  
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && !circuitBreakerRef.current) {
       renderCountRef.current++;
-      if (renderCountRef.current > 50) {
-        console.error('[ConsultationPanel] Excessive renders detected (>50), possible infinite loop!');
+      if (renderCountRef.current > 20) {
+        console.error('[ConsultationPanel] Excessive renders detected (>20), enabling circuit breaker!');
         console.trace();
+        circuitBreakerRef.current = true;
+        
+        // Reset after a delay to allow normal operation
+        setTimeout(() => {
+          renderCountRef.current = 0;
+          circuitBreakerRef.current = false;
+          console.log('[ConsultationPanel] Circuit breaker reset');
+        }, 2000);
       }
     }
   });
@@ -155,31 +165,36 @@ export default function ConsultationPanel({
   const [soapNote, setSoapNote] = useState<SoapNote | null>(null);
   const [isGeneratingSoap, setIsGeneratingSoap] = useState(false);
   
-  // Rich content state management
+  // Rich content state management - stable error handlers to prevent re-renders
+  const handleDiagnosisError = useCallback((error: Error) => {
+    console.error('Diagnosis rich content error:', error);
+    toast({ 
+      title: "Error saving diagnosis", 
+      description: error.message, 
+      variant: "destructive" 
+    });
+  }, [toast]);
+
+  const handleTreatmentError = useCallback((error: Error) => {
+    console.error('Treatment rich content error:', error);
+    toast({ 
+      title: "Error saving treatment", 
+      description: error.message, 
+      variant: "destructive" 
+    });
+  }, [toast]);
+
+  // Only use rich content editor in non-demo mode to prevent unnecessary state updates
   const diagnosisRichContent = useRichContentEditor({
-    encounterId: encounter?.id || '',
+    encounterId: isDemoMode ? '' : (encounter?.id || ''),
     contentType: 'diagnosis',
-    onError: (error) => {
-      console.error('Diagnosis rich content error:', error);
-      toast({ 
-        title: "Error saving diagnosis", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    }
+    onError: handleDiagnosisError
   });
   
   const treatmentRichContent = useRichContentEditor({
-    encounterId: encounter?.id || '',
-    contentType: 'treatments',
-    onError: (error) => {
-      console.error('Treatment rich content error:', error);
-      toast({ 
-        title: "Error saving treatment", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    }
+    encounterId: isDemoMode ? '' : (encounter?.id || ''),
+    contentType: 'treatments', 
+    onError: handleTreatmentError
   });
   
   // Transcription state and refs
@@ -1148,28 +1163,25 @@ export default function ConsultationPanel({
     }
   }, [isOpen, autoStartTranscription, selectedEncounter, encounter, started, isTranscribing, toast]);
   
-  // Update demo content when props change (for animated transcript)
+  // Update demo content when props change (for animated transcript) - split into separate effects to prevent loops
   useEffect(() => {
     if (!isDemoMode || !isOpen) return;
     
-    console.log('[ConsultationPanel] Demo props update:', {
-      initialDemoTranscript: initialDemoTranscript?.length || 0,
-      demoDiagnosis: demoDiagnosis?.length || 0,
-      demoTreatment: demoTreatment?.length || 0,
-      demoDifferentialDiagnoses: demoDifferentialDiagnoses?.length || 0
-    });
-    
-    // Update transcript content during animation
-    if (initialDemoTranscript !== undefined) {
+    // Only update transcript if it has actually changed
+    if (initialDemoTranscript !== undefined && initialDemoTranscript !== transcriptText) {
       setTranscriptText(initialDemoTranscript);
     }
+  }, [isDemoMode, isOpen, initialDemoTranscript]); // Remove transcriptText from dependencies to prevent loops
+
+  useEffect(() => {
+    if (!isDemoMode || !isOpen) return;
     
-    // Update other demo content
-    if (demoDiagnosis !== undefined) {
+    // Update other demo content only when they actually change
+    if (demoDiagnosis !== undefined && demoDiagnosis !== diagnosisText) {
       setDiagnosisText(demoDiagnosis);
     }
     
-    if (demoTreatment !== undefined) {
+    if (demoTreatment !== undefined && demoTreatment !== treatmentText) {
       setTreatmentText(demoTreatment);
     }
     
@@ -1183,7 +1195,7 @@ export default function ConsultationPanel({
     
     // Update plan generation state
     setPlanGenerated(!!(demoDiagnosis || demoTreatment || demoDifferentialDiagnoses));
-  }, [isDemoMode, isOpen, initialDemoTranscript, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, demoSoapNote]);
+  }, [isDemoMode, isOpen, demoDiagnosis, demoTreatment, demoDifferentialDiagnoses, demoSoapNote]); // Remove state variables from dependencies
   
   // Create encounter for non-demo mode - separate effect with stable dependencies
   useEffect(() => {
