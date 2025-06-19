@@ -17,6 +17,7 @@ const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 interface Patient {
   id: string;
+  patient_id: string;
   first_name: string;
   last_name: string;
 }
@@ -111,7 +112,7 @@ async function main() {
       }
 
       console.log('Calling clinical engine...');
-      await callClinicalEngineAPI(patient.id, enc.id, transcript || '');
+      await callClinicalEngineAPI(patient.patient_id, enc.id, transcript || '');
       console.log('Clinical engine processing complete.');
     }
   }
