@@ -1,7 +1,10 @@
-import { Patient, ComplexCaseAlert, Encounter, Diagnosis } from '@/lib/types';
-import { Specialty } from '@/types/guidelines';
+import { Patient, ComplexCaseAlert, Encounter, Diagnosis, Specialty } from '@/lib/types';
+import { UnifiedAlertsService } from '@/lib/unifiedAlertsService';
+import { AlertType } from '@/types/alerts';
 
 export class SpecialtySuggestionService {
+  private static alertsService = new UnifiedAlertsService();
+
   /**
    * Suggests a specialty based on patient context including alerts, diagnoses, and demographics
    */
@@ -11,9 +14,10 @@ export class SpecialtySuggestionService {
     recentDiagnoses?: Diagnosis[]
   ): Promise<Specialty> {
     
-    // Check patient alerts first (highest priority)
-    if (patient.alerts && patient.alerts.length > 0) {
-      const alertSpecialty = this.mapAlertsToSpecialty(patient.alerts);
+    // Check patient alerts first (highest priority) - now using unified alerts service
+    const alertsResult = await this.alertsService.getAlerts({ patientId: patient.id });
+    if (alertsResult.alerts && alertsResult.alerts.length > 0) {
+      const alertSpecialty = this.mapUnifiedAlertsToSpecialty(alertsResult.alerts);
       if (alertSpecialty !== 'General Medicine') {
         return alertSpecialty;
       }

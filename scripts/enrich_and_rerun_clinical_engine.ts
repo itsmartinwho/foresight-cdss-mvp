@@ -6,8 +6,8 @@ import { ClinicalEngineServiceV3 } from '../src/lib/clinicalEngineServiceV3';
 // Load environment variables
 dotenv.config({ path: process.cwd() + '/.env.local' });
 
-const SUPABASE_URL = process.env.SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
