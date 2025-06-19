@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
+import { RichTreatmentEditor } from '@/components/ui/rich-treatment-editor';
+import { TreatmentRenderer } from '@/components/advisor/streaming-markdown/treatment-renderer';
+import { useRichContentEditor } from '@/hooks/useRichContentEditor';
 import { X, Brain, CircleNotch, PauseCircle, PlayCircle, FloppyDisk, Bell } from '@phosphor-icons/react';
 import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { DemoAudioWaveform } from '@/components/ui/DemoAudioWaveform';
@@ -151,6 +154,33 @@ export default function ConsultationPanel({
   // SOAP Notes state
   const [soapNote, setSoapNote] = useState<SoapNote | null>(null);
   const [isGeneratingSoap, setIsGeneratingSoap] = useState(false);
+  
+  // Rich content state management
+  const diagnosisRichContent = useRichContentEditor({
+    encounterId: encounter?.id || '',
+    contentType: 'diagnosis',
+    onError: (error) => {
+      console.error('Diagnosis rich content error:', error);
+      toast({ 
+        title: "Error saving diagnosis", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    }
+  });
+  
+  const treatmentRichContent = useRichContentEditor({
+    encounterId: encounter?.id || '',
+    contentType: 'treatments',
+    onError: (error) => {
+      console.error('Treatment rich content error:', error);
+      toast({ 
+        title: "Error saving treatment", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    }
+  });
   
   // Transcription state and refs
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -431,11 +461,18 @@ export default function ConsultationPanel({
         updatePromises.push(supabaseDataService.updateEncounterTranscript(patient.id, compositeEncounterId, finalTranscript));
       }
       
+      // Save diagnosis (both text and rich content)
       const finalDiagnosis = diagnosisText.trim();
       if (finalDiagnosis) {
         updatePromises.push(supabaseDataService.savePrimaryDiagnosis(patient.id, encounter.encounterIdentifier, finalDiagnosis));
       }
       
+      // Save diagnosis rich content if available
+      if (diagnosisRichContent.content) {
+        updatePromises.push(diagnosisRichContent.saveContent(diagnosisRichContent.content));
+      }
+      
+      // Save treatments (both text and rich content)
       const finalTreatmentText = treatmentText.trim();
       if (finalTreatmentText) {
         const treatments: Treatment[] = [{
@@ -444,6 +481,11 @@ export default function ConsultationPanel({
           rationale: 'Physician\'s assessment during consultation.'
         }];
         updatePromises.push(supabaseDataService.updateEncounterTreatments(patient.id, compositeEncounterId, treatments));
+      }
+      
+      // Save treatment rich content if available
+      if (treatmentRichContent.content) {
+        updatePromises.push(treatmentRichContent.saveContent(treatmentRichContent.content));
       }
       
       const soapNote = (finalTranscript || finalDiagnosis || finalTreatmentText) 
@@ -578,6 +620,133 @@ export default function ConsultationPanel({
     
     return () => clearTimeout(timeoutId);
   }, []);
+
+  const handleGenerateTreatments = useCallback(async () => {
+    if (!encounter?.id || !diagnosisText) {
+      toast({
+        title: "Cannot generate treatments",
+        description: "Please ensure diagnosis is completed first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Get patient data for treatment generation
+      const patientData = {
+        patient: {
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          age: 45, // TODO: Get from patient data when available
+          gender: patient.gender || 'unknown'
+        },
+        conditions: [], // Could be populated from patient history
+        treatments: treatmentText ? [treatmentText] : []
+      };
+
+      // Create diagnosis object
+      const diagnosis = {
+        diagnosisName: diagnosisText,
+        confidence: 0.9,
+        supportingEvidence: ["Clinical assessment completed"],
+        reasoningExplanation: "Based on consultation findings"
+      };
+
+      // Call the treatments API
+      const response = await fetch('/api/clinical-engine/treatments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patientData,
+          diagnosis,
+          transcript: transcriptText
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.treatments) {
+        // Create rich content from the API result
+        const richContent = {
+          content_type: 'text/markdown' as const,
+          text_content: generateTreatmentTextContent(result.treatments),
+          rich_elements: result.treatments.decisionTree ? [{
+            id: 'decision_tree_1',
+            type: 'decision_tree' as const,
+            data: result.treatments.decisionTree,
+            position: 1,
+            editable: false
+          }] : [],
+          created_at: new Date().toISOString(),
+          version: '1.0'
+        };
+
+        // Save the rich content
+        await treatmentRichContent.saveContent(richContent);
+        
+        toast({
+          title: "Treatment plan generated",
+          description: "Structured treatment plan with decision trees created successfully"
+        });
+      }
+    } catch (error) {
+      console.error('Error generating treatments:', error);
+      toast({
+        title: "Error generating treatments",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  }, [encounter?.id, diagnosisText, patient, treatmentText, transcriptText, treatmentRichContent.saveContent, toast]);
+
+  // Helper function to generate text content from treatment data
+  const generateTreatmentTextContent = (treatments: any) => {
+    let content = '# Treatment Plan\n\n';
+    
+    if (treatments.treatments?.length) {
+      content += '## Recommended Treatments\n\n';
+      treatments.treatments.forEach((treatment: any, index: number) => {
+        content += `### ${treatment.medication || `Treatment ${index + 1}`}\n`;
+        content += `- **Dosage:** ${treatment.dosage || 'As prescribed'}\n`;
+        content += `- **Duration:** ${treatment.duration || 'As needed'}\n`;
+        content += `- **Rationale:** ${treatment.rationale || 'Clinical indication'}\n`;
+        if (treatment.monitoring) {
+          content += `- **Monitoring:** ${treatment.monitoring}\n`;
+        }
+        if (treatment.guidelines_reference) {
+          content += `- **Guidelines:** ${treatment.guidelines_reference}\n`;
+        }
+        content += '\n';
+      });
+    }
+
+    if (treatments.nonPharmacologicalTreatments?.length) {
+      content += '## Non-Pharmacological Treatments\n\n';
+      treatments.nonPharmacologicalTreatments.forEach((treatment: string) => {
+        content += `- ${treatment}\n`;
+      });
+      content += '\n';
+    }
+
+    if (treatments.followUpPlan) {
+      content += '## Follow-up Plan\n\n';
+      content += `**Timeline:** ${treatments.followUpPlan.timeline || 'As clinically indicated'}\n\n`;
+      if (treatments.followUpPlan.parameters?.length) {
+        content += `**Monitoring Parameters:**\n`;
+        treatments.followUpPlan.parameters.forEach((param: string) => {
+          content += `- ${param}\n`;
+        });
+      }
+    }
+
+    return content;
+  };
 
   const pauseTranscription = useCallback(() => {
     console.log("ConsultationPanel pauseTranscription called - current states:", { isTranscribing, isPaused });
@@ -1373,14 +1542,72 @@ export default function ConsultationPanel({
                   )}
                   {planGenerated && activeTab === 'diagnosis' && (
                     <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                      <h3 className="text-lg font-medium">Diagnosis</h3>
-                      <RichTextEditor content={diagnosisText} onContentChange={setDiagnosisText} placeholder="Enter diagnosis..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
+                      {diagnosisRichContent.content ? (
+                        <RichTreatmentEditor
+                          content={diagnosisRichContent.content}
+                          onSave={diagnosisRichContent.saveContent}
+                          isDemo={isDemoMode}
+                          label="Diagnosis"
+                        />
+                      ) : diagnosisRichContent.isLoading ? (
+                        <div className="flex items-center justify-center flex-1">
+                          <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
+                          <span className="ml-2 text-muted-foreground">Loading diagnosis...</span>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                          <h3 className="text-lg font-medium">Diagnosis</h3>
+                          <RichTextEditor 
+                            content={diagnosisText} 
+                            onContentChange={setDiagnosisText} 
+                            placeholder="Enter diagnosis..." 
+                            disabled={isDemoMode} 
+                            showToolbar={!isDemoMode} 
+                            minHeight="300px" 
+                            className="flex-1" 
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                   {planGenerated && activeTab === 'treatment' && (
                     <div className="flex-1 flex flex-col space-y-4 min-h-0">
-                      <h3 className="text-lg font-medium">Treatment Plan</h3>
-                      <RichTextEditor content={treatmentText} onContentChange={handleTreatmentTextChange} placeholder="Enter treatment plan..." disabled={isDemoMode} showToolbar={!isDemoMode} minHeight="300px" className="flex-1" />
+                      {treatmentRichContent.content ? (
+                        <RichTreatmentEditor
+                          content={treatmentRichContent.content}
+                          onSave={treatmentRichContent.saveContent}
+                          isDemo={isDemoMode}
+                          label="Treatment Plan"
+                        />
+                      ) : treatmentRichContent.isLoading ? (
+                        <div className="flex items-center justify-center flex-1">
+                          <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
+                          <span className="ml-2 text-muted-foreground">Loading treatment plan...</span>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col space-y-4 min-h-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-medium">Treatment Plan</h3>
+                            {!isDemoMode && encounter?.id && (
+                              <button
+                                onClick={() => handleGenerateTreatments()}
+                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors"
+                              >
+                                Generate Structured Plan
+                              </button>
+                            )}
+                          </div>
+                          <RichTextEditor 
+                            content={treatmentText} 
+                            onContentChange={handleTreatmentTextChange} 
+                            placeholder="Enter treatment plan..." 
+                            disabled={isDemoMode} 
+                            showToolbar={!isDemoMode} 
+                            minHeight="300px" 
+                            className="flex-1" 
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
