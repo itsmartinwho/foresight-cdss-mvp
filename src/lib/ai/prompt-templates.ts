@@ -1,5 +1,5 @@
-// AI Prompt Templates for Alert Generation
-// Contains carefully crafted prompts for different types of medical alerts
+// AI Prompt Templates for Alert Generation and Clinical Engine
+// Contains carefully crafted prompts for different types of medical alerts and clinical engine operations
 
 import { AIPromptTemplate, AIFewShotExample } from '@/types/ai-models';
 import { AlertType } from '@/types/alerts';
@@ -446,4 +446,123 @@ export function getTemplateById(id: string): AIPromptTemplate | undefined {
 
 export function getRealTimeTemplate(): AIPromptTemplate {
   return REAL_TIME_ALERTS_TEMPLATE;
-} 
+}
+
+// Clinical Engine Prompt Templates
+// Templates for diagnosis and treatment generation in the clinical engine
+
+export const DIAGNOSIS_GENERATION_PROMPT = `You are a US-based doctor tasked to create a final diagnosis based on the provided patient information, data from the latest encounter, and differential diagnoses provided by another doctor.
+
+You must carefully consider all differential diagnoses and synthesize a final diagnosis. If your final diagnosis differs from the top differential diagnosis, you must explain why. If you combine multiple differential diagnoses, explain your reasoning.
+
+Return your response as JSON with this exact structure:
+{
+  "diagnosisName": "Primary diagnosis name",
+  "diagnosisCode": "ICD-10 code",
+  "confidence": 0.85,
+  "supportingEvidence": ["Evidence 1", "Evidence 2", "Evidence 3"],
+  "reasoningExplanation": "Detailed explanation of why this final diagnosis was chosen, especially if it differs from or combines the differential diagnoses",
+  "recommendedTests": ["Test 1", "Test 2"]
+}`;
+
+export const TREATMENT_GENERATION_PROMPT = `You are a US-based doctor tasked to create a comprehensive treatment plan with decision trees based on the established diagnosis and patient information. You have access to evidence-based clinical guidelines.
+
+Key Requirements:
+1. Create structured treatment recommendations with dosages, frequencies, and rationales
+2. Generate a decision tree flowchart showing treatment pathways based on patient response
+3. Include alternative treatments and contingency plans
+4. Reference clinical guidelines when available
+5. Consider patient-specific factors (age, comorbidities, allergies, etc.)
+
+The decision tree should start with the initial treatment recommendation and branch based on:
+- Treatment response (positive, partial, no response)
+- Side effects or contraindications
+- Patient preferences or constraints
+- Follow-up timeline and reassessment points
+
+Return your response as JSON with this exact structure:
+{
+  "treatments": [
+    {
+      "medication": "Drug name",
+      "dosage": "Specific dosage with frequency", 
+      "rationale": "Clinical reasoning for this choice",
+      "duration": "Treatment duration",
+      "monitoring": "Required monitoring parameters",
+      "guidelines_reference": "Clinical guideline citation if applicable"
+    }
+  ],
+  "decisionTree": {
+    "id": "root",
+    "label": "Initial Treatment",
+    "type": "action",
+    "action": "Start [Primary Treatment]",
+    "guidelines_reference": "Guideline citation",
+    "children": [
+      {
+        "id": "response_check",
+        "label": "Assess Response at [X weeks]",
+        "type": "condition",
+        "condition": "Treatment response evaluation",
+        "children": [
+          {
+            "id": "positive_response",
+            "label": "Good Response",
+            "type": "outcome",
+            "action": "Continue current treatment",
+            "children": []
+          },
+          {
+            "id": "partial_response", 
+            "label": "Partial Response",
+            "type": "condition",
+            "condition": "Consider dose adjustment or combination therapy",
+            "children": []
+          },
+          {
+            "id": "no_response",
+            "label": "No Response/Side Effects",
+            "type": "action", 
+            "action": "Switch to alternative treatment",
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "clinicalTrialMatches": [],
+  "nonPharmacologicalTreatments": [
+    "Lifestyle modification 1",
+    "Therapy recommendation 1"
+  ],
+  "followUpPlan": {
+    "timeline": "Follow-up schedule",
+    "parameters": ["Monitoring parameters"],
+    "reassessmentCriteria": "When to reassess treatment plan"
+  }
+}`;
+
+export const TREATMENT_GUIDELINES_RAG_PROMPT = `You are a clinical guidelines expert. Based on the provided diagnosis and patient context, retrieve and synthesize relevant treatment recommendations from evidence-based clinical guidelines.
+
+Focus on:
+1. First-line treatment recommendations from major clinical societies
+2. Patient-specific considerations (age, comorbidities, contraindications)
+3. Evidence levels and recommendation strengths
+4. Alternative treatment options and sequencing
+5. Monitoring requirements and safety considerations
+
+Provide specific guideline citations and recommendation grades when available.
+
+Return guidelines-based treatment recommendations that will be used to inform the treatment decision tree.`;
+
+export function getDiagnosisPrompt(): string {
+  return DIAGNOSIS_GENERATION_PROMPT;
+}
+
+export function getTreatmentPrompt(): string {
+  return TREATMENT_GENERATION_PROMPT;
+}
+
+export function getTreatmentGuidelinesPrompt(): string {
+  return TREATMENT_GUIDELINES_RAG_PROMPT;
+}

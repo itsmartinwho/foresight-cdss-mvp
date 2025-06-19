@@ -24,6 +24,34 @@ export interface Treatment {
   rationale: string;
 }
 
+// Rich content structure for diagnosis and treatments
+export interface RichContent {
+  content_type: 'text/plain' | 'text/markdown' | 'application/json';
+  text_content: string; // Clean text for EHR integration
+  rich_elements: RichElement[]; // Charts, tables, decision trees
+  created_at: string;
+  updated_at?: string;
+  version: string;
+}
+
+export interface RichElement {
+  id: string;
+  type: 'chart' | 'table' | 'decision_tree' | 'text_block';
+  data: any; // Element-specific data structure
+  position?: number; // Order within the content
+  editable?: boolean; // Whether this element can be edited
+}
+
+export interface DecisionTreeNode {
+  id: string;
+  label: string;
+  type: 'condition' | 'action' | 'outcome';
+  children?: DecisionTreeNode[];
+  condition?: string; // For decision nodes
+  action?: string; // For action nodes
+  guidelines_reference?: string; // Reference to clinical guideline
+}
+
 export interface Encounter {
   id: string;
   encounterIdentifier: string; // Human-readable/external ID for the encounter
@@ -39,6 +67,8 @@ export interface Encounter {
   observations?: string[]; // New field for observations
   soapNote?: string;
   treatments?: Treatment[];
+  diagnosis_rich_content?: RichContent; // Rich content for diagnosis
+  treatments_rich_content?: RichContent; // Rich content for treatments
   priorAuthJustification?: string;
   insuranceStatus?: string; // From database schema insurance_status
   isDeleted?: boolean;

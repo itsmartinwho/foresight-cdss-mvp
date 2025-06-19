@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS public.encounters (
   transcript TEXT,
   soap_note TEXT, -- Or consider a separate 'clinical_notes' table linked to encounters
   treatments JSONB, -- Array of treatment objects or references
+  diagnosis_rich_content JSONB, -- Rich content for diagnosis including charts, tables, and decision trees
+  treatments_rich_content JSONB, -- Rich content for treatments including charts, tables, and decision trees
   observations TEXT[], -- Clinical observations made during the encounter (array of observation strings)
   prior_auth_justification TEXT,
   insurance_status TEXT,
@@ -61,6 +63,8 @@ COMMENT ON COLUMN public.encounters.encounter_type IS 'Category of the encounter
 COMMENT ON COLUMN public.encounters.status IS 'The status of the encounter (e.g., planned, finished).';
 COMMENT ON COLUMN public.encounters.reason_code IS 'Coded reason for the encounter (e.g., SNOMED CT).';
 COMMENT ON COLUMN public.encounters.reason_display_text IS 'Human-readable description of the reason for the encounter.';
+COMMENT ON COLUMN public.encounters.diagnosis_rich_content IS 'Rich content for diagnosis including charts, tables, decision trees, and formatted text.';
+COMMENT ON COLUMN public.encounters.treatments_rich_content IS 'Rich content for treatments including charts, tables, decision trees, and formatted text.';
 COMMENT ON COLUMN public.encounters.is_deleted IS 'Flag for soft-deleting encounters.';
 COMMENT ON COLUMN public.encounters.extra_data IS 'JSONB field for storing additional, non-standardized encounter information.';
 

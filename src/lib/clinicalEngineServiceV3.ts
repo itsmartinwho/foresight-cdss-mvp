@@ -17,6 +17,7 @@ import { supabaseDataService } from './supabaseDataService';
 import { getSupabaseClient } from './supabaseClient';
 import OpenAI from 'openai';
 import { GPT_4_1_MINI } from './ai/gpt-models';
+import { getDiagnosisPrompt, getTreatmentPrompt, getTreatmentGuidelinesPrompt } from './ai/prompt-templates';
 
 // Clinical Engine Assistant ID
 const CLINICAL_ENGINE_ASSISTANT_ID = process.env.CLINICAL_ENGINE_ASSISTANT_ID;
@@ -264,12 +265,26 @@ Please:
       // Stage 2: Generate differential diagnoses using GPT-4.1-mini
       const differentialDiagnoses = await this.generateDifferentialDiagnoses(patientData, finalTranscript);
       
-      // Stage 3: Generate primary diagnosis and treatment plan using o4-mini
-      const diagnosticResult = await this.generateDiagnosisAndTreatment(
+      // Stage 3a: Generate primary diagnosis
+      const diagnosisResult = await this.generateDiagnosis(
         patientData, 
         finalTranscript, 
         differentialDiagnoses
       );
+
+      // Stage 3b: Generate treatment plan with decision trees
+      const treatmentResult = await this.generateTreatmentPlan(
+        patientData,
+        finalTranscript,
+        diagnosisResult
+      );
+
+      // Combine diagnosis and treatment results
+      const diagnosticResult: DiagnosticResult = {
+        ...diagnosisResult,
+        recommendedTreatments: treatmentResult.treatments?.map((t: any) => `${t.medication} ${t.dosage} - ${t.rationale}`) || [],
+        clinicalTrialMatches: treatmentResult.clinicalTrialMatches || []
+      } as DiagnosticResult;
       
       // Stage 4: Generate additional clinical fields using o4-mini
       await this.generateAdditionalFields(patientData, finalTranscript, diagnosticResult, actualEncounterId);
@@ -290,7 +305,9 @@ Please:
           soapNote, 
           referralDoc, 
           priorAuthDoc,
-          differentialDiagnoses
+          differentialDiagnoses,
+          diagnosisResult,
+          treatmentResult
         );
       }
       
@@ -411,27 +428,16 @@ Please generate differential diagnoses based on this information.`;
   /**
    * Stage 3: Generate primary diagnosis and treatment plan using o4-mini
    */
-  private async generateDiagnosisAndTreatment(
+  /**
+   * Generate diagnosis only (separated from treatment generation)
+   */
+  private async generateDiagnosis(
     patientData: any,
     transcript: string,
     differentialDiagnoses: DifferentialDiagnosis[]
-  ): Promise<DiagnosticResult> {
+  ): Promise<Partial<DiagnosticResult>> {
     try {
-      const systemPrompt = `You are a US-based doctor tasked to create a final diagnosis and treatment plan based on the provided patient information, data from the latest encounter, and differential diagnoses provided by another doctor.
-
-You must carefully consider all differential diagnoses and synthesize a final diagnosis. If your final diagnosis differs from the top differential diagnosis, you must explain why. If you combine multiple differential diagnoses, explain your reasoning.
-
-Return your response as JSON with this exact structure:
-{
-  "diagnosisName": "Primary diagnosis name",
-  "diagnosisCode": "ICD-10 code",
-  "confidence": 0.85,
-  "supportingEvidence": ["Evidence 1", "Evidence 2", "Evidence 3"],
-  "reasoningExplanation": "Detailed explanation of why this final diagnosis was chosen, especially if it differs from or combines the differential diagnoses",
-  "recommendedTests": ["Test 1", "Test 2"],
-  "recommendedTreatments": ["Treatment 1 with dosage and rationale", "Treatment 2 with dosage and rationale"],
-  "clinicalTrialMatches": []
-}`;
+      const systemPrompt = getDiagnosisPrompt();
 
       const userPrompt = `Patient Data: ${JSON.stringify(patientData, null, 2)}
 
@@ -439,7 +445,7 @@ Latest Encounter Transcript: ${transcript}
 
 Differential Diagnoses from Colleague: ${JSON.stringify(differentialDiagnoses, null, 2)}
 
-Please provide your primary diagnosis and treatment plan.`;
+Please provide your primary diagnosis.`;
 
       const completion = await this.openai.chat.completions.create({
         model: GPT_4_1_MINI,
@@ -447,14 +453,14 @@ Please provide your primary diagnosis and treatment plan.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 1, // Set to 1 as requested
-        max_completion_tokens: 2000, // Fixed: o4-mini uses max_completion_tokens instead of max_tokens
+        temperature: 1,
+        max_completion_tokens: 1500,
       });
 
       const response = completion.choices[0].message.content;
       
       if (!response) {
-        throw new Error('No response from o4-mini for diagnosis and treatment');
+        throw new Error('No response from AI for diagnosis');
       }
 
       const result = JSON.parse(response);
@@ -462,10 +468,10 @@ Please provide your primary diagnosis and treatment plan.`;
       // Add differential diagnoses to result
       result.differentialDiagnoses = differentialDiagnoses;
       
-      return result as DiagnosticResult;
+      return result;
       
     } catch (error) {
-      console.error('Error generating diagnosis and treatment:', error);
+      console.error('Error generating diagnosis:', error);
       // Fallback diagnosis
       return {
         diagnosisName: "Clinical evaluation pending",
@@ -474,9 +480,226 @@ Please provide your primary diagnosis and treatment plan.`;
         supportingEvidence: ["Clinical data requires further analysis"],
         differentialDiagnoses: differentialDiagnoses,
         recommendedTests: [],
-        recommendedTreatments: [],
-        clinicalTrialMatches: []
       };
+    }
+  }
+
+  /**
+   * Generate treatment plan with decision trees (separated from diagnosis)
+   */
+  private async generateTreatmentPlan(
+    patientData: any,
+    transcript: string,
+    diagnosis: Partial<DiagnosticResult>
+  ): Promise<any> {
+    try {
+      // First, get clinical guidelines-based recommendations
+      const guidelinesRecommendations = await this.getGuidelinesRecommendations(
+        diagnosis.diagnosisName || '',
+        patientData
+      );
+
+      const systemPrompt = getTreatmentPrompt();
+
+      const userPrompt = `Patient Data: ${JSON.stringify(patientData, null, 2)}
+
+Latest Encounter Transcript: ${transcript}
+
+Established Diagnosis: ${JSON.stringify(diagnosis, null, 2)}
+
+Clinical Guidelines Recommendations: ${guidelinesRecommendations}
+
+Please provide a comprehensive treatment plan with decision tree.`;
+
+      const completion = await this.openai.chat.completions.create({
+        model: GPT_4_1_MINI,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 1,
+        max_completion_tokens: 3000,
+      });
+
+      const response = completion.choices[0].message.content;
+      
+      if (!response) {
+        throw new Error('No response from AI for treatment plan');
+      }
+
+      const treatmentResult = JSON.parse(response);
+      
+      return treatmentResult;
+      
+    } catch (error) {
+      console.error('Error generating treatment plan:', error);
+      // Fallback treatment
+      return {
+        treatments: [],
+        decisionTree: {
+          id: "root",
+          label: "Clinical evaluation needed",
+          type: "action",
+          action: "Further assessment required",
+          children: []
+        },
+        clinicalTrialMatches: [],
+        nonPharmacologicalTreatments: [],
+        followUpPlan: {
+          timeline: "Follow-up as clinically indicated",
+          parameters: [],
+          reassessmentCriteria: "Clinical assessment"
+        }
+      };
+    }
+  }
+
+  /**
+   * Parse EHR treatment formats (JSON, plain text, tables)
+   */
+  private parseEHRTreatmentFormats(treatmentData: any): any[] {
+    try {
+      // If it's already a structured object/array, return as is
+      if (Array.isArray(treatmentData)) {
+        return treatmentData;
+      }
+      
+      if (typeof treatmentData === 'object' && treatmentData !== null) {
+        // If it's an object with treatments array
+        if (treatmentData.treatments && Array.isArray(treatmentData.treatments)) {
+          return treatmentData.treatments;
+        }
+        // If it's a single treatment object
+        return [treatmentData];
+      }
+
+      // If it's a string, try to parse different formats
+      if (typeof treatmentData === 'string') {
+        // Try JSON first
+        try {
+          const parsed = JSON.parse(treatmentData);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          // Not JSON, try other formats
+        }
+
+        // Try to parse table-like format (common in EHR systems)
+        if (treatmentData.includes('|') || treatmentData.includes('\t')) {
+          return this.parseTableFormat(treatmentData);
+        }
+
+        // Try to parse list format
+        if (treatmentData.includes('\n') || treatmentData.includes(';')) {
+          return this.parseListFormat(treatmentData);
+        }
+
+        // Single treatment as plain text
+        return [{
+          medication: treatmentData.trim(),
+          dosage: 'As prescribed',
+          rationale: 'EHR import',
+          duration: 'As needed'
+        }];
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error parsing EHR treatment format:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Parse table format treatments (pipe or tab separated)
+   */
+  private parseTableFormat(data: string): any[] {
+    const lines = data.split('\n').filter(line => line.trim());
+    const treatments = [];
+    
+    // Assume first line might be headers
+    const hasHeaders = lines[0]?.toLowerCase().includes('medication') || 
+                      lines[0]?.toLowerCase().includes('drug') ||
+                      lines[0]?.toLowerCase().includes('treatment');
+    
+    const dataLines = hasHeaders ? lines.slice(1) : lines;
+    
+    for (const line of dataLines) {
+      const columns = line.split(/[|\t]/).map(col => col.trim());
+      if (columns.length >= 1) {
+        treatments.push({
+          medication: columns[0] || 'Unknown medication',
+          dosage: columns[1] || 'As prescribed',
+          rationale: columns[2] || 'EHR import',
+          duration: columns[3] || 'As needed',
+          monitoring: columns[4] || undefined
+        });
+      }
+    }
+    
+    return treatments;
+  }
+
+  /**
+   * Parse list format treatments (newline or semicolon separated)
+   */
+  private parseListFormat(data: string): any[] {
+    const items = data.split(/[;\n]/).filter(item => item.trim());
+    
+    return items.map(item => {
+      const cleanItem = item.trim();
+      
+      // Try to extract dosage from common patterns
+      const dosageMatch = cleanItem.match(/(\d+\s*mg|\d+\s*mcg|\d+\s*units|\d+\s*ml)/i);
+      const medication = dosageMatch ? 
+        cleanItem.replace(dosageMatch[0], '').trim() : 
+        cleanItem;
+      
+      return {
+        medication: medication || cleanItem,
+        dosage: dosageMatch ? dosageMatch[0] : 'As prescribed',
+        rationale: 'EHR import',
+        duration: 'As needed'
+      };
+    });
+  }
+
+  /**
+   * Get clinical guidelines recommendations using RAG
+   */
+  private async getGuidelinesRecommendations(
+    diagnosisName: string,
+    patientData: any
+  ): Promise<string> {
+    try {
+      const systemPrompt = getTreatmentGuidelinesPrompt();
+
+      const userPrompt = `Diagnosis: ${diagnosisName}
+
+Patient Context: ${JSON.stringify({
+        age: patientData.patient?.age,
+        gender: patientData.patient?.gender,
+        comorbidities: patientData.conditions?.map((c: any) => c.description) || [],
+        allergies: patientData.allergies || [],
+        currentMedications: patientData.treatments || []
+      }, null, 2)}
+
+Please provide evidence-based treatment recommendations from clinical guidelines.`;
+
+      const completion = await this.openai.chat.completions.create({
+        model: GPT_4_1_MINI,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.3, // Lower temperature for guidelines-based recommendations
+        max_completion_tokens: 1500,
+      });
+
+      return completion.choices[0].message.content || 'No specific guidelines found for this diagnosis.';
+      
+    } catch (error) {
+      console.error('Error getting guidelines recommendations:', error);
+      return 'Clinical guidelines consultation recommended.';
     }
   }
 
@@ -881,6 +1104,113 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
   }
 
   /**
+   * Create rich content structure for diagnosis
+   */
+  private createDiagnosisRichContent(
+    diagnosisResult?: Partial<DiagnosticResult>,
+    soapNote?: SoapNote
+  ): any {
+    if (!diagnosisResult) return null;
+
+    const textContent = [
+      `Diagnosis: ${diagnosisResult.diagnosisName || 'Pending evaluation'}`,
+      `ICD-10 Code: ${diagnosisResult.diagnosisCode || 'N/A'}`,
+      `Confidence: ${diagnosisResult.confidence ? (diagnosisResult.confidence * 100).toFixed(0) + '%' : 'N/A'}`,
+      '',
+      'Supporting Evidence:',
+      ...(diagnosisResult.supportingEvidence?.map(evidence => `• ${evidence}`) || []),
+      '',
+      'Reasoning:',
+      diagnosisResult.reasoningExplanation || 'Clinical evaluation completed',
+      '',
+      'Assessment (from SOAP):',
+      soapNote?.assessment || ''
+    ].join('\n');
+
+    return {
+      content_type: 'text/markdown',
+      text_content: textContent,
+      rich_elements: [],
+      created_at: new Date().toISOString(),
+      version: '1.0'
+    };
+  }
+
+  /**
+   * Create rich content structure for treatments
+   */
+  private createTreatmentsRichContent(
+    treatmentResult?: any,
+    diagnosticResult?: DiagnosticResult
+  ): any {
+    if (!treatmentResult && !diagnosticResult?.recommendedTreatments?.length) return null;
+
+    const richElements = [];
+    let textContent = 'Treatment Plan\n\n';
+
+    // Add basic treatments text
+    if (diagnosticResult?.recommendedTreatments?.length) {
+      textContent += 'Recommended Treatments:\n';
+      diagnosticResult.recommendedTreatments.forEach((treatment, index) => {
+        textContent += `${index + 1}. ${treatment}\n`;
+      });
+      textContent += '\n';
+    }
+
+    // Add structured treatment data if available
+    if (treatmentResult?.treatments?.length) {
+      textContent += 'Detailed Treatment Plan:\n\n';
+      
+      treatmentResult.treatments.forEach((treatment: any, index: number) => {
+        textContent += `**${treatment.medication || 'Treatment ' + (index + 1)}**\n`;
+        textContent += `- Dosage: ${treatment.dosage || 'As prescribed'}\n`;
+        textContent += `- Duration: ${treatment.duration || 'As needed'}\n`;
+        textContent += `- Rationale: ${treatment.rationale || 'Clinical indication'}\n`;
+        if (treatment.monitoring) {
+          textContent += `- Monitoring: ${treatment.monitoring}\n`;
+        }
+        if (treatment.guidelines_reference) {
+          textContent += `- Guidelines: ${treatment.guidelines_reference}\n`;
+        }
+        textContent += '\n';
+      });
+    }
+
+    // Add decision tree as a rich element if available
+    if (treatmentResult?.decisionTree) {
+      richElements.push({
+        id: 'decision_tree_1',
+        type: 'decision_tree',
+        data: treatmentResult.decisionTree,
+        position: 1,
+        editable: false
+      });
+      
+      textContent += '\n**Treatment Decision Tree**\n(Interactive decision tree available in rich view)\n\n';
+    }
+
+    // Add follow-up plan
+    if (treatmentResult?.followUpPlan) {
+      textContent += '**Follow-up Plan:**\n';
+      textContent += `Timeline: ${treatmentResult.followUpPlan.timeline || 'As clinically indicated'}\n`;
+      if (treatmentResult.followUpPlan.parameters?.length) {
+        textContent += `Monitoring Parameters: ${treatmentResult.followUpPlan.parameters.join(', ')}\n`;
+      }
+      if (treatmentResult.followUpPlan.reassessmentCriteria) {
+        textContent += `Reassessment Criteria: ${treatmentResult.followUpPlan.reassessmentCriteria}\n`;
+      }
+    }
+
+    return {
+      content_type: 'text/markdown',
+      text_content: textContent,
+      rich_elements: richElements,
+      created_at: new Date().toISOString(),
+      version: '1.0'
+    };
+  }
+
+  /**
    * Save all results to database
    */
   private async saveResults(
@@ -890,7 +1220,9 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
     soapNote: SoapNote,
     referralDoc: any,
     priorAuthDoc: any,
-    differentialDiagnoses: DifferentialDiagnosis[]
+    differentialDiagnoses: DifferentialDiagnosis[],
+    diagnosisResult?: Partial<DiagnosticResult>,
+    treatmentResult?: any
   ): Promise<void> {
     try {
       // Get patient UUID
@@ -943,12 +1275,18 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
         }
       }
 
-      // 3. Update encounter with SOAP note and treatments
+      // 3. Create rich content structures
+      const diagnosisRichContent = this.createDiagnosisRichContent(diagnosisResult, soapNote);
+      const treatmentsRichContent = this.createTreatmentsRichContent(treatmentResult, diagnosticResult);
+
+      // 4. Update encounter with SOAP note, treatments, and rich content
       const { error: encounterError } = await this.supabase
         .from('encounters')
         .update({
           soap_note: `S: ${soapNote.subjective}\nO: ${soapNote.objective}\nA: ${soapNote.assessment}\nP: ${soapNote.plan}`,
           treatments: diagnosticResult.recommendedTreatments,
+          diagnosis_rich_content: diagnosisRichContent,
+          treatments_rich_content: treatmentsRichContent,
           prior_auth_justification: priorAuthDoc ? priorAuthDoc.generatedContent.clinicalJustification : null
         })
         .eq('id', actualEncounterUuid);
