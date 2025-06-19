@@ -30,17 +30,21 @@ export class PriorAuthService {
     diagnoses: Diagnosis[],
     resourceType: string = 'Claim'
   ): PriorAuthFormData {
-    const primaryDiagnosis = diagnoses?.[0];
-    const primaryTreatment = encounter.treatments?.[0];
+    // Ensure inputs are arrays to prevent map errors
+    const safeDiagnoses = Array.isArray(diagnoses) ? diagnoses : [];
+    const safeTreatments = Array.isArray(encounter?.treatments) ? encounter.treatments : [];
+    
+    const primaryDiagnosis = safeDiagnoses[0];
+    const primaryTreatment = safeTreatments[0];
     
     return {
       resourceType,
       patientInformation: {
-        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || '',
-        dateOfBirth: patient.dateOfBirth || '',
-        gender: patient.gender || '',
-        insuranceId: encounter.insuranceStatus || '',
-        memberId: patient.id || ''
+        name: patient?.name || `${patient?.firstName || ''} ${patient?.lastName || ''}`.trim() || '',
+        dateOfBirth: patient?.dateOfBirth || '',
+        gender: patient?.gender || '',
+        insuranceId: encounter?.insuranceStatus || '',
+        memberId: patient?.id || ''
       },
       providerInformation: {
         name: '', // Placeholder - not available in current system
@@ -58,7 +62,7 @@ export class PriorAuthService {
         duration: '30 days', // Default duration
         frequency: primaryTreatment?.status || 'As prescribed'
       },
-      clinicalJustification: encounter.priorAuthJustification || encounter.reasonDisplayText || encounter.reasonCode || '',
+      clinicalJustification: encounter?.priorAuthJustification || encounter?.reasonDisplayText || encounter?.reasonCode || '',
       authorizationNumber: '', // Placeholder - manual input required
       urgencyLevel: 'routine', // Default urgency
       supportingDocumentation: []

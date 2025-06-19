@@ -52,17 +52,22 @@ export class ReferralService {
     labResults: LabResult[] = [],
     resourceType: string = 'ServiceRequest'
   ): ReferralFormData {
-    const primaryDiagnosis = diagnoses?.[0];
-    const allDiagnoses = diagnoses?.map(d => d.description).filter(Boolean) || [];
+    // Ensure inputs are arrays to prevent map errors
+    const safeDiagnoses = Array.isArray(diagnoses) ? diagnoses : [];
+    const safeLabResults = Array.isArray(labResults) ? labResults : [];
+    const safeTreatments = Array.isArray(encounter?.treatments) ? encounter.treatments : [];
+    
+    const primaryDiagnosis = safeDiagnoses[0];
+    const allDiagnoses = safeDiagnoses.map(d => d.description).filter(Boolean);
     
     return {
       resourceType,
       patientInformation: {
-        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || '',
-        dateOfBirth: patient.dateOfBirth || '',
-        gender: patient.gender || '',
+        name: patient?.name || `${patient?.firstName || ''} ${patient?.lastName || ''}`.trim() || '',
+        dateOfBirth: patient?.dateOfBirth || '',
+        gender: patient?.gender || '',
         contactPhone: '', // Placeholder - not available in current system
-        insurance: encounter.insuranceStatus || '',
+        insurance: encounter?.insuranceStatus || '',
         address: '' // Placeholder - not available in current system
       },
       referringProvider: {
@@ -80,16 +85,16 @@ export class ReferralService {
       referralReason: {
         diagnosis: primaryDiagnosis?.description || '',
         diagnosisCode: primaryDiagnosis?.code || '',
-        reasonForReferral: encounter.reasonDisplayText || encounter.reasonCode || '',
+        reasonForReferral: encounter?.reasonDisplayText || encounter?.reasonCode || '',
         urgency: 'routine' // Default urgency
       },
       clinicalInformation: {
-        historyOfPresentIllness: encounter.soapNote || '', // Use available clinical notes
+        historyOfPresentIllness: encounter?.soapNote || '', // Use available clinical notes
         relevantPastMedicalHistory: allDiagnoses,
-        currentMedications: encounter.treatments?.map(t => `${t.drug} - ${t.status}`) || [],
+        currentMedications: safeTreatments.map(t => `${t.drug} - ${t.status}`),
         allergies: [], // Placeholder - not available in current system
         physicalExamination: '', // Placeholder - not available in current system
-        recentLabResults: labResults,
+        recentLabResults: safeLabResults,
         vitalSigns: '' // Placeholder - not available in current system
       },
       requestedEvaluation: [
