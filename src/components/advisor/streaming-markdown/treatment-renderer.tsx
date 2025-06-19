@@ -1,5 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { parser, parser_write, parser_end, default_renderer, Token } from './smd.js';
+import React, { useState } from 'react';
 import { DecisionTreeRenderer } from '../../ui/decision-tree-renderer';
 import { RichContent, RichElement } from '@/lib/types';
 
@@ -20,57 +19,8 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
   onContentEdit,
   editable = true
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const parserRef = useRef<any>(null);
-  const [streamedContent, setStreamedContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
-
-  // Initialize parser with custom renderer for treatment content
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const renderer = createTreatmentRenderer(containerRef.current);
-    parserRef.current = parser(renderer);
-
-    return () => {
-      if (parserRef.current) {
-        parser_end(parserRef.current);
-      }
-    };
-  }, []);
-
-  // Stream content if streaming mode is enabled
-  useEffect(() => {
-    if (!isStreaming || !parserRef.current) return;
-
-    const contentToStream = richContent?.text_content || content;
-    let index = 0;
-
-    const streamInterval = setInterval(() => {
-      if (index >= contentToStream.length) {
-        clearInterval(streamInterval);
-        parser_end(parserRef.current);
-        return;
-      }
-
-      const chunk = contentToStream.slice(index, index + 5); // Stream 5 chars at a time
-      parser_write(parserRef.current, chunk);
-      index += 5;
-      setStreamedContent(contentToStream.slice(0, index));
-    }, 50);
-
-    return () => clearInterval(streamInterval);
-  }, [content, richContent, isStreaming]);
-
-  // Render static content if not streaming
-  useEffect(() => {
-    if (isStreaming || !parserRef.current) return;
-
-    const contentToRender = richContent?.text_content || content;
-    parser_write(parserRef.current, contentToRender);
-    parser_end(parserRef.current);
-  }, [content, richContent, isStreaming]);
 
   const handleEdit = () => {
     if (!editable) return;
@@ -90,8 +40,31 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
     setIsEditing(false);
   };
 
+  // Simple markdown-to-HTML converter
+  const renderMarkdown = (text: string) => {
+    let html = text
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-6 mb-3">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-8 mb-4">$1</h1>')
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      // Lists
+      .replace(/^- (.*$)/gim, '<li class="ml-4 mb-1">• $1</li>')
+      // Line breaks
+      .replace(/\n\n/g, '<br/><br/>')
+      .replace(/\n/g, '<br/>');
+
+    return { __html: html };
+  };
+
   const renderRichElements = () => {
-    if (!richContent?.rich_elements?.length) return null;
+    if (!richContent?.rich_elements?.length) {
+      console.log('TreatmentRenderer: No rich elements found');
+      return null;
+    }
+
+    console.log('TreatmentRenderer: Rendering rich elements:', richContent.rich_elements);
 
     return (
       <div className="mt-4 space-y-4">
@@ -135,8 +108,8 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
       ) : (
         <div className="relative group">
           <div 
-            ref={containerRef} 
             className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={renderMarkdown(richContent?.text_content || content)}
           />
           {editable && (
             <button
@@ -161,6 +134,8 @@ const RichElementRenderer: React.FC<{
   onDelete?: (id: string) => void;
   editable?: boolean;
 }> = ({ element, onDelete, editable = true }) => {
+  console.log('RichElementRenderer: Rendering element:', element.type, element);
+
   const handleDelete = () => {
     if (onDelete) {
       onDelete(element.id);
@@ -170,6 +145,7 @@ const RichElementRenderer: React.FC<{
   const renderElement = () => {
     switch (element.type) {
       case 'decision_tree':
+        console.log('RichElementRenderer: Rendering decision tree with data:', element.data);
         return (
           <DecisionTreeRenderer 
             tree={element.data}
@@ -191,11 +167,14 @@ const RichElementRenderer: React.FC<{
       case 'table':
         return (
           <div className="overflow-x-auto">
+            <div className="text-sm font-medium text-gray-700 mb-2">
+              {element.data.title || 'Table'}
+            </div>
             <table className="min-w-full border border-gray-300">
               <thead className="bg-gray-50">
                 <tr>
                   {element.data.headers?.map((header: string, index: number) => (
-                    <th key={index} className="px-4 py-2 border-b border-gray-300 text-left">
+                    <th key={index} className="px-4 py-2 border-b border-gray-300 text-left font-medium">
                       {header}
                     </th>
                   ))}
@@ -242,37 +221,5 @@ const RichElementRenderer: React.FC<{
     </div>
   );
 };
-
-// Custom renderer factory for treatment content
-function createTreatmentRenderer(container: HTMLElement) {
-  const renderer = default_renderer(container);
-  
-  // Extend the default renderer with treatment-specific enhancements
-  const originalAddToken = renderer.add_token;
-  renderer.add_token = (data: any, type: any) => {
-    // Handle custom treatment tokens if needed
-    return originalAddToken(data, type);
-  };
-
-  const originalAddText = renderer.add_text;
-  renderer.add_text = (data: any, text: string) => {
-    // Process treatment-specific text patterns
-    const processedText = processTreatmentText(text);
-    return originalAddText(data, processedText);
-  };
-
-  return renderer;
-}
-
-// Process treatment text for special patterns
-function processTreatmentText(text: string): string {
-  // Convert medication patterns to more readable format
-  text = text.replace(/(\d+\s*mg|\d+\s*mcg|\d+\s*units)/gi, '<strong>$1</strong>');
-  
-  // Highlight dosage frequencies
-  text = text.replace(/\b(daily|twice daily|BID|TID|QID|as needed|PRN)\b/gi, '<em>$1</em>');
-  
-  return text;
-}
 
 export default TreatmentRenderer; 

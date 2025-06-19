@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { DecisionTreeNode } from '@/lib/types';
 
 interface DecisionTreeRendererProps {
-  tree: DecisionTreeNode;
+  tree: DecisionTreeNode | any; // Allow both formats
   editable?: boolean;
   onNodeClick?: (nodeId: string) => void;
 }
@@ -15,20 +15,102 @@ export const DecisionTreeRenderer: React.FC<DecisionTreeRendererProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current || !tree) return;
+    if (!containerRef.current || !tree) {
+      console.log('DecisionTreeRenderer: Missing container or tree data');
+      return;
+    }
 
-    // For now, render as a simple tree structure
-    // In a production system, you could use Mermaid.js, D3, or another visualization library
-    renderSimpleTree(containerRef.current, tree, onNodeClick);
+    // Convert graph format to tree format if needed
+    const treeData = convertToTreeFormat(tree);
+    console.log('DecisionTreeRenderer: Converted tree data:', treeData);
+    
+    if (!treeData) {
+      console.log('DecisionTreeRenderer: Failed to convert tree data');
+      return;
+    }
+
+    // Render the tree structure
+    renderSimpleTree(containerRef.current, treeData, onNodeClick);
   }, [tree, onNodeClick]);
 
   return (
     <div className="decision-tree-container bg-white border border-gray-200 rounded-lg p-2 sm:p-4">
-      <div className="mb-2 text-sm font-medium text-gray-700">Treatment Decision Tree</div>
+      <div className="mb-2 text-sm font-medium text-gray-700">
+        {tree?.title || 'Treatment Decision Tree'}
+      </div>
       <div ref={containerRef} className="decision-tree overflow-auto max-h-96 sm:max-h-none" />
     </div>
   );
 };
+
+// Convert nodes+connections format to tree format
+function convertToTreeFormat(data: any): DecisionTreeNode | null {
+  // If already in tree format (has children), return as-is
+  if (data.id && data.label && data.children !== undefined) {
+    return data as DecisionTreeNode;
+  }
+
+  // If in graph format (has nodes and connections), convert it
+  if (data.nodes && data.connections) {
+    const nodes = data.nodes;
+    const connections = data.connections;
+
+    // Find the root node (usually 'start' type or first node)
+    let rootNode = nodes.find((n: any) => n.type === 'start') || nodes[0];
+    if (!rootNode) return null;
+
+    // Build children for each node based on connections
+    const buildChildren = (nodeId: string): DecisionTreeNode[] => {
+      const outgoingConnections = connections.filter((conn: any) => conn.from === nodeId);
+      return outgoingConnections.map((conn: any) => {
+        const childNode = nodes.find((n: any) => n.id === conn.to);
+        if (!childNode) return null;
+
+        const convertedChild: DecisionTreeNode = {
+          id: childNode.id,
+          label: childNode.label,
+          type: mapNodeType(childNode.type),
+          condition: childNode.condition,
+          action: childNode.action,
+          guidelines_reference: childNode.guidelines_reference,
+          children: buildChildren(childNode.id)
+        };
+
+        return convertedChild;
+      }).filter(Boolean) as DecisionTreeNode[];
+    };
+
+    const rootTreeNode: DecisionTreeNode = {
+      id: rootNode.id,
+      label: rootNode.label,
+      type: mapNodeType(rootNode.type),
+      condition: rootNode.condition,
+      action: rootNode.action,
+      guidelines_reference: rootNode.guidelines_reference,
+      children: buildChildren(rootNode.id)
+    };
+
+    return rootTreeNode;
+  }
+
+  return null;
+}
+
+// Map node types to expected types
+function mapNodeType(type: string): 'condition' | 'action' | 'outcome' {
+  switch (type) {
+    case 'start':
+    case 'action':
+      return 'action';
+    case 'decision':
+      return 'condition';
+    case 'end':
+    case 'outcome':
+      return 'outcome';
+    default:
+      return 'action';
+  }
+}
 
 // Simple tree renderer (could be replaced with more sophisticated visualization)
 function renderSimpleTree(
@@ -63,8 +145,8 @@ function renderNode(
   nodeContent.className = getNodeClassName(node.type);
   nodeContent.innerHTML = `
     <div class="node-label">${node.label}</div>
-    ${node.action ? `<div class="node-action">${node.action}</div>` : ''}
-    ${node.condition ? `<div class="node-condition">${node.condition}</div>` : ''}
+    ${node.action ? `<div class="node-action">Action: ${node.action}</div>` : ''}
+    ${node.condition ? `<div class="node-condition">Condition: ${node.condition}</div>` : ''}
     ${node.guidelines_reference ? `<div class="node-reference">📋 ${node.guidelines_reference}</div>` : ''}
   `;
   
