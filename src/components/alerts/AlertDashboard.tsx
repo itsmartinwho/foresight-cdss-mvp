@@ -42,7 +42,8 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'severity' | 'type'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'severity'>('date');
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const [alertsService] = useState(() => new UnifiedAlertsService());
 
   
@@ -370,21 +371,43 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
 
     // Apply sorting
     filtered.sort((a, b) => {
+      let comparison = 0;
+      
       switch (sortBy) {
         case 'date':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          comparison = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          break;
         case 'severity':
           const severityOrder = { [AlertSeverity.CRITICAL]: 3, [AlertSeverity.WARNING]: 2, [AlertSeverity.INFO]: 1 };
-          return severityOrder[b.severity] - severityOrder[a.severity];
-        case 'type':
-          return a.alertType.localeCompare(b.alertType);
+          comparison = severityOrder[b.severity] - severityOrder[a.severity];
+          break;
         default:
           return 0;
       }
+      
+      // Apply sort direction
+      return sortDirection === 'desc' ? comparison : -comparison;
     });
 
     setFilteredAlerts(filtered);
-  }, [alerts, selectedType, sortBy]);
+  }, [alerts, selectedType, sortBy, sortDirection]);
+
+  const handleSortChange = (newSortBy: 'date' | 'severity') => {
+    if (sortBy === newSortBy) {
+      // Toggle direction if same sort type
+      setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+    } else {
+      // Change sort type and reset to descending
+      setSortBy(newSortBy);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortLabel = (sortType: 'date' | 'severity') => {
+    const direction = sortBy === sortType ? (sortDirection === 'desc' ? '↓' : '↑') : '';
+    const label = sortType === 'date' ? 'Date' : 'Severity';
+    return `${label} ${direction}`;
+  };
 
   const getAlertTypeIcon = (type: AlertType) => {
     const config = alertTypeConfig[type];
@@ -422,12 +445,11 @@ export const AlertDashboard: React.FC<AlertDashboardProps> = ({
               <div className="ml-4">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date' | 'severity' | 'type')}
+                  onChange={(e) => handleSortChange(e.target.value as 'date' | 'severity')}
                   className="px-2 py-1 border border-gray-200 rounded text-xs bg-white"
                 >
-                  <option value="date">Sort by Date</option>
-                  <option value="severity">Sort by Severity</option>
-                  <option value="type">Sort by Type</option>
+                  <option value="date">{getSortLabel('date')}</option>
+                  <option value="severity">{getSortLabel('severity')}</option>
                 </select>
               </div>
             </div>
