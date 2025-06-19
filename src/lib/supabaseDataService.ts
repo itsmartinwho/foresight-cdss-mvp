@@ -153,6 +153,9 @@ class SupabaseDataService {
               transcript: row.transcript,
               soapNote: row.soap_note,
               treatments: row.treatments || undefined,
+              // === Rich content fields ===
+              diagnosis_rich_content: row.diagnosis_rich_content || undefined,
+              treatments_rich_content: row.treatments_rich_content || undefined,
               priorAuthJustification: row.prior_auth_justification,
               isDeleted: !!row.is_deleted,
               deletedAt: row.updated_at && row.is_deleted ? new Date(row.updated_at).toISOString() : undefined,
@@ -399,7 +402,10 @@ class SupabaseDataService {
           transcript: row.transcript,
           observations: row.observations || undefined,
           soapNote: row.soap_note,
-          treatments: row.treatments || undefined, 
+          treatments: row.treatments || undefined,
+          // === Rich content fields ===
+          diagnosis_rich_content: row.diagnosis_rich_content || undefined,
+          treatments_rich_content: row.treatments_rich_content || undefined,
           priorAuthJustification: row.prior_auth_justification,
           insuranceStatus: row.insurance_status,
           isDeleted: !!row.is_deleted, 
@@ -1363,6 +1369,9 @@ class SupabaseDataService {
       observations: row.observations || undefined,
       soapNote: row.soap_note,
       treatments: row.treatments || undefined,
+      // === Rich content fields ===
+      diagnosis_rich_content: row.diagnosis_rich_content || undefined,
+      treatments_rich_content: row.treatments_rich_content || undefined,
       priorAuthJustification: row.prior_auth_justification,
       insuranceStatus: row.insurance_status,
       isDeleted: !!row.is_deleted,
