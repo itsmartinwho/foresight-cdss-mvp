@@ -1571,7 +1571,7 @@ export default function ConsultationPanel({
                           content={diagnosisRichContent.content}
                           onSave={diagnosisRichContent.saveContent}
                           isDemo={isDemoMode}
-                          label="Diagnosis"
+                          label={isDemoMode ? "" : "Diagnosis"}
                         />
                       ) : diagnosisRichContent.isLoading ? (
                         <div className="flex items-center justify-center flex-1">
