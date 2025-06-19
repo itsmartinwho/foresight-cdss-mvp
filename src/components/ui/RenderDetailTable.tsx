@@ -17,7 +17,7 @@ export default function RenderDetailTable({ title, dataArray, headers, columnAcc
 }) {
   const rows = Array.isArray(dataArray) ? dataArray : [];
   if (rows.length === 0) {
-    return <p className="text-base text-muted-foreground/70 mt-1">No {title.toLowerCase()} data available</p>;
+    return <p className="text-xs text-muted-foreground/70 mt-1">No {title.toLowerCase()} data available</p>;
   }
   const displayHeaders = headers;
   const accessors = columnAccessors || headers.map(h => h.toLowerCase().replace(/\s+/g, ''));
@@ -25,7 +25,7 @@ export default function RenderDetailTable({ title, dataArray, headers, columnAcc
   return (
     <div className="mt-2">
       <h4 className="text-lg font-medium text-foreground mb-2">{title}</h4>
-      <Table className="text-base mobile-card:block sm:table">
+      <Table className="text-xs mobile-card:block sm:table">
         <TableHeader className="mobile-card:hidden sm:table-header-group">
           <TableRow>
             {displayHeaders.map(header => <TableHead key={header}>{header}</TableHead>)}

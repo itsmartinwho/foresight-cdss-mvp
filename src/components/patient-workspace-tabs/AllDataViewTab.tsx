@@ -107,7 +107,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
       {/* Demographics */}
       <div className="glass-dense rounded-lg p-4">
         <h2 className="text-xl font-semibold text-foreground mb-3">Patient Demographics</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-base">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           {Object.entries(patient).map(([key, value]) => (
             (typeof value !== 'object' || value === null) && (
               <div key={key} className="flex flex-col sm:flex-row sm:gap-2">
@@ -140,7 +140,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <span className="font-medium text-muted-foreground">Actual Start:</span>
                   <span className="ml-2 text-foreground">
@@ -158,14 +158,14 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
               {encounter.transcript && (
                 <div className="bg-white/5 border border-white/10 rounded-lg p-3">
                   <h4 className="text-lg font-medium text-foreground mb-2">Transcript</h4>
-                                      <pre className="whitespace-pre-wrap text-base text-foreground">{encounter.transcript}</pre>
+                                      <pre className="whitespace-pre-wrap text-xs text-foreground">{encounter.transcript}</pre>
                 </div>
               )}
 
               {encounter.soapNote && (
                 <div className="bg-white/5 border border-white/10 rounded-lg p-3">
                   <h4 className="text-lg font-medium text-foreground mb-2">SOAP Note</h4>
-                                      <pre className="whitespace-pre-wrap text-base text-foreground">{encounter.soapNote}</pre>
+                                      <pre className="whitespace-pre-wrap text-xs text-foreground">{encounter.soapNote}</pre>
                 </div>
               )}
 
@@ -178,7 +178,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
           );
         })}
         {encounters.filter(ew => !ew.encounter.isDeleted).length === 0 && (
-          <p className="text-base text-muted-foreground/70 text-center py-8">No active encounter history for this patient</p>
+          <p className="text-xs text-muted-foreground/70 text-center py-8">No active encounter history for this patient</p>
         )}
       </div>
 

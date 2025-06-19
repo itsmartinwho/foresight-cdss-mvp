@@ -274,7 +274,7 @@ export function EditableTable({
                   <div className="col-span-5">Rationale</div>
                 </div>
                 {normalizedTreatments.map((treatment, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-4 text-base">
+                  <div key={index} className="grid grid-cols-12 gap-4 text-xs">
                     <div className="col-span-4 font-medium">
                       {treatment.drug || 'No medication specified'}
                     </div>
@@ -296,7 +296,7 @@ export function EditableTable({
                 ))}
               </div>
             ) : (
-              <p className="text-base text-muted-foreground/70 text-center py-8">
+              <p className="text-xs text-muted-foreground/70 text-center py-8">
                 No treatments recorded
               </p>
             )}
