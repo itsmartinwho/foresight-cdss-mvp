@@ -26,15 +26,21 @@ export const useRichContentEditor = ({
   onError
 }: UseRichContentEditorProps): UseRichContentEditorReturn => {
   const [content, setContent] = useState<RichContent | null>(initialContent || null);
-  const [isLoading, setIsLoading] = useState(!initialContent);
+  const [isLoading, setIsLoading] = useState(Boolean(encounterId) && !initialContent);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   
   const supabase = getSupabaseClient();
 
-  // Load initial content if not provided
+  // Load initial content if needed. If no encounterId (demo mode), ensure we are not stuck in loading state.
   useEffect(() => {
-    if (!initialContent && encounterId) {
+    if (!encounterId) {
+      // No database source → immediately mark as not loading
+      setIsLoading(false);
+      return;
+    }
+
+    if (!initialContent) {
       loadContent();
     }
   }, [encounterId, initialContent]);

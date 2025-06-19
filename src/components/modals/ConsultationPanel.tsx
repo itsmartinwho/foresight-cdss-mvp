@@ -29,6 +29,7 @@ import { SOAPNotesPanel } from '@/components/soap/SOAPNotesPanel';
 import { DraggableModalWrapper } from '@/components/ui/draggable-modal-wrapper';
 import { ModalDragAndMinimizeConfig } from '@/types/modal';
 import { saveConsultationDraft, loadConsultationDraft, clearConsultationDraft } from '@/lib/consultationDraftStore';
+import { DemoDataService } from '@/services/demo/DemoDataService';
 
 interface ConsultationPanelProps {
   /** Controls open state from parent */
@@ -197,13 +198,15 @@ export default function ConsultationPanel({
   const diagnosisRichContent = useRichContentEditor({
     encounterId: isDemoMode ? '' : (encounter?.id || ''),
     contentType: 'diagnosis',
-    onError: handleDiagnosisError
+    onError: handleDiagnosisError,
+    initialContent: isDemoMode ? DemoDataService.getDemoRichDiagnosisContent() : undefined
   });
   
   const treatmentRichContent = useRichContentEditor({
     encounterId: isDemoMode ? '' : (encounter?.id || ''),
     contentType: 'treatments', 
-    onError: handleTreatmentError
+    onError: handleTreatmentError,
+    initialContent: isDemoMode ? DemoDataService.getDemoRichTreatmentContent() : undefined
   });
   
   // Transcription state and refs

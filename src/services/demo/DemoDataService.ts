@@ -150,29 +150,34 @@ P:
 • New glucometer and diabetes education before discharge`,
   treatments: [
     { 
-      drug: "Discontinue glyburide immediately", 
+      drug: "Discontinue warfarin immediately", 
       status: "Discontinued", 
-      rationale: "High risk drug interaction with warfarin causing increased bleeding risk" 
+      rationale: "Immediate cessation of warfarin is essential to stop further anticoagulation contributing to bleeding" 
     },
     { 
-      drug: "Continue metformin 1000mg twice daily", 
-      status: "Continued", 
-      rationale: "Well-tolerated first-line diabetes medication, safer with anticoagulation" 
+      drug: "Vitamin K (Phytonadione) 5-10 mg IV once", 
+      status: "Prescribed", 
+      rationale: "Rapidly reverses warfarin effect by restoring vitamin K-dependent clotting factors; IV route preferred for serious bleeding due to faster onset" 
     },
     { 
-      drug: "Start insulin glargine 10 units subcutaneous daily", 
-      status: "New prescription", 
-      rationale: "Long-acting insulin for better glucose control without warfarin interaction" 
+      drug: "4-factor Prothrombin Complex Concentrates (PCC) 25-50 units/kg IV once", 
+      status: "Prescribed", 
+      rationale: "Provides rapid replacement of vitamin K-dependent factors II, VII, IX, and X for prompt reversal of anticoagulation; preferred over FFP due to faster INR correction and lower infusion volume" 
     },
     { 
-      drug: "Normal saline IV at 100 mL/hour", 
-      status: "Inpatient", 
-      rationale: "Correct dehydration and orthostatic hypotension" 
+      drug: "Fresh Frozen Plasma (FFP) 10-15 mL/kg IV if PCC unavailable", 
+      status: "Alternative", 
+      rationale: "Alternative coagulation factor replacement; slower onset and requires large volume infusion; carries risk of volume overload" 
     },
     { 
-      drug: "Hold warfarin pending INR results", 
-      status: "Held temporarily", 
-      rationale: "Evaluate current anticoagulation level due to bleeding symptoms" 
+      drug: "Hold glyburide immediately", 
+      status: "Discontinued", 
+      rationale: "Glyburide potentiates bleeding risk by interaction with warfarin and causes hypoglycemia; hold to prevent further adverse effects" 
+    },
+    { 
+      drug: "Supportive care as clinically indicated", 
+      status: "Ongoing", 
+      rationale: "Maintain hemodynamic stability with fluids and blood transfusions as needed; localized hemostasis if applicable" 
     }
   ]
 };
@@ -180,8 +185,8 @@ P:
 const dorothyRobinsonDiagnosisJSON: DemoDiagnosisData = {
   patientId: DEMO_PATIENT_ID,
   encounterId: DEMO_ENCOUNTER_ID,
-  code: "E11.9",
-  description: "Type 2 diabetes mellitus without complications, currently poorly controlled with drug interaction requiring medication adjustment and monitoring"
+  code: "D68.32",
+  description: "Warfarin-induced hemorrhagic disorder with bleeding tendency requiring immediate anticoagulation reversal and medication adjustment"
 };
 
 export const demoEncounterData: DemoEncounterData = {
@@ -391,33 +396,40 @@ export class DemoDataService {
       content_type: 'text/markdown',
       text_content: `# Primary Diagnosis
 
-## Type 2 Diabetes Mellitus, Poorly Controlled (E11.9)
+## Warfarin-induced Hemorrhagic Disorder (D68.32)
 
 **Clinical Presentation:**
-- Polyuria and polydipsia consistent with hyperglycemia
-- Orthostatic hypotension secondary to dehydration
-- Poor glycemic monitoring due to broken glucometer
+- Easy bruising and prolonged nosebleed episodes
+- Orthostatic hypotension with symptomatic dizziness
+- Multiple small bruises on bilateral arms without trauma history
+- No recent INR monitoring for 2 months
 
 **Contributing Factors:**
-- Drug interaction: Glyburide + Warfarin increasing bleeding risk
-- Lack of blood glucose monitoring for 1 month
-- Possible medication non-adherence
+- Recent addition of glyburide (3 weeks ago) increasing warfarin potency
+- Drug interaction: Glyburide + Warfarin significantly increases bleeding risk
+- Lack of anticoagulation monitoring for extended period
+- Possible warfarin over-anticoagulation
 
 **Complications:**
-- Dehydration with orthostatic changes
-- Increased bleeding risk from drug interaction
-- Poor diabetes control without monitoring
+- Active bleeding tendency with high hemorrhage risk
+- Drug interaction requiring immediate medication discontinuation
+- Need for urgent anticoagulation reversal
 
 ## Secondary Diagnoses
 
-### Drug Interaction (High Priority)
-- **Medications:** Glyburide and Warfarin
-- **Risk Level:** High - increased bleeding complications
-- **Action Required:** Immediate medication adjustment
+### Warfarin-induced Over-anticoagulation with Bleeding Tendency
+- **Risk Level:** High - immediate intervention required
+- **Clinical Signs:** Easy bruising, prolonged bleeding, orthostatic changes
+- **Action Required:** Immediate warfarin discontinuation and reversal
 
-### History of Acute Myelomonocytic Leukemia
+### Hypoglycemia due to Sulfonylurea (Glyburide) Use
+- **Risk Level:** High - compounded by drug interaction
+- **Clinical Signs:** Dizziness, orthostatic hypotension on standing
+- **Action Required:** Immediate glyburide discontinuation
+
+### History of Acute Myelomonocytic Leukemia in Remission
 - **Status:** Complete remission
-- **Relevance:** Affects bleeding risk assessment and infection monitoring
+- **Relevance:** Affects bleeding risk assessment and requires careful monitoring for cytopenias
 - **Guidelines Reference:** NCCN 2024 Survivorship Guidelines`,
       rich_elements: [],
       created_at: new Date().toISOString(),
