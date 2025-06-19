@@ -18,6 +18,8 @@ import {
   SOAPNoteEditor, 
   TranscriptEditorModal 
 } from '@/components/ui/editable';
+import PriorAuthorizationForm from '@/components/forms/PriorAuthorizationForm';
+import ReferralForm from '@/components/forms/ReferralForm';
 import { useEditableEncounterFields } from '@/hooks/useEditableEncounterFields';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { toast } from '@/hooks/use-toast';
@@ -301,59 +303,94 @@ export default function ConsolidatedConsultationTab({
       </Card>
 
       {/* Prior Authorization */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-foreground">Prior Authorization</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Patient Name</label>
-                <Input disabled value={`${patient.name || 'N/A'}`} className="bg-white/5" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Date of Birth</label>
-                <Input disabled value={`${patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : 'N/A'}`} className="bg-white/5" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Medication / Treatment</label>
-                <Input disabled value={medicationForAuth} className="bg-white/5" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Diagnosis (Description)</label>
-                <Input disabled value={diagnosisForAuth} className="bg-white/5" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Diagnosis (ICD-10 Code)</label>
-                <Input disabled value={diagnosisCodeForAuth} className="bg-white/5" />
-              </div>
-            </div>
+      <PriorAuthorizationForm
+        patient={patient}
+        encounter={selectedEncounter}
+        diagnoses={diagnoses}
+        onSave={async (formData) => {
+          try {
+            const response = await fetch('/api/forms/prior-auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'save', formData })
+            });
+            
+            if (!response.ok) throw new Error('Failed to save form');
+            
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Save failed');
+            
+            // Update the encounter with relevant form data
+            await updateField('priorAuthJustification', formData.clinicalJustification);
+            
+          } catch (error) {
+            console.error('Error saving prior auth form:', error);
+            throw error;
+          }
+        }}
+        onGeneratePDF={async (formData) => {
+          try {
+            const response = await fetch('/api/forms/prior-auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'generate-pdf', formData })
+            });
+            
+            if (!response.ok) throw new Error('Failed to generate PDF');
+            
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'PDF generation failed');
+            
+          } catch (error) {
+            console.error('Error generating prior auth PDF:', error);
+            throw error;
+          }
+        }}
+      />
 
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">Clinical Justification</label>
-              <EditableTextField
-                value={selectedEncounter.priorAuthJustification || ''}
-                onSave={(value) => updateField('priorAuthJustification', value)}
-                placeholder="Enter clinical justification for prior authorization..."
-                multiline
-                displayClassName="text-sm"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" size="sm">
-                <FileText className="h-4 w-4 mr-2" />
-                Generate Prior Auth Document
-              </Button>
-              <Button variant="outline" size="sm">
-                <FileText className="h-4 w-4 mr-2" />
-                Generate Referral
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Referral */}
+      <ReferralForm
+        patient={patient}
+        encounter={selectedEncounter}
+        diagnoses={diagnoses}
+        labResults={labResults}
+        onSave={async (formData) => {
+          try {
+            const response = await fetch('/api/forms/referral', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'save', formData })
+            });
+            
+            if (!response.ok) throw new Error('Failed to save form');
+            
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Save failed');
+            
+          } catch (error) {
+            console.error('Error saving referral form:', error);
+            throw error;
+          }
+        }}
+        onGeneratePDF={async (formData) => {
+          try {
+            const response = await fetch('/api/forms/referral', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'generate-pdf', formData })
+            });
+            
+            if (!response.ok) throw new Error('Failed to generate PDF');
+            
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'PDF generation failed');
+            
+          } catch (error) {
+            console.error('Error generating referral PDF:', error);
+            throw error;
+          }
+        }}
+      />
 
       {/* Clinical Trials */}
       <Card>

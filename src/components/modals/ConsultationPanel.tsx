@@ -101,9 +101,9 @@ export default function ConsultationPanel({
   selectedEncounter,
   autoStartTranscription = false,
 }: ConsultationPanelProps) {
-  // Debug demo mode detection
+  // Debug demo mode detection - only log when demo mode actually changes
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isDemoMode) {
       console.log('[ConsultationPanel] Demo mode detection:', {
         isDemoMode,
         patientId: patient?.id,
@@ -113,7 +113,7 @@ export default function ConsultationPanel({
         hasOnClickHandler: !!onDemoClinicalPlanClick
       });
     }
-  }, [isOpen, isDemoMode, patient?.id, initialDemoTranscript, demoDiagnosis, demoTreatment, onDemoClinicalPlanClick]);
+  }, [isOpen, isDemoMode]); // Remove frequently changing dependencies
   const { toast } = useToast();
   const demoState = useDemo();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
