@@ -1,5 +1,5 @@
 // Demo Data Service - Contains all demo-specific data and logic
-import { Patient, ComplexCaseAlert, SoapNote } from '@/lib/types';
+import { Patient, ComplexCaseAlert, SoapNote, RichContent } from '@/lib/types';
 
 export interface DemoTreatmentData {
   drug: string;
@@ -233,6 +233,195 @@ export class DemoDataService {
       plan: "Immediate management:\n• Admit to medical ward for observation and medication optimization\n• STAT laboratory studies: BMP, HbA1c, PT/INR, CBC with differential\n• IV hydration with normal saline at 100 mL/hour\n• Fingerstick glucose monitoring every 6 hours\n• Strict intake and output monitoring\n\nMedication management:\n• HOLD glyburide immediately due to warfarin interaction and bleeding risk\n• Continue metformin 1000mg BID if kidney function normal\n• HOLD warfarin pending INR results and bleeding assessment\n• Start sliding scale insulin if glucose >250 mg/dL\n• Consider insulin glargine once glucose patterns established\n\nDiagnostic monitoring:\n• Monitor for signs of bleeding (hemoglobin, hematocrit trends)\n• Orthostatic vital signs every 8 hours\n• Daily weights and fluid balance assessment\n• Glucose monitoring q6h until stable\n• Repeat INR in 24 hours after holding warfarin\n\nConsultations:\n• Endocrinology for diabetes management optimization\n• Hematology if INR significantly elevated or bleeding worsens\n• Pharmacy for medication reconciliation and interaction review\n• Diabetes educator for glucometer training and education\n\nPatient education:\n• Drug interaction awareness between glyburide and warfarin\n• Importance of regular INR monitoring on warfarin\n• Signs and symptoms of bleeding to report immediately\n• Diabetes management and importance of regular monitoring\n• Proper use of glucometer and when to check blood sugars\n\nDischarge planning:\n• Patient may be discharged when glucose stable, orthostatic symptoms resolved\n• INR in therapeutic range or bleeding risk minimized\n• New glucometer provided with education completed\n• Medication reconciliation completed with safer alternatives\n• Follow-up appointments: Primary care in 1 week, Endocrine in 2 weeks\n• Return precautions for bleeding, severe hypoglycemia, or uncontrolled hyperglycemia\n\nLong-term management:\n• Establish regular endocrinology follow-up for diabetes management\n• Consider diabetes education classes for comprehensive management\n• Regular INR monitoring per anticoagulation clinic\n• Annual ophthalmology and podiatry screening for diabetes complications\n• Continued monitoring of leukemia remission status with oncology",
       
       rawTranscriptSnippet: "Well, I'm taking metformin 1000mg twice a day, and my family doctor just started me on glyburide about three weeks ago. Oh, and I'm also taking warfarin because I had that blood clot last year."
+    };
+  }
+
+  static getDemoRichTreatmentContent(): RichContent {
+    return {
+      content_type: 'text/markdown',
+      text_content: `# Comprehensive Treatment Plan
+
+## Primary Medications
+
+### Insulin Glargine 10 units daily
+- **Indication:** Type 2 diabetes mellitus, poorly controlled
+- **Rationale:** Long-acting insulin provides consistent glucose control without warfarin interaction risk
+- **Monitoring:** Daily fasting glucose, weekly HbA1c trends
+- **Guidelines Reference:** ADA 2024 Standards of Care - Insulin therapy for T2DM
+
+### Metformin 1000mg twice daily (Continue)
+- **Indication:** First-line diabetes management
+- **Rationale:** Well-tolerated, no bleeding risk with anticoagulation
+- **Monitoring:** Quarterly kidney function, annual B12 levels
+- **Guidelines Reference:** ADA 2024 - Metformin as first-line therapy
+
+## Discontinued Medications
+
+### Glyburide (DISCONTINUED)
+- **Reason:** High-risk drug interaction with warfarin
+- **Risk:** Increased bleeding complications
+- **Alternative:** Replaced with insulin therapy
+
+## Non-Pharmacological Interventions
+
+- Diabetes self-management education and support (DSMES)
+- Nutritional counseling for carbohydrate counting
+- Blood glucose monitoring education with new glucometer
+- Orthostatic precautions and fall prevention
+
+## Follow-up Plan
+
+**Timeline:** 48-72 hours post-discharge
+
+**Monitoring Parameters:**
+- Daily fingerstick glucose logs
+- Weekly weight checks
+- INR monitoring per primary care schedule
+- Watch for signs of bleeding or bruising
+
+**Reassessment Criteria:**
+- Persistent hyperglycemia >250 mg/dL
+- New bleeding episodes
+- Orthostatic symptoms despite medication changes`,
+      rich_elements: [
+        {
+          id: 'decision_tree_diabetes_warfarin',
+          type: 'decision_tree',
+          data: {
+            title: 'Diabetes Management with Anticoagulation',
+            description: 'Clinical decision pathway for managing diabetes in patients on warfarin therapy',
+            nodes: [
+              {
+                id: 'start',
+                type: 'start',
+                label: 'Patient with T2DM on Warfarin',
+                position: { x: 0, y: 0 }
+              },
+              {
+                id: 'assess_current_meds',
+                type: 'decision',
+                label: 'Assess Current Diabetes Medications',
+                condition: 'Is patient on glyburide or sulfonylurea?',
+                position: { x: 0, y: 100 }
+              },
+              {
+                id: 'high_risk_combo',
+                type: 'action',
+                label: 'HIGH RISK: Discontinue glyburide immediately',
+                action: 'Switch to insulin or metformin',
+                position: { x: -150, y: 200 }
+              },
+              {
+                id: 'safe_combo',
+                type: 'action',
+                label: 'Continue current regimen',
+                action: 'Monitor glucose and INR regularly',
+                position: { x: 150, y: 200 }
+              },
+              {
+                id: 'insulin_initiation',
+                type: 'action',
+                label: 'Initiate insulin therapy',
+                action: 'Start glargine 10 units daily',
+                position: { x: -150, y: 300 }
+              },
+              {
+                id: 'monitor_response',
+                type: 'decision',
+                label: 'Monitor Treatment Response',
+                condition: 'Glucose controlled AND no bleeding?',
+                position: { x: 0, y: 400 }
+              },
+              {
+                id: 'success',
+                type: 'end',
+                label: 'Continue current plan with regular monitoring',
+                position: { x: -100, y: 500 }
+              },
+              {
+                id: 'adjust',
+                type: 'action',
+                label: 'Adjust medications',
+                action: 'Consult endocrinology or hematology',
+                position: { x: 100, y: 500 }
+              }
+            ],
+            connections: [
+              { from: 'start', to: 'assess_current_meds' },
+              { from: 'assess_current_meds', to: 'high_risk_combo', condition: 'YES' },
+              { from: 'assess_current_meds', to: 'safe_combo', condition: 'NO' },
+              { from: 'high_risk_combo', to: 'insulin_initiation' },
+              { from: 'safe_combo', to: 'monitor_response' },
+              { from: 'insulin_initiation', to: 'monitor_response' },
+              { from: 'monitor_response', to: 'success', condition: 'YES' },
+              { from: 'monitor_response', to: 'adjust', condition: 'NO' }
+            ],
+            guidelines_references: [
+              'ADA 2024 Standards of Medical Care in Diabetes',
+              'ACC/AHA 2019 Guideline on Primary Prevention',
+              'Beers Criteria 2023 - Drug interactions in elderly'
+            ]
+          },
+          position: 1,
+          editable: false
+        },
+        {
+          id: 'medication_table',
+          type: 'table',
+          data: {
+            title: 'Medication Interaction Assessment',
+            headers: ['Medication', 'Interaction Level', 'Clinical Action', 'Monitoring'],
+            rows: [
+              ['Glyburide + Warfarin', 'HIGH RISK', 'Discontinue immediately', 'Watch for bleeding'],
+              ['Metformin + Warfarin', 'Low Risk', 'Continue therapy', 'Routine monitoring'],
+              ['Insulin + Warfarin', 'No Interaction', 'Safe to use', 'Glucose monitoring']
+            ]
+          },
+          position: 2,
+          editable: true
+        }
+      ],
+      created_at: new Date().toISOString(),
+      version: '1.0'
+    };
+  }
+
+  static getDemoRichDiagnosisContent(): RichContent {
+    return {
+      content_type: 'text/markdown',
+      text_content: `# Primary Diagnosis
+
+## Type 2 Diabetes Mellitus, Poorly Controlled (E11.9)
+
+**Clinical Presentation:**
+- Polyuria and polydipsia consistent with hyperglycemia
+- Orthostatic hypotension secondary to dehydration
+- Poor glycemic monitoring due to broken glucometer
+
+**Contributing Factors:**
+- Drug interaction: Glyburide + Warfarin increasing bleeding risk
+- Lack of blood glucose monitoring for 1 month
+- Possible medication non-adherence
+
+**Complications:**
+- Dehydration with orthostatic changes
+- Increased bleeding risk from drug interaction
+- Poor diabetes control without monitoring
+
+## Secondary Diagnoses
+
+### Drug Interaction (High Priority)
+- **Medications:** Glyburide and Warfarin
+- **Risk Level:** High - increased bleeding complications
+- **Action Required:** Immediate medication adjustment
+
+### History of Acute Myelomonocytic Leukemia
+- **Status:** Complete remission
+- **Relevance:** Affects bleeding risk assessment and infection monitoring
+- **Guidelines Reference:** NCCN 2024 Survivorship Guidelines`,
+      rich_elements: [],
+      created_at: new Date().toISOString(),
+      version: '1.0'
     };
   }
 } 
