@@ -102,7 +102,7 @@ export default function DifferentialDiagnosesList({
         <div className="flex flex-col items-center space-y-3">
           <Stethoscope className="h-8 w-8 text-muted-foreground" />
           <div className="text-center">
-            <p className="text-sm font-medium text-muted-foreground">No differential diagnoses recorded for this consultation</p>
+            <p className="text-base text-muted-foreground/70">No differential diagnoses recorded for this consultation</p>
             <p className="text-xs text-muted-foreground mt-1">
               Differential diagnoses will appear here once the clinical engine processes the consultation
             </p>

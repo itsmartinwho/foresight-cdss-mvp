@@ -125,7 +125,7 @@ export default function ConsolidatedConsultationTab({
       {/* Encounter Header */}
       <div className="glass-dense rounded-lg p-6 space-y-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-xl font-semibold text-foreground">
             Consultation Details
           </h2>
           <span className="text-sm text-muted-foreground font-mono">
@@ -192,7 +192,7 @@ export default function ConsolidatedConsultationTab({
       {/* Summary Notes (SOAP Notes) */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
             Summary Notes
             <div className="flex gap-2">
               {selectedEncounter.transcript && (
@@ -220,7 +220,7 @@ export default function ConsolidatedConsultationTab({
       {/* Diagnosis */}
       <Card>
         <CardHeader>
-          <CardTitle>Diagnosis</CardTitle>
+          <CardTitle className="text-xl font-semibold text-foreground">Diagnosis</CardTitle>
         </CardHeader>
         <CardContent>
           {diagnoses.length > 0 ? (
@@ -230,7 +230,7 @@ export default function ConsolidatedConsultationTab({
                   {/* Full Diagnosis Description - prominently displayed */}
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Diagnosis</h4>
-                    <p className="text-lg font-semibold text-foreground leading-relaxed">
+                    <p className="text-base leading-relaxed">
                       {dx.description || "No description available"}
                     </p>
                   </div>
@@ -250,11 +250,11 @@ export default function ConsolidatedConsultationTab({
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground italic">No final diagnosis recorded for this consultation.</p>
+            <p className="text-base text-muted-foreground/70">No final diagnosis recorded for this consultation</p>
           )}
           
           <div className="mt-6 pt-6 border-t border-border/50">
-             <h3 className="text-base font-semibold text-foreground mb-4">Differential Diagnoses</h3>
+             <h3 className="text-lg font-medium text-foreground mb-4">Differential Diagnoses</h3>
              <DifferentialDiagnosesList
                 diagnoses={differentialDiagnoses}
                 isLoading={isLoadingDifferentials}
@@ -278,7 +278,7 @@ export default function ConsolidatedConsultationTab({
       {/* Labs */}
       <Card>
         <CardHeader>
-          <CardTitle>Laboratory Results</CardTitle>
+          <CardTitle className="text-xl font-semibold text-foreground">Laboratory Results</CardTitle>
         </CardHeader>
         <CardContent>
           {labResults.length > 0 ? (
@@ -289,7 +289,7 @@ export default function ConsolidatedConsultationTab({
               columnAccessors={['name', 'value', 'units', 'dateTime', 'referenceRange', 'flag']} 
             />
           ) : (
-            <p className="text-muted-foreground italic">No lab results recorded for this consultation.</p>
+            <p className="text-base text-muted-foreground/70">No lab results recorded for this consultation</p>
           )}
         </CardContent>
       </Card>
@@ -297,7 +297,7 @@ export default function ConsolidatedConsultationTab({
       {/* Prior Authorization */}
       <Card>
         <CardHeader>
-          <CardTitle>Prior Authorization</CardTitle>
+          <CardTitle className="text-xl font-semibold text-foreground">Prior Authorization</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -351,7 +351,7 @@ export default function ConsolidatedConsultationTab({
       {/* Clinical Trials */}
       <Card>
         <CardHeader>
-          <CardTitle>Clinical Trials</CardTitle>
+          <CardTitle className="text-xl font-semibold text-foreground">Clinical Trials</CardTitle>
         </CardHeader>
         <CardContent>
           {trialRows.length > 0 ? (
@@ -363,8 +363,8 @@ export default function ConsolidatedConsultationTab({
             />
           ) : (
             <div className="text-center space-y-2 py-8">
-              <p className="text-muted-foreground">No clinical trial information available for this patient.</p>
-              <p className="text-sm text-muted-foreground/60">Trial recommendations will appear here based on patient diagnosis and treatment history.</p>
+              <p className="text-base text-muted-foreground/70">No clinical trial information available for this patient</p>
+              <p className="text-sm text-muted-foreground/60">Trial recommendations will appear here based on patient diagnosis and treatment history</p>
             </div>
           )}
         </CardContent>
@@ -383,15 +383,15 @@ export default function ConsolidatedConsultationTab({
 
       {/* Danger Zone */}
       <div className="space-y-4 pt-6 mt-6 border-t border-destructive/20">
-        <h2 className="text-lg font-semibold text-destructive">Danger Zone</h2>
+        <h2 className="text-xl font-semibold text-destructive">Danger Zone</h2>
         <div className="bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors rounded-lg p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-foreground">
+              <h3 className="text-lg font-medium text-foreground">
                 Delete This Consultation
               </h3>
-              <p className="text-sm text-muted-foreground">
-                This will mark the consultation as deleted. It can be restored later from the &quot;All Data&quot; tab.
+              <p className="text-base text-muted-foreground">
+                This will mark the consultation as deleted. It can be restored later from the &quot;All Data&quot; tab
               </p>
             </div>
             <Button 

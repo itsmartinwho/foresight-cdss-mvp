@@ -173,7 +173,7 @@ export default function SOAPNoteEditor({
         return (
           <Card key={section.id} className="border-l-4 border-l-blue-500">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{section.title}</CardTitle>
+              <CardTitle className="text-lg font-medium text-foreground">{section.title}</CardTitle>
             </CardHeader>
             <CardContent>
               <EditableSection
@@ -205,7 +205,7 @@ export default function SOAPNoteEditor({
                         dangerouslySetInnerHTML={{ __html: section.content }}
                       />
                     ) : (
-                      <p className="text-muted-foreground italic">
+                      <p className="text-base text-muted-foreground/70">
                         No {section.title.toLowerCase()} information recorded
                       </p>
                     )}

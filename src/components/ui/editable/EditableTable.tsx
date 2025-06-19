@@ -142,7 +142,7 @@ export function EditableTable({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
           {label}
           {!isEditing && !disabled && (
             <Button
@@ -296,8 +296,8 @@ export function EditableTable({
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground italic text-center py-8">
-                No treatments recorded. Click Edit to add treatments.
+              <p className="text-base text-muted-foreground/70 text-center py-8">
+                No treatments recorded
               </p>
             )}
           </div>

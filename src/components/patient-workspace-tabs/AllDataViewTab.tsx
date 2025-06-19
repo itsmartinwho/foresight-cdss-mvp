@@ -106,7 +106,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
     <div className="space-y-6 max-h-[calc(100vh-20rem)] overflow-y-auto">
       {/* Demographics */}
       <div className="glass-dense rounded-lg p-4">
-        <h2 className="text-lg font-semibold text-foreground mb-3">Patient Demographics</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-3">Patient Demographics</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
           {Object.entries(patient).map(([key, value]) => (
             (typeof value !== 'object' || value === null) && (
@@ -123,7 +123,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
 
       {/* Active Encounters History */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Encounters History</h2>
+        <h2 className="text-xl font-semibold text-foreground">Encounters History</h2>
         {encounters.filter(ew => !ew.encounter.isDeleted)
           .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
           .map((encounterWrapper: EncounterDetailsWrapper, index: number) => {
@@ -132,7 +132,7 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
           return (
             <div key={encounter.id || index} className="glass-dense rounded-lg p-4 space-y-4">
               <div>
-                <h3 className="text-base font-semibold text-foreground">
+                <h3 className="text-lg font-medium text-foreground">
                   Encounter on {new Date(encounter.scheduledStart).toLocaleDateString()}
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -157,14 +157,14 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
 
               {encounter.transcript && (
                 <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                  <h4 className="font-semibold text-sm text-muted-foreground/80 mb-2">Transcript</h4>
+                  <h4 className="text-lg font-medium text-foreground mb-2">Transcript</h4>
                   <pre className="whitespace-pre-wrap text-xs text-foreground">{encounter.transcript}</pre>
                 </div>
               )}
 
               {encounter.soapNote && (
                 <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                  <h4 className="font-semibold text-sm text-muted-foreground/80 mb-2">SOAP Note</h4>
+                  <h4 className="text-lg font-medium text-foreground mb-2">SOAP Note</h4>
                   <pre className="whitespace-pre-wrap text-xs text-foreground">{encounter.soapNote}</pre>
                 </div>
               )}
@@ -178,14 +178,14 @@ export default function AllDataViewTab({ detailedPatientData, setDetailedPatient
           );
         })}
         {encounters.filter(ew => !ew.encounter.isDeleted).length === 0 && (
-          <p className="text-muted-foreground text-center py-8">No active encounter history for this patient.</p>
+          <p className="text-base text-muted-foreground/70 text-center py-8">No active encounter history for this patient</p>
         )}
       </div>
 
       {/* Deleted Items Section */}
       {deletedEncounters.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-destructive">Deleted Items</h2>
+          <h2 className="text-xl font-semibold text-destructive">Deleted Items</h2>
           {deletedEncounters.map((encounterWrapper: EncounterDetailsWrapper, index: number) => {
             const { encounter } = encounterWrapper;
             return (

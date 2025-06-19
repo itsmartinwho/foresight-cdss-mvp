@@ -82,7 +82,7 @@ export function SOAPSectionEditor({
   return (
     <Card className={cn("border border-border/50", className)}>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between text-sm font-medium">
+        <CardTitle className="flex items-center justify-between text-lg font-medium text-foreground">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold">
               {sectionKey}
@@ -148,8 +148,8 @@ export function SOAPSectionEditor({
               "min-h-[100px] p-3 rounded-md text-sm whitespace-pre-wrap",
               isReadOnly 
                 ? "bg-muted/30 text-foreground" 
-                : "bg-muted/20 hover:bg-muted/30 cursor-pointer border border-transparent hover:border-border/50 transition-colors",
-              !content && "text-muted-foreground italic"
+                :             "bg-muted/20 hover:bg-muted/30 cursor-pointer border border-transparent hover:border-border/50 transition-colors",
+              !content && "text-base text-muted-foreground/70"
             )}
             onClick={!isReadOnly ? handleEdit : undefined}
           >
