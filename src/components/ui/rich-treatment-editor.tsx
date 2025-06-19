@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { TreatmentRenderer } from '../advisor/streaming-markdown/treatment-renderer';
+import { ClinicalGuidelinesIndicator, extractGuidelinesFromRichContent } from '@/components/ui/clinical-guidelines-indicator';
 import { RichContent, RichElement } from '@/lib/types';
 
 interface RichTreatmentEditorProps {
@@ -142,10 +143,20 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
     );
   }
 
+  const guidelines = extractGuidelinesFromRichContent(content);
+
   return (
     <div className="rich-treatment-editor">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">{label}</h3>
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-medium text-gray-900">{label}</h3>
+          {guidelines.length > 0 && (
+            <ClinicalGuidelinesIndicator 
+              guidelines={guidelines} 
+              variant="compact"
+            />
+          )}
+        </div>
         {!isDemo && (
           <button
             onClick={handleStartEdit}
@@ -155,6 +166,16 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
           </button>
         )}
       </div>
+
+      {guidelines.length > 0 && (
+        <div className="mb-4">
+          <ClinicalGuidelinesIndicator 
+            guidelines={guidelines} 
+            variant="detailed"
+            maxDisplay={2}
+          />
+        </div>
+      )}
 
       <TreatmentRenderer
         content={content.text_content}
