@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Patient, DifferentialDiagnosis, SoapNote } from '@/lib/types';
+import { Patient, DifferentialDiagnosis, SoapNote, RichContent } from '@/lib/types';
 import { DEMO_PATIENT_ID, DemoDataService } from '@/services/demo/DemoDataService';
 import { DemoStage } from '@/services/demo/DemoStateService';
 import { getDemoDifferentialDiagnoses } from '@/data/demoClinicalResults';
@@ -11,7 +11,7 @@ export interface DemoConsultationBehavior {
   isDemoMode: boolean;
   initialDemoTranscript?: string;
   demoDiagnosis?: string;
-  demoTreatment?: string;
+  demoTreatment?: RichContent;
   demoDifferentialDiagnoses?: DifferentialDiagnosis[];
   demoSoapNote?: SoapNote;
   isDemoGeneratingPlan?: boolean;
@@ -79,15 +79,15 @@ export function useDemoConsultation({
     }
   };
   
-  // Demo treatment based on stage - use real enriched data
-  const getDemoTreatment = () => {
+  // Demo treatment based on stage - use rich content data
+  const getDemoTreatment = (): RichContent | undefined => {
     if (!isDemoMode) return undefined;
     
     switch (demoStage) {
       case 'showingPlan':
       case 'finished':
-        // Use the real enriched treatment plan from DemoDataService
-        return DemoDataService.getTreatmentPlanText();
+        // Use the rich content from DemoDataService
+        return DemoDataService.getDemoRichTreatmentContent();
       default:
         return undefined;
     }

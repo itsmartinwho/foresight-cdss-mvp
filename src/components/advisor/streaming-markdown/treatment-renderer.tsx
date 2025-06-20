@@ -3,7 +3,7 @@ import { DecisionTreeRenderer } from '../../ui/decision-tree-renderer';
 import { RichContent, RichElement } from '@/lib/types';
 
 interface TreatmentRendererProps {
-  content: string;
+  content: string | any; // Allow string or fallback to any for backwards compatibility
   richContent?: RichContent;
   isStreaming?: boolean;
   onChartDelete?: (chartId: string) => void;
@@ -19,13 +19,16 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
   onContentEdit,
   editable = true
 }) => {
+  // Defensive programming: ensure content is always a string
+  const safeContent = typeof content === 'string' ? content : '';
+  
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(content);
+  const [editContent, setEditContent] = useState(safeContent);
 
   const handleEdit = () => {
     if (!editable) return;
     setIsEditing(true);
-    setEditContent(richContent?.text_content || content);
+    setEditContent(richContent?.text_content || safeContent);
   };
 
   const handleSave = () => {
@@ -36,12 +39,17 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
   };
 
   const handleCancel = () => {
-    setEditContent(richContent?.text_content || content);
+    setEditContent(richContent?.text_content || safeContent);
     setIsEditing(false);
   };
 
   // Simple markdown-to-HTML converter
   const renderMarkdown = (text: string) => {
+    // Ensure text is a string and handle edge cases
+    if (!text || typeof text !== 'string') {
+      return { __html: '<p class="text-muted-foreground">No content available</p>' };
+    }
+    
     // First, normalize line endings and clean up excessive whitespace
     let html = text
       .replace(/\r\n/g, '\n')
@@ -135,7 +143,7 @@ export const TreatmentRenderer: React.FC<TreatmentRendererProps> = ({
         <div className="relative group">
           <div 
             className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={renderMarkdown(richContent?.text_content || content)}
+            dangerouslySetInnerHTML={renderMarkdown(richContent?.text_content || safeContent)}
           />
           {editable && (
             <button

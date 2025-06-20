@@ -17,7 +17,7 @@ import { RealTimeAlertManager } from '@/components/alerts/RealTimeAlertManager';
 import { AlertToast } from '@/components/alerts/AlertToast';
 import { useRealTimeAlerts } from '@/hooks/useRealTimeAlerts';
 import { format } from 'date-fns';
-import type { Patient, Encounter, Treatment, DifferentialDiagnosis, SoapNote } from '@/lib/types';
+import type { Patient, Encounter, Treatment, DifferentialDiagnosis, SoapNote, RichContent } from '@/lib/types';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -47,7 +47,7 @@ interface ConsultationPanelProps {
   /** Initial diagnosis content for demo mode */
   demoDiagnosis?: string;
   /** Initial treatment content for demo mode */
-  demoTreatment?: string;
+  demoTreatment?: RichContent;
   /** Initial differential diagnoses for demo mode */
   demoDifferentialDiagnoses?: DifferentialDiagnosis[];
   /** Initial SOAP notes for demo mode */
@@ -206,7 +206,7 @@ export default function ConsultationPanel({
     encounterId: isDemoMode ? '' : (encounter?.id || ''),
     contentType: 'treatments', 
     onError: handleTreatmentError,
-    initialContent: isDemoMode ? DemoDataService.getDemoRichTreatmentContent() : undefined
+    initialContent: isDemoMode ? (demoTreatment || DemoDataService.getDemoRichTreatmentContent()) : undefined
   });
   
   // Transcription state and refs
@@ -1123,7 +1123,8 @@ export default function ConsultationPanel({
     if (isDemoMode) {
       setTranscriptText(initialDemoTranscript || '');
       setDiagnosisText(demoDiagnosis || '');
-      setTreatmentText(demoTreatment || '');
+      // For demo mode, we use rich content directly, not the treatmentText state
+      setTreatmentText(''); // Clear text since we use rich content
       setDifferentialDiagnoses(demoDifferentialDiagnoses || []);
       setSoapNote(demoSoapNote || null);
       setPlanGenerated(!!(demoDiagnosis || demoTreatment || demoDifferentialDiagnoses));
@@ -1193,9 +1194,8 @@ export default function ConsultationPanel({
       setDiagnosisText(demoDiagnosis);
     }
     
-    if (demoTreatment !== undefined && demoTreatment !== treatmentText) {
-      setTreatmentText(demoTreatment);
-    }
+    // Note: demoTreatment is now RichContent, handled directly by treatmentRichContent hook
+    // No need to update treatmentText state for demo mode
     
     if (demoDifferentialDiagnoses !== undefined) {
       setDifferentialDiagnoses(demoDifferentialDiagnoses);
