@@ -327,10 +327,10 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           <Table className="text-step-0">
             <TableHeader>
               <TableRow>
-                <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[30%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[30%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('reason', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead className="w-[15%]"></TableHead>
+                <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[32%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[32%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('reason', tableType)} className="w-[20%] cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead className="w-[16%]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -343,23 +343,29 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`);
                   }
                 }} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <TableCell className="w-[30%]">
+                <TableCell className="w-[32%]">
                   <div className="flex items-center">
-                    <Avatar className="h-8 w-8 mr-3">
+                    <Avatar className="h-8 w-8 mr-3 flex-shrink-0">
                       <AvatarImage src={patient?.photo || "/images/default-avatar.png"} alt={patient?.name || 'Patient'} />
                       <AvatarFallback>{patient?.firstName?.charAt(0)}{patient?.lastName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    {patient?.name || `${patient?.firstName} ${patient?.lastName}`.trim()}
+                    <span className="text-sm font-medium truncate">
+                      {patient?.name || `${patient?.firstName} ${patient?.lastName}`.trim()}
+                    </span>
                   </div>
                 </TableCell>
-                <TableCell className="w-[30%]">{encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                <TableCell className="w-[25%] truncate">
-                  <span className="truncate" title={(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}>
-                    {(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}
+                <TableCell className="w-[32%]">
+                  <span className="text-sm">
+                    {encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}
                   </span>
                 </TableCell>
-                <TableCell className="text-right w-[15%]">
-                  <div className="flex gap-2 justify-end">
+                <TableCell className="w-[20%]">
+                  <div className="text-xs leading-tight" title={(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}>
+                    {(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right w-[16%]">
+                  <div className="flex gap-1 justify-end">
                     {(() => {
                       const now = new Date();
                       const scheduledTime = encounter.scheduledStart ? new Date(encounter.scheduledStart) : null;
@@ -379,8 +385,9 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                               }
                             }}
                             title="View patient data to prepare for consultation"
+                            className="text-xs px-2 py-1 h-7"
                           >
-                            <Eye size={16} className="mr-1" /> 
+                            <Eye size={14} className="mr-1" /> 
                             Prepare
                           </Button>
                         );
@@ -413,8 +420,9 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                         const isUpcoming = scheduledTime && scheduledTime > now;
                         return isUpcoming ? "Start Consultation" : "Go to Consultation";
                       })()}
+                      className="text-xs px-2 py-1 h-7"
                     >
-                      <PlayCircle size={20} className="mr-1" /> 
+                      <PlayCircle size={14} className="mr-1" /> 
                       {(() => {
                         const now = new Date();
                         const scheduledTime = encounter.scheduledStart ? new Date(encounter.scheduledStart) : null;

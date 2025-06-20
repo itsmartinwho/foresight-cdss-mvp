@@ -139,10 +139,10 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
           <Table className="mobile-card:block sm:table text-step-0">
             <TableHeader className="mobile-card:hidden sm:table-header-group">
               <TableRow>
-                <TableHead className="w-32">Time</TableHead>
-                <TableHead className="w-48">Patient</TableHead>
-                <TableHead className="w-40">Reason</TableHead>
-                <TableHead className="w-36"></TableHead>
+                <TableHead className="w-24">Time</TableHead>
+                <TableHead className="w-40">Patient</TableHead>
+                <TableHead className="w-32">Reason</TableHead>
+                <TableHead className="w-44"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="mobile-card:block sm:table-row-group">
@@ -155,25 +155,29 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                     router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}`);
                   }}
                 >
-                  <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell w-32">
+                  <TableCell data-column="Time" className="mobile-card:flex mobile-card:flex-col sm:table-cell w-24">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Time: </span>
-                    {encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
+                    <div className="text-sm font-medium">
+                      {encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}) : "N/A"}
+                    </div>
                   </TableCell>
-                  <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell items-center w-48">
+                  <TableCell data-column="Patient" className="mobile-card:flex mobile-card:flex-col sm:table-cell w-40">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Patient: </span>
-                    {p.photo && (
-                      <Image src={p.photo} alt={p.name || "Patient photo"} width={24} height={24} className="rounded-full inline-block mr-2 mobile-card:hidden" />
-                    )}
-                    {p.name}
+                    <div className="flex items-center">
+                      {p.photo && (
+                        <Image src={p.photo} alt={p.name || "Patient photo"} width={24} height={24} className="rounded-full inline-block mr-2 mobile-card:hidden flex-shrink-0" />
+                      )}
+                      <span className="text-sm font-medium truncate">{p.name}</span>
+                    </div>
                   </TableCell>
-                  <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell w-40 truncate">
+                  <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell w-32">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                    <span className="truncate" title={encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}>
+                    <div className="text-xs leading-tight max-w-32" title={encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}>
                       {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
-                    </span>
+                    </div>
                   </TableCell>
-                  <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right w-36">
-                    <div className="flex gap-2 mobile-card:flex-col sm:flex-row">
+                  <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right w-44">
+                    <div className="flex gap-1 mobile-card:flex-col sm:flex-row justify-end">
                       <Button
                         variant="outline"
                         iconLeft={<Eye />}
@@ -183,7 +187,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                           setSelectedPatientForData(p);
                           setShowPatientDataModal(true);
                         }}
-                        className="gap-1 flex-1 mobile-card:w-full"
+                        className="gap-1 text-xs px-2 py-1 h-7 mobile-card:w-full"
                       >
                         Prepare
                       </Button>
@@ -196,7 +200,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                           // Navigate to patient workspace WITH auto-start consultation
                           router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
                         }}
-                        className="gap-1 flex-1 mobile-card:w-full"
+                        className="gap-1 text-xs px-2 py-1 h-7 mobile-card:w-full"
                       >
                         Start
                       </Button>
