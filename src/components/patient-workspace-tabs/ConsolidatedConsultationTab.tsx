@@ -318,7 +318,7 @@ export default function ConsolidatedConsultationTab({
                </div>
              ) : null}
              <DifferentialDiagnosesList
-                diagnoses={differentialDiagnoses}
+                diagnoses={differentialDiagnoses || []}
                 isLoading={isLoadingDifferentials}
                 isEditable={true}
                 onAddDiagnosis={addDifferentialDiagnosis}

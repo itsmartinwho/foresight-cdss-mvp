@@ -41,6 +41,7 @@ export interface FHIRPatientContext {
   priorEncounters: Encounter[];
   conditions: FHIRCondition[];  // FHIR-like conditions
   observations: FHIRObservation[];  // FHIR-like observations
+  differentialDiagnoses: any[];  // Differential diagnoses from database
 }
 
 /**
@@ -73,7 +74,8 @@ export class PatientContextLoader {
       currentEncounter: undefined,
       priorEncounters: [],
       conditions: [],
-      observations: []
+      observations: [],
+      differentialDiagnoses: []
     };
 
     // Attempt to get data using the service
@@ -153,8 +155,12 @@ export class PatientContextLoader {
       flag: lab.flag,
       referenceRange: lab.referenceRange
     }));
-    // logger.info(`PatientContextLoader: Loaded ${context.labResults.length} lab results.`);
     console.log(`PatientContextLoader: Loaded ${defaultContext.observations.length} lab results.`);
+
+    // Process all differential diagnoses for the patient from supabaseDataService
+    const differentialDiagnoses = supabaseDataService.getPatientDifferentialDiagnoses(patientId);
+    defaultContext.differentialDiagnoses = differentialDiagnoses;
+    console.log(`PatientContextLoader: Loaded ${differentialDiagnoses.length} differential diagnoses.`);
     
     // logger.info(`PatientContextLoader: Context built successfully for patient ${patientId}. Current Encounter ID (if any): ${currentEncounter?.id}`);
     console.log(`PatientContextLoader: Context built successfully for patient ${patientId}. Current Encounter ID (if any): ${currentEncounter?.id}`);
@@ -220,7 +226,8 @@ export class PatientContextLoader {
         dateTime: obs.effectiveDateTime,
         flag: obs.flag,
         referenceRange: obs.referenceRange
-      }))
+      })),
+      differentialDiagnoses: context.differentialDiagnoses || []
     };
   }
 } 
