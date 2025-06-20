@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,6 @@ import {
 } from '@/components/ui/editable';
 import { RichTreatmentEditor } from '@/components/ui/rich-treatment-editor';
 import { useRichContentEditor } from '@/hooks/useRichContentEditor';
-import { RichContent } from '@/lib/types';
-import { v4 as uuidv4 } from 'uuid';
 import PriorAuthorizationForm from '@/components/forms/PriorAuthorizationForm';
 import ReferralForm from '@/components/forms/ReferralForm';
 import { useEditableEncounterFields } from '@/hooks/useEditableEncounterFields';
@@ -100,32 +98,6 @@ export default function ConsolidatedConsultationTab({
       });
     }
   });
-
-  // ---------------------------------------------
-  // Auto-populate treatments_rich_content if empty
-  // ---------------------------------------------
-  useEffect(() => {
-    if (
-      !treatmentRichContent.isLoading &&
-      !treatmentRichContent.content &&
-      Array.isArray(selectedEncounter.treatments) &&
-      selectedEncounter.treatments.length > 0
-    ) {
-      // Build minimal RichContent from legacy treatments array
-      const newContent: RichContent = {
-        content_type: 'application/json',
-        text_content: JSON.stringify(selectedEncounter.treatments, null, 2),
-        rich_elements: [],
-        created_at: new Date().toISOString(),
-        version: '1.0'
-      } as RichContent;
-
-      // Save to DB; no overwrite if another tab already saved in the meantime
-      treatmentRichContent.saveContent(newContent).catch(err => {
-        console.error('Failed to auto-populate treatments_rich_content', err);
-      });
-    }
-  }, [treatmentRichContent.isLoading, treatmentRichContent.content, selectedEncounter.treatments]);
 
   // Call hooks before any early returns to follow Rules of Hooks
   // Fixed: Use the database encounter ID (UUID) for differential diagnoses
