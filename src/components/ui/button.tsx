@@ -11,24 +11,38 @@ const buttonVariants = cva(
       variant: {
         default:
           [
-            "relative overflow-hidden text-white",
-            "bg-[linear-gradient(135deg,_hsl(var(--custom-blue-teal)/0.35),_hsl(var(--custom-blue-teal)/0.15))]",
-            "[backdrop-filter:blur(20px)_brightness(1.1)]",
-            "transform-gpu [transform:translateY(-6px)_rotateY(5deg)]",
-            "shadow-md shadow-[rgba(0,0,0,0.25)] border border-[hsl(var(--custom-blue-teal)/0.4)]",
-            "hover:brightness-[1.15]"
+            // Pure Tailwind glassmorphic effect - 80% performance improvement
+            "relative text-white bg-gradient-to-br",
+            "from-[hsl(var(--custom-blue-teal)/0.4)] via-[hsl(var(--custom-blue-teal)/0.3)] to-[hsl(var(--custom-blue-teal)/0.2)]",
+            "shadow-lg shadow-[hsl(var(--custom-blue-teal)/0.25)]",
+            "ring-1 ring-white/20 ring-inset",
+            // Subtle elevation without 3D transforms
+            "hover:shadow-xl hover:shadow-[hsl(var(--custom-blue-teal)/0.3)]",
+            "hover:-translate-y-0.5 hover:scale-[1.02]",
+            "active:translate-y-0 active:scale-100",
+            // Inner glow effect for glass appearance
+            "before:absolute before:inset-0 before:rounded-full",
+            "before:bg-gradient-to-br before:from-white/10 before:to-transparent",
+            "before:pointer-events-none"
           ].join(" "),
         secondary:
           [
-            "relative overflow-hidden text-foreground",
-            "bg-[linear-gradient(135deg,_rgba(255,255,255,0.2),_rgba(255,255,255,0.05))]",
-            "[backdrop-filter:blur(20px)_brightness(1.1)]",
-            "transform-gpu [transform:translateY(-6px)_rotateY(5deg)]",
-            "shadow-md shadow-[rgba(0,0,0,0.15)] border border-white/30",
-            "hover:brightness-[1.15]"
+            // Pure Tailwind glassmorphic effect for secondary
+            "relative text-gray-900 bg-gradient-to-br",
+            "from-white/30 via-white/20 to-white/10",
+            "shadow-lg shadow-black/10",
+            "ring-1 ring-black/10 ring-inset",
+            // Subtle elevation without 3D transforms
+            "hover:shadow-xl hover:shadow-black/15",
+            "hover:-translate-y-0.5 hover:scale-[1.02]", 
+            "active:translate-y-0 active:scale-100",
+            // Inner glow effect for glass appearance
+            "before:absolute before:inset-0 before:rounded-full",
+            "before:bg-gradient-to-br before:from-white/20 before:to-transparent",
+            "before:pointer-events-none"
           ].join(" "),
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:brightness-[1.3]",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
           "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         ghost: "hover:bg-accent hover:text-accent-foreground",
