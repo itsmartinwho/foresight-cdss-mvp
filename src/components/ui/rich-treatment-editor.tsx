@@ -16,14 +16,37 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
   isDemo = false,
   label = 'Treatment Plan'
 }) => {
+  // Defensive normalization: ensure content follows RichContent schema
+  const legacyContent = content as any; // Handle legacy formats that don't match RichContent
+  const normalizedContent = {
+    content_type: content?.content_type || 'text/markdown',
+    text_content: content?.text_content || legacyContent?.markdown || '',
+    rich_elements: Array.isArray(content?.rich_elements) ? content.rich_elements : [],
+    created_at: content?.created_at || new Date().toISOString(),
+    version: content?.version || '1.0',
+    // Legacy fallback: convert legacy tables/charts to rich_elements if needed
+    ...(legacyContent?.tables && Array.isArray(legacyContent.tables) && legacyContent.tables.length > 0 ? {
+      rich_elements: [
+        ...Array.isArray(content?.rich_elements) ? content.rich_elements : [],
+        ...legacyContent.tables.map((table: any, index: number) => ({
+          id: `legacy_table_${index}`,
+          type: 'table',
+          position: index,
+          data: table,
+          editable: true
+        }))
+      ]
+    } : {})
+  };
+
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(content);
+  const [editedContent, setEditedContent] = useState(normalizedContent);
 
   const handleStartEdit = useCallback(() => {
     if (isDemo) return; // No editing in demo mode
     setIsEditing(true);
-    setEditedContent(content);
-  }, [content, isDemo]);
+    setEditedContent(normalizedContent);
+  }, [normalizedContent, isDemo]);
 
   const handleSave = useCallback(() => {
     onSave(editedContent);
@@ -31,9 +54,9 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
   }, [editedContent, onSave]);
 
   const handleCancel = useCallback(() => {
-    setEditedContent(content);
+    setEditedContent(normalizedContent);
     setIsEditing(false);
-  }, [content]);
+  }, [normalizedContent]);
 
   const handleTextContentChange = useCallback((newTextContent: string) => {
     setEditedContent(prev => ({
@@ -143,7 +166,7 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
     );
   }
 
-  const guidelines = extractGuidelinesFromRichContent(content);
+  const guidelines = extractGuidelinesFromRichContent(normalizedContent);
 
   return (
     <div className="rich-treatment-editor">
@@ -179,8 +202,8 @@ export const RichTreatmentEditor: React.FC<RichTreatmentEditorProps> = ({
 
       <div className="overflow-hidden">
         <TreatmentRenderer
-          content={content.text_content}
-          richContent={content}
+          content={normalizedContent.text_content}
+          richContent={normalizedContent}
           editable={!isDemo}
           onChartDelete={handleChartDelete}
           onContentEdit={handleTextContentChange}

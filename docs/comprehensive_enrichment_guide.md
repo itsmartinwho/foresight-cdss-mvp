@@ -1,1 +1,0 @@
-Merged `patient-enrichment-rules.md` and `enrichment-implementation-guide.md` to create a single, comprehensive guide. 
