@@ -28,7 +28,26 @@ export default function PriorAuthorizationForm({
   onSave,
   onGeneratePDF
 }: PriorAuthorizationFormProps) {
-  // Defensive null checks to prevent React errors
+  const [formData, setFormData] = useState<PriorAuthFormData>(() =>
+    PriorAuthService.autoPopulateForm(patient || {} as Patient, encounter || {} as Encounter, diagnoses || [])
+  );
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  
+  useEffect(() => {
+    if (patient && encounter) {
+      setFormData(PriorAuthService.autoPopulateForm(patient, encounter, diagnoses || []));
+    }
+  }, [patient, encounter, diagnoses]);
+
+  // Validate on form data changes
+  useEffect(() => {
+    const validation = PriorAuthService.validateForm(formData);
+    setErrors(validation.errors);
+  }, [formData]);
+
+  // Defensive null checks after hooks
   if (!patient || !encounter) {
     return (
       <div className="p-4 text-center text-muted-foreground">
@@ -36,16 +55,6 @@ export default function PriorAuthorizationForm({
       </div>
     );
   }
-
-  const [formData, setFormData] = useState<PriorAuthFormData>(() =>
-    PriorAuthService.autoPopulateForm(patient, encounter, diagnoses || [])
-  );
-  const [validation, setValidation] = useState<FormValidationResult>({ 
-    isValid: true, 
-    errors: {}, 
-    warnings: {} 
-  });
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Auto-populate when resource type changes
   useEffect(() => {
@@ -82,45 +91,18 @@ export default function PriorAuthorizationForm({
     }));
   }, [formData.resourceType, patient, encounter, diagnoses]);
 
-  // Validate form on data changes
-  useEffect(() => {
-    const validationResult = PriorAuthService.validateForm(formData);
-    setValidation(validationResult);
-  }, [formData]);
-
-  const updateField = (path: string, value: any) => {
-    const keys = path.split('.');
-    setFormData(prev => {
-      const newData = { ...prev };
-      let current: any = newData;
-      
-      for (let i = 0; i < keys.length - 1; i++) {
-        current[keys[i]] = { ...current[keys[i]] };
-        current = current[keys[i]];
+  const handleInputChange = (section: keyof PriorAuthFormData, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section] as any,
+        [field]: value
       }
-      
-      current[keys[keys.length - 1]] = value;
-      
-      // Show toast when resource type changes
-      if (path === 'resourceType') {
-        const resourceTypeLabel = PRIOR_AUTH_RESOURCE_TYPES.find(r => r.value === value)?.label;
-        toast({
-          title: "Authorization Type Updated",
-          description: `Form updated for ${resourceTypeLabel}`,
-          variant: "default"
-        });
-      }
-      
-      return newData;
-    });
-
-    // Auto-save after a brief delay
-    setTimeout(async () => {
-      await onSave(formData);
-    }, 500);
+    }));
   };
 
   const handleGeneratePDF = async () => {
+    const validation = PriorAuthService.validateForm(formData);
     if (!validation.isValid) {
       toast({
         title: "Form Validation Failed",
@@ -149,8 +131,7 @@ export default function PriorAuthorizationForm({
     }
   };
 
-  const getFieldError = (fieldName: string) => validation.errors[fieldName];
-  const getFieldWarning = (fieldName: string) => validation.warnings[fieldName];
+  const isFormValid = Object.keys(errors).length === 0;
 
   return (
     <Card>
@@ -158,7 +139,7 @@ export default function PriorAuthorizationForm({
         <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
           Prior Authorization
           <div className="flex items-center gap-2">
-            {validation.isValid ? (
+            {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
               <Warning className="h-5 w-5 text-yellow-500" />
@@ -167,7 +148,7 @@ export default function PriorAuthorizationForm({
               variant="outline"
               size="sm"
               onClick={handleGeneratePDF}
-              disabled={!validation.isValid || isGeneratingPDF}
+              disabled={!isFormValid || isGeneratingPDF}
               className="flex items-center gap-2"
             >
               {isGeneratingPDF ? (
@@ -184,7 +165,7 @@ export default function PriorAuthorizationForm({
         {/* FHIR Resource Type Selector */}
         <FHIRResourceSelector
           value={formData.resourceType}
-          onValueChange={(value) => updateField('resourceType', value)}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, resourceType: value }))}
           resourceTypes={PRIOR_AUTH_RESOURCE_TYPES}
           placeholder="Select authorization type"
         />
@@ -197,14 +178,14 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Patient Name *
               </label>
-                             <EditableTextField
-                 value={formData.patientInformation.name}
-                 onSave={async (value) => updateField('patientInformation.name', value)}
-                 placeholder="Enter patient name"
-                 displayClassName={getFieldError('patientName') ? "text-destructive" : "text-sm"}
-               />
-              {getFieldError('patientName') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('patientName')}</p>
+              <Input
+                value={formData.patientInformation.name}
+                onChange={(e) => handleInputChange('patientInformation', 'name', e.target.value)}
+                placeholder="Enter patient name"
+                className={errors.patientName ? "border-destructive" : ""}
+              />
+              {errors.patientName && (
+                <p className="text-xs text-destructive mt-1">{errors.patientName}</p>
               )}
             </div>
 
@@ -215,11 +196,11 @@ export default function PriorAuthorizationForm({
               <Input
                 type="date"
                 value={formData.patientInformation.dateOfBirth}
-                onChange={(e) => updateField('patientInformation.dateOfBirth', e.target.value)}
-                className={getFieldError('dateOfBirth') ? "border-destructive" : ""}
+                onChange={(e) => handleInputChange('patientInformation', 'dateOfBirth', e.target.value)}
+                className={errors.dateOfBirth ? "border-destructive" : ""}
               />
-              {getFieldError('dateOfBirth') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('dateOfBirth')}</p>
+              {errors.dateOfBirth && (
+                <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>
               )}
             </div>
 
@@ -227,7 +208,7 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Gender</label>
               <Input
                 value={formData.patientInformation.gender}
-                onChange={(e) => updateField('patientInformation.gender', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'gender', e.target.value)}
                 placeholder="Enter gender"
               />
             </div>
@@ -236,7 +217,7 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Insurance ID</label>
               <Input
                 value={formData.patientInformation.insuranceId}
-                onChange={(e) => updateField('patientInformation.insuranceId', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'insuranceId', e.target.value)}
                 placeholder="Enter insurance ID"
               />
             </div>
@@ -250,34 +231,34 @@ export default function PriorAuthorizationForm({
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Provider Name
-                {getFieldWarning('providerName') && (
+                {errors.providerName && (
                   <span className="text-yellow-600 ml-1">⚠</span>
                 )}
               </label>
               <Input
                 value={formData.providerInformation.name}
-                onChange={(e) => updateField('providerInformation.name', e.target.value)}
+                onChange={(e) => handleInputChange('providerInformation', 'name', e.target.value)}
                 placeholder="Enter provider name"
               />
-              {getFieldWarning('providerName') && (
-                <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('providerName')}</p>
+              {errors.providerName && (
+                <p className="text-xs text-yellow-600 mt-1">{errors.providerName}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 NPI Number
-                {getFieldWarning('providerNPI') && (
+                {errors.providerNPI && (
                   <span className="text-yellow-600 ml-1">⚠</span>
                 )}
               </label>
               <Input
                 value={formData.providerInformation.npi}
-                onChange={(e) => updateField('providerInformation.npi', e.target.value)}
+                onChange={(e) => handleInputChange('providerInformation', 'npi', e.target.value)}
                 placeholder="Enter NPI number"
               />
-              {getFieldWarning('providerNPI') && (
-                <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('providerNPI')}</p>
+              {errors.providerNPI && (
+                <p className="text-xs text-yellow-600 mt-1">{errors.providerNPI}</p>
               )}
             </div>
 
@@ -285,7 +266,7 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Facility</label>
               <Input
                 value={formData.providerInformation.facility}
-                onChange={(e) => updateField('providerInformation.facility', e.target.value)}
+                onChange={(e) => handleInputChange('providerInformation', 'facility', e.target.value)}
                 placeholder="Enter facility name"
               />
             </div>
@@ -294,7 +275,7 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Contact Phone</label>
               <Input
                 value={formData.providerInformation.contactPhone}
-                onChange={(e) => updateField('providerInformation.contactPhone', e.target.value)}
+                onChange={(e) => handleInputChange('providerInformation', 'contactPhone', e.target.value)}
                 placeholder="Enter contact phone"
               />
             </div>
@@ -311,12 +292,12 @@ export default function PriorAuthorizationForm({
               </label>
                              <EditableTextField
                  value={formData.serviceRequest.diagnosis}
-                 onSave={async (value) => updateField('serviceRequest.diagnosis', value)}
+                 onSave={async (value) => handleInputChange('serviceRequest', 'diagnosis', value)}
                  placeholder="Enter diagnosis"
-                 displayClassName={getFieldError('diagnosis') ? "text-destructive" : "text-sm"}
+                 displayClassName={errors.diagnosis ? "text-destructive" : "text-sm"}
                />
-              {getFieldError('diagnosis') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('diagnosis')}</p>
+              {errors.diagnosis && (
+                <p className="text-xs text-destructive mt-1">{errors.diagnosis}</p>
               )}
             </div>
 
@@ -324,7 +305,7 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">ICD-10 Code</label>
               <Input
                 value={formData.serviceRequest.diagnosisCode}
-                onChange={(e) => updateField('serviceRequest.diagnosisCode', e.target.value)}
+                onChange={(e) => handleInputChange('serviceRequest', 'diagnosisCode', e.target.value)}
                 placeholder="Enter ICD-10 code"
               />
             </div>
@@ -335,29 +316,29 @@ export default function PriorAuthorizationForm({
               </label>
                              <EditableTextField
                  value={formData.serviceRequest.requestedService}
-                 onSave={async (value) => updateField('serviceRequest.requestedService', value)}
+                 onSave={async (value) => handleInputChange('serviceRequest', 'requestedService', value)}
                  placeholder="Enter requested service or medication"
-                 displayClassName={getFieldError('requestedService') ? "text-destructive" : "text-sm"}
+                 displayClassName={errors.requestedService ? "text-destructive" : "text-sm"}
                />
-              {getFieldError('requestedService') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('requestedService')}</p>
+              {errors.requestedService && (
+                <p className="text-xs text-destructive mt-1">{errors.requestedService}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Service Code
-                {getFieldWarning('serviceCode') && (
+                {errors.serviceCode && (
                   <span className="text-yellow-600 ml-1">⚠</span>
                 )}
               </label>
               <Input
                 value={formData.serviceRequest.serviceCode}
-                onChange={(e) => updateField('serviceRequest.serviceCode', e.target.value)}
+                onChange={(e) => handleInputChange('serviceRequest', 'serviceCode', e.target.value)}
                 placeholder="Enter service code"
               />
-              {getFieldWarning('serviceCode') && (
-                <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('serviceCode')}</p>
+              {errors.serviceCode && (
+                <p className="text-xs text-yellow-600 mt-1">{errors.serviceCode}</p>
               )}
             </div>
 
@@ -365,10 +346,10 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Urgency Level</label>
               <Select
                 value={formData.urgencyLevel}
-                onValueChange={(value) => updateField('urgencyLevel', value)}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, urgencyLevel: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select urgency level" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="routine">Routine</SelectItem>
@@ -381,61 +362,46 @@ export default function PriorAuthorizationForm({
         </div>
 
         {/* Clinical Justification */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-muted-foreground">
-            Clinical Justification *
-          </label>
-                     <EditableTextField
-             value={formData.clinicalJustification}
-             onSave={async (value) => updateField('clinicalJustification', value)}
-             placeholder="Enter clinical justification for prior authorization..."
-             multiline
-             displayClassName={getFieldError('clinicalJustification') ? "text-destructive" : "text-sm"}
-           />
-          {getFieldError('clinicalJustification') && (
-            <p className="text-xs text-destructive">{getFieldError('clinicalJustification')}</p>
-          )}
-        </div>
-
-        {/* Authorization Details */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-foreground">Authorization Details</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">Authorization Number</label>
-              <Input
-                value={formData.authorizationNumber}
-                onChange={(e) => updateField('authorizationNumber', e.target.value)}
-                placeholder="Enter authorization number (if available)"
-              />
-            </div>
+          <h3 className="text-lg font-medium text-foreground">Clinical Justification</h3>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
+              Clinical Justification *
+            </label>
+            <Textarea
+              value={formData.clinicalJustification}
+              onChange={(e) => setFormData(prev => ({ ...prev, clinicalJustification: e.target.value }))}
+              placeholder="Enter clinical justification for prior authorization..."
+              className={`min-h-[100px] ${errors.clinicalJustification ? "border-destructive" : ""}`}
+            />
+            {errors.clinicalJustification && (
+              <p className="text-xs text-destructive">{errors.clinicalJustification}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
+              Authorization Number
+            </label>
+            <Input
+              value={formData.authorizationNumber}
+              onChange={(e) => setFormData(prev => ({ ...prev, authorizationNumber: e.target.value }))}
+              placeholder="Enter authorization number (if available)"
+            />
           </div>
         </div>
 
         {/* Validation Summary */}
-        {(!validation.isValid || Object.keys(validation.warnings).length > 0) && (
+        {Object.keys(errors).length > 0 && (
           <div className="space-y-2">
-            {!validation.isValid && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm font-medium text-destructive mb-1">Required fields missing:</p>
-                <ul className="text-xs text-destructive/80 list-disc list-inside">
-                  {Object.values(validation.errors).map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {Object.keys(validation.warnings).length > 0 && (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-                <p className="text-sm font-medium text-yellow-700 mb-1">Recommended fields:</p>
-                <ul className="text-xs text-yellow-600 list-disc list-inside">
-                  {Object.values(validation.warnings).map((warning, index) => (
-                    <li key={index}>{warning}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm font-medium text-destructive mb-1">Required fields missing:</p>
+              <ul className="text-xs text-destructive/80 list-disc list-inside">
+                {Object.values(errors).map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
       </CardContent>

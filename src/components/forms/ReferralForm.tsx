@@ -30,7 +30,26 @@ export default function ReferralForm({
   onSave,
   onGeneratePDF
 }: ReferralFormProps) {
-  // Defensive null checks to prevent React errors
+  const [formData, setFormData] = useState<ReferralFormData>(() =>
+    ReferralService.autoPopulateForm(patient || {} as Patient, encounter || {} as Encounter, diagnoses || [], labResults)
+  );
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  
+  useEffect(() => {
+    if (patient && encounter) {
+      setFormData(ReferralService.autoPopulateForm(patient, encounter, diagnoses || [], labResults));
+    }
+  }, [patient, encounter, diagnoses, labResults]);
+
+  // Validate on form data changes
+  useEffect(() => {
+    const validation = ReferralService.validateForm(formData);
+    setErrors(validation.errors);
+  }, [formData]);
+
+  // Defensive null checks after hooks
   if (!patient || !encounter) {
     return (
       <div className="p-4 text-center text-muted-foreground">
@@ -39,15 +58,11 @@ export default function ReferralForm({
     );
   }
 
-  const [formData, setFormData] = useState<ReferralFormData>(() =>
-    ReferralService.autoPopulateForm(patient, encounter, diagnoses || [], labResults)
-  );
   const [validation, setValidation] = useState<FormValidationResult>({ 
     isValid: true, 
     errors: {}, 
     warnings: {} 
   });
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Auto-populate when resource type changes
   useEffect(() => {
@@ -111,39 +126,18 @@ export default function ReferralForm({
     setValidation(validationResult);
   }, [formData]);
 
-  const updateField = (path: string, value: any) => {
-    const keys = path.split('.');
-    setFormData(prev => {
-      const newData = { ...prev };
-      let current: any = newData;
-      
-      for (let i = 0; i < keys.length - 1; i++) {
-        current[keys[i]] = { ...current[keys[i]] };
-        current = current[keys[i]];
+  const handleInputChange = (section: keyof ReferralFormData, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section] as any,
+        [field]: value
       }
-      
-      current[keys[keys.length - 1]] = value;
-      
-      // Show toast when resource type changes
-      if (path === 'resourceType') {
-        const resourceTypeLabel = REFERRAL_RESOURCE_TYPES.find(r => r.value === value)?.label;
-        toast({
-          title: "Referral Type Updated", 
-          description: `Form updated for ${resourceTypeLabel}`,
-          variant: "default"
-        });
-      }
-      
-      return newData;
-    });
-
-    // Auto-save after a brief delay
-    setTimeout(async () => {
-      await onSave(formData);
-    }, 500);
+    }));
   };
 
   const handleGeneratePDF = async () => {
+    const validation = ReferralService.validateForm(formData);
     if (!validation.isValid) {
       toast({
         title: "Form Validation Failed",
@@ -157,7 +151,7 @@ export default function ReferralForm({
     try {
       await onGeneratePDF(formData);
       toast({
-        title: "PDF Generated Successfully",
+        title: "PDF Generated Successfully", 
         description: "Referral form has been downloaded",
         variant: "default"
       });
@@ -174,22 +168,24 @@ export default function ReferralForm({
 
   const addRequestedEvaluation = () => {
     const updatedEvaluations = [...formData.requestedEvaluation, ''];
-    updateField('requestedEvaluation', updatedEvaluations);
+    handleInputChange('requestedEvaluation', '', updatedEvaluations);
   };
 
   const removeRequestedEvaluation = (index: number) => {
     const updatedEvaluations = formData.requestedEvaluation.filter((_, i) => i !== index);
-    updateField('requestedEvaluation', updatedEvaluations);
+    handleInputChange('requestedEvaluation', '', updatedEvaluations);
   };
 
   const updateRequestedEvaluation = (index: number, value: string) => {
     const updatedEvaluations = [...formData.requestedEvaluation];
     updatedEvaluations[index] = value;
-    updateField('requestedEvaluation', updatedEvaluations);
+    handleInputChange('requestedEvaluation', '', updatedEvaluations);
   };
 
   const getFieldError = (fieldName: string) => validation.errors[fieldName];
   const getFieldWarning = (fieldName: string) => validation.warnings[fieldName];
+
+  const isFormValid = Object.keys(errors).length === 0;
 
   return (
     <Card>
@@ -223,7 +219,7 @@ export default function ReferralForm({
         {/* FHIR Resource Type Selector */}
         <FHIRResourceSelector
           value={formData.resourceType}
-          onValueChange={(value) => updateField('resourceType', value)}
+          onValueChange={(value) => handleInputChange('resourceType', '', value)}
           resourceTypes={REFERRAL_RESOURCE_TYPES}
           placeholder="Select referral type"
         />
@@ -238,7 +234,7 @@ export default function ReferralForm({
               </label>
               <EditableTextField
                 value={formData.patientInformation.name}
-                onSave={async (value) => updateField('patientInformation.name', value)}
+                onSave={(value) => handleInputChange('patientInformation', 'name', value)}
                 placeholder="Enter patient name"
                 displayClassName={getFieldError('patientName') ? "text-destructive" : "text-sm"}
               />
@@ -254,7 +250,7 @@ export default function ReferralForm({
               <Input
                 type="date"
                 value={formData.patientInformation.dateOfBirth}
-                onChange={(e) => updateField('patientInformation.dateOfBirth', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'dateOfBirth', e.target.value)}
                 className={getFieldError('dateOfBirth') ? "border-destructive" : ""}
               />
               {getFieldError('dateOfBirth') && (
@@ -266,7 +262,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Gender</label>
               <Input
                 value={formData.patientInformation.gender}
-                onChange={(e) => updateField('patientInformation.gender', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'gender', e.target.value)}
                 placeholder="Enter gender"
               />
             </div>
@@ -275,7 +271,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Contact Phone</label>
               <Input
                 value={formData.patientInformation.contactPhone}
-                onChange={(e) => updateField('patientInformation.contactPhone', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'contactPhone', e.target.value)}
                 placeholder="Enter contact phone"
               />
             </div>
@@ -284,7 +280,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Insurance</label>
               <Input
                 value={formData.patientInformation.insurance}
-                onChange={(e) => updateField('patientInformation.insurance', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'insurance', e.target.value)}
                 placeholder="Enter insurance information"
               />
             </div>
@@ -293,7 +289,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Address</label>
               <Input
                 value={formData.patientInformation.address}
-                onChange={(e) => updateField('patientInformation.address', e.target.value)}
+                onChange={(e) => handleInputChange('patientInformation', 'address', e.target.value)}
                 placeholder="Enter patient address"
               />
             </div>
@@ -313,7 +309,7 @@ export default function ReferralForm({
               </label>
               <Input
                 value={formData.referringProvider.name}
-                onChange={(e) => updateField('referringProvider.name', e.target.value)}
+                onChange={(e) => handleInputChange('referringProvider', 'name', e.target.value)}
                 placeholder="Enter provider name"
               />
               {getFieldWarning('providerName') && (
@@ -330,7 +326,7 @@ export default function ReferralForm({
               </label>
               <Input
                 value={formData.referringProvider.npi}
-                onChange={(e) => updateField('referringProvider.npi', e.target.value)}
+                onChange={(e) => handleInputChange('referringProvider', 'npi', e.target.value)}
                 placeholder="Enter NPI number"
               />
               {getFieldWarning('providerNPI') && (
@@ -342,7 +338,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Facility</label>
               <Input
                 value={formData.referringProvider.facility}
-                onChange={(e) => updateField('referringProvider.facility', e.target.value)}
+                onChange={(e) => handleInputChange('referringProvider', 'facility', e.target.value)}
                 placeholder="Enter facility name"
               />
             </div>
@@ -351,7 +347,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Contact Phone</label>
               <Input
                 value={formData.referringProvider.contactPhone}
-                onChange={(e) => updateField('referringProvider.contactPhone', e.target.value)}
+                onChange={(e) => handleInputChange('referringProvider', 'contactPhone', e.target.value)}
                 placeholder="Enter contact phone"
               />
             </div>
@@ -360,7 +356,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Contact Email</label>
               <Input
                 value={formData.referringProvider.contactEmail}
-                onChange={(e) => updateField('referringProvider.contactEmail', e.target.value)}
+                onChange={(e) => handleInputChange('referringProvider', 'contactEmail', e.target.value)}
                 placeholder="Enter contact email"
               />
             </div>
@@ -377,7 +373,7 @@ export default function ReferralForm({
               </label>
               <Select
                 value={formData.specialist.type}
-                onValueChange={(value) => updateField('specialist.type', value)}
+                onValueChange={(value) => handleInputChange('specialist', 'type', value)}
               >
                 <SelectTrigger className={getFieldError('specialtyType') ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select specialty" />
@@ -404,7 +400,7 @@ export default function ReferralForm({
               </label>
               <Input
                 value={formData.specialist.facility}
-                onChange={(e) => updateField('specialist.facility', e.target.value)}
+                onChange={(e) => handleInputChange('specialist', 'facility', e.target.value)}
                 placeholder="Enter preferred facility"
               />
               {getFieldWarning('specialistFacility') && (
@@ -416,7 +412,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Preferred Provider</label>
               <Input
                 value={formData.specialist.preferredProvider}
-                onChange={(e) => updateField('specialist.preferredProvider', e.target.value)}
+                onChange={(e) => handleInputChange('specialist', 'preferredProvider', e.target.value)}
                 placeholder="Enter preferred provider name"
               />
             </div>
@@ -433,7 +429,7 @@ export default function ReferralForm({
               </label>
               <EditableTextField
                 value={formData.referralReason.diagnosis}
-                onSave={async (value) => updateField('referralReason.diagnosis', value)}
+                onSave={(value) => handleInputChange('referralReason', 'diagnosis', value)}
                 placeholder="Enter primary diagnosis"
                 displayClassName={getFieldError('diagnosis') ? "text-destructive" : "text-sm"}
               />
@@ -446,7 +442,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">ICD-10 Code</label>
               <Input
                 value={formData.referralReason.diagnosisCode}
-                onChange={(e) => updateField('referralReason.diagnosisCode', e.target.value)}
+                onChange={(e) => handleInputChange('referralReason', 'diagnosisCode', e.target.value)}
                 placeholder="Enter ICD-10 code"
               />
             </div>
@@ -457,7 +453,7 @@ export default function ReferralForm({
               </label>
               <EditableTextField
                 value={formData.referralReason.reasonForReferral}
-                onSave={async (value) => updateField('referralReason.reasonForReferral', value)}
+                onSave={(value) => handleInputChange('referralReason', 'reasonForReferral', value)}
                 placeholder="Enter detailed reason for referral..."
                 multiline
                 displayClassName={getFieldError('reasonForReferral') ? "text-destructive" : "text-sm"}
@@ -471,7 +467,7 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">Urgency Level</label>
               <Select
                 value={formData.referralReason.urgency}
-                onValueChange={(value) => updateField('referralReason.urgency', value)}
+                onValueChange={(value) => handleInputChange('referralReason', 'urgency', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -499,7 +495,7 @@ export default function ReferralForm({
             </label>
             <EditableTextField
               value={formData.clinicalInformation.historyOfPresentIllness}
-              onSave={async (value) => updateField('clinicalInformation.historyOfPresentIllness', value)}
+              onSave={(value) => handleInputChange('clinicalInformation', 'historyOfPresentIllness', value)}
               placeholder="Enter history of present illness..."
               multiline
               displayClassName="text-sm"
@@ -579,7 +575,7 @@ export default function ReferralForm({
           <label className="block text-sm font-medium text-muted-foreground">Additional Notes</label>
           <EditableTextField
             value={formData.additionalNotes}
-            onSave={async (value) => updateField('additionalNotes', value)}
+            onSave={(value) => handleInputChange('additionalNotes', '', value)}
             placeholder="Enter any additional notes for the specialist..."
             multiline
             displayClassName="text-sm"
