@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft, PlusCircle, X, CaretUp as ChevronUp } from '@phosphor-icons/react';
+import { Users, CaretLeft as ChevronLeft, PlusCircle, X, CaretUp as ChevronUp, FileText, FilePlus } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
@@ -26,6 +26,7 @@ import { useDemoWorkspace } from '@/hooks/demo/useDemoWorkspace';
 import { useDemoConsultation } from '@/hooks/demo/useDemoConsultation';
 import { DemoDataService } from "@/services/demo/DemoDataService";
 import { useModalManager } from '@/components/ui/modal-manager';
+import FormCreationModal from '@/components/modals/FormCreationModal';
 
 interface PatientWorkspaceProps {
   patient: Patient;
@@ -47,6 +48,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [encounterToDeleteId, setEncounterToDeleteId] = useState<string | null>(null);
   const [isPatientOverviewOpen, setIsPatientOverviewOpen] = useState(false);
+  const [showPriorAuthModal, setShowPriorAuthModal] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -558,6 +561,24 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               <PlusCircle className="mr-2 h-4 w-4"/>
               New Consultation
             </Button>
+            <Button
+              variant="secondary"
+              size="default"
+              onClick={() => setShowPriorAuthModal(true)}
+              className="font-semibold"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Prior Auth
+            </Button>
+            <Button
+              variant="secondary"
+              size="default"
+              onClick={() => setShowReferralModal(true)}
+              className="font-semibold"
+            >
+              <FilePlus className="mr-2 h-4 w-4" />
+              Referral
+            </Button>
           </div>
         </div>
 
@@ -647,6 +668,40 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           draggableConfig={demoConsultationConfig}
         />
       )}
+
+      {/* Prior Authorization Modal */}
+      <FormCreationModal
+        open={showPriorAuthModal}
+        onOpenChange={setShowPriorAuthModal}
+        formType="priorAuth"
+        patientId={patient.id}
+        encounterId={selectedEncounterForConsultation?.id}
+        draggable={true}
+        allowDragging={false}
+        draggableConfig={{
+          id: `prior-auth-${patient.id}`,
+          title: 'Prior Authorization',
+          persistent: true,
+          defaultPosition: typeof window !== 'undefined' ? { x: 120, y: 120 } : { x: 200, y: 100 },
+        }}
+      />
+
+      {/* Referral Modal */}
+      <FormCreationModal
+        open={showReferralModal}
+        onOpenChange={setShowReferralModal}
+        formType="referral"
+        patientId={patient.id}
+        encounterId={selectedEncounterForConsultation?.id}
+        draggable={true}
+        allowDragging={false}
+        draggableConfig={{
+          id: `referral-${patient.id}`,
+          title: 'Referral',
+          persistent: true,
+          defaultPosition: typeof window !== 'undefined' ? { x: 140, y: 140 } : { x: 200, y: 100 },
+        }}
+      />
     </ContentSurface>
   );
 }
