@@ -320,7 +320,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
       {demoStage === 'introModal' && isDemoModalOpen && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
           <DialogContent 
-            className="sm:max-w-[750px] max-h-[650px] p-8"
+            className="sm:max-w-[750px] max-h-[650px] p-8 demo-modal-glass"
           >
             <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
               <DialogHeader className="space-y-0">

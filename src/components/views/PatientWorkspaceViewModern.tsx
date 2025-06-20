@@ -102,13 +102,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
       if (foundEncounter) {
         setSelectedEncounterForConsultation(foundEncounter);
         
-        // Check if we should auto-start the consultation
+        // Check if we should auto-start the consultation panel (for existing encounters)
         const autoStart = searchParams.get('autoStart');
         if (autoStart === 'true') {
           // Save current selection to restore if modal is discarded
           previousEncounterRef.current = foundEncounter;
           setShowConsultationPanel(true);
         }
+        
+        // For new consultations with autoStartTranscription, just set the encounter and let ConsultationTab handle it
+        // The consultation tab will automatically start transcription based on the autoStartTranscription parameter
       }
     }
   }, [searchParams, activeEncounterDetails]);
@@ -592,6 +595,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               selectedEncounter={selectedEncounterForConsultation}
               allEncounters={activeEncounterDetails}
               onDeleteEncounter={openDeleteConfirmation}
+              autoStartTranscription={searchParams.get('autoStartTranscription') === 'true'}
             />
           )}
           

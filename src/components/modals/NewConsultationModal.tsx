@@ -173,8 +173,8 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         // Close the modal FIRST to reset its state
         onOpenChange(false);
         
-        // Navigate to the patient page with the new encounter
-        router.push(`/patients/${selectedPatient.id}?encounterId=${enc.id}`);
+        // Navigate to the patient page with the new encounter and auto-start transcription
+        router.push(`/patients/${selectedPatient.id}?tab=consultation&encounterId=${enc.id}&autoStartTranscription=true`);
         
         // Don't call onConsultationCreated after navigation to prevent double navigation
         return;
@@ -189,8 +189,8 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
         // Close the modal FIRST to reset its state
         onOpenChange(false);
         
-        // Navigate to the patient page with the new encounter
-        router.push(`/patients/${patient.id}?encounterId=${encounter.id}`);
+        // Navigate to the patient page with the new encounter and auto-start transcription
+        router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}&autoStartTranscription=true`);
         
         // Don't call onConsultationCreated after navigation to prevent double navigation
         return;

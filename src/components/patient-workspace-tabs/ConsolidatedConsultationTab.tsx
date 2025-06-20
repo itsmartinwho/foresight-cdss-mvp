@@ -1,9 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper, Treatment, LabResult, Diagnosis, ClinicalTrial } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, X, Trash, CircleNotch } from '@phosphor-icons/react';
+import { FileText, Eye, X, Trash, CircleNotch, Plus, PencilSimple, FloppyDisk, PlayCircle, PauseCircle, StopCircle } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -26,19 +26,30 @@ import { useEditableEncounterFields } from '@/hooks/useEditableEncounterFields';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { toast } from '@/hooks/use-toast';
 import Section from '@/components/ui/section';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+import { cn } from '@/lib/utils';
+import { supabaseDataService } from '@/lib/supabaseDataService';
+import { format } from 'date-fns';
+import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { AudioWaveform } from '@/components/ui/AudioWaveform';
 
 interface ConsolidatedConsultationTabProps {
   patient: Patient | null;
   selectedEncounter: Encounter | null;
   allEncounters: EncounterDetailsWrapper[] | null;
   onDeleteEncounter: (encounterId: string) => void;
+  autoStartTranscription?: boolean;
 }
 
 export default function ConsolidatedConsultationTab({ 
   patient, 
   selectedEncounter, 
   allEncounters, 
-  onDeleteEncounter 
+  onDeleteEncounter,
+  autoStartTranscription = false
 }: ConsolidatedConsultationTabProps) {
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false);
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
@@ -100,6 +111,20 @@ export default function ConsolidatedConsultationTab({
     }
   });
 
+  // Transcription state and functionality
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [transcriptText, setTranscriptText] = useState('');
+  const [lastSavedTranscript, setLastSavedTranscript] = useState('');
+  
+  // Refs for transcription functionality
+  const socketRef = useRef<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const originalStreamRef = useRef<MediaStream | null>(null);
+  const autoStartSessionRef = useRef(false);
+  const richTextEditorRef = useRef<RichTextEditorRef>(null);
+
   // Call hooks before any early returns to follow Rules of Hooks
   // Fixed: Use the database encounter ID (UUID) for differential diagnoses
   const {
@@ -114,6 +139,263 @@ export default function ConsolidatedConsultationTab({
     encounterId: selectedEncounter?.id || '', // Use the UUID, not encounterIdentifier
     autoLoad: true,
   });
+
+  // Load existing transcript text from the encounter
+  useEffect(() => {
+    if (selectedEncounter?.transcript) {
+      setTranscriptText(selectedEncounter.transcript);
+      setLastSavedTranscript(selectedEncounter.transcript);
+    } else {
+      setTranscriptText('');
+      setLastSavedTranscript('');
+    }
+  }, [selectedEncounter?.id, selectedEncounter?.transcript]);
+
+  // Clean up audio resources
+  const cleanupAllAudioResources = useCallback(() => {
+    console.log('[ConsolidatedConsultationTab] Cleaning up audio resources');
+    
+    // Close WebSocket
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    
+    // Stop MediaRecorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+    
+    // Stop all audio tracks from original stream
+    if (originalStreamRef.current) {
+      originalStreamRef.current.getTracks().forEach(track => track.stop());
+      originalStreamRef.current = null;
+    }
+    
+    // Clear audio stream ref
+    audioStreamRef.current = null;
+    
+    // Reset states
+    setIsTranscribing(false);
+    setIsPaused(false);
+  }, []);
+
+  // Start transcription functionality
+  const startTranscription = useCallback(async () => {
+    console.log('[ConsolidatedConsultationTab] Starting transcription');
+    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY;
+    
+    if (!apiKey) {
+      toast({ title: "Error", description: "Deepgram API key not configured.", variant: "destructive" });
+      return;
+    }
+    
+    if (isTranscribing) {
+      console.log('[ConsolidatedConsultationTab] Already transcribing, ignoring start request');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      originalStreamRef.current = stream;
+      audioStreamRef.current = stream;
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      
+      // Enhanced Deepgram WebSocket URL with better silence handling and speech detection
+      const wsUrl = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
+        model: 'nova-3-medical',
+        punctuate: 'true',
+        interim_results: 'true',
+        smart_format: 'true',
+        diarize: 'true',
+        utterance_end_ms: '3000',
+        endpointing: 'false',
+        vad_events: 'true'
+      }).toString();
+      
+      const ws = new WebSocket(wsUrl, ['token', apiKey]);
+      socketRef.current = ws;
+
+      // KeepAlive mechanism to prevent connection timeouts during silence
+      let keepAliveInterval: NodeJS.Timeout | null = null;
+
+      ws.onopen = () => {
+        console.log('[ConsolidatedConsultationTab] WebSocket opened successfully');
+        
+        // Start KeepAlive messages every 5 seconds to prevent 10-second timeout
+        keepAliveInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "KeepAlive" }));
+            console.log('[ConsolidatedConsultationTab] Sent KeepAlive message');
+          }
+        }, 5000);
+
+        mediaRecorderRef.current?.addEventListener('dataavailable', event => {
+          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
+        });
+        mediaRecorderRef.current?.start(250);
+        setIsTranscribing(true);
+        setIsPaused(false);
+        console.log('[ConsolidatedConsultationTab] Transcription started');
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          
+          // Handle UtteranceEnd events
+          if (data.type === 'UtteranceEnd') {
+            console.log('[ConsolidatedConsultationTab] Received UtteranceEnd event', data);
+            return;
+          }
+
+          // Handle speech events
+          if (data.type === 'SpeechStarted') {
+            console.log('[ConsolidatedConsultationTab] Speech detected');
+            return;
+          }
+
+          // Handle transcription results
+          if (data && data.channel && data.is_final && data.channel.alternatives[0]?.transcript) {
+            const chunk = data.channel.alternatives[0].transcript.trim();
+            if (chunk) {
+              const speaker = data.channel.alternatives[0]?.words?.[0]?.speaker ?? null;
+              
+              setTranscriptText(prevText => {
+                let textToAdd = chunk;
+                
+                // Add speaker label if available and appropriate
+                if (speaker !== null && speaker !== undefined) {
+                  const lines = prevText.split('\n');
+                  const lastLine = lines[lines.length - 1] || '';
+                  
+                  // Add speaker label if starting fresh or speaker changed
+                  if (!lastLine.includes('Speaker ') || !lastLine.startsWith(`Speaker ${speaker}:`)) {
+                    textToAdd = (prevText ? '\n' : '') + `Speaker ${speaker}: ` + chunk;
+                  } else {
+                    textToAdd = ' ' + chunk;
+                  }
+                } else {
+                  // No speaker info, just add appropriate spacing
+                  textToAdd = (prevText ? ' ' : '') + chunk;
+                }
+                
+                const updatedText = prevText + textToAdd;
+                
+                // Auto-scroll to bottom after content update
+                setTimeout(() => {
+                  if (richTextEditorRef.current?.editor) {
+                    richTextEditorRef.current.editor.commands.focus('end');
+                  }
+                }, 100);
+                
+                return updatedText;
+              });
+            }
+          }
+        } catch (error) {
+          console.warn('[ConsolidatedConsultationTab] Error processing WebSocket message:', error);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log('[ConsolidatedConsultationTab] WebSocket closed:', event.code, event.reason);
+        
+        // Clear KeepAlive interval
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+
+        // Only attempt reconnection if the transcription is still supposed to be active
+        if (isTranscribing && !isPaused && event.code !== 1000 && event.code !== 1001) {
+          console.log('[ConsolidatedConsultationTab] Connection lost unexpectedly, attempting reconnection...');
+          
+          setTimeout(() => {
+            if (isTranscribing && !isPaused) {
+              console.log('[ConsolidatedConsultationTab] Attempting automatic reconnection...');
+              startTranscription();
+            }
+          }, 2000);
+        } else {
+          cleanupAllAudioResources();
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('[ConsolidatedConsultationTab] WebSocket error:', error);
+        
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+
+        toast({ title: "Error", description: "Transcription service error.", variant: "destructive" });
+        cleanupAllAudioResources();
+      };
+    } catch (err) {
+      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
+    }
+  }, [isTranscribing, isPaused, cleanupAllAudioResources]);
+
+  // Pause transcription
+  const pauseTranscription = useCallback(() => {
+    console.log('[ConsolidatedConsultationTab] Pausing transcription');
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.pause();
+      setIsPaused(true);
+    }
+  }, []);
+
+  // Resume transcription
+  const resumeTranscription = useCallback(() => {
+    console.log('[ConsolidatedConsultationTab] Resuming transcription');
+    if (mediaRecorderRef.current?.state === 'paused') {
+      mediaRecorderRef.current.resume();
+      setIsPaused(false);
+      setIsTranscribing(true);
+    }
+  }, []);
+
+  // Stop transcription and save
+  const stopTranscriptionAndSave = useCallback(async () => {
+    console.log('[ConsolidatedConsultationTab] Stopping transcription and saving');
+    cleanupAllAudioResources();
+    
+    // Save transcript to database
+    if (transcriptText !== lastSavedTranscript) {
+      try {
+        await updateField('transcript', transcriptText);
+        setLastSavedTranscript(transcriptText);
+        toast({ title: "Success", description: "Transcript saved successfully", variant: "default" });
+      } catch (error) {
+        console.error('Error saving transcript:', error);
+        toast({ title: "Error", description: "Failed to save transcript", variant: "destructive" });
+      }
+    }
+  }, [transcriptText, lastSavedTranscript, updateField, cleanupAllAudioResources]);
+
+  // Auto-start transcription effect
+  useEffect(() => {
+    if (autoStartTranscription && selectedEncounter && !isTranscribing && !autoStartSessionRef.current) {
+      console.log('[ConsolidatedConsultationTab] Auto-starting transcription for encounter:', selectedEncounter.id);
+      autoStartSessionRef.current = true;
+      
+      const timer = setTimeout(() => {
+        startTranscription();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoStartTranscription, selectedEncounter, isTranscribing, startTranscription]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupAllAudioResources();
+    };
+  }, [cleanupAllAudioResources]);
 
   if (!patient) {
     return (
@@ -227,6 +509,64 @@ export default function ConsolidatedConsultationTab({
           </div>
         </div>
       </div>
+
+      {/* Live Transcript */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
+            Live Transcript
+            <div className="flex gap-2">
+              {!isTranscribing && !isPaused && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={startTranscription}
+                  className="flex items-center gap-2"
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  Start Recording
+                </Button>
+              )}
+              {transcriptText && transcriptText !== lastSavedTranscript && !isTranscribing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={stopTranscriptionAndSave}
+                  className="flex items-center gap-2"
+                >
+                  <FloppyDisk className="h-4 w-4" />
+                  Save Transcript
+                </Button>
+              )}
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="relative">
+          <div className="min-h-[300px] relative">
+            <RichTextEditor
+              ref={richTextEditorRef}
+              content={transcriptText}
+              onContentChange={setTranscriptText}
+              placeholder="Start recording to see live transcription here, or type your notes manually..."
+              disabled={isTranscribing}
+              showToolbar={!isTranscribing}
+              minHeight="300px"
+              className="h-full"
+            />
+            {/* AudioWaveform component for transcription controls */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+              <AudioWaveform
+                isRecording={isTranscribing}
+                isPaused={isPaused}
+                mediaStream={audioStreamRef.current}
+                onPause={pauseTranscription}
+                onResume={resumeTranscription}
+                onStop={stopTranscriptionAndSave}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary Notes (SOAP Notes) */}
       <Card>
