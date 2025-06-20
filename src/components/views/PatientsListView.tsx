@@ -327,9 +327,9 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
           <Table className="text-step-0">
             <TableHeader>
               <TableRow>
-                <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
-                <TableHead onClick={() => requestSort('reason', tableType)} className="cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('patientName', tableType)} className="w-[30%] cursor-pointer hover:text-neon">Patient{currentSortConfig?.key === 'patientName' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('scheduledDate', tableType)} className="w-[30%] cursor-pointer hover:text-neon">Scheduled date{currentSortConfig?.key === 'scheduledDate' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
+                <TableHead onClick={() => requestSort('reason', tableType)} className="w-[25%] cursor-pointer hover:text-neon">Reason{currentSortConfig?.key === 'reason' ? (currentSortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 inline ml-1" /> : <ArrowDown className="h-4 w-4 inline ml-1" />) : null}</TableHead>
                 <TableHead className="w-[15%]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -343,7 +343,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`);
                   }
                 }} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <TableCell>
+                <TableCell className="w-[30%]">
                   <div className="flex items-center">
                     <Avatar className="h-8 w-8 mr-3">
                       <AvatarImage src={patient?.photo || "/images/default-avatar.png"} alt={patient?.name || 'Patient'} />
@@ -352,9 +352,13 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                     {patient?.name || `${patient?.firstName} ${patient?.lastName}`.trim()}
                   </div>
                 </TableCell>
-                <TableCell>{encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}</TableCell>
-                <TableCell>{(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="w-[30%]">{encounter.scheduledStart ? new Date(encounter.scheduledStart).toLocaleString() : "N/A"}</TableCell>
+                <TableCell className="w-[25%] truncate">
+                  <span className="truncate" title={(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}>
+                    {(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right w-[15%]">
                   <div className="flex gap-2 justify-end">
                     {(() => {
                       const now = new Date();
