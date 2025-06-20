@@ -361,8 +361,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     url.searchParams.set('autoStartTranscription', 'true'); // Add auto-start transcription
     window.history.replaceState({}, '', url.toString());
     
-    // Close the consultation panel since we're now showing the new consultation in the workspace
-    setShowConsultationPanel(false);
+    // Keep the consultation panel open so the user can work within the modal
+    // The modal will only close when the user explicitly closes it (Save / Discard / X)
   };
 
   const openDeleteConfirmation = (encounterId: string) => {
@@ -560,6 +560,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               onClick={() => {
                 // Save current selection to restore if modal is discarded
                 previousEncounterRef.current = selectedEncounterForConsultation;
+                // Clear current selection so modal starts a brand-new consultation
+                setSelectedEncounterForConsultation(null);
                 setShowConsultationPanel(true);
               }}
               className="font-semibold"
