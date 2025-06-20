@@ -36,7 +36,7 @@ export interface RichContent {
 
 export interface RichElement {
   id: string;
-  type: 'chart' | 'table' | 'decision_tree' | 'text_block';
+  type: 'chart' | 'table' | 'decision_tree' | 'text_block' | 'progress_bar';
   data: any; // Element-specific data structure
   position?: number; // Order within the content
   editable?: boolean; // Whether this element can be edited

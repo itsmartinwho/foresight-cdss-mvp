@@ -10,16 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Filter, 
-  RefreshCw, 
-  BarChart3, 
-  AlertTriangle, 
+  Funnel as Filter, 
+  ArrowsClockwise as RefreshCw, 
+  ChartBar as BarChart3, 
+  Warning as AlertTriangle, 
   Pill, 
   Stethoscope,
-  FileQuestion,
-  TrendingUp,
+  Question as FileQuestion,
+  TrendUp as TrendingUp,
   Brain
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 interface AlertDashboardProps {
   patientId?: string;

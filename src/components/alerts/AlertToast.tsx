@@ -5,7 +5,7 @@ import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Info, AlertCircle, X } from 'lucide-react';
+import { Warning as AlertTriangle, Info, WarningCircle as AlertCircle, X } from '@phosphor-icons/react';
 
 interface AlertToastProps {
   alert: UnifiedAlert;

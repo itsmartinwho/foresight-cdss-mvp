@@ -6,16 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
+import {
   Clock, 
-  AlertTriangle, 
-  TrendingUp, 
-  Activity, 
-  Bot,
+  Warning as AlertTriangle, 
+  TrendUp as TrendingUp, 
+  Pulse as Activity, 
+  Robot as Bot,
   TestTube,
   Stethoscope,
   CheckCircle
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 // Legacy copilot components
 import { checkForDrugInteractions, checkForMissingLabs } from '@/lib/copilotLogic';

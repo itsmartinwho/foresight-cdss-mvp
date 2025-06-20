@@ -3,21 +3,21 @@
 import React from 'react';
 import { UnifiedAlert, AlertType, AlertSeverity } from '@/types/alerts';
 import { 
-  AlertTriangle, 
+  Warning as AlertTriangle, 
   Info, 
-  AlertCircle, 
+  WarningCircle as AlertCircle, 
   Pill, 
-  FlaskConical, 
+  Flask as FlaskConical, 
   Brain, 
-  HelpCircle, 
+  Question as HelpCircle, 
   Stethoscope,
-  Activity,
+  Pulse as Activity,
   CheckCircle,
   XCircle,
-  ExternalLink,
+  ArrowSquareOut as ExternalLink,
   Clock,
   User
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 interface AlertListProps {
   alerts: UnifiedAlert[];

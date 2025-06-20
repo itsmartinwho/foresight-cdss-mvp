@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Pause, Mic } from 'lucide-react';
+import { Pause, Microphone as Mic } from '@phosphor-icons/react';
 import { Button } from './button';
 
 interface DemoAudioWaveformProps {

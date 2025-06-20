@@ -5,7 +5,7 @@ import { UnifiedAlert, AlertSeverity } from '@/types/alerts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, AlertTriangle, Skull, Info, AlertCircle, X, Check } from 'lucide-react'; // Icons for severity
+import { Lightbulb, Warning as AlertTriangle, Skull, Info, WarningCircle as AlertCircle, X, Check } from '@phosphor-icons/react'; // Icons for severity
 
 interface CopilotDisplayProps {
   alerts?: CopilotAlert[];
