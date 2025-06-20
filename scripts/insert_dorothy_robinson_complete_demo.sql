@@ -3,36 +3,6 @@
 
 BEGIN;
 
--- Insert patient record
-INSERT INTO patients (
-    id, 
-    patient_id,
-    first_name, 
-    last_name, 
-    birth_date, 
-    gender, 
-    race, 
-    ethnicity, 
-    marital_status, 
-    language, 
-    poverty_percentage
-) 
-SELECT 
-    '0681FA35-A794-4684-97BD-00B88370DB41'::uuid,
-    '0681FA35-A794-4684-97BD-00B88370DB41',
-    'Dorothy',
-    'Robinson', 
-    '1978-10-02'::date,
-    'female',
-    'White',
-    'Hispanic or Latino',
-    'Unknown',
-    'Spanish',
-    19.16
-WHERE NOT EXISTS (
-    SELECT 1 FROM patients WHERE id = '0681FA35-A794-4684-97BD-00B88370DB41'::uuid
-);
-
 -- Insert encounter with full transcript and SOAP notes
 INSERT INTO encounters (
     id,

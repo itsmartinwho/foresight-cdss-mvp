@@ -603,6 +603,50 @@ The implementation journey demonstrated the complexity of UI interactions and th
 
 ---
 
+## Dorothy Robinson Demo Patient Integration (June 20, 2025)
+
+**Problem Summary**:
+A significant effort was undertaken to make the demo patient, Dorothy Robinson, appear in the main patient list while preserving the interactive demo functionality. The primary challenges were ensuring her data was correctly inserted into the database and that the frontend would correctly fetch and display her encounter and associated clinical data, including differential diagnoses.
+
+**Initial State**: 
+- Dorothy Robinson's data was hardcoded in `src/services/demo/DemoDataService.ts`.
+- She was not present in the `patients` table in the database and thus did not appear in the main patient list.
+
+**Key Issues and Resolutions**:
+
+### 1. **Patient and Encounter Insertion**
+- **Problem**: Dorothy and her encounter data were not in the database.
+- **Solution**: A comprehensive SQL script (`scripts/insert_dorothy_robinson_complete_demo.sql`) was created to safely insert her patient record, a complete encounter record (with full transcript, SOAP notes, and treatments), differential diagnoses, and a critical drug interaction alert. The script used `IF NOT EXISTS` guards to be idempotent and prevent data duplication.
+
+### 2. **Encounter Not Appearing in UI**
+- **Problem**: Even after being inserted into the database, the encounter was not visible in the dropdown in her workspace.
+- **Root Cause**: The `supabaseDataService` was filtering encounters using a JSONB field (`extra_data->>'PatientID'`), but the initial insertion script had not populated this field.
+- **Solution**: A patch script (`scripts/fix_dorothy_encounter_extra_data.sql`) was created and run to add the necessary `extra_data` to her encounter record, making it visible to the data service.
+
+### 3. **Incorrect Encounter Content Displayed**
+- **Problem**: The UI was displaying a "constipation" encounter with stub data instead of the rich diabetes/warfarin interaction case.
+- **Root Cause**: The existing encounter record had incorrect `reason_display_text` and placeholder content.
+- **Solution**: An update script (`scripts/update_dorothy_demo_encounter.sql`) was executed to overwrite the incorrect content with the full transcript, SOAP notes, and treatments from the demo data service.
+
+### 4. **Differential Diagnoses Not Displaying**
+- **Problem**: The differential diagnoses were not showing in the UI, even though they existed in the database for Dorothy's encounter.
+- **Root Cause**: A structural bug was identified in the API route (`/api/differential-diagnoses/route.ts`). The API was using a generic `getDifferentialDiagnoses()` method that returned all diagnoses and then incorrectly filtered them using the patient's original ID instead of their Supabase UUID. This caused the filter to always fail.
+- **Solution**: The API was fixed to use the correct data service methods: `getPatientDifferentialDiagnoses(patientId)` and `getDifferentialDiagnosesForEncounter(patientId, encounterId)`. These methods correctly handle the mapping between the public-facing patient ID and the internal Supabase UUID, ensuring the correct data is returned.
+- **Current Status**: Although the API fix was implemented, the issue of differential diagnoses not appearing persists, suggesting a deeper, potentially related issue in the frontend data-loading or rendering logic that was not resolved in this session. The console logs showing `Converted diagnoses Array(0)` confirm that the frontend is still receiving an empty list.
+
+**Final Outcome**:
+- Dorothy Robinson now appears correctly in the patient list.
+- Her encounter dropdown is populated, and the correct encounter with the full, enriched demo data is selectable.
+- A structural bug preventing any differential diagnoses from being displayed was identified and fixed at the API level, though a frontend issue appears to still be blocking their visibility.
+
+**Scripts Created and Used**:
+- `scripts/insert_dorothy_robinson_complete_demo.sql`: The final, comprehensive script for seeding Dorothy's data.
+- `scripts/fix_dorothy_encounter_extra_data.sql`: A one-time patch to fix the `extra_data` field.
+- `scripts/update_dorothy_demo_encounter.sql`: A script to update the encounter content.
+*(These scripts were consolidated and the temporary ones will be removed).*
+
+---
+
 ## Deprecated Code Cleanup (June 2025)
 
 Several deprecated files and services were identified and cleaned up to maintain code quality and reduce confusion about which systems are currently active.
