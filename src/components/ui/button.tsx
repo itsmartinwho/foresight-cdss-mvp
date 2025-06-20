@@ -10,9 +10,23 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[hsl(var(--custom-blue-teal))] text-white hover:brightness-[1.3] shadow-sm",
+          [
+            "relative overflow-hidden text-white",
+            "bg-[linear-gradient(135deg,_hsl(var(--custom-blue-teal)/0.35),_hsl(var(--custom-blue-teal)/0.15))]",
+            "[backdrop-filter:blur(20px)_brightness(1.1)]",
+            "transform-gpu [transform:translateY(-6px)_rotateY(5deg)]",
+            "shadow-md shadow-[rgba(0,0,0,0.25)] border border-[hsl(var(--custom-blue-teal)/0.4)]",
+            "hover:brightness-[1.15]"
+          ].join(" "),
         secondary:
-          "bg-white/20 text-foreground backdrop-blur-sm hover:brightness-[1.3] border border-white/30",
+          [
+            "relative overflow-hidden text-foreground",
+            "bg-[linear-gradient(135deg,_rgba(255,255,255,0.2),_rgba(255,255,255,0.05))]",
+            "[backdrop-filter:blur(20px)_brightness(1.1)]",
+            "transform-gpu [transform:translateY(-6px)_rotateY(5deg)]",
+            "shadow-md shadow-[rgba(0,0,0,0.15)] border border-white/30",
+            "hover:brightness-[1.15]"
+          ].join(" "),
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:brightness-[1.3]",
         outline:
