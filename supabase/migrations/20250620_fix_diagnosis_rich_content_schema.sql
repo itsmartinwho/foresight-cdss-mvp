@@ -11,16 +11,22 @@ SET diagnosis_rich_content = jsonb_build_object(
   'text_content', COALESCE(diagnosis_rich_content->>'markdown', ''),
   'rich_elements', 
     CASE 
-      WHEN diagnosis_rich_content->'tables' IS NOT NULL AND jsonb_array_length(diagnosis_rich_content->'tables') > 0 THEN
-        (SELECT jsonb_agg(
+      WHEN diagnosis_rich_content->'tables' IS NOT NULL 
+           AND jsonb_typeof(diagnosis_rich_content->'tables') = 'array'
+           AND jsonb_array_length(diagnosis_rich_content->'tables') > 0 THEN
+        (WITH numbered_tables AS (
+          SELECT elem, row_number() OVER() as table_number
+          FROM jsonb_array_elements(diagnosis_rich_content->'tables') AS elem
+        )
+        SELECT jsonb_agg(
           jsonb_build_object(
-            'id', 'table_' || (row_number() OVER()),
+            'id', 'table_' || table_number,
             'type', 'table',
-            'position', (row_number() OVER()) - 1,
+            'position', table_number - 1,
             'data', elem,
             'editable', true
           )
-        ) FROM jsonb_array_elements(diagnosis_rich_content->'tables') elem)
+        ) FROM numbered_tables)
       ELSE '[]'::jsonb
     END,
   'created_at', NOW(),
