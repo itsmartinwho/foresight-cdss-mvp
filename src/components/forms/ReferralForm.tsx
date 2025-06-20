@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Download, Warning, CheckCircle, Plus, X } from '@phosphor-icons/react';
+import { Download, AlertTriangle, CheckCircle, Plus, X } from 'lucide-react';
 import FHIRResourceSelector from '@/components/ui/FHIRResourceSelector';
 import { EditableTextField } from '@/components/ui/editable';
 import { ReferralService, REFERRAL_RESOURCE_TYPES, SPECIALTY_TYPES } from '@/lib/forms/referralService';
+import { PDFGenerator } from '@/lib/forms/pdfGenerator';
 import { Patient, Encounter, Diagnosis, LabResult, ReferralFormData, FormValidationResult } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -70,7 +71,7 @@ export default function ReferralForm({
     if (!validation.isValid) {
       toast({
         title: "Form Validation Failed",
-        description: "Please fix the errors before generating PDF",
+        description: "Please fix the errors before downloading",
         variant: "destructive"
       });
       return;
@@ -78,15 +79,26 @@ export default function ReferralForm({
 
     setIsGeneratingPDF(true);
     try {
-      await onGeneratePDF(formData);
+      // Prepare data for PDF generation using the same format as sections
+      const pdfData = ReferralService.preparePDFData(formData);
+      
+      // Generate HTML file using PDFGenerator
+      const blob = await PDFGenerator.generateReferralPDF(pdfData);
+      
+      // Download the HTML file
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `referral_${formData.patientInformation.name.replace(/\s+/g, '_')}_${timestamp}.html`;
+      PDFGenerator.downloadBlob(blob, filename);
+      
       toast({
-        title: "PDF Generated Successfully", 
-        description: "Referral form has been downloaded",
+        title: "Form Downloaded Successfully", 
+        description: "Referral form has been downloaded as HTML file",
         variant: "default"
       });
     } catch (error) {
+      console.error('Download failed:', error);
       toast({
-        title: "PDF Generation Failed",
+        title: "Download Failed",
         description: "Please try again or contact support",
         variant: "destructive"
       });
@@ -131,7 +143,7 @@ export default function ReferralForm({
             {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
-              <Warning className="h-5 w-5 text-yellow-500" />
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
             )}
             <Button
               variant="outline"
@@ -145,7 +157,7 @@ export default function ReferralForm({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Generate PDF
+              Download
             </Button>
           </div>
         </CardTitle>

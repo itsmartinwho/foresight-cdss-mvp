@@ -1,9 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from "react-dom";
-import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
+import type { Patient, Encounter, EncounterDetailsWrapper, Treatment, LabResult, Diagnosis, ClinicalTrial } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, X, Trash, CircleNotch } from '@phosphor-icons/react';
+import { FileText, Eye, X, Trash, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import ReferralForm from '@/components/forms/ReferralForm';
 import { useEditableEncounterFields } from '@/hooks/useEditableEncounterFields';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { toast } from '@/hooks/use-toast';
+import Section from '@/components/ui/section';
 
 interface ConsolidatedConsultationTabProps {
   patient: Patient | null;
@@ -273,7 +274,7 @@ export default function ConsolidatedConsultationTab({
             </div>
           ) : diagnosisRichContent.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading diagnosis...</span>
             </div>
           ) : (
@@ -348,7 +349,7 @@ export default function ConsolidatedConsultationTab({
             </div>
           ) : treatmentRichContent.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading treatment plans...</span>
             </div>
           ) : (
@@ -382,122 +383,136 @@ export default function ConsolidatedConsultationTab({
       </Card>
 
       {/* Prior Authorization */}
-      <PriorAuthorizationForm
-        patient={patient}
-        encounter={selectedEncounter}
-        diagnoses={diagnoses}
-        onSave={async (formData) => {
-          try {
-            const response = await fetch('/api/forms/prior-auth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'save', formData })
-            });
-            
-            if (!response.ok) throw new Error('Failed to save form');
-            
-            const result = await response.json();
-            if (!result.success) throw new Error(result.message || 'Save failed');
-            
-            // Update the encounter with relevant form data
-            await updateField('priorAuthJustification', formData.clinicalJustification);
-            
-          } catch (error) {
-            console.error('Error saving prior auth form:', error);
-            throw error;
-          }
-        }}
-        onGeneratePDF={async (formData) => {
-          try {
-            const response = await fetch('/api/forms/prior-auth', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'generate-pdf', formData })
-            });
-            
-            if (!response.ok) throw new Error('Failed to generate PDF');
-            
-            const result = await response.json();
-            if (!result.success) throw new Error(result.message || 'PDF generation failed');
-            
-            // Download the PDF data
-            if (result.pdfData) {
-              const binaryString = atob(result.pdfData);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              const blob = new Blob([bytes], { type: result.mimeType || 'text/html' });
+      <Section 
+        title="Prior Authorization" 
+        collapsible={true} 
+        defaultOpen={false}
+        collapsedSummary="Generate prior authorization forms"
+      >
+        <PriorAuthorizationForm
+          patient={patient}
+          encounter={selectedEncounter}
+          diagnoses={diagnoses}
+          onSave={async (formData) => {
+            try {
+              const response = await fetch('/api/forms/prior-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'save', formData })
+              });
               
-              // Import PDFGenerator for download function
-              const { PDFGenerator } = await import('@/lib/forms/pdfGenerator');
-              PDFGenerator.downloadBlob(blob, result.filename || 'prior_authorization.html');
+              if (!response.ok) throw new Error('Failed to save form');
+              
+              const result = await response.json();
+              if (!result.success) throw new Error(result.message || 'Save failed');
+              
+              // Update the encounter with relevant form data
+              await updateField('priorAuthJustification', formData.clinicalJustification);
+              
+            } catch (error) {
+              console.error('Error saving prior auth form:', error);
+              throw error;
             }
-            
-          } catch (error) {
-            console.error('Error generating prior auth PDF:', error);
-            throw error;
-          }
-        }}
-      />
+          }}
+          onGeneratePDF={async (formData) => {
+            try {
+              const response = await fetch('/api/forms/prior-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generate-pdf', formData })
+              });
+              
+              if (!response.ok) throw new Error('Failed to generate PDF');
+              
+              const result = await response.json();
+              if (!result.success) throw new Error(result.message || 'PDF generation failed');
+              
+              // Download the PDF data
+              if (result.pdfData) {
+                const binaryString = atob(result.pdfData);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: result.mimeType || 'text/html' });
+                
+                // Import PDFGenerator for download function
+                const { PDFGenerator } = await import('@/lib/forms/pdfGenerator');
+                PDFGenerator.downloadBlob(blob, result.filename || 'prior_authorization.html');
+              }
+              
+            } catch (error) {
+              console.error('Error generating prior auth PDF:', error);
+              throw error;
+            }
+          }}
+        />
+      </Section>
 
       {/* Referral */}
-      <ReferralForm
-        patient={patient}
-        encounter={selectedEncounter}
-        diagnoses={diagnoses}
-        labResults={labResults}
-        onSave={async (formData) => {
-          try {
-            const response = await fetch('/api/forms/referral', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'save', formData })
-            });
-            
-            if (!response.ok) throw new Error('Failed to save form');
-            
-            const result = await response.json();
-            if (!result.success) throw new Error(result.message || 'Save failed');
-            
-          } catch (error) {
-            console.error('Error saving referral form:', error);
-            throw error;
-          }
-        }}
-        onGeneratePDF={async (formData) => {
-          try {
-            const response = await fetch('/api/forms/referral', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'generate-pdf', formData })
-            });
-            
-            if (!response.ok) throw new Error('Failed to generate PDF');
-            
-            const result = await response.json();
-            if (!result.success) throw new Error(result.message || 'PDF generation failed');
-            
-            // Download the PDF data
-            if (result.pdfData) {
-              const binaryString = atob(result.pdfData);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              const blob = new Blob([bytes], { type: result.mimeType || 'text/html' });
+      <Section 
+        title="Referral" 
+        collapsible={true} 
+        defaultOpen={false}
+        collapsedSummary="Generate referral forms"
+      >
+        <ReferralForm
+          patient={patient}
+          encounter={selectedEncounter}
+          diagnoses={diagnoses}
+          labResults={labResults}
+          onSave={async (formData) => {
+            try {
+              const response = await fetch('/api/forms/referral', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'save', formData })
+              });
               
-              // Import PDFGenerator for download function
-              const { PDFGenerator } = await import('@/lib/forms/pdfGenerator');
-              PDFGenerator.downloadBlob(blob, result.filename || 'referral.html');
+              if (!response.ok) throw new Error('Failed to save form');
+              
+              const result = await response.json();
+              if (!result.success) throw new Error(result.message || 'Save failed');
+              
+            } catch (error) {
+              console.error('Error saving referral form:', error);
+              throw error;
             }
-            
-          } catch (error) {
-            console.error('Error generating referral PDF:', error);
-            throw error;
-          }
-        }}
-      />
+          }}
+          onGeneratePDF={async (formData) => {
+            try {
+              const response = await fetch('/api/forms/referral', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generate-pdf', formData })
+              });
+              
+              if (!response.ok) throw new Error('Failed to generate PDF');
+              
+              const result = await response.json();
+              if (!result.success) throw new Error(result.message || 'PDF generation failed');
+              
+              // Download the PDF data
+              if (result.pdfData) {
+                const binaryString = atob(result.pdfData);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: result.mimeType || 'text/html' });
+                
+                // Import PDFGenerator for download function
+                const { PDFGenerator } = await import('@/lib/forms/pdfGenerator');
+                PDFGenerator.downloadBlob(blob, result.filename || 'referral.html');
+              }
+              
+            } catch (error) {
+              console.error('Error generating referral PDF:', error);
+              throw error;
+            }
+          }}
+        />
+      </Section>
 
       {/* Clinical Trials */}
       <Card>

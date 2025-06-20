@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Download, Warning, CheckCircle } from '@phosphor-icons/react';
+import { FileText, Download, AlertTriangle, CheckCircle } from 'lucide-react';
 import FHIRResourceSelector from '@/components/ui/FHIRResourceSelector';
 import { EditableTextField } from '@/components/ui/editable';
 import { PriorAuthService, PRIOR_AUTH_RESOURCE_TYPES } from '@/lib/forms/priorAuthService';
+import { PDFGenerator } from '@/lib/forms/pdfGenerator';
 import { Patient, Encounter, Diagnosis, PriorAuthFormData, FormValidationResult } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -99,7 +100,7 @@ export default function PriorAuthorizationForm({
     if (!validation.isValid) {
       toast({
         title: "Form Validation Failed",
-        description: "Please fix the errors before generating PDF",
+        description: "Please fix the errors before downloading",
         variant: "destructive"
       });
       return;
@@ -107,15 +108,26 @@ export default function PriorAuthorizationForm({
 
     setIsGeneratingPDF(true);
     try {
-      await onGeneratePDF(formData);
+      // Prepare data for PDF generation using the same format as sections
+      const pdfData = PriorAuthService.preparePDFData(formData);
+      
+      // Generate HTML file using PDFGenerator
+      const blob = await PDFGenerator.generatePriorAuthPDF(pdfData);
+      
+      // Download the HTML file
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `prior_auth_${formData.patientInformation.name.replace(/\s+/g, '_')}_${timestamp}.html`;
+      PDFGenerator.downloadBlob(blob, filename);
+      
       toast({
-        title: "PDF Generated Successfully",
-        description: "Prior authorization form has been downloaded",
+        title: "Form Downloaded Successfully", 
+        description: "Prior authorization form has been downloaded as HTML file",
         variant: "default"
       });
     } catch (error) {
+      console.error('Download failed:', error);
       toast({
-        title: "PDF Generation Failed",
+        title: "Download Failed",
         description: "Please try again or contact support",
         variant: "destructive"
       });
@@ -144,7 +156,7 @@ export default function PriorAuthorizationForm({
             {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
-              <Warning className="h-5 w-5 text-yellow-500" />
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
             )}
             <Button
               variant="outline"
@@ -158,7 +170,7 @@ export default function PriorAuthorizationForm({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              Generate PDF
+              Download
             </Button>
           </div>
         </CardTitle>
