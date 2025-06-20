@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper, Treatment, LabResult, Diagnosis, ClinicalTrial } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, X, Trash, CircleNotch, Plus, PencilSimple, FloppyDisk, PlayCircle, PauseCircle, StopCircle } from '@phosphor-icons/react';
+import { Eye, Trash, CircleNotch } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -32,9 +32,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { format } from 'date-fns';
-import { RichTextEditor, RichTextEditorRef } from '@/components/ui/rich-text-editor';
+import type { RichTextEditorRef } from '@/components/ui/rich-text-editor';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { AudioWaveform } from '@/components/ui/AudioWaveform';
 
 interface ConsolidatedConsultationTabProps {
   patient: Patient | null;
@@ -509,64 +508,6 @@ export default function ConsolidatedConsultationTab({
           </div>
         </div>
       </div>
-
-      {/* Live Transcript */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
-            Live Transcript
-            <div className="flex gap-2">
-              {!isTranscribing && !isPaused && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={startTranscription}
-                  className="flex items-center gap-2"
-                >
-                  <PlayCircle className="h-4 w-4" />
-                  Start Recording
-                </Button>
-              )}
-              {transcriptText && transcriptText !== lastSavedTranscript && !isTranscribing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={stopTranscriptionAndSave}
-                  className="flex items-center gap-2"
-                >
-                  <FloppyDisk className="h-4 w-4" />
-                  Save Transcript
-                </Button>
-              )}
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative">
-          <div className="min-h-[300px] relative">
-            <RichTextEditor
-              ref={richTextEditorRef}
-              content={transcriptText}
-              onContentChange={setTranscriptText}
-              placeholder="Start recording to see live transcription here, or type your notes manually..."
-              disabled={false}
-              showToolbar={!isTranscribing}
-              minHeight="300px"
-              className="h-full"
-            />
-            {/* AudioWaveform component for transcription controls */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-              <AudioWaveform
-                isRecording={isTranscribing}
-                isPaused={isPaused}
-                mediaStream={audioStreamRef.current}
-                onPause={pauseTranscription}
-                onResume={resumeTranscription}
-                onStop={stopTranscriptionAndSave}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Summary Notes (SOAP Notes) */}
       <Card>
