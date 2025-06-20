@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { fn, userEvent, expect, within } from '@storybook/test';
-import { Heart } from 'lucide-react'; // Example icon
+import { Heart } from '@phosphor-icons/react'; // Example icon
 
 import { Button } from '@/components/ui/button'; // Updated import path
 

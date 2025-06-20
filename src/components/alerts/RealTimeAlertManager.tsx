@@ -6,7 +6,7 @@ import { AlertEngine } from '@/lib/alerts/alert-engine';
 import AlertToast from './AlertToast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Pause, Square, TestTube } from 'lucide-react';
+import { Play, Pause, Square, TestTube } from '@phosphor-icons/react';
 
 interface RealTimeAlertManagerProps {
   isActive: boolean;

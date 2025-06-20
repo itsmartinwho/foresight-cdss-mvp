@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlayIcon, DownloadIcon } from 'lucide-react';
+import { Play as PlayIcon, Download as DownloadIcon } from '@phosphor-icons/react';
 import type { PyodideInterface } from '@/types/pyodide';
 
 interface TableRendererProps {

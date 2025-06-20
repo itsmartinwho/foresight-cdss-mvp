@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { PlayIcon, EyeIcon, DownloadIcon } from 'lucide-react';
+import { Play as PlayIcon, Eye as EyeIcon, Download as DownloadIcon } from '@phosphor-icons/react';
 import type { PyodideInterface } from '@/types/pyodide';
 
 interface ChartRendererProps {
