@@ -292,12 +292,12 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Diagnosis *
               </label>
-                             <EditableTextField
-                 value={formData.serviceRequest.diagnosis}
-                 onSave={async (value) => handleInputChange('serviceRequest', 'diagnosis', value)}
-                 placeholder="Enter diagnosis"
-                 displayClassName={errors.diagnosis ? "text-destructive" : "text-sm"}
-               />
+              <EditableTextField
+                value={formData.serviceRequest.diagnosis}
+                onSave={async (value) => Promise.resolve(handleInputChange('serviceRequest', 'diagnosis', value))}
+                placeholder="Enter diagnosis"
+                displayClassName={errors.diagnosis ? "text-destructive" : "text-sm"}
+              />
               {errors.diagnosis && (
                 <p className="text-xs text-destructive mt-1">{errors.diagnosis}</p>
               )}
@@ -316,12 +316,12 @@ export default function PriorAuthorizationForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Requested Service/Medication *
               </label>
-                             <EditableTextField
-                 value={formData.serviceRequest.requestedService}
-                 onSave={async (value) => handleInputChange('serviceRequest', 'requestedService', value)}
-                 placeholder="Enter requested service or medication"
-                 displayClassName={errors.requestedService ? "text-destructive" : "text-sm"}
-               />
+              <EditableTextField
+                value={formData.serviceRequest.requestedService}
+                onSave={async (value) => Promise.resolve(handleInputChange('serviceRequest', 'requestedService', value))}
+                placeholder="Enter requested service or medication"
+                displayClassName={errors.requestedService ? "text-destructive" : "text-sm"}
+              />
               {errors.requestedService && (
                 <p className="text-xs text-destructive mt-1">{errors.requestedService}</p>
               )}

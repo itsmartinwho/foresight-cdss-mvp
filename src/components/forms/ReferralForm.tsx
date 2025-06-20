@@ -364,7 +364,7 @@ export default function ReferralForm({
               </label>
               <EditableTextField
                 value={formData.referralReason.diagnosis}
-                onSave={(value) => handleInputChange('referralReason', 'diagnosis', value)}
+                onSave={async (value) => Promise.resolve(handleInputChange('referralReason', 'diagnosis', value))}
                 placeholder="Enter primary diagnosis"
                 displayClassName={errors.diagnosis ? "text-destructive" : "text-sm"}
               />
@@ -388,7 +388,7 @@ export default function ReferralForm({
               </label>
               <EditableTextField
                 value={formData.referralReason.reasonForReferral}
-                onSave={(value) => handleInputChange('referralReason', 'reasonForReferral', value)}
+                onSave={async (value) => Promise.resolve(handleInputChange('referralReason', 'reasonForReferral', value))}
                 placeholder="Enter detailed reason for referral..."
                 multiline
                 displayClassName={errors.reasonForReferral ? "text-destructive" : "text-sm"}
@@ -430,7 +430,7 @@ export default function ReferralForm({
             </label>
             <EditableTextField
               value={formData.clinicalInformation.historyOfPresentIllness}
-              onSave={(value) => handleInputChange('clinicalInformation', 'historyOfPresentIllness', value)}
+              onSave={async (value) => Promise.resolve(handleInputChange('clinicalInformation', 'historyOfPresentIllness', value))}
               placeholder="Enter history of present illness..."
               multiline
               displayClassName="text-sm"
@@ -510,7 +510,7 @@ export default function ReferralForm({
           <label className="block text-sm font-medium text-muted-foreground">Additional Notes</label>
           <EditableTextField
             value={formData.additionalNotes}
-            onSave={(value) => handleInputChange('additionalNotes', '', value)}
+            onSave={async (value) => Promise.resolve(handleInputChange('additionalNotes', '', value))}
             placeholder="Enter any additional notes for the specialist..."
             multiline
             displayClassName="text-sm"
