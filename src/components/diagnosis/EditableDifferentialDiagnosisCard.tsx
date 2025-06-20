@@ -356,26 +356,26 @@ export default function EditableDifferentialDiagnosisCard({
           </div>
         )}
 
-        {diagnosis.supportingEvidence && diagnosis.supportingEvidence.length > 0 && !isEditing && (
+        {Array.isArray(diagnosis.supportingEvidence) && diagnosis.supportingEvidence.length > 0 && !isEditing && (
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-1">
               Supporting Evidence
             </label>
             <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
-              {diagnosis.supportingEvidence.map((evidence, index) => (
+              {(diagnosis.supportingEvidence || []).map((evidence, index) => (
                 <li key={index}>{evidence}</li>
               ))}
             </ul>
           </div>
         )}
 
-        {diagnosis.icdCodes && diagnosis.icdCodes.length > 0 && !isEditing && (
+        {Array.isArray(diagnosis.icdCodes) && diagnosis.icdCodes.length > 0 && !isEditing && (
           <div>
             <label className="text-sm font-medium text-gray-600 block mb-1">
               ICD Codes
             </label>
             <div className="flex flex-wrap gap-2">
-              {diagnosis.icdCodes.map((icd, index) => (
+              {(diagnosis.icdCodes || []).map((icd, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
                   {icd.code}: {icd.description}
                 </Badge>

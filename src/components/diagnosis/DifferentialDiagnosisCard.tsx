@@ -36,9 +36,9 @@ export default function DifferentialDiagnosisCard({
             <CardTitle className="text-base font-semibold text-foreground">
               #{diagnosis.rank} {diagnosis.name}
             </CardTitle>
-            {diagnosis.icdCodes && diagnosis.icdCodes.length > 0 && (
+            {Array.isArray(diagnosis.icdCodes) && diagnosis.icdCodes.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
-                {diagnosis.icdCodes.map((icd, index) => (
+                {(diagnosis.icdCodes || []).map((icd, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
                     {icd.code}
                   </Badge>
@@ -79,14 +79,14 @@ export default function DifferentialDiagnosisCard({
         )}
 
         {/* Supporting Evidence */}
-        {diagnosis.supportingEvidence && diagnosis.supportingEvidence.length > 0 && (
+        {Array.isArray(diagnosis.supportingEvidence) && diagnosis.supportingEvidence.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <TestTube className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium text-muted-foreground">Supporting Evidence</span>
             </div>
             <ul className="text-sm text-foreground pl-6 space-y-1">
-              {diagnosis.supportingEvidence.map((evidence, index) => (
+              {(diagnosis.supportingEvidence || []).map((evidence, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <span className="w-1 h-1 bg-muted-foreground rounded-full mt-2 shrink-0" />
                   <span>{evidence}</span>
@@ -97,14 +97,14 @@ export default function DifferentialDiagnosisCard({
         )}
 
         {/* ICD Codes with Descriptions */}
-        {diagnosis.icdCodes && diagnosis.icdCodes.length > 0 && (
+        {Array.isArray(diagnosis.icdCodes) && diagnosis.icdCodes.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Info className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium text-muted-foreground">ICD-10 Codes</span>
             </div>
             <div className="pl-6 space-y-1">
-              {diagnosis.icdCodes.map((icd, index) => (
+              {(diagnosis.icdCodes || []).map((icd, index) => (
                 <div key={index} className="text-sm">
                   <span className="font-mono font-medium">{icd.code}</span>
                   <span className="text-muted-foreground ml-2">{icd.description}</span>
