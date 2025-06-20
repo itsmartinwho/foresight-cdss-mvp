@@ -461,7 +461,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto pr-96">
+        <div className="flex-1 overflow-y-auto pr-80 pl-8">
           {/* Main Content - Tables */}
           <TabsContent value="allPatients" className="mt-0 h-full">
             {renderAllPatientsTable()}
@@ -473,7 +473,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         </div>
 
         {/* Fixed Right Side Panel - Actions */}
-        <div className="fixed top-36 right-6 bottom-6 w-80 z-10 flex flex-col space-y-4">
+        <div className="fixed top-36 right-6 bottom-6 w-72 z-10 flex flex-col space-y-4">
           {/* New Consultation */}
           <div 
             className="relative flex-1 bg-sidebar/60 backdrop-blur-lg border border-border/20 rounded-xl p-6 pb-8 flex flex-col items-center justify-center cursor-pointer hover:bg-sidebar-accent transition-colors overflow-hidden"
