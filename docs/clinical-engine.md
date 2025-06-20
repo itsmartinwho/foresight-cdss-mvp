@@ -1,92 +1,203 @@
-# Clinical Engine Guide
+# Clinical Engine Documentation
 
-This document provides a guide to the Clinical Engine (tool B), covering its architecture, batch processing capabilities, and future enhancements.
+## Overview
 
-## V3 Architecture
+The Foresight Clinical Engine is a sophisticated AI-powered diagnostic system that leverages OpenAI's GPT models to analyze patient data and provide clinical decision support. The engine implements a multi-stage diagnostic pipeline following FHIR Core 6.1 standards.
 
-The Clinical Engine V3 uses a multi-step GPT-based clinical reasoning process to provide more accurate and context-aware results than previous versions.
+## FHIR Core 6.1 Compliance
 
-### Multi-Step Clinical Reasoning Process
+The clinical engine creates both rich and non-rich versions of clinical content to support different use cases and FHIR compliance:
 
-1.  **Stage 1: Comprehensive Patient Data Loading**: The engine loads the complete patient context, including demographics, medical history, encounters, and lab results.
-2.  **Stage 2: Differential Diagnosis Generation**: A GPT model (`gpt-4.1-mini`) generates 3-5 ranked differential diagnoses based on the patient data.
-3.  **Stage 3: Primary Diagnosis and Treatment Plan**: A second GPT model (`o4-mini`) creates a primary diagnosis and treatment plan, considering the differential diagnoses from the previous stage.
-4.  **Stage 4: Additional Clinical Field Extraction**: The engine extracts specific fields like ICD-10 codes and encounter reasons.
-5.  **Stage 5: SOAP Note Generation**: A SOAP note is automatically generated.
-6.  **Stage 6: Automated Document Generation**: The engine can generate referral documents and prior authorization requests.
-7.  **Stage 7: Database Persistence**: All results are saved to the appropriate tables in the database.
+### Content Storage Strategy
 
-### Benefits of V3
+**Diagnosis Content:**
+- **Non-Rich Version**: `conditions.description` - Plain text diagnosis name for FHIR Condition resources
+- **Rich Version**: `encounters.diagnosis_rich_content` - Structured markdown with charts, visualizations, and clinical reasoning
 
-- **Clinical Accuracy**: Leverages the medical knowledge of GPT models.
-- **Context Awareness**: Considers the full patient history.
-- **Structured Output**: Provides consistent JSON responses.
-- **Auditability**: Saves all reasoning steps.
+**Treatment Content:**
+- **Non-Rich Version**: `encounters.treatments` - Simple array of treatment strings for basic clinical workflows
+- **Rich Version**: `encounters.treatments_rich_content` - Structured content with decision trees, monitoring plans, and detailed protocols
 
-### Future Enhancements
+### FHIR Status Codes
 
-The roadmap for the Clinical Engine includes:
-- Integration with clinical decision trees and medical guidelines.
-- Enhanced lab analysis and drug interaction checking.
-- Probabilistic reasoning and risk factor analysis.
-- Continuous learning from physician feedback.
+The engine applies FHIR-compliant status codes based on diagnostic confidence:
 
-### Integration with Aspirational Tools
+**Clinical Status** (conditions.clinical_status):
+- `active` - Applied to all diagnoses (confidence ≥ 0.6 and < 0.6) following FHIR guidelines that active conditions should remain active until proven otherwise
 
-The Clinical Engine's outputs are designed to feed into other aspirational tools in the system:
-- **Tool D (Complex Conditions Alerts):** Will scan Clinical Engine diagnostic outputs to identify potential complex conditions requiring special attention.
-- **Tool F (Clinical Trial Matching):** Will use the finalized diagnoses to identify eligible clinical trials for patients.
+**Verification Status** (conditions.verification_status):
+- `confirmed` - High confidence (≥ 0.8)
+- `provisional` - Moderate-high confidence (≥ 0.6)
+- `differential` - Moderate confidence (≥ 0.4) 
+- `unconfirmed` - Low confidence (< 0.4)
 
-## Batch Processing
+### Rich Content Features
 
-The batch clinical engine processing system identifies patients with clinical transcripts but minimal existing clinical results and automatically generates comprehensive clinical results using the clinical engine API.
+Rich versions contain the same core clinical information as non-rich versions but enhanced with:
+- **Enhanced Markdown Formatting**: Headers, lists, tables for better readability
+- **Interactive Visualizations**: Confidence meters, decision trees, diagnostic charts
+- **Structured Metadata**: FHIR-compliant linking, source tracking, version control
+- **Clinical Decision Support**: Embedded guidelines references, monitoring parameters
 
-### How It Works
+## Architecture
 
-The system uses a script (`scripts/batch_clinical_engine_processing.ts`) to identify target encounters and process them through the clinical engine.
+### Core Components
 
-#### Patient Selection Criteria
+1. **ClinicalEngineServiceV3** - Main service orchestrating the diagnostic pipeline
+2. **Multi-stage AI Analysis** - Differential diagnoses → Primary diagnosis → Treatment planning
+3. **Rich Content Generators** - Create enhanced clinical documentation
+4. **FHIR Compliance Layer** - Ensures proper status codes and resource mapping
 
-The system selects encounters that have:
-1. A transcript with a length greater than 100 characters.
-2. Fewer than 3 differential diagnoses OR no primary encounter diagnosis.
+### Diagnostic Pipeline Stages
 
-### Usage
+1. **Data Collection** - Patient data aggregation from multiple sources
+2. **Differential Diagnoses** - AI-generated ranked differential diagnoses
+3. **Primary Diagnosis** - Confident primary diagnosis selection
+4. **Treatment Planning** - Evidence-based treatment recommendations with decision trees
+5. **SOAP Note Generation** - Structured clinical documentation
+6. **Rich Content Creation** - Enhanced versions with visualizations
+7. **FHIR-Compliant Storage** - Proper mapping to database with status codes
 
-1.  **Prerequisites**: Make sure the database is set up with the `get_patients_for_clinical_engine()` function and that your `.env.local` file has the necessary environment variables.
-2.  **Run the script**:
-    ```bash
-    npx ts-node scripts/batch_clinical_engine_processing.ts
-    ```
+### AI Models Used
 
-### Safety Features
+- **GPT-4.1-mini** - Differential diagnoses generation and primary diagnosis
+- **OpenAI Assistants API** - Complex clinical reasoning and analysis
+- **Code Interpreter** - Data visualization and chart generation
 
-- **Rate Limiting**: 1-second delay between API calls.
-- **Retry Logic**: Up to 3 attempts for failed API calls.
-- **Data Validation**: Validates transcript length and verifies that results were created.
+## Database Schema Integration
 
-### Rich Content Workflow (Diagnosis & Treatments)
+### Conditions Table
+```sql
+conditions (
+  id,
+  patient_id,
+  encounter_id,
+  code,                    -- ICD-10 code
+  description,             -- Non-rich diagnosis text (FHIR Condition.text)
+  category,                -- 'encounter-diagnosis'
+  clinical_status,         -- FHIR clinical status (active, inactive, etc.)
+  verification_status,     -- FHIR verification status (confirmed, provisional, etc.)
+  note                     -- Additional clinical notes
+)
+```
 
-The Clinical Engine now persists **two parallel representations** for every encounter:
+### Encounters Table
+```sql
+encounters (
+  id,
+  treatments,                   -- Non-rich: Simple array of treatment strings
+  treatments_rich_content,      -- Rich: Structured JSON with decision trees
+  diagnosis_rich_content,       -- Rich: Enhanced markdown with visualizations
+  soap_note,                    -- Clinical documentation
+  prior_auth_justification      -- Insurance documentation
+)
+```
 
-1. **Rich Content** – Stored in the JSONB columns `diagnosis_rich_content` and `treatments_rich_content`. Each object follows the `RichContent` TS interface (see `src/lib/types.ts`) and can embed:
-   - Markdown narrative
-   - Data tables
-   - Interactive charts or images
-   - Decision-tree diagrams (Mermaid)
+## Implementation Details
 
-2. **Simple Fields** – `soap_note` (plain text) and `treatments` (array) remain untouched for interoperability with EHR systems that cannot consume rich formats.
+### Content Generation Process
 
-### Migration & Indexing
+1. **Non-Rich Content Creation**:
+   - `conditions.description` = Plain diagnosis name from AI analysis
+   - `encounters.treatments` = Simple string array of treatments
 
-Migration `20250129_add_rich_content_fields_simple.sql` adds the columns using `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and creates `GIN` indexes (`idx_encounters_*_rich_content`) for efficient JSONB search.
+2. **Rich Content Enhancement**:
+   - `diagnosis_rich_content` = Markdown with confidence visualizations
+   - `treatments_rich_content` = Structured treatment plans with decision trees
 
-### Generation Flow
+3. **FHIR Status Assignment**:
+   - Clinical status based on confidence thresholds
+   - Verification status for diagnostic certainty levels
 
-`ClinicalEngineServiceV3.saveResults()` constructs the rich content via helper functions `createDiagnosisRichContent()` and `createTreatmentsRichContent()` and writes them to the new columns alongside the existing plain-text fields.
+### Content Consistency
 
-### Front-End Consumption
+The system ensures content consistency by:
+- Using the same source data for both rich and non-rich versions
+- Applying enhanced formatting to rich versions while preserving core information
+- Maintaining conceptual linking through encounter relationships
+- Adding metadata for traceability and version control
 
-The `useRichContentEditor` hook (see `src/hooks/useRichContentEditor.ts`) fetches these columns and feeds them into the `TreatmentRenderer` & related components. If the rich fields are `NULL`, the UI gracefully falls back to the simple fields, preserving backward compatibility.
+## API Endpoints
 
-This dual-storage approach enables a modern, highly-readable UI while maintaining safe integration points for downstream systems. 
+### Primary Diagnostic Pipeline
+```
+POST /api/clinical-engine
+```
+- Runs full diagnostic pipeline
+- Returns structured clinical output package
+- Automatically saves both rich and non-rich content
+
+### Differential Diagnoses
+```
+POST /api/clinical-engine/differential-diagnoses
+```
+- Generates ranked differential diagnoses
+- FHIR-compliant probability assessments
+
+### Treatment Recommendations
+```
+POST /api/clinical-engine/treatments
+```
+- Evidence-based treatment planning
+- Decision tree generation
+- Guidelines integration
+
+## Configuration
+
+### Model Selection
+- Primary analysis: GPT-4.1-mini for accuracy
+- Visualization: Code Interpreter for charts
+- Temperature: 1.0 for clinical creativity within bounds
+
+### FHIR Compliance Settings
+- Clinical status threshold: 0.6 confidence
+- Verification status mapping: Confidence-based
+- Rich content versioning: Semantic versioning
+
+## Quality Assurance
+
+### Content Validation
+- Dual content generation ensures consistency
+- FHIR validation for status codes
+- Rich content rendering verification
+
+### Clinical Accuracy
+- Evidence-based reasoning chains
+- Guidelines integration
+- Confidence scoring and transparency
+
+## Integration Points
+
+### Frontend Components
+- `DifferentialDiagnosesList` - Displays structured diagnosis data
+- `TreatmentRenderer` - Renders rich treatment content
+- `ConfidenceMeter` - Visualizes diagnostic confidence
+
+### External Services
+- **Supabase** - Database persistence with FHIR schema
+- **OpenAI** - AI reasoning and content generation
+- **Guidelines Service** - Evidence-based recommendations
+
+## Monitoring and Logging
+
+The engine provides comprehensive logging for:
+- Content generation status (rich vs non-rich)
+- FHIR compliance verification
+- AI model performance metrics
+- Database operation success/failure
+
+Example log output:
+```
+✅ Diagnosis Non-Rich: conditions.description (plain text)
+✅ Diagnosis Rich: encounters.diagnosis_rich_content (with charts/tables)
+✅ Treatment Non-Rich: encounters.treatments (simple array)
+✅ Treatment Rich: encounters.treatments_rich_content (structured content)
+✅ FHIR Clinical Status: Applied based on confidence (0.85)
+```
+
+## Future Enhancements
+
+- **Advanced Visualizations**: 3D diagnostic charts, interactive decision trees
+- **Real-time Updates**: Live confidence adjustments based on new data
+- **Multi-modal Integration**: Image analysis, lab result interpretation
+- **Enhanced FHIR Support**: Full R6 resource compliance, terminologies integration 
