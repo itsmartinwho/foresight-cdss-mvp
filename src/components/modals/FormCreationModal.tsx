@@ -194,16 +194,18 @@ export default function FormCreationModal({
                 setSelectedEncounter(enc);
               }}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full max-w-xl">
                 <SelectValue placeholder="Choose encounter" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-xl">
                 {patientEncounters.length > 0 ? (
                   patientEncounters
                     .sort((a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime())
                     .map((enc) => (
-                      <SelectItem key={enc.id} value={enc.id}>
-                        {new Date(enc.scheduledStart).toLocaleDateString()} - {enc.reasonDisplayText || enc.reasonCode || 'Encounter'}
+                      <SelectItem key={enc.id} value={enc.id} className="max-w-full">
+                        <span className="truncate">
+                          {new Date(enc.scheduledStart).toLocaleDateString()} - {enc.reasonDisplayText || enc.reasonCode || 'Encounter'}
+                        </span>
                       </SelectItem>
                     ))
                 ) : (
