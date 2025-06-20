@@ -28,8 +28,20 @@ export async function GET(request: NextRequest) {
     if (encounterId) {
       // Get differential diagnoses for specific encounter
       filteredDiagnoses = supabaseDataService.getDifferentialDiagnosesForEncounter(patientId, encounterId);
+
+      // Fallback: if cache not yet loaded or empty, query Supabase directly
+      if (!filteredDiagnoses || filteredDiagnoses.length === 0) {
+        const { data: directDiffs, error: diffErr } = await supabase
+          .from('differential_diagnoses')
+          .select('*')
+          .eq('encounter_id', encounterId);
+
+        if (!diffErr && directDiffs) {
+          filteredDiagnoses = directDiffs;
+        }
+      }
     } else {
-      // Get all differential diagnoses for the patient
+      // Get all differential diagnoses for the patient (cache)
       filteredDiagnoses = supabaseDataService.getPatientDifferentialDiagnoses(patientId);
     }
 
