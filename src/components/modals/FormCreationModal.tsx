@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { MagnifyingGlass, ArrowLeft, FilePlus, FileText } from '@phosphor-icons/react';
+import { MagnifyingGlass, ArrowLeft } from '@phosphor-icons/react';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import ReferralForm from '@/components/forms/ReferralForm';

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { PlayCircle, PlusCircle, FilePlus, FileText, Eye } from '@phosphor-icons/react';
+import { PlayCircle, Eye } from '@phosphor-icons/react';
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';

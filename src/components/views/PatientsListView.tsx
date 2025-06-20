@@ -5,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter } from "@/lib/types";
-import { ArrowUp, ArrowDown, PlusCircle, PlayCircle, Eye, Calendar, FilePlus, FileText } from '@phosphor-icons/react';
+import { ArrowUp, ArrowDown, PlayCircle, Eye, Calendar } from '@phosphor-icons/react';
 import { Button } from "@/components/ui/button";
 import NewConsultationModal from '../modals/NewConsultationModal';
 import { useRouter } from 'next/navigation';
