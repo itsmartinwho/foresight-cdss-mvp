@@ -360,7 +360,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                   </span>
                 </TableCell>
                 <TableCell className="w-[20%]">
-                  <div className="text-xs leading-tight" title={(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}>
+                  <div className="text-sm leading-snug break-words" title={(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}>
                     {(encounter.reasonDisplayText || encounter.reasonCode) ?? "—"}
                   </div>
                 </TableCell>

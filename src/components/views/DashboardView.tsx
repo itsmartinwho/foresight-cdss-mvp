@@ -172,7 +172,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                   </TableCell>
                   <TableCell data-column="Reason" className="mobile-card:flex mobile-card:flex-col sm:table-cell w-32">
                     <span className="mobile-card:text-xs mobile-card:text-muted-foreground sm:hidden">Reason: </span>
-                    <div className="text-xs leading-tight max-w-32" title={encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}>
+                    <div className="text-sm leading-snug break-words" title={encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}>
                       {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
                     </div>
                   </TableCell>
