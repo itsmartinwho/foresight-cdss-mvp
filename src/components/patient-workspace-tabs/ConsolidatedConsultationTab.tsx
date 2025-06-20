@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, X, Trash } from '@phosphor-icons/react';
+import { FileText, Eye, X, Trash, CircleNotch } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ import {
   SOAPNoteEditor, 
   TranscriptEditorModal 
 } from '@/components/ui/editable';
+import { RichTreatmentEditor } from '@/components/ui/rich-treatment-editor';
+import { useRichContentEditor } from '@/hooks/useRichContentEditor';
 import PriorAuthorizationForm from '@/components/forms/PriorAuthorizationForm';
 import ReferralForm from '@/components/forms/ReferralForm';
 import { useEditableEncounterFields } from '@/hooks/useEditableEncounterFields';
@@ -70,7 +72,35 @@ export default function ConsolidatedConsultationTab({
   // Set up unsaved changes warning
   useUnsavedChangesWarning({ when: isSaving });
 
+  // Rich content hooks for diagnosis and treatment
+  const diagnosisRichContent = useRichContentEditor({
+    encounterId: selectedEncounter?.id || '',
+    contentType: 'diagnosis',
+    onError: (error) => {
+      console.error('Diagnosis rich content error:', error);
+      toast({ 
+        title: "Error loading diagnosis", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const treatmentRichContent = useRichContentEditor({
+    encounterId: selectedEncounter?.id || '',
+    contentType: 'treatments',
+    onError: (error) => {
+      console.error('Treatment rich content error:', error);
+      toast({ 
+        title: "Error loading treatment", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    }
+  });
+
   // Call hooks before any early returns to follow Rules of Hooks
+  // Fixed: Use the database encounter ID (UUID) for differential diagnoses
   const {
     differentialDiagnoses,
     isLoading: isLoadingDifferentials,
@@ -80,7 +110,7 @@ export default function ConsolidatedConsultationTab({
     deleteDifferentialDiagnosis,
   } = useDifferentialDiagnoses({
     patientId: patient?.id || '',
-    encounterId: selectedEncounter?.id || selectedEncounter?.encounterIdentifier || '',
+    encounterId: selectedEncounter?.id || '', // Use the UUID, not encounterIdentifier
     autoLoad: true,
   });
 
@@ -225,44 +255,68 @@ export default function ConsolidatedConsultationTab({
         </CardContent>
       </Card>
 
-      {/* Diagnosis */}
+      {/* Diagnosis - Enhanced with Rich Content */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground">Diagnosis</CardTitle>
         </CardHeader>
         <CardContent>
-          {diagnoses.length > 0 ? (
-            <div className="space-y-4">
-              {diagnoses.map((dx, index) => (
-                <div key={`dx-${index}-${dx.code || 'unknown'}`} className="bg-white/5 border border-white/10 rounded-md p-4 space-y-3">
-                  {/* Full Diagnosis Description - prominently displayed */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Diagnosis</h4>
-                    <p className="text-sm leading-relaxed">
-                      {dx.description || "No description available"}
-                    </p>
-                  </div>
-                  
-                  {/* ICD Code - displayed below */}
-                  {dx.code && (
-                    <div className="pt-2 border-t border-border/30">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">ICD Code:</span>
-                        <span className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
-                          {dx.code}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* Rich Content Diagnosis */}
+          {diagnosisRichContent.content ? (
+            <div className="mb-6">
+              <RichTreatmentEditor
+                content={diagnosisRichContent.content}
+                onSave={diagnosisRichContent.saveContent}
+                isDemo={false}
+                label="Clinical Diagnosis"
+              />
+            </div>
+          ) : diagnosisRichContent.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading diagnosis...</span>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground/70">No final diagnosis recorded for this consultation</p>
+            /* Fallback to Text-only Diagnosis */
+            diagnoses.length > 0 ? (
+              <div className="space-y-4 mb-6">
+                {diagnoses.map((dx, index) => (
+                  <div key={`dx-${index}-${dx.code || 'unknown'}`} className="bg-white/5 border border-white/10 rounded-md p-4 space-y-3">
+                    {/* Full Diagnosis Description - prominently displayed */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Diagnosis</h4>
+                      <p className="text-sm leading-relaxed">
+                        {dx.description || "No description available"}
+                      </p>
+                    </div>
+                    
+                    {/* ICD Code - displayed below */}
+                    {dx.code && (
+                      <div className="pt-2 border-t border-border/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">ICD Code:</span>
+                          <span className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded">
+                            {dx.code}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground/70 mb-6">No final diagnosis recorded for this consultation</p>
+            )
           )}
           
-          <div className="mt-6 pt-6 border-t border-border/50">
+          {/* Differential Diagnoses Section */}
+          <div className="pt-6 border-t border-border/50">
              <h3 className="text-lg font-medium text-foreground mb-4">Differential Diagnoses</h3>
+             {differentialDiagnosesError ? (
+               <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md mb-4">
+                 Error loading differential diagnoses: {differentialDiagnosesError}
+               </div>
+             ) : null}
              <DifferentialDiagnosesList
                 diagnoses={differentialDiagnoses}
                 isLoading={isLoadingDifferentials}
@@ -276,12 +330,37 @@ export default function ConsolidatedConsultationTab({
         </CardContent>
       </Card>
 
-      {/* Treatment */}
-      <EditableTable
-        label="Treatment Plans"
-        treatments={selectedEncounter.treatments}
-        onSave={(value) => updateField('treatments', value)}
-      />
+      {/* Treatment - Enhanced with Rich Content */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-foreground">Treatment Plans</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Rich Content Treatment */}
+          {treatmentRichContent.content ? (
+            <div className="mb-6">
+              <RichTreatmentEditor
+                content={treatmentRichContent.content}
+                onSave={treatmentRichContent.saveContent}
+                isDemo={false}
+                label="Treatment Plans"
+              />
+            </div>
+          ) : treatmentRichContent.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading treatment plans...</span>
+            </div>
+          ) : (
+            /* Fallback to Basic Treatment Table */
+            <EditableTable
+              label=""
+              treatments={selectedEncounter.treatments}
+              onSave={(value) => updateField('treatments', value)}
+            />
+          )}
+        </CardContent>
+      </Card>
 
       {/* Labs */}
       <Card>
