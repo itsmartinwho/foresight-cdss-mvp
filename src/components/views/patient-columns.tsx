@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Patient } from "@/lib/types" // Assuming Patient type is available
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, Eye } from "lucide-react"
+import { ArrowsDownUp as ArrowUpDown, Eye } from "@phosphor-icons/react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 

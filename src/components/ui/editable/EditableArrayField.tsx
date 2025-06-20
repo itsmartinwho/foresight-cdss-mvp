@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../button';
 import { Input } from '../input';
 import { Card, CardContent, CardHeader, CardTitle } from '../card';
-import { Edit, Save, X, Plus, Trash2, List } from 'lucide-react';
+import { PencilSimple as Edit, FloppyDisk as Save, X, Plus, Trash as Trash2, List } from '@phosphor-icons/react';
 
 interface EditableArrayFieldProps {
   label: string;

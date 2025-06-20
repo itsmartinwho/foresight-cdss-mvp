@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { AlertCircle, Terminal } from 'lucide-react'; // Example icons
+import { WarningCircle as AlertCircle, Terminal } from '@phosphor-icons/react'; // Example icons
 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 

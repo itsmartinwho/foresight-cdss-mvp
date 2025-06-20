@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../button';
 import { Textarea } from '../textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../card';
-import { Edit, Save, X, Code, AlertCircle } from 'lucide-react';
+import { PencilSimple as Edit, FloppyDisk as Save, X, Code, WarningCircle as AlertCircle } from '@phosphor-icons/react';
 
 interface EditableJSONFieldProps {
   label: string;
