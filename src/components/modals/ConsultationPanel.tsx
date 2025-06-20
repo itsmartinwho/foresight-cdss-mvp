@@ -1514,8 +1514,8 @@ export default function ConsultationPanel({
                               content={transcriptText}
                               onContentChange={handleTranscriptChange}
                               placeholder="Transcription will appear here..."
-                              disabled={isDemoMode || isTranscribing}
-                              showToolbar={!isDemoMode && !isTranscribing}
+                              disabled={isDemoMode}
+                              showToolbar={!isDemoMode}
                               minHeight="100px"
                               className=""
                             />

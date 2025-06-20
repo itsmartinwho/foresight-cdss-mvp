@@ -548,7 +548,7 @@ export default function ConsolidatedConsultationTab({
               content={transcriptText}
               onContentChange={setTranscriptText}
               placeholder="Start recording to see live transcription here, or type your notes manually..."
-              disabled={isTranscribing}
+              disabled={false}
               showToolbar={!isTranscribing}
               minHeight="300px"
               className="h-full"
