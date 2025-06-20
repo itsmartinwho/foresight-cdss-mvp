@@ -227,7 +227,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden trigger; open controlled externally */}</DialogTrigger>
-      {draggable ? (
+      {draggable || stableDraggableConfig ? (
         <DraggableDialogContent
           onCloseAutoFocus={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}

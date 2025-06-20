@@ -277,6 +277,11 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
         onOpenChange={setShowNewConsultModal}
         draggable={false}
         allowDragging={false}
+        draggableConfig={{
+          id: 'new-consultation-dashboard',
+          title: 'Start New Consultation',
+          persistent: false,
+        }}
       />
 
       {/* Prior Authorization Modal */}

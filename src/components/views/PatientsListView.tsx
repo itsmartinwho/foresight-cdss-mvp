@@ -512,6 +512,11 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         }}
         draggable={false}
         allowDragging={false}
+        draggableConfig={{
+          id: 'new-consultation-patients',
+          title: 'Start New Consultation',
+          persistent: false,
+        }}
       />
 
       {/* Prior Authorization Modal */}
