@@ -23,14 +23,15 @@ export async function GET(request: NextRequest) {
 
     console.log('[Differential Diagnoses API] Fetching for:', { patientId, encounterId });
 
-    // Use supabaseDataService singleton to fetch differential diagnoses
-    const differentialDiagnoses = supabaseDataService.getDifferentialDiagnoses();
-
-    // Filter by patient if needed (for now return all since demo uses synthetic data)
-    const filteredDiagnoses = differentialDiagnoses.filter(diagnosis => 
-      diagnosis.patient_id === patientId || 
-      diagnosis.patient_id === patientId
-    );
+    // Use the appropriate method to get differential diagnoses for the specific patient
+    let filteredDiagnoses;
+    if (encounterId) {
+      // Get differential diagnoses for specific encounter
+      filteredDiagnoses = supabaseDataService.getDifferentialDiagnosesForEncounter(patientId, encounterId);
+    } else {
+      // Get all differential diagnoses for the patient
+      filteredDiagnoses = supabaseDataService.getPatientDifferentialDiagnoses(patientId);
+    }
 
     console.log('[Differential Diagnoses API] Found diagnoses:', filteredDiagnoses.length);
 
