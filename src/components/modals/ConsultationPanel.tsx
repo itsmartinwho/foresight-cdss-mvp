@@ -1715,8 +1715,8 @@ export default function ConsultationPanel({
       )}
       
       {showConfirmationDialog && (
-        <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full">
+        <div className="fixed inset-0 z-[10000] bg-white/75 backdrop-blur-3xl flex items-center justify-center p-4">
+                      <div className="bg-white/90 backdrop-blur-3xl border border-white/60 rounded-lg shadow-lg p-6 max-w-md w-full">
             {(() => {
               const isActivelyTranscribing = transcriptionActiveRef.current || isTranscribing || isPaused;
               const hasTranscriptContent = transcriptText.trim();

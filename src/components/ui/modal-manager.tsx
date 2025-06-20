@@ -565,7 +565,7 @@ export function ModalManagerProvider({ children }: ModalManagerProviderProps) {
       {/* Global modal overlay - only shown when there are visible, non-minimized modals */}
       {shouldShowOverlay && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 bg-white/75 backdrop-blur-3xl"
           style={{ zIndex: overlayZIndex }}
           aria-hidden="true"
         />

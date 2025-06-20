@@ -25,7 +25,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[9999] glass-backdrop data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-[9999] bg-white/75 backdrop-blur-3xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       "flex items-center justify-center p-4",
       className
     )}
@@ -44,7 +44,7 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto min-w-[672px]",
+          "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg bg-white/90 backdrop-blur-3xl border border-white/60 pointer-events-auto min-w-[672px]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className
         )}
@@ -151,7 +151,7 @@ const DraggableDialogContent = React.forwardRef<
           <DialogPrimitive.Content 
             ref={ref}
             className={cn(
-              "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg glass pointer-events-auto min-w-[672px]",
+              "relative grid w-full max-w-lg gap-4 rounded-lg p-6 shadow-lg bg-white/90 backdrop-blur-3xl border border-white/60 pointer-events-auto min-w-[672px]",
               "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
               className
             )} 
