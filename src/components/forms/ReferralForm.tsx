@@ -49,91 +49,20 @@ export default function ReferralForm({
     setErrors(validation.errors);
   }, [formData]);
 
-  // Defensive null checks after hooks
-  if (!patient || !encounter) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        <p>Unable to load form data. Patient or encounter information is missing.</p>
-      </div>
-    );
-  }
-
-  const [validation, setValidation] = useState<FormValidationResult>({ 
-    isValid: true, 
-    errors: {}, 
-    warnings: {} 
-  });
-
-  // Auto-populate when resource type changes
-  useEffect(() => {
-    const newFormData = ReferralService.autoPopulateForm(patient, encounter, diagnoses, labResults, formData.resourceType);
-    // Only update fields that are currently empty to avoid overriding user input
-    setFormData(prev => ({
-      ...prev,
-      resourceType: formData.resourceType, // Always update resource type
-      // Only populate patient info if it's currently empty
-      patientInformation: {
-        name: prev.patientInformation.name || newFormData.patientInformation.name,
-        dateOfBirth: prev.patientInformation.dateOfBirth || newFormData.patientInformation.dateOfBirth,
-        gender: prev.patientInformation.gender || newFormData.patientInformation.gender,
-        contactPhone: prev.patientInformation.contactPhone || newFormData.patientInformation.contactPhone,
-        insurance: prev.patientInformation.insurance || newFormData.patientInformation.insurance,
-        address: prev.patientInformation.address || newFormData.patientInformation.address,
-      },
-      // Provider info is typically left as manual input
-      referringProvider: prev.referringProvider,
-      // Update specialist suggestion only if type is currently empty
-      specialist: {
-        type: prev.specialist.type || newFormData.specialist.type,
-        facility: prev.specialist.facility || newFormData.specialist.facility,
-        preferredProvider: prev.specialist.preferredProvider || newFormData.specialist.preferredProvider,
-      },
-      // Only populate referral reason if diagnosis/reason are currently empty
-      referralReason: {
-        diagnosis: prev.referralReason.diagnosis || newFormData.referralReason.diagnosis,
-        diagnosisCode: prev.referralReason.diagnosisCode || newFormData.referralReason.diagnosisCode,
-        reasonForReferral: prev.referralReason.reasonForReferral || newFormData.referralReason.reasonForReferral,
-        urgency: prev.referralReason.urgency || newFormData.referralReason.urgency,
-      },
-      // Only populate clinical information if currently empty
-      clinicalInformation: {
-        historyOfPresentIllness: prev.clinicalInformation.historyOfPresentIllness || newFormData.clinicalInformation.historyOfPresentIllness,
-        relevantPastMedicalHistory: prev.clinicalInformation.relevantPastMedicalHistory.length > 0 
-          ? prev.clinicalInformation.relevantPastMedicalHistory 
-          : newFormData.clinicalInformation.relevantPastMedicalHistory,
-        currentMedications: prev.clinicalInformation.currentMedications.length > 0 
-          ? prev.clinicalInformation.currentMedications 
-          : newFormData.clinicalInformation.currentMedications,
-        allergies: prev.clinicalInformation.allergies.length > 0 
-          ? prev.clinicalInformation.allergies 
-          : newFormData.clinicalInformation.allergies,
-        physicalExamination: prev.clinicalInformation.physicalExamination || newFormData.clinicalInformation.physicalExamination,
-        recentLabResults: prev.clinicalInformation.recentLabResults.length > 0 
-          ? prev.clinicalInformation.recentLabResults 
-          : newFormData.clinicalInformation.recentLabResults,
-        vitalSigns: prev.clinicalInformation.vitalSigns || newFormData.clinicalInformation.vitalSigns,
-      },
-      requestedEvaluation: prev.requestedEvaluation.length > 0 
-        ? prev.requestedEvaluation 
-        : newFormData.requestedEvaluation,
-      additionalNotes: prev.additionalNotes || newFormData.additionalNotes,
-    }));
-  }, [formData.resourceType, patient, encounter, diagnoses, labResults]);
-
-  // Validate form on data changes
-  useEffect(() => {
-    const validationResult = ReferralService.validateForm(formData);
-    setValidation(validationResult);
-  }, [formData]);
-
   const handleInputChange = (section: keyof ReferralFormData, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section] as any,
-        [field]: value
-      }
-    }));
+    if (section === 'requestedEvaluation') {
+      setFormData(prev => ({ ...prev, requestedEvaluation: value }));
+    } else if (section === 'additionalNotes') {
+      setFormData(prev => ({ ...prev, additionalNotes: value }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [section]: {
+          ...prev[section] as any,
+          [field]: value
+        }
+      }));
+    }
   };
 
   const handleGeneratePDF = async () => {
@@ -182,10 +111,16 @@ export default function ReferralForm({
     handleInputChange('requestedEvaluation', '', updatedEvaluations);
   };
 
-  const getFieldError = (fieldName: string) => validation.errors[fieldName];
-  const getFieldWarning = (fieldName: string) => validation.warnings[fieldName];
-
   const isFormValid = Object.keys(errors).length === 0;
+
+  // Defensive null checks after hooks - return JSX with error message
+  if (!patient || !encounter) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        <p>Unable to load form data. Patient or encounter information is missing.</p>
+      </div>
+    );
+  }
 
   return (
     <Card>
@@ -193,7 +128,7 @@ export default function ReferralForm({
         <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
           Referral
           <div className="flex items-center gap-2">
-            {validation.isValid ? (
+            {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
               <Warning className="h-5 w-5 text-yellow-500" />
@@ -202,7 +137,7 @@ export default function ReferralForm({
               variant="outline"
               size="sm"
               onClick={handleGeneratePDF}
-              disabled={!validation.isValid || isGeneratingPDF}
+              disabled={!isFormValid || isGeneratingPDF}
               className="flex items-center gap-2"
             >
               {isGeneratingPDF ? (
@@ -219,7 +154,7 @@ export default function ReferralForm({
         {/* FHIR Resource Type Selector */}
         <FHIRResourceSelector
           value={formData.resourceType}
-          onValueChange={(value) => handleInputChange('resourceType', '', value)}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, resourceType: value }))}
           resourceTypes={REFERRAL_RESOURCE_TYPES}
           placeholder="Select referral type"
         />
@@ -232,14 +167,14 @@ export default function ReferralForm({
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Patient Name *
               </label>
-              <EditableTextField
+              <Input
                 value={formData.patientInformation.name}
-                onSave={(value) => handleInputChange('patientInformation', 'name', value)}
+                onChange={(e) => handleInputChange('patientInformation', 'name', e.target.value)}
                 placeholder="Enter patient name"
-                displayClassName={getFieldError('patientName') ? "text-destructive" : "text-sm"}
+                className={errors.patientName ? "border-destructive" : ""}
               />
-              {getFieldError('patientName') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('patientName')}</p>
+              {errors.patientName && (
+                <p className="text-xs text-destructive mt-1">{errors.patientName}</p>
               )}
             </div>
 
@@ -251,10 +186,10 @@ export default function ReferralForm({
                 type="date"
                 value={formData.patientInformation.dateOfBirth}
                 onChange={(e) => handleInputChange('patientInformation', 'dateOfBirth', e.target.value)}
-                className={getFieldError('dateOfBirth') ? "border-destructive" : ""}
+                className={errors.dateOfBirth ? "border-destructive" : ""}
               />
-              {getFieldError('dateOfBirth') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('dateOfBirth')}</p>
+              {errors.dateOfBirth && (
+                <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>
               )}
             </div>
 
@@ -303,7 +238,7 @@ export default function ReferralForm({
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Provider Name
-                {getFieldWarning('providerName') && (
+                {errors.providerName && (
                   <span className="text-yellow-600 ml-1">⚠</span>
                 )}
               </label>
@@ -312,15 +247,15 @@ export default function ReferralForm({
                 onChange={(e) => handleInputChange('referringProvider', 'name', e.target.value)}
                 placeholder="Enter provider name"
               />
-              {getFieldWarning('providerName') && (
-                <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('providerName')}</p>
+              {errors.providerName && (
+                <p className="text-xs text-yellow-600 mt-1">{errors.providerName}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 NPI Number
-                {getFieldWarning('providerNPI') && (
+                {errors.providerNPI && (
                   <span className="text-yellow-600 ml-1">⚠</span>
                 )}
               </label>
@@ -329,8 +264,8 @@ export default function ReferralForm({
                 onChange={(e) => handleInputChange('referringProvider', 'npi', e.target.value)}
                 placeholder="Enter NPI number"
               />
-              {getFieldWarning('providerNPI') && (
-                <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('providerNPI')}</p>
+              {errors.providerNPI && (
+                <p className="text-xs text-yellow-600 mt-1">{errors.providerNPI}</p>
               )}
             </div>
 
@@ -375,7 +310,7 @@ export default function ReferralForm({
                 value={formData.specialist.type}
                 onValueChange={(value) => handleInputChange('specialist', 'type', value)}
               >
-                <SelectTrigger className={getFieldError('specialtyType') ? "border-destructive" : ""}>
+                <SelectTrigger className={errors.specialtyType ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select specialty" />
                 </SelectTrigger>
                 <SelectContent>
@@ -386,15 +321,15 @@ export default function ReferralForm({
                   ))}
                 </SelectContent>
               </Select>
-              {getFieldError('specialtyType') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('specialtyType')}</p>
+              {errors.specialtyType && (
+                <p className="text-xs text-destructive mt-1">{errors.specialtyType}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Preferred Facility
-                {getFieldWarning('specialistFacility') && (
+                {errors.specialistFacility && (
                   <span className="text-yellow-600 ml-1">⚠</span>
                 )}
               </label>
@@ -403,8 +338,8 @@ export default function ReferralForm({
                 onChange={(e) => handleInputChange('specialist', 'facility', e.target.value)}
                 placeholder="Enter preferred facility"
               />
-              {getFieldWarning('specialistFacility') && (
-                <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('specialistFacility')}</p>
+              {errors.specialistFacility && (
+                <p className="text-xs text-yellow-600 mt-1">{errors.specialistFacility}</p>
               )}
             </div>
 
@@ -431,10 +366,10 @@ export default function ReferralForm({
                 value={formData.referralReason.diagnosis}
                 onSave={(value) => handleInputChange('referralReason', 'diagnosis', value)}
                 placeholder="Enter primary diagnosis"
-                displayClassName={getFieldError('diagnosis') ? "text-destructive" : "text-sm"}
+                displayClassName={errors.diagnosis ? "text-destructive" : "text-sm"}
               />
-              {getFieldError('diagnosis') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('diagnosis')}</p>
+              {errors.diagnosis && (
+                <p className="text-xs text-destructive mt-1">{errors.diagnosis}</p>
               )}
             </div>
 
@@ -456,10 +391,10 @@ export default function ReferralForm({
                 onSave={(value) => handleInputChange('referralReason', 'reasonForReferral', value)}
                 placeholder="Enter detailed reason for referral..."
                 multiline
-                displayClassName={getFieldError('reasonForReferral') ? "text-destructive" : "text-sm"}
+                displayClassName={errors.reasonForReferral ? "text-destructive" : "text-sm"}
               />
-              {getFieldError('reasonForReferral') && (
-                <p className="text-xs text-destructive mt-1">{getFieldError('reasonForReferral')}</p>
+              {errors.reasonForReferral && (
+                <p className="text-xs text-destructive mt-1">{errors.reasonForReferral}</p>
               )}
             </div>
 
@@ -489,7 +424,7 @@ export default function ReferralForm({
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               History of Present Illness
-              {getFieldWarning('clinicalHistory') && (
+              {errors.clinicalHistory && (
                 <span className="text-yellow-600 ml-1">⚠</span>
               )}
             </label>
@@ -500,8 +435,8 @@ export default function ReferralForm({
               multiline
               displayClassName="text-sm"
             />
-            {getFieldWarning('clinicalHistory') && (
-              <p className="text-xs text-yellow-600 mt-1">{getFieldWarning('clinicalHistory')}</p>
+            {errors.clinicalHistory && (
+              <p className="text-xs text-yellow-600 mt-1">{errors.clinicalHistory}</p>
             )}
           </div>
 
@@ -581,33 +516,6 @@ export default function ReferralForm({
             displayClassName="text-sm"
           />
         </div>
-
-        {/* Validation Summary */}
-        {(!validation.isValid || Object.keys(validation.warnings).length > 0) && (
-          <div className="space-y-2">
-            {!validation.isValid && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm font-medium text-destructive mb-1">Required fields missing:</p>
-                <ul className="text-xs text-destructive/80 list-disc list-inside">
-                  {Object.values(validation.errors).map((error, index) => (
-                    <li key={index}>{error}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {Object.keys(validation.warnings).length > 0 && (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-                <p className="text-sm font-medium text-yellow-700 mb-1">Recommended fields:</p>
-                <ul className="text-xs text-yellow-600 list-disc list-inside">
-                  {Object.values(validation.warnings).map((warning, index) => (
-                    <li key={index}>{warning}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
