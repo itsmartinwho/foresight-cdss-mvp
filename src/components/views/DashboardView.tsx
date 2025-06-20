@@ -275,17 +275,8 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
       <NewConsultationModal 
         open={showNewConsultModal} 
         onOpenChange={setShowNewConsultModal}
-        draggable={true}
+        draggable={false}
         allowDragging={false}
-        draggableConfig={{
-          id: 'new-consultation-dashboard',
-          title: 'New Consultation',
-          persistent: true,
-          defaultPosition: typeof window !== 'undefined' ? {
-            x: Math.max(50, Math.round((window.innerWidth - 320 - 672) / 2)), // center within content area
-            y: Math.max(50, Math.round((window.innerHeight - 600) / 2) - 32), // account for nav bar height/2
-          } : { x: 200, y: 100 }
-        }}
       />
 
       {/* Prior Authorization Modal */}
@@ -305,11 +296,8 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
       {/* Demo Modal */}
       {demoStage === 'introModal' && isDemoModalOpen && (
         <Dialog open={isDemoModalOpen} onOpenChange={setDemoModalOpen}>
-          <DraggableDialogContent 
+          <DialogContent 
             className="sm:max-w-[750px] max-h-[650px] p-8"
-            draggable={true}
-            allowDragging={false}
-            draggableConfig={stableDemoDraggableConfig}
           >
             <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
               <DialogHeader className="space-y-0">
@@ -348,7 +336,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                 </Button>
               </DialogFooter>
             </div>
-          </DraggableDialogContent>
+          </DialogContent>
         </Dialog>
       )}
     </ContentSurface>

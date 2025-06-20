@@ -510,9 +510,8 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
             fetchData();
           }
         }}
-        draggable={true}
+        draggable={false}
         allowDragging={false}
-        draggableConfig={stableDraggableConfig}
       />
 
       {/* Prior Authorization Modal */}

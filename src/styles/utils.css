@@ -128,15 +128,15 @@
 /* Modal-specific classes for enhanced styling */
 .modal-glass {
   background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.55) 0%, 
-    rgba(255, 255, 255, 0.45) 50%, 
-    rgba(255, 255, 255, 0.35) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+    rgba(255, 255, 255, 0.75) 0%, 
+    rgba(255, 255, 255, 0.65) 50%, 
+    rgba(255, 255, 255, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.15),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .modal-overlay {
