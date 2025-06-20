@@ -674,16 +674,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         open={showPriorAuthModal}
         onOpenChange={setShowPriorAuthModal}
         formType="priorAuth"
-        patientId={patient.id}
+        patientId={patient?.id}
         encounterId={selectedEncounterForConsultation?.id}
-        draggable={true}
-        allowDragging={false}
-        draggableConfig={{
-          id: `prior-auth-${patient.id}`,
-          title: 'Prior Authorization',
-          persistent: true,
-          defaultPosition: typeof window !== 'undefined' ? { x: 120, y: 120 } : { x: 200, y: 100 },
-        }}
       />
 
       {/* Referral Modal */}
@@ -691,16 +683,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         open={showReferralModal}
         onOpenChange={setShowReferralModal}
         formType="referral"
-        patientId={patient.id}
+        patientId={patient?.id}
         encounterId={selectedEncounterForConsultation?.id}
-        draggable={true}
-        allowDragging={false}
-        draggableConfig={{
-          id: `referral-${patient.id}`,
-          title: 'Referral',
-          persistent: true,
-          defaultPosition: typeof window !== 'undefined' ? { x: 140, y: 140 } : { x: 200, y: 100 },
-        }}
       />
     </ContentSurface>
   );

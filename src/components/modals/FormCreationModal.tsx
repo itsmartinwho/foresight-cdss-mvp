@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
-  DraggableDialogContent,
+  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { MagnifyingGlass, ArrowLeft, FilePlus, FileText } from '@phosphor-icons/react';
 import LoadingAnimation from '@/components/LoadingAnimation';
-import { ModalDragAndMinimizeConfig } from '@/types/modal';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import ReferralForm from '@/components/forms/ReferralForm';
 import PriorAuthorizationForm from '@/components/forms/PriorAuthorizationForm';
@@ -29,9 +28,6 @@ interface FormCreationModalProps {
   patientId?: string;
   /** If provided (and patientId is provided), skip encounter selection step */
   encounterId?: string;
-  draggable?: boolean;
-  allowDragging?: boolean;
-  draggableConfig?: ModalDragAndMinimizeConfig;
 }
 
 type Step = 'select' | 'form';
@@ -42,9 +38,6 @@ export default function FormCreationModal({
   formType,
   patientId: preselectedPatientId,
   encounterId: preselectedEncounterId,
-  draggable,
-  allowDragging,
-  draggableConfig,
 }: FormCreationModalProps) {
   /* -------------------- State -------------------- */
   const [step, setStep] = useState<Step>('select');
@@ -54,37 +47,45 @@ export default function FormCreationModal({
   const [patientEncounters, setPatientEncounters] = useState<Encounter[]>([]);
   const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   /* -------------------- Effects -------------------- */
   useEffect(() => {
     if (!open) return;
 
     const init = async () => {
-      setIsLoading(true);
-      // Ensure patient data loaded
-      if (supabaseDataService.getAllPatients().length === 0) {
-        await supabaseDataService.loadPatientData();
-      }
-      setAllPatients(supabaseDataService.getAllPatients());
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        setError(null);
+        // Ensure patient data loaded
+        if (supabaseDataService.getAllPatients().length === 0) {
+          await supabaseDataService.loadPatientData();
+        }
+        setAllPatients(supabaseDataService.getAllPatients());
+        setIsLoading(false);
 
-      // If props provided patientId, preselect
-      if (preselectedPatientId) {
-        const p = supabaseDataService.getPatient(preselectedPatientId);
-        if (p) {
-          setSelectedPatient(p);
-          const encs = supabaseDataService.getPatientEncounters(p.id);
-          setPatientEncounters(encs);
-          // Preselect encounter if provided
-          if (preselectedEncounterId) {
-            const enc = encs.find((e) => e.id === preselectedEncounterId) || null;
-            setSelectedEncounter(enc);
-            setStep('form');
-          } else if (encs.length === 1) {
-            setSelectedEncounter(encs[0]);
-            setStep('form');
+        // If props provided patientId, preselect
+        if (preselectedPatientId) {
+          const p = supabaseDataService.getPatient(preselectedPatientId);
+          if (p) {
+            setSelectedPatient(p);
+            const encs = supabaseDataService.getPatientEncounters(p.id);
+            setPatientEncounters(encs);
+            // Preselect encounter if provided
+            if (preselectedEncounterId) {
+              const enc = encs.find((e) => e.id === preselectedEncounterId) || null;
+              setSelectedEncounter(enc);
+              setStep('form');
+            } else if (encs.length === 1) {
+              setSelectedEncounter(encs[0]);
+              setStep('form');
+            }
           }
         }
+      } catch (err) {
+        console.error('Error initializing form modal:', err);
+        setError('Failed to load patient data. Please try again.');
+        setIsLoading(false);
       }
     };
 
@@ -99,6 +100,7 @@ export default function FormCreationModal({
       setSelectedPatient(null);
       setPatientEncounters([]);
       setSelectedEncounter(null);
+      setError(null);
     }
   }, [open]);
 
@@ -135,82 +137,95 @@ export default function FormCreationModal({
   };
 
   /* -------------------- Rendering Helpers -------------------- */
-  const renderSelectionStep = () => (
-    <div className="space-y-4 w-full max-w-xl">
-      {/* Search Input */}
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Search patient..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1"
-        />
-        <MagnifyingGlass className="w-5 h-5 text-muted-foreground" />
-      </div>
-
-      {/* Patients List */}
-      <div className="max-h-56 overflow-y-auto border rounded-md">
-        {isLoading ? (
-          <LoadingAnimation />
-        ) : (
-          <ul>
-            {filteredPatients.map((p) => (
-              <li
-                key={p.id}
-                className={`px-4 py-2 hover:bg-muted cursor-pointer ${
-                  selectedPatient?.id === p.id ? 'bg-muted/50' : ''
-                }`}
-                onClick={() => handlePatientSelect(p)}
-              >
-                {p.name || `${p.firstName} ${p.lastName}`.trim()}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Encounter Dropdown */}
-      {selectedPatient && (
-        <div>
-          <label className="block mb-1 text-sm font-medium">Select Encounter</label>
-          <Select
-            value={selectedEncounter?.id || ''}
-            onValueChange={(val) => {
-              const enc = patientEncounters.find((e) => e.id === val) || null;
-              setSelectedEncounter(enc);
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose encounter" />
-            </SelectTrigger>
-            <SelectContent>
-              {patientEncounters.length > 0 ? (
-                patientEncounters
-                  .sort((a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime())
-                  .map((enc) => (
-                    <SelectItem key={enc.id} value={enc.id}>
-                      {new Date(enc.scheduledStart).toLocaleDateString()} - {enc.reasonDisplayText || enc.reasonCode || 'Encounter'}
-                    </SelectItem>
-                  ))
-              ) : (
-                <div className="text-sm p-2 text-muted-foreground">No encounters</div>
-              )}
-            </SelectContent>
-          </Select>
+  const renderSelectionStep = () => {
+    if (error) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Reload Page
+          </Button>
         </div>
-      )}
+      );
+    }
 
-      {/* Continue Button */}
-      <div className="flex justify-end pt-2">
-        <Button
-          disabled={!selectedPatient || !selectedEncounter}
-          onClick={handleContinueToForm}
-        >
-          Continue
-        </Button>
+    return (
+      <div className="space-y-4 w-full max-w-xl">
+        {/* Search Input */}
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search patient..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1"
+          />
+          <MagnifyingGlass className="w-5 h-5 text-muted-foreground" />
+        </div>
+
+        {/* Patients List */}
+        <div className="max-h-56 overflow-y-auto border rounded-md">
+          {isLoading ? (
+            <LoadingAnimation />
+          ) : (
+            <ul>
+              {filteredPatients.map((p) => (
+                <li
+                  key={p.id}
+                  className={`px-4 py-2 hover:bg-muted cursor-pointer ${
+                    selectedPatient?.id === p.id ? 'bg-muted/50' : ''
+                  }`}
+                  onClick={() => handlePatientSelect(p)}
+                >
+                  {p.name || `${p.firstName} ${p.lastName}`.trim()}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Encounter Dropdown */}
+        {selectedPatient && (
+          <div>
+            <label className="block mb-1 text-sm font-medium">Select Encounter</label>
+            <Select
+              value={selectedEncounter?.id || ''}
+              onValueChange={(val) => {
+                const enc = patientEncounters.find((e) => e.id === val) || null;
+                setSelectedEncounter(enc);
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose encounter" />
+              </SelectTrigger>
+              <SelectContent>
+                {patientEncounters.length > 0 ? (
+                  patientEncounters
+                    .sort((a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime())
+                    .map((enc) => (
+                      <SelectItem key={enc.id} value={enc.id}>
+                        {new Date(enc.scheduledStart).toLocaleDateString()} - {enc.reasonDisplayText || enc.reasonCode || 'Encounter'}
+                      </SelectItem>
+                    ))
+                ) : (
+                  <div className="text-sm p-2 text-muted-foreground">No encounters</div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Continue Button */}
+        <div className="flex justify-end pt-2">
+          <Button
+            disabled={!selectedPatient || !selectedEncounter}
+            onClick={handleContinueToForm}
+          >
+            Continue
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const diagnoses: Diagnosis[] = selectedPatient && selectedEncounter ? supabaseDataService.getDiagnosesForEncounter(selectedPatient.id, selectedEncounter.id) : [];
   const labResults: LabResult[] = selectedPatient && selectedEncounter ? supabaseDataService.getLabResultsForEncounter(selectedPatient.id, selectedEncounter.id) : [];
@@ -220,12 +235,20 @@ export default function FormCreationModal({
       return <p className="text-sm text-muted-foreground">Missing patient or encounter.</p>;
     }
 
+    // Use clean encounter data (excluding rich content fields)
+    const cleanEncounter = {
+      ...selectedEncounter,
+      // Explicitly exclude rich content fields - we want to use basic treatments and diagnosis
+      diagnosis_rich_content: undefined,
+      treatments_rich_content: undefined
+    };
+
     return (
       <div className="max-h-[70vh] overflow-y-auto w-full">
         {formType === 'priorAuth' ? (
           <PriorAuthorizationForm
             patient={selectedPatient}
-            encounter={selectedEncounter}
+            encounter={cleanEncounter}
             diagnoses={diagnoses}
             onSave={async () => {}}
             onGeneratePDF={async () => {}}
@@ -233,7 +256,7 @@ export default function FormCreationModal({
         ) : (
           <ReferralForm
             patient={selectedPatient}
-            encounter={selectedEncounter}
+            encounter={cleanEncounter}
             diagnoses={diagnoses}
             labResults={labResults}
             onSave={async () => {}}
@@ -244,30 +267,12 @@ export default function FormCreationModal({
     );
   };
 
-  const stableDraggableConfig = useMemo(() => {
-    if (!draggable || !draggableConfig) return undefined;
-    return {
-      id: draggableConfig.id,
-      title: draggableConfig.title,
-      persistent: draggableConfig.persistent ?? false,
-      defaultPosition: draggableConfig.defaultPosition,
-      icon: draggableConfig.icon,
-    } as ModalDragAndMinimizeConfig;
-  }, [draggable, draggableConfig]);
-
   /* -------------------- Render -------------------- */
   const titleText = formType === 'priorAuth' ? 'Prior Authorization' : 'Referral';
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden */}</DialogTrigger>
-      <DraggableDialogContent
-        onCloseAutoFocus={(e) => e.preventDefault()}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        className="min-w-[720px] max-w-3xl max-h-[calc(100vh-80px)] overflow-auto p-6"
-        draggable={draggable && open}
-        allowDragging={allowDragging}
-        draggableConfig={stableDraggableConfig}
-      >
+      <DialogContent className="min-w-[720px] max-w-3xl max-h-[calc(100vh-80px)] overflow-auto p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {formType === 'priorAuth' ? <FileText className="h-5 w-5" /> : <FilePlus className="h-5 w-5" />}
@@ -287,7 +292,7 @@ export default function FormCreationModal({
             </Button>
           </DialogFooter>
         )}
-      </DraggableDialogContent>
+      </DialogContent>
     </Dialog>
   );
 } 

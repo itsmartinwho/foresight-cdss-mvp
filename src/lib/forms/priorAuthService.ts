@@ -32,19 +32,18 @@ export class PriorAuthService {
   ): PriorAuthFormData {
     // Ensure inputs are arrays to prevent map errors
     const safeDiagnoses = Array.isArray(diagnoses) ? diagnoses : [];
+    
+    // Use standard treatments field from encounters table (non-enriched)
     const safeTreatments = Array.isArray(encounter?.treatments) ? encounter.treatments : [];
-    
-    const primaryDiagnosis = safeDiagnoses[0];
-    const primaryTreatment = safeTreatments[0];
-    
+
     return {
       resourceType,
       patientInformation: {
-        name: patient?.name || `${patient?.firstName || ''} ${patient?.lastName || ''}`.trim() || '',
-        dateOfBirth: patient?.dateOfBirth || '',
-        gender: patient?.gender || '',
-        insuranceId: encounter?.insuranceStatus || '',
-        memberId: patient?.id || ''
+        name: patient.name || `${patient.firstName} ${patient.lastName}`.trim(),
+        dateOfBirth: patient.dateOfBirth || '',
+        gender: patient.gender || '',
+        insuranceId: encounter.insuranceStatus || '',
+        memberId: patient.id
       },
       providerInformation: {
         name: '', // Placeholder - not available in current system
@@ -54,15 +53,15 @@ export class PriorAuthService {
         contactEmail: '' // Placeholder
       },
       serviceRequest: {
-        diagnosis: primaryDiagnosis?.description || '',
-        diagnosisCode: primaryDiagnosis?.code || '',
-        requestedService: primaryTreatment?.drug || '',
-        serviceCode: '', // Use treatment code if available
+        diagnosis: safeDiagnoses[0]?.description || encounter.reasonDisplayText || encounter.reasonCode || '',
+        diagnosisCode: safeDiagnoses[0]?.code || '', // Use diagnosis code from conditions table
+        requestedService: safeTreatments[0]?.drug || 'Proposed Treatment',
+        serviceCode: '', // Placeholder for manual input
         startDate: new Date().toISOString().split('T')[0],
         duration: '30 days', // Default duration
-        frequency: primaryTreatment?.status || 'As prescribed'
+        frequency: safeTreatments[0]?.status || 'As prescribed'
       },
-      clinicalJustification: encounter?.priorAuthJustification || encounter?.reasonDisplayText || encounter?.reasonCode || '',
+      clinicalJustification: encounter.priorAuthJustification || encounter.reasonDisplayText || encounter.reasonCode || '',
       authorizationNumber: '', // Placeholder - manual input required
       urgencyLevel: 'routine', // Default urgency
       supportingDocumentation: []

@@ -30,8 +30,17 @@ export default function ReferralForm({
   onSave,
   onGeneratePDF
 }: ReferralFormProps) {
+  // Defensive null checks to prevent React errors
+  if (!patient || !encounter) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        <p>Unable to load form data. Patient or encounter information is missing.</p>
+      </div>
+    );
+  }
+
   const [formData, setFormData] = useState<ReferralFormData>(() =>
-    ReferralService.autoPopulateForm(patient, encounter, diagnoses, labResults)
+    ReferralService.autoPopulateForm(patient, encounter, diagnoses || [], labResults)
   );
   const [validation, setValidation] = useState<FormValidationResult>({ 
     isValid: true, 

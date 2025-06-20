@@ -515,14 +515,11 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         draggableConfig={stableDraggableConfig}
       />
 
-      {/* Prior Auth Modal */}
+      {/* Prior Authorization Modal */}
       <FormCreationModal
         open={showPriorAuthModal}
         onOpenChange={setShowPriorAuthModal}
         formType="priorAuth"
-        draggable={true}
-        allowDragging={false}
-        draggableConfig={{ id:'prior-auth-patients', title:'Prior Authorization', persistent:true, defaultPosition: typeof window !== 'undefined' ? {x: Math.max(50,Math.round((window.innerWidth-672)/2)), y: 100} : {x:200, y:100} }}
       />
 
       {/* Referral Modal */}
@@ -530,9 +527,6 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
         open={showReferralModal}
         onOpenChange={setShowReferralModal}
         formType="referral"
-        draggable={true}
-        allowDragging={false}
-        draggableConfig={{ id:'referral-patients', title:'Referral', persistent:true, defaultPosition: typeof window !== 'undefined' ? {x: Math.max(50,Math.round((window.innerWidth-672)/2)+60), y: 120} : {x:200, y:100} }}
       />
     </ContentSurface>
   );

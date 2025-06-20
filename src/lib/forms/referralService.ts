@@ -55,20 +55,19 @@ export class ReferralService {
     // Ensure inputs are arrays to prevent map errors
     const safeDiagnoses = Array.isArray(diagnoses) ? diagnoses : [];
     const safeLabResults = Array.isArray(labResults) ? labResults : [];
+    
+    // Use standard treatments field from encounters table (non-enriched)
     const safeTreatments = Array.isArray(encounter?.treatments) ? encounter.treatments : [];
-    
-    const primaryDiagnosis = safeDiagnoses[0];
-    const allDiagnoses = safeDiagnoses.map(d => d.description).filter(Boolean);
-    
+
     return {
       resourceType,
       patientInformation: {
-        name: patient?.name || `${patient?.firstName || ''} ${patient?.lastName || ''}`.trim() || '',
-        dateOfBirth: patient?.dateOfBirth || '',
-        gender: patient?.gender || '',
-        contactPhone: '', // Placeholder - not available in current system
-        insurance: encounter?.insuranceStatus || '',
-        address: '' // Placeholder - not available in current system
+        name: patient.name || `${patient.firstName} ${patient.lastName}`.trim(),
+        dateOfBirth: patient.dateOfBirth || '',
+        gender: patient.gender || '',
+        contactPhone: '', // Not available in current patient model
+        insurance: encounter.insuranceStatus || '',
+        address: '' // Not available in current patient model
       },
       referringProvider: {
         name: '', // Placeholder - not available in current system
@@ -78,31 +77,27 @@ export class ReferralService {
         contactEmail: '' // Placeholder
       },
       specialist: {
-        type: this.suggestSpecialty(primaryDiagnosis?.description || ''),
-        facility: '', // Placeholder - manual input
-        preferredProvider: '' // Placeholder - manual input
+        type: '', // Manual input required
+        facility: '', // Manual input required
+        preferredProvider: '' // Manual input required
       },
       referralReason: {
-        diagnosis: primaryDiagnosis?.description || '',
-        diagnosisCode: primaryDiagnosis?.code || '',
-        reasonForReferral: encounter?.reasonDisplayText || encounter?.reasonCode || '',
+        diagnosis: safeDiagnoses[0]?.description || encounter.reasonDisplayText || encounter.reasonCode || '',
+        diagnosisCode: safeDiagnoses[0]?.code || '', // Use diagnosis code from conditions table
+        reasonForReferral: encounter.reasonDisplayText || encounter.reasonCode || '',
         urgency: 'routine' // Default urgency
       },
       clinicalInformation: {
-        historyOfPresentIllness: encounter?.soapNote || '', // Use available clinical notes
-        relevantPastMedicalHistory: allDiagnoses,
-        currentMedications: safeTreatments.map(t => `${t.drug} - ${t.status}`),
-        allergies: [], // Placeholder - not available in current system
-        physicalExamination: '', // Placeholder - not available in current system
+        historyOfPresentIllness: encounter.reasonDisplayText || encounter.reasonCode || '',
+        relevantPastMedicalHistory: [], // Not available in current system
+        currentMedications: safeTreatments.map(t => t.drug).filter(Boolean),
+        allergies: [], // Not available in current patient model
+        physicalExamination: encounter.observations?.join(', ') || '',
         recentLabResults: safeLabResults,
-        vitalSigns: '' // Placeholder - not available in current system
+        vitalSigns: '' // Not available in current system
       },
-      requestedEvaluation: [
-        'Initial consultation',
-        'Diagnostic evaluation',
-        'Treatment recommendations'
-      ],
-      additionalNotes: ''
+      requestedEvaluation: [], // Manual input required
+      additionalNotes: encounter.soapNote || ''
     };
   }
 
