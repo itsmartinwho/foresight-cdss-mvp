@@ -19,7 +19,8 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "lucide-react": ["src/lib/lucide-react.ts"]
     },
     "preserveWatchOutput": true,
     "pretty": true,
