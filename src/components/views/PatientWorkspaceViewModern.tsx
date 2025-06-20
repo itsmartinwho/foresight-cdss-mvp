@@ -353,15 +353,16 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
     setSelectedEncounterForConsultation(encounter);
     setActiveTab('consultation');
     
-    // Clear autoStart parameter and navigate
+    // Navigate with autoStartTranscription=true to automatically start transcription
     const url = new URL(window.location.href);
-    url.searchParams.delete('autoStart');
+    url.searchParams.delete('autoStart'); // Clear old autoStart parameter
     url.searchParams.set('encounterId', encounter.id);
     url.searchParams.set('tab', 'consultation');
+    url.searchParams.set('autoStartTranscription', 'true'); // Add auto-start transcription
     window.history.replaceState({}, '', url.toString());
     
-    // NOTE: Don't close the panel automatically - let user manually close when done
-    // The panel should remain open for consultation content entry
+    // Close the consultation panel since we're now showing the new consultation in the workspace
+    setShowConsultationPanel(false);
   };
 
   const openDeleteConfirmation = (encounterId: string) => {
@@ -636,9 +637,9 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
           setSelectedEncounterForConsultation(previousEncounterRef.current);
           previousEncounterRef.current = null;
           
-          // Remove autoStart parameter from URL to prevent re-triggering
+          // Remove autoStartTranscription parameter from URL to prevent re-triggering
           const url = new URL(window.location.href);
-          url.searchParams.delete('autoStart');
+          url.searchParams.delete('autoStartTranscription');
           window.history.replaceState({}, '', url.toString());
         }}
         patient={patient}
@@ -648,7 +649,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         allowDragging={false}
         draggableConfig={regularConsultationConfig}
         selectedEncounter={selectedEncounterForConsultation}
-        autoStartTranscription={searchParams.get('autoStart') === 'true'}
+        autoStartTranscription={searchParams.get('autoStartTranscription') === 'true'}
       />
 
       {/* Demo Consultation Panel - separate instance for demo */}
