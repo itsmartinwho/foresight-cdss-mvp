@@ -355,7 +355,7 @@ export default function ConsolidatedConsultationTab({
             /* Fallback to Basic Treatment Table */
             <EditableTable
               label=""
-              treatments={selectedEncounter.treatments}
+              treatments={selectedEncounter.treatments || []}
               onSave={(value) => updateField('treatments', value)}
             />
           )}
