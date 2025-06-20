@@ -197,7 +197,7 @@ export default function FormCreationModal({
               <SelectTrigger className="w-full max-w-xl">
                 <SelectValue placeholder="Choose encounter" />
               </SelectTrigger>
-              <SelectContent className="max-w-xl">
+              <SelectContent className="w-[48rem] max-w-[48rem]">
                 {patientEncounters.length > 0 ? (
                   patientEncounters
                     .sort((a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime())

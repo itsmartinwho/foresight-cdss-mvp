@@ -530,7 +530,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
                 <SelectTrigger className="w-64 h-9">
                   <SelectValue placeholder="Select consultation..." />
                 </SelectTrigger>
-                <SelectContent className="w-64">
+                <SelectContent className="w-[32rem]">
                   {activeEncounterDetails
                     .sort((a, b) => new Date(b.encounter.scheduledStart).getTime() - new Date(a.encounter.scheduledStart).getTime())
                     .map((ew) => (
