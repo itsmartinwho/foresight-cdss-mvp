@@ -138,7 +138,7 @@ export default function ReferralForm({
     <Card>
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
-          Referral
+          📝 Referral
           <div className="flex items-center gap-2">
             {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />

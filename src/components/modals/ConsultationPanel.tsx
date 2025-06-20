@@ -1673,7 +1673,7 @@ export default function ConsultationPanel({
           <X className="h-4 w-4" />
         </Button>
         <div className="pt-8">
-          <h2 className="text-xl font-semibold px-6 pb-2">New Consultation</h2>
+          <h2 className="text-xl font-semibold px-6 pb-2">🩺 New Consultation</h2>
           {modalContent}
         </div>
       </div>

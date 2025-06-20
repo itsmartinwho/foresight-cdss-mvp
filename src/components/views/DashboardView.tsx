@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { PlayCircle, PlusCircle, FilePlus, FileText } from '@phosphor-icons/react';
+import { PlayCircle, PlusCircle, FilePlus, FileText, Eye } from '@phosphor-icons/react';
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter, ComplexCaseAlert } from "@/lib/types";
 import NewConsultationModal from '../modals/NewConsultationModal';
@@ -37,6 +37,7 @@ import { SIDE_PANEL_CONFIG } from '@/lib/side-panel-config';
 // Import modal manager
 import { useModalManager } from "@/components/ui/modal-manager";
 import FormCreationModal from '@/components/modals/FormCreationModal';
+import PatientDataModal from '@/components/modals/PatientDataModal';
 
 // Type for upcoming appointments, specific to this view
 type UpcomingEntry = { patient: Patient; encounter: Encounter };
@@ -54,6 +55,8 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
   const [showNewConsultModal, setShowNewConsultModal] = useState(false);
   const [showPriorAuthModal, setShowPriorAuthModal] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showPatientDataModal, setShowPatientDataModal] = useState(false);
+  const [selectedPatientForData, setSelectedPatientForData] = useState<Patient | null>(null);
 
   const {
     hasDemoRun,
@@ -168,19 +171,34 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                     {encounter.reasonDisplayText || encounter.reasonCode || 'N/A'}
                   </TableCell>
                   <TableCell className="mobile-card:col-span-2 mobile-card:mt-2 sm:table-cell text-right">
-                    <Button
-                      variant="secondary"
-                      iconLeft={<PlayCircle />}
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click when button is clicked
-                        // Navigate to patient workspace WITH auto-start consultation
-                        router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
-                      }}
-                      className="gap-1 w-full mobile-card:w-full"
-                    >
-                      Start
-                    </Button>
+                    <div className="flex gap-2 mobile-card:flex-col sm:flex-row">
+                      <Button
+                        variant="outline"
+                        iconLeft={<Eye />}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click when button is clicked
+                          setSelectedPatientForData(p);
+                          setShowPatientDataModal(true);
+                        }}
+                        className="gap-1 flex-1 mobile-card:w-full"
+                      >
+                        Prepare
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        iconLeft={<PlayCircle />}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row click when button is clicked
+                          // Navigate to patient workspace WITH auto-start consultation
+                          router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
+                        }}
+                        className="gap-1 flex-1 mobile-card:w-full"
+                      >
+                        Start
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -214,7 +232,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
           {/* Content on top of background */}
           <div className="relative text-center space-y-4 z-10">
             <div className="w-16 h-16 bg-white/60 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <PlusCircle className="w-8 h-8 text-primary" />
+              <span className="text-2xl">🩺</span>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-2">New Consultation</h3>
@@ -230,7 +248,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
           <div className="absolute inset-0 rounded-xl" style={{ backgroundImage:`url(${SIDE_PANEL_CONFIG.backgroundImage})`, backgroundSize:SIDE_PANEL_CONFIG.backgroundSize, backgroundPosition:SIDE_PANEL_CONFIG.backgroundPosition, backgroundRepeat:SIDE_PANEL_CONFIG.backgroundRepeat, opacity:SIDE_PANEL_CONFIG.opacity, zIndex:-1 }} />
           <div className="relative text-center space-y-4 z-10">
             <div className="w-16 h-16 bg-white/60 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <FileText className="w-8 h-8 text-primary" />
+              <span className="text-2xl">📋</span>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-2">Prior Authorization</h3>
@@ -246,7 +264,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
           <div className="absolute inset-0 rounded-xl" style={{ backgroundImage:`url(${SIDE_PANEL_CONFIG.backgroundImage})`, backgroundSize:SIDE_PANEL_CONFIG.backgroundSize, backgroundPosition:SIDE_PANEL_CONFIG.backgroundPosition, backgroundRepeat:SIDE_PANEL_CONFIG.backgroundRepeat, opacity:SIDE_PANEL_CONFIG.opacity, zIndex:-1 }} />
           <div className="relative text-center space-y-4 z-10">
             <div className="w-16 h-16 bg-white/60 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto shadow-lg">
-              <FilePlus className="w-8 h-8 text-primary" />
+              <span className="text-2xl">📝</span>
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-2">Referral</h3>
@@ -344,6 +362,16 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Patient Data Modal */}
+      <PatientDataModal
+        isOpen={showPatientDataModal}
+        onClose={() => {
+          setShowPatientDataModal(false);
+          setSelectedPatientForData(null);
+        }}
+        patient={selectedPatientForData}
+      />
     </ContentSurface>
   );
 }

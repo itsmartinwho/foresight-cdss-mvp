@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, CaretLeft as ChevronLeft, PlusCircle, X, CaretUp as ChevronUp, FileText, FilePlus } from '@phosphor-icons/react';
+import { Users, CaretLeft as ChevronLeft, X, CaretUp as ChevronUp } from '@phosphor-icons/react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import type { Patient, Encounter, EncounterDetailsWrapper } from "@/lib/types";
@@ -558,7 +558,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               }}
               className="font-semibold"
             >
-              <PlusCircle className="mr-2 h-4 w-4"/>
+              <span className="mr-2 text-base">🩺</span>
               New Consultation
             </Button>
             <Button
@@ -567,7 +567,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               onClick={() => setShowPriorAuthModal(true)}
               className="font-semibold"
             >
-              <FileText className="mr-2 h-4 w-4" />
+              <span className="mr-2 text-base">📋</span>
               Prior Auth
             </Button>
             <Button
@@ -576,7 +576,7 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
               onClick={() => setShowReferralModal(true)}
               className="font-semibold"
             >
-              <FilePlus className="mr-2 h-4 w-4" />
+              <span className="mr-2 text-base">📝</span>
               Referral
             </Button>
           </div>

@@ -237,7 +237,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
           draggableConfig={stableDraggableConfig}
         >
           <DialogHeader>
-            <DialogTitle>Start New Consultation</DialogTitle>
+            <DialogTitle>🩺 Start New Consultation</DialogTitle>
           </DialogHeader>
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-3">
@@ -470,7 +470,7 @@ export default function NewConsultationModal({ open, onOpenChange, onConsultatio
           className={`min-w-[672px] max-w-2xl max-h-[calc(100vh-80px)] overflow-auto pb-4 ${shake ? 'animate-shake' : ''}`}
         >
           <DialogHeader>
-            <DialogTitle>Start New Consultation</DialogTitle>
+            <DialogTitle>🩺 Start New Consultation</DialogTitle>
           </DialogHeader>
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-3">

@@ -268,14 +268,13 @@ export default function FormCreationModal({
   };
 
   /* -------------------- Render -------------------- */
-  const titleText = formType === 'priorAuth' ? 'Prior Authorization' : 'Referral';
+  const titleText = formType === 'priorAuth' ? '📋 Prior Authorization' : '📝 Referral';
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{/* hidden */}</DialogTrigger>
       <DialogContent className="min-w-[720px] max-w-3xl max-h-[calc(100vh-80px)] overflow-auto p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {formType === 'priorAuth' ? <FileText className="h-5 w-5" /> : <FilePlus className="h-5 w-5" />}
             {titleText}
           </DialogTitle>
         </DialogHeader>
