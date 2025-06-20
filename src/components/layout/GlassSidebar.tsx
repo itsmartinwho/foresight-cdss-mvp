@@ -88,7 +88,7 @@ export default function GlassSidebar() {
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">
+          <TooltipContent side="right" className="sidebar-collapse-tooltip">
             <p>{collapsed ? "Maximize menu" : "Minimize menu"}</p>
           </TooltipContent>
         </Tooltip>

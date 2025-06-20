@@ -196,4 +196,13 @@
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.15),
     inset 0 0 0 1px rgba(220, 235, 255, 0.224) !important;
+}
+
+/* Specific styling for sidebar collapse/expand tooltip only */
+.sidebar-collapse-tooltip {
+  background: rgba(50, 50, 50, 0.9) !important;
+  color: #9ca3af !important; /* medium gray text */
+  border: 1px solid rgba(100, 100, 100, 0.3) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 } 
