@@ -3,7 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronUp } from 'lucide-react';
+import { CaretUp as ChevronUp } from '@phosphor-icons/react';
 
 interface SectionProps {
   title: string;

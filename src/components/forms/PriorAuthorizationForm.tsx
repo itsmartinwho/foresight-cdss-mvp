@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Download, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileText, DownloadSimple, Warning, CheckCircle } from '@phosphor-icons/react';
 import FHIRResourceSelector from '@/components/ui/FHIRResourceSelector';
 import { EditableTextField } from '@/components/ui/editable';
 import { PriorAuthService, PRIOR_AUTH_RESOURCE_TYPES } from '@/lib/forms/priorAuthService';
@@ -156,7 +156,7 @@ export default function PriorAuthorizationForm({
             {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <Warning className="h-5 w-5 text-yellow-500" />
             )}
             <Button
               variant="outline"
@@ -168,7 +168,7 @@ export default function PriorAuthorizationForm({
               {isGeneratingPDF ? (
                 <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
               ) : (
-                <Download className="h-4 w-4" />
+                <DownloadSimple className="h-4 w-4" />
               )}
               Download
             </Button>

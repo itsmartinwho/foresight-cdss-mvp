@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper, Treatment, LabResult, Diagnosis, ClinicalTrial } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, X, Trash, Loader2 } from 'lucide-react';
+import { FileText, Eye, X, Trash, CircleNotch } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -274,7 +274,7 @@ export default function ConsolidatedConsultationTab({
             </div>
           ) : diagnosisRichContent.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading diagnosis...</span>
             </div>
           ) : (
@@ -349,7 +349,7 @@ export default function ConsolidatedConsultationTab({
             </div>
           ) : treatmentRichContent.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <CircleNotch className="h-6 w-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading treatment plans...</span>
             </div>
           ) : (

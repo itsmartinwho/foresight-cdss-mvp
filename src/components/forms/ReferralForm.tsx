@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Download, AlertTriangle, CheckCircle, Plus, X } from 'lucide-react';
+import { DownloadSimple, Warning, CheckCircle, Plus, X } from '@phosphor-icons/react';
 import FHIRResourceSelector from '@/components/ui/FHIRResourceSelector';
 import { EditableTextField } from '@/components/ui/editable';
 import { ReferralService, REFERRAL_RESOURCE_TYPES, SPECIALTY_TYPES } from '@/lib/forms/referralService';
@@ -143,7 +143,7 @@ export default function ReferralForm({
             {isFormValid ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <Warning className="h-5 w-5 text-yellow-500" />
             )}
             <Button
               variant="outline"
@@ -155,7 +155,7 @@ export default function ReferralForm({
               {isGeneratingPDF ? (
                 <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
               ) : (
-                <Download className="h-4 w-4" />
+                <DownloadSimple className="h-4 w-4" />
               )}
               Download
             </Button>
