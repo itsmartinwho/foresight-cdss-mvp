@@ -157,10 +157,10 @@ except Exception as e:
 
       {/* Table Display */}
       {tableData && (
-        <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
+        <div className="table-glass rounded-lg overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-white/20 border-b border-white/30">
                 <tr>
                   {Object.keys(tableData[0]).map((header) => (
                     <th key={header} className="px-4 py-2 text-left font-medium text-gray-900">
@@ -171,7 +171,7 @@ except Exception as e:
               </thead>
               <tbody>
                 {tableData.map((row: any, index: number) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <tr key={index} className={index % 2 === 0 ? 'bg-white/10' : 'bg-white/20'}>
                     {Object.keys(tableData[0]).map((header) => (
                       <td key={header} className="px-4 py-2 text-gray-700">
                         {row[header] || ''}

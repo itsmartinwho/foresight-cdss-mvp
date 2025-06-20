@@ -318,8 +318,8 @@ export default function GuidelineModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-white/75 backdrop-blur-3xl z-50 flex items-center justify-center p-4">
-      <div className="bg-white/90 backdrop-blur-3xl rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-white/60 shadow-lg">
+    <div className="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+      <div className="modal-glass rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-lg">
         <GuidelineModalContent 
           modalData={modalData}
           config={config}

@@ -201,7 +201,7 @@ except Exception as e:
 
       {/* Chart Display */}
       {chartUrl && (
-        <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
+        <div className="table-glass rounded-lg overflow-hidden shadow-sm">
           <Image
             src={chartUrl}
             alt="Generated medical chart"
