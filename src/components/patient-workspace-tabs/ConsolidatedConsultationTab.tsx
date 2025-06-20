@@ -80,7 +80,7 @@ export default function ConsolidatedConsultationTab({
     deleteDifferentialDiagnosis,
   } = useDifferentialDiagnoses({
     patientId: patient?.id || '',
-    encounterId: selectedEncounter?.encounterIdentifier || '',
+    encounterId: selectedEncounter?.id || selectedEncounter?.encounterIdentifier || '',
     autoLoad: true,
   });
 
