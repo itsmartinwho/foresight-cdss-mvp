@@ -25,7 +25,12 @@ class SupabaseDataService {
   /** Simple pub-sub so UI layers can refresh after data-mutating calls */
   private changeSubscribers: Array<() => void> = [];
 
-  // Method to load data for a single patient
+  // NEW: Cache for complete patient payloads to avoid re-assembling JSON
+  private cachedPatientPayloads: Record<string, PatientDataPayload> = {}; // key = patientId, value = complete payload
+  private payloadCacheTimestamps: Record<string, number> = {}; // key = patientId, value = timestamp when cached
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
+
+  // Method to load data for a single patient with PARALLEL fetching and JSON caching
   private async loadSinglePatientData(patientId: string): Promise<void> {
     if (this.patients[patientId]) { // Already loaded
       return Promise.resolve();
@@ -34,25 +39,54 @@ class SupabaseDataService {
       return this.singlePatientLoadPromises.get(patientId);
     }
 
-    console.log(`SupabaseDataService: Loading data for patient ${patientId}`);
+    console.log(`SupabaseDataService: Loading data for patient ${patientId} with parallel fetching`);
     const promise = (async () => {
       try {
-        // Fetch patient details
-        const { data: patientRow, error: pErr } = await this.supabase
-          .from('patients')
-          .select('*')
-          .eq('patient_id', patientId)
-          .single();
+        // PARALLEL FETCH: Start all database queries simultaneously
+        const [
+          patientResponse,
+          encountersResponse,
+          conditionsResponse,
+          labResultsResponse
+        ] = await Promise.all([
+          // Fetch patient demographics
+          this.supabase
+            .from('patients')
+            .select('*')
+            .eq('patient_id', patientId)
+            .single(),
+          
+          // Fetch encounters (including SOAP notes and treatments)
+          this.supabase
+            .from('encounters')
+            .select('*')
+            .eq('extra_data->>PatientID', patientId),
+          
+          // Fetch conditions (non-rich diagnoses)
+          this.supabase
+            .from('conditions')
+            .select('*')
+            .eq('patient_id', patientId), // Note: This will need to be corrected to use the UUID after patient is loaded
+          
+          // Fetch lab results
+          this.supabase
+            .from('lab_results')
+            .select('*')
+            .eq('patient_id', patientId) // Note: This will need to be corrected to use the UUID after patient is loaded
+        ]);
 
-        if (pErr) {
-          console.error(`SupabaseDataService (Prod Debug): Error fetching patient ${patientId}:`, pErr);
-          throw pErr;
+        // Check for patient fetch errors first
+        if (patientResponse.error) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching patient ${patientId}:`, patientResponse.error);
+          throw patientResponse.error;
         }
-        if (!patientRow) {
+        if (!patientResponse.data) {
           throw new Error(`Patient ${patientId} not found.`);
         }
 
-        // Process patient data (similar to loadPatientData but for one patient)
+        const patientRow = patientResponse.data;
+
+        // Process patient demographics
         const patient: Patient = {
           id: patientRow.patient_id,
           name: patientRow.name,
@@ -90,35 +124,27 @@ class SupabaseDataService {
             } catch (e) { console.warn('SupabaseDataService: Unable to parse alerts for patient', patientRow.patient_id, e); }
             return [];
           })(),
-
           nextAppointment: patientRow.next_appointment_date ? new Date(patientRow.next_appointment_date).toISOString() : undefined,
           reason: patientRow.patient_level_reason,
         };
+
+        // Store patient and UUID mapping
         this.patients[patient.id] = patient;
         if (!this.encountersByPatient[patient.id]) {
           this.encountersByPatient[patient.id] = [];
         }
-        // Store the mapping from Supabase UUID to original patient ID
         this.patientUuidToOriginalId[patientRow.id] = patient.id;
 
-        // Fetch encounters for this patient
-        // Important: Ensure 'encounters' table has a way to filter by patient_id
-        // Assuming 'encounters' table has 'patient_id_fk' or similar that matches 'patients.patient_id'
-        // This query might need adjustment based on your actual schema for encounters
-        const { data: encounterRows, error: vErr } = await this.supabase
-          .from('encounters')
-          .select('*')
-          .eq('extra_data->>PatientID', patientId); // Querying based on the existing pattern in loadPatientData
-
-        if (vErr) {
-          console.error(`SupabaseDataService (Prod Debug): Error fetching encounters for patient ${patientId}:`, vErr);
-          throw vErr;
+        // Process encounters (check for errors)
+        if (encountersResponse.error) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching encounters for patient ${patientId}:`, encountersResponse.error);
+          throw encountersResponse.error;
         }
 
-        if (encounterRows) {
-          encounterRows.forEach((row) => {
+        if (encountersResponse.data) {
+          encountersResponse.data.forEach((row) => {
             const encounterSupabaseUUID = row.id;
-            const encounterBusinessKey = row.encounter_id; // Assumes DB column is now encounter_id
+            const encounterBusinessKey = row.encounter_id;
             const patientSupabaseUUIDFromEncounter = row.patient_supabase_id;
 
             if (!encounterBusinessKey) {
@@ -151,11 +177,9 @@ class SupabaseDataService {
               reasonCode: row.reason_code,
               reasonDisplayText: row.reason_display_text,
               transcript: row.transcript,
-              soapNote: row.soap_note,
-              treatments: row.treatments || undefined,
-              // === Rich content fields ===
-              diagnosis_rich_content: row.diagnosis_rich_content || undefined,
-              treatments_rich_content: row.treatments_rich_content || undefined,
+              soapNote: row.soap_note, // SOAP notes included as requested
+              treatments: row.treatments || undefined, // Treatments (non-rich) included as requested
+              // Exclude rich content fields as per requirements
               priorAuthJustification: row.prior_auth_justification,
               isDeleted: !!row.is_deleted,
               deletedAt: row.updated_at && row.is_deleted ? new Date(row.updated_at).toISOString() : undefined,
@@ -170,30 +194,35 @@ class SupabaseDataService {
           });
         }
 
-        // Fetch diagnoses for this patient
-        const { data: dxRows } = await this.supabase.from('conditions')
-          .select('*')
-          .eq('patient_id', patientRow.id);
+        // Now we need to re-fetch conditions and lab results with the correct patient UUID
+        // since the initial parallel fetch used the wrong patient_id format
+        const [correctedConditionsResponse, correctedLabResultsResponse] = await Promise.all([
+          this.supabase.from('conditions')
+            .select('*')
+            .eq('patient_id', patientRow.id), // Use the Supabase UUID
+          
+          this.supabase.from('lab_results')
+            .select('*')
+            .eq('patient_id', patientRow.id) // Use the Supabase UUID
+        ]);
 
-        // Fetch lab results for this patient
-        const { data: labRows } = await this.supabase.from('lab_results')
-          .select('*')
-          .eq('patient_id', patientRow.id);
-
-        // Store diagnoses
-        if (dxRows) {
-          this.diagnoses[patientId] = dxRows.map(dx => ({
+        // Process conditions (non-rich diagnoses)
+        if (correctedConditionsResponse.error) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching conditions for patient ${patientId}:`, correctedConditionsResponse.error);
+        } else if (correctedConditionsResponse.data) {
+          this.diagnoses[patientId] = correctedConditionsResponse.data.map(dx => ({
             patientId: patientId,
             encounterId: dx.encounter_id || '',
             code: dx.code,
-            description: dx.description,
+            description: dx.description, // Condition descriptions (non-rich) as requested
           }));
-  
         }
         
-        // Store lab results
-        if (labRows) {
-          this.labResults[patientId] = labRows.map(lab => ({
+        // Process lab results
+        if (correctedLabResultsResponse.error) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching lab results for patient ${patientId}:`, correctedLabResultsResponse.error);
+        } else if (correctedLabResultsResponse.data) {
+          this.labResults[patientId] = correctedLabResultsResponse.data.map(lab => ({
             patientId: patientId,
             encounterId: lab.encounter_id || '',
             name: lab.name,
@@ -203,12 +232,29 @@ class SupabaseDataService {
             referenceRange: lab.reference_range,
             flag: lab.flag,
           }));
-
         }
 
+        // Build and cache the complete patient payload JSON immediately after all data is assembled
+        const patientEncounters = this.getPatientEncounters(patientId, true);
+        const encounterDetails = patientEncounters.map(encounter => ({
+          encounter: encounter,
+          diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
+          labResults: this.getLabResultsForEncounter(patientId, encounter.id),
+        }));
+
+        const completePayload: PatientDataPayload = { 
+          patient, 
+          encounters: encounterDetails 
+        };
+
+        // Cache the complete JSON payload for future requests
+        this.cachedPatientPayloads[patientId] = completePayload;
+        this.payloadCacheTimestamps[patientId] = Date.now();
+
+        console.log(`SupabaseDataService: Successfully loaded and cached complete payload for patient ${patientId}`);
         this.emitChange(); // Notify subscribers
       } catch (error) {
-        console.error(`SupabaseDataService (Prod Debug): Exception during single patient data fetch for ${patientId}:`, error);
+        console.error(`SupabaseDataService (Prod Debug): Exception during parallel patient data fetch for ${patientId}:`, error);
         throw error; // Re-throw
       } finally {
         this.singlePatientLoadPromises.delete(patientId); // Clear promise once done (success or fail)
@@ -554,32 +600,57 @@ class SupabaseDataService {
   }
 
   async getPatientData(patientId: string): Promise<PatientDataPayload | null> {
-    // console.log(`SupabaseDataService (Prod Debug): getPatientData called for ${patientId}. isLoaded:`, this.isLoaded, 'isLoading:', this.isLoading);
+    console.log(`SupabaseDataService: getPatientData called for ${patientId}`);
+    
+    // Check if we have a valid cached payload first
+    const cachedPayload = this.cachedPatientPayloads[patientId];
+    const cacheTimestamp = this.payloadCacheTimestamps[patientId];
+    
+    if (cachedPayload && cacheTimestamp) {
+      const cacheAge = Date.now() - cacheTimestamp;
+      if (cacheAge < this.CACHE_TTL_MS) {
+        console.log(`SupabaseDataService: Returning cached payload for patient ${patientId} (age: ${Math.round(cacheAge / 1000)}s)`);
+        return cachedPayload;
+      } else {
+        console.log(`SupabaseDataService: Cache expired for patient ${patientId} (age: ${Math.round(cacheAge / 1000)}s), will reload`);
+        // Clear expired cache
+        delete this.cachedPatientPayloads[patientId];
+        delete this.payloadCacheTimestamps[patientId];
+      }
+    }
     
     // If the specific patient is not in cache, try to load them.
     if (!this.patients[patientId] && !this.singlePatientLoadPromises.has(patientId)) {
-      console.log(`SupabaseDataService (Prod Debug): Patient ${patientId} not in cache. Attempting single load.`);
+      console.log(`SupabaseDataService: Patient ${patientId} not in cache. Attempting parallel load.`);
       try {
         await this.loadSinglePatientData(patientId);
       } catch (error) {
-        console.error(`SupabaseDataService (Prod Debug): Failed to load single patient ${patientId} in getPatientData:`, error);
+        console.error(`SupabaseDataService: Failed to load single patient ${patientId} in getPatientData:`, error);
         return null; // Failed to load, return null
       }
     } else if (this.singlePatientLoadPromises.has(patientId)) {
       // If a load is in progress for this patient, await it
-      console.log(`SupabaseDataService (Prod Debug): Patient ${patientId} load in progress. Awaiting...`);
+      console.log(`SupabaseDataService: Patient ${patientId} load in progress. Awaiting...`);
       try {
         await this.singlePatientLoadPromises.get(patientId);
       } catch (error) {
-         console.error(`SupabaseDataService (Prod Debug): Existing load for single patient ${patientId} failed:`, error);
+         console.error(`SupabaseDataService: Existing load for single patient ${patientId} failed:`, error);
         return null;
       }
     }
 
-    // After attempting to load, check cache again
+    // After loading, return the cached payload (which should now be available)
+    const finalCachedPayload = this.cachedPatientPayloads[patientId];
+    if (finalCachedPayload) {
+      console.log(`SupabaseDataService: Returning newly loaded and cached payload for patient ${patientId}`);
+      return finalCachedPayload;
+    }
+
+    // Fallback: if cache is somehow missing, build payload on-the-fly
+    console.warn(`SupabaseDataService: Cache missing for patient ${patientId}, building payload on-the-fly`);
     const patient = this.patients[patientId];
     if (!patient) {
-        console.warn(`SupabaseDataService (Prod Debug): getPatientData - Patient ${patientId} not found in cache (after load attempt).`);
+        console.warn(`SupabaseDataService: getPatientData - Patient ${patientId} not found in cache (after load attempt).`);
         return null;
     }
 
@@ -671,6 +742,7 @@ class SupabaseDataService {
     }
     if (this.encounters[encounterCompositeId]) {
       this.encounters[encounterCompositeId].transcript = transcript;
+      this.clearPatientPayloadCache(patientId); // Clear cache when data is updated
       this.emitChange();
     } else {
       console.warn(`SupabaseDataService (Prod Debug): updateEncounterTranscript - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
@@ -701,6 +773,7 @@ class SupabaseDataService {
     // Update local cache
     if (this.encounters[encounterCompositeId]) {
       this.encounters[encounterCompositeId].observations = observations;
+      this.clearPatientPayloadCache(patientId); // Clear cache when data is updated
       this.emitChange(); // Notify subscribers of the change
     } else {
       console.warn(`SupabaseDataService (Prod Debug): updateEncounterObservations - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
@@ -728,6 +801,7 @@ class SupabaseDataService {
     // Update local cache
     if (this.encounters[encounterCompositeId]) {
       this.encounters[encounterCompositeId].soapNote = soapNote;
+      this.clearPatientPayloadCache(patientId); // Clear cache when data is updated
       this.emitChange();
     } else {
       console.warn(`SupabaseDataService: updateEncounterSOAPNote - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
@@ -755,6 +829,7 @@ class SupabaseDataService {
     // Update local cache
     if (this.encounters[encounterCompositeId]) {
       this.encounters[encounterCompositeId].treatments = treatments;
+      this.clearPatientPayloadCache(patientId); // Clear cache when data is updated
       this.emitChange();
     } else {
       console.warn(`SupabaseDataService: updateEncounterTreatments - Encounter with composite ID ${encounterCompositeId} not found in local cache to update.`);
@@ -844,6 +919,7 @@ class SupabaseDataService {
     this.encounters[compositeId] = encounter;
     if (!this.encountersByPatient[patientId]) this.encountersByPatient[patientId] = [];
     this.encountersByPatient[patientId].unshift(compositeId);
+    this.clearPatientPayloadCache(patientId); // Clear cache when new encounter is created
     this.emitChange();
     return encounter;
   }
@@ -865,6 +941,35 @@ class SupabaseDataService {
         /* no-op */
       }
     });
+  }
+
+  // Clear cached payload for a specific patient (when data is updated)
+  private clearPatientPayloadCache(patientId: string) {
+    if (this.cachedPatientPayloads[patientId]) {
+      delete this.cachedPatientPayloads[patientId];
+      delete this.payloadCacheTimestamps[patientId];
+      console.log(`SupabaseDataService: Cleared cached payload for patient ${patientId}`);
+    }
+  }
+
+  // Clear all cached payloads (useful for bulk operations)
+  private clearAllPayloadCaches() {
+    const clearedCount = Object.keys(this.cachedPatientPayloads).length;
+    this.cachedPatientPayloads = {};
+    this.payloadCacheTimestamps = {};
+    if (clearedCount > 0) {
+      console.log(`SupabaseDataService: Cleared ${clearedCount} cached patient payloads`);
+    }
+  }
+
+  // Public method to manually clear a patient's cached payload
+  public clearPatientCache(patientId: string): void {
+    this.clearPatientPayloadCache(patientId);
+  }
+
+  // Public method to manually clear all cached payloads
+  public clearAllCaches(): void {
+    this.clearAllPayloadCaches();
   }
 
   async createNewPatient(input: { firstName: string; lastName: string; gender?: string; dateOfBirth?: string }): Promise<Patient> {
@@ -964,6 +1069,7 @@ class SupabaseDataService {
       }
 
       console.log(`SupabaseDataService: Successfully soft deleted encounter ${encounterId}`);
+      this.clearPatientPayloadCache(patientId); // Clear cache when encounter is deleted
       this.emitChange();
       return true;
     } catch (error) {
@@ -1022,6 +1128,7 @@ class SupabaseDataService {
       }
 
       console.log(`SupabaseDataService: Successfully restored encounter ${encounterId}`);
+      this.clearPatientPayloadCache(patientId); // Clear cache when encounter is restored
       this.emitChange();
       return true;
     } catch (error) {
@@ -1137,7 +1244,10 @@ class SupabaseDataService {
    * Useful for debugging or when database changes need to be reflected immediately
    */
   async forceRefreshPatient(patientId: string): Promise<void> {
-    console.log(`SupabaseDataService: Force refreshing patient ${patientId}`);
+    console.log(`SupabaseDataService: Force refreshing patient ${patientId} with parallel fetching`);
+    
+    // Clear cached payload first
+    this.clearPatientPayloadCache(patientId);
     
     // Clear patient from cache (similar to clearDemoPatientData but for any patient)
     if (this.patients[patientId]) {
@@ -1169,12 +1279,12 @@ class SupabaseDataService {
     // Remove any pending load promises to force fresh load
     this.singlePatientLoadPromises.delete(patientId);
 
-    console.log(`SupabaseDataService: Patient ${patientId} cleared from cache, reloading...`);
+    console.log(`SupabaseDataService: Patient ${patientId} cleared from cache, reloading with parallel fetching...`);
     
-    // Force reload the patient data
+    // Force reload the patient data with parallel fetching and caching
     await this.loadSinglePatientData(patientId);
     
-    console.log(`SupabaseDataService: Patient ${patientId} successfully refreshed`);
+    console.log(`SupabaseDataService: Patient ${patientId} successfully refreshed with new cached payload`);
     this.emitChange();
   }
 
