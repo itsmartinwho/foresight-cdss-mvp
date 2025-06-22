@@ -235,7 +235,8 @@ class SupabaseDataService {
         }
 
         // Build and cache the complete patient payload JSON immediately after all data is assembled
-        const patientEncounters = this.getPatientEncounters(patientId, true);
+        // Only include non-deleted encounters for AI context
+        const patientEncounters = this.getPatientEncounters(patientId, false);
         const encounterDetails = patientEncounters.map(encounter => ({
           encounter: encounter,
           diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
@@ -654,8 +655,8 @@ class SupabaseDataService {
         return null;
     }
 
-    // Include all encounters (deleted and non-deleted) for comprehensive patient data
-    const patientEncounters = this.getPatientEncounters(patientId, true);
+    // Include only non-deleted encounters for AI context
+    const patientEncounters = this.getPatientEncounters(patientId, false);
     const encounterDetails = patientEncounters.map(encounter => ({
       encounter: encounter,
       diagnoses: this.getDiagnosesForEncounter(patientId, encounter.id),
