@@ -79,21 +79,27 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Assistant ID for the medical advisor (you can create this once and store it)
 const MEDICAL_ADVISOR_ASSISTANT_ID = process.env.MEDICAL_ADVISOR_ASSISTANT_ID;
 
-async function createOrGetAssistant(): Promise<string> {
-  if (MEDICAL_ADVISOR_ASSISTANT_ID) {
+// Cache assistant IDs in memory to avoid recreating each request
+const assistantIdCache: Record<string, string> = {};
+
+async function createOrGetAssistant(model: string): Promise<string> {
+  // Use model name as cache key
+  if (assistantIdCache[model]) return assistantIdCache[model];
+
+  // If an environment variable is provided for the default model (gpt-4.1-mini), reuse it
+  if (model === "gpt-4.1-mini" && MEDICAL_ADVISOR_ASSISTANT_ID) {
+    assistantIdCache[model] = MEDICAL_ADVISOR_ASSISTANT_ID;
     return MEDICAL_ADVISOR_ASSISTANT_ID;
   }
 
-  // Create a new assistant if not configured
   const assistant = await openai.beta.assistants.create({
-    name: "Foresight Medical Advisor",
+    name: `Foresight Medical Advisor (${model})`,
     instructions: baseSystemPrompt,
-    model: "gpt-4.1-mini",
+    model,
     tools: [{ type: "code_interpreter" }],
   });
 
-  
-  
+  assistantIdCache[model] = assistant.id;
   return assistant.id;
 }
 
@@ -546,55 +552,38 @@ export async function GET(req: NextRequest) {
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
         if (!thinkMode) {
-          // Build chat completion messages with base system prompt and optional patient context
-          const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+          // Use Assistants API but with the faster mini model for regular mode
+          const assistantId = await createOrGetAssistant(AIModelType.GPT_4_1_MINI);
 
-          const combinedSystemPrompt = patientSummaryBlock
-            ? `${baseSystemPrompt}\n\n${patientSummaryBlock}`
-            : baseSystemPrompt;
+          const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 
-          chatMessages.push({ role: "system", content: combinedSystemPrompt });
+          // If needed, enrich user query with guidelines similar to think mode
+          if (filteredMessages.length > 0) {
+            const latestUserMessage = filteredMessages[filteredMessages.length - 1];
+            if (latestUserMessage.role === "user") {
+              let patientData = null;
+              try {
+                if (patientSummaryBlock) {
+                  patientData = { summary: patientSummaryBlock };
+                }
+              } catch (e) {
+                console.warn("Could not extract patient data for guidelines search:", e);
+              }
 
-          for (const m of messagesFromClient) {
-            if (m.role === "user" || m.role === "assistant") {
-              chatMessages.push({ role: m.role, content: m.content });
-            }
-          }
-
-          try {
-            const completionStream = await openai.chat.completions.create({
-              model: AIModelType.GPT_4_1_MINI,
-              stream: true,
-              messages: chatMessages,
-            });
-
-            for await (const chunk of completionStream) {
-              if (requestAbortController.signal.aborted) break;
-
-              const delta = chunk.choices[0]?.delta?.content ?? "";
-              if (delta) {
-                const textPayload = { type: "markdown_chunk", content: delta };
-                controller.enqueue(encoder.encode(`data:${JSON.stringify(textPayload)}\n\n`));
+              const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
+              if (guidelinesEnrichment) {
+                latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
               }
             }
-
-            const endPayload = { type: "stream_end" };
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
-            closeControllerOnce();
-            requestAbortController.signal.removeEventListener('abort', mainAbortListener);
-            return;
-          } catch (e) {
-            console.error("Chat completion streaming failed:", e);
-            const errorPayload = { type: "error", message: "Connection issue or stream interrupted" };
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
-            closeControllerOnce();
-            requestAbortController.signal.removeEventListener('abort', mainAbortListener);
-            return;
           }
+
+          await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+          return;
         }
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
-        const assistantId = await createOrGetAssistant();
+        const assistantId = await createOrGetAssistant(AIModelType.GPT_4O);
 
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 
