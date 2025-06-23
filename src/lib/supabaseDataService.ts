@@ -42,38 +42,12 @@ class SupabaseDataService {
     console.log(`SupabaseDataService: Loading data for patient ${patientId} with parallel fetching`);
     const promise = (async () => {
       try {
-        // PARALLEL FETCH: Start all database queries simultaneously
-        const [
-          patientResponse,
-          encountersResponse,
-          conditionsResponse,
-          labResultsResponse
-        ] = await Promise.all([
-          // Fetch patient demographics
-          this.supabase
-            .from('patients')
-            .select('*')
-            .eq('patient_id', patientId)
-            .single(),
-          
-          // Fetch encounters (including SOAP notes and treatments)
-          this.supabase
-            .from('encounters')
-            .select('*')
-            .eq('extra_data->>PatientID', patientId),
-          
-          // Fetch conditions (non-rich diagnoses)
-          this.supabase
-            .from('conditions')
-            .select('*')
-            .eq('patient_id', patientId), // Note: This will need to be corrected to use the UUID after patient is loaded
-          
-          // Fetch lab results
-          this.supabase
-            .from('lab_results')
-            .select('*')
-            .eq('patient_id', patientId) // Note: This will need to be corrected to use the UUID after patient is loaded
-        ]);
+        // STEP 1: First fetch patient demographics to get the Supabase UUID
+        const patientResponse = await this.supabase
+          .from('patients')
+          .select('*')
+          .eq('patient_id', patientId)
+          .single();
 
         // Check for patient fetch errors first
         if (patientResponse.error) {
@@ -85,6 +59,32 @@ class SupabaseDataService {
         }
 
         const patientRow = patientResponse.data;
+
+        // STEP 2: PARALLEL FETCH encounters, conditions, and lab results using the Supabase UUID
+        const [
+          encountersResponse,
+          conditionsResponse,
+          labResultsResponse
+        ] = await Promise.all([
+          // Fetch encounters (including SOAP notes and treatments) using correct foreign key
+          this.supabase
+            .from('encounters')
+            .select('*')
+            .eq('patient_supabase_id', patientRow.id)
+            .eq('is_deleted', false), // Only fetch non-deleted encounters
+          
+          // Fetch conditions (non-rich diagnoses) using Supabase UUID
+          this.supabase
+            .from('conditions')
+            .select('*')
+            .eq('patient_id', patientRow.id),
+          
+          // Fetch lab results using Supabase UUID
+          this.supabase
+            .from('lab_results')
+            .select('*')
+            .eq('patient_id', patientRow.id)
+        ]);
 
         // Process patient demographics
         const patient: Patient = {
@@ -194,23 +194,11 @@ class SupabaseDataService {
           });
         }
 
-        // Now we need to re-fetch conditions and lab results with the correct patient UUID
-        // since the initial parallel fetch used the wrong patient_id format
-        const [correctedConditionsResponse, correctedLabResultsResponse] = await Promise.all([
-          this.supabase.from('conditions')
-            .select('*')
-            .eq('patient_id', patientRow.id), // Use the Supabase UUID
-          
-          this.supabase.from('lab_results')
-            .select('*')
-            .eq('patient_id', patientRow.id) // Use the Supabase UUID
-        ]);
-
-        // Process conditions (non-rich diagnoses)
-        if (correctedConditionsResponse.error) {
-          console.error(`SupabaseDataService (Prod Debug): Error fetching conditions for patient ${patientId}:`, correctedConditionsResponse.error);
-        } else if (correctedConditionsResponse.data) {
-          this.diagnoses[patientId] = correctedConditionsResponse.data.map(dx => ({
+        // Process conditions (non-rich diagnoses) directly from the parallel fetch
+        if (conditionsResponse.error) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching conditions for patient ${patientId}:`, conditionsResponse.error);
+        } else if (conditionsResponse.data) {
+          this.diagnoses[patientId] = conditionsResponse.data.map(dx => ({
             patientId: patientId,
             encounterId: dx.encounter_id || '',
             code: dx.code,
@@ -218,11 +206,11 @@ class SupabaseDataService {
           }));
         }
         
-        // Process lab results
-        if (correctedLabResultsResponse.error) {
-          console.error(`SupabaseDataService (Prod Debug): Error fetching lab results for patient ${patientId}:`, correctedLabResultsResponse.error);
-        } else if (correctedLabResultsResponse.data) {
-          this.labResults[patientId] = correctedLabResultsResponse.data.map(lab => ({
+        // Process lab results directly from the parallel fetch
+        if (labResultsResponse.error) {
+          console.error(`SupabaseDataService (Prod Debug): Error fetching lab results for patient ${patientId}:`, labResultsResponse.error);
+        } else if (labResultsResponse.data) {
+          this.labResults[patientId] = labResultsResponse.data.map(lab => ({
             patientId: patientId,
             encounterId: lab.encounter_id || '',
             name: lab.name,
