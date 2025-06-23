@@ -246,7 +246,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent row click when button is clicked
                           // Navigate to patient workspace WITH auto-start consultation
-                          router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
+                          router.push(`/patients/${p.id}?tab=consultation&encounterId=${encounter.id}&autoStartTranscription=true`);
                         }}
                         className="gap-1 text-xs px-2 py-1 h-7 mobile-card:w-full"
                       >

@@ -407,7 +407,7 @@ export default function PatientsListView({ onSelect }: PatientsListViewProps) {
                           
                           if (isUpcoming) {
                             // For upcoming consultations, navigate with auto-start
-                            router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}&autoStart=true`);
+                            router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}&autoStartTranscription=true`);
                           } else {
                             // For past consultations, just navigate normally
                             router.push(`/patients/${patient.id}?tab=consultation&encounterId=${encounter.id}`);
