@@ -4,26 +4,50 @@ This document provides a guide to the Advisor feature (tool A), including its in
 
 ## Overview
 
-The Advisor is an AI-powered chatbot that provides general medical information and allows users to ask questions based on attached patient data. It uses OpenAI's models to provide answers and can generate charts and tables to visualize data.
+The Advisor is an AI-powered chatbot that provides general medical information and allows users to ask questions based on attached patient data. It operates in two modes to optimize both speed and functionality.
 
 ### Key Features
 
-- **AI-Powered Chat**: Utilizes OpenAI models (e.g., `gpt-4.1-mini`) for medical queries.
-- **Patient Context**: Can answer questions based on the data of a selected patient.
-- **Code Interpreter Integration**: Uses OpenAI's Code Interpreter to automatically generate charts and tables for data analysis.
-- **Streaming Responses**: Text responses are streamed to the user for a real-time experience.
+- **Dual-Mode Operation**: Regular mode for fast responses, Think mode for advanced analysis
+- **AI-Powered Chat**: Utilizes OpenAI models (e.g., `gpt-4.1-mini`) for medical queries
+- **Patient Context**: Can answer questions based on the data of a selected patient
+- **Code Interpreter Integration**: Uses OpenAI's Code Interpreter in Think mode for automatic chart and table generation
+- **Streaming Responses**: Text responses are streamed to the user for a real-time experience
+- **Clinical Guidelines Integration**: References evidence-based guidelines from USPSTF, NICE, NCI PDQ, and RxNorm
 
-## Code Interpreter Integration
+## Operating Modes
 
-The system uses OpenAI's Assistants API with the Code Interpreter tool for all medical data analysis and visualization.
+### Regular Mode (Default)
+- **Fast Response**: Uses Chat Completions API for quick text-based medical advice
+- **Markdown Tables**: Creates structured data comparisons using markdown table syntax
+- **Visualization Guidance**: Acknowledges chart requests and guides users to Think mode for comprehensive visualizations
+- **Clinical Analysis**: Provides detailed clinical interpretation in structured text format
+
+### Think Mode (Advanced Analysis)
+- **Code Interpreter**: Uses OpenAI's Assistants API with Code Interpreter tool
+- **Automatic Charts**: Generates professional medical visualizations with Python code execution
+- **Time-Series Analysis**: Analyzes lab results, vital signs, and medication history over time
+- **Pattern Recognition**: Identifies clinical trends and correlations in patient data
+- **Comprehensive Tables**: Creates structured data tables with proper medical formatting
+
+## Code Interpreter Integration (Think Mode)
+
+The system uses OpenAI's Assistants API with the Code Interpreter tool for advanced medical data analysis and visualization in Think mode.
 
 ### How It Works
 
-1.  **Patient Context**: When a patient is selected, their clinical data is fetched.
-2.  **Assistant Analysis**: A dedicated OpenAI Assistant analyzes the data.
-3.  **Proactive Visualization**: The assistant proactively creates charts and tables for time-series data, comparisons, or clinical trends.
-4.  **Simulated Streaming**: Text responses are streamed, and chart loading placeholders are displayed.
-5.  **Result Display**: The final charts and tables are rendered in the chat interface.
+#### Regular Mode Flow
+1. **Patient Context**: When a patient is selected, their clinical data is fetched
+2. **Chat Completion**: Uses Chat Completions API for fast text-based responses  
+3. **Markdown Analysis**: Creates structured data analysis using markdown tables and lists
+4. **Visualization Guidance**: When users request charts, provides guidance to enable Think mode
+
+#### Think Mode Flow
+1. **Patient Context**: When a patient is selected, their clinical data is fetched
+2. **Assistant Analysis**: A dedicated OpenAI Assistant with Code Interpreter analyzes the data
+3. **Proactive Visualization**: The assistant proactively creates charts and tables for time-series data, comparisons, or clinical trends
+4. **Simulated Streaming**: Text responses are streamed, and chart loading placeholders are displayed
+5. **Result Display**: The final charts and tables are rendered in the chat interface
 
 ### API Endpoints
 
@@ -47,11 +71,27 @@ MEDICAL_ADVISOR_ASSISTANT_ID=asst_your_advisor_assistant_id
 CLINICAL_ENGINE_ASSISTANT_ID=asst_your_clinical_engine_assistant_id
 ```
 
+## Usage Guidelines
+
+### When to Use Regular Mode
+- Quick medical consultations and advice
+- General medical questions without complex data analysis
+- Fast text-based clinical guidance
+- Initial patient assessments
+
+### When to Use Think Mode
+- Complex data analysis requiring charts and visualizations
+- Time-series analysis of lab results or vital signs
+- Medication history tracking and trend analysis
+- Comprehensive clinical pattern recognition
+- When specifically requesting charts, graphs, or data visualizations
+
 ## Roadmap and Future Enhancements
 
-- **Full Chart Visualization**: The current implementation generates the code for charts and renders them but charts could be impproved.
-- **Interactive Charts**: Future versions may include support for interactive charts.
-- **Real-time Progress**: The system may be enhanced to show the real-time progress of chart generation.
+- **Enhanced Visualizations**: Improve chart quality and styling for medical presentations
+- **Interactive Charts**: Future versions may include support for interactive charts
+- **Real-time Progress**: Show real-time progress of chart generation in Think mode
+- **Hybrid Mode**: Automatically detect when visualizations would be beneficial and suggest Think mode
 
 ## Troubleshooting
 
