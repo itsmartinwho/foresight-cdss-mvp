@@ -583,7 +583,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
-        const assistantId = await createOrGetAssistant(AIModelType.GPT_4O);
+        const assistantId = await createOrGetAssistant(AIModelType.O4_MINI);
 
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 
