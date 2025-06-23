@@ -68,10 +68,11 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     setMounted(true);
   }, []);
 
-  // Sync with localStorage changes (cross-tab)
+  // Sync with localStorage changes (cross-tab) - stabilize dependencies
   useEffect(() => {
     return DemoStateService.addStorageListener((hasRun) => {
-      if (hasDemoRun !== hasRun) {
+      // Use ref to avoid comparing potentially stale state
+      if (demoStageRef.current !== 'finished' && hasRun !== DemoStateService.hasDemoRun()) {
         setHasDemoRunState(hasRun);
         if (hasRun) {
           setDemoStage('finished');
@@ -83,36 +84,36 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
         }
       }
     });
-  }, [hasDemoRun]);
+  }, []); // Remove hasDemoRun dependency to prevent loops
 
-  // Detect demo route after navigation to restore active state
+  // Detect demo route after navigation to restore active state - stabilize with ref
   useEffect(() => {
     if (mounted) {
       const isDemoRoute = searchParams.get('demo') === 'true';
-      if (isDemoRoute && !isDemoActive) {
+      // Use ref to check current state without causing dependency loops
+      if (isDemoRoute && demoStageRef.current !== 'finished' && !isDemoActive) {
         console.log('Restoring demo active state from URL');
         setIsDemoActive(true);
       }
     }
-  }, [searchParams, isDemoActive, mounted]);
+  }, [searchParams, mounted]); // Remove isDemoActive dependency
 
   // Demo stage management
   const advanceDemoStage = useCallback((stage: DemoStage) => {
     console.log(`Advancing demo stage to: ${stage}`);
+    demoStageRef.current = stage; // Update ref immediately
     setDemoStage(stage);
   }, []);
 
-  // Animation management
+  // Animation management - prevent loops with more specific conditions
   useEffect(() => {
-    console.log('[DemoOrchestrator] Animation effect triggered:', { isDemoActive, demoStage });
-    if (isDemoActive && demoStage === 'animatingTranscript') {
+    if (isDemoActive && demoStage === 'animatingTranscript' && !DemoAnimationService.isTranscriptAnimating()) {
+      console.log('[DemoOrchestrator] Starting transcript animation');
       const transcriptLines = DemoDataService.getTranscriptLines();
-      console.log('[DemoOrchestrator] Starting transcript animation with lines:', transcriptLines.length);
       
       DemoAnimationService.startTranscriptAnimation(
         transcriptLines,
         (animatedText) => {
-          console.log('[DemoOrchestrator] Updating animated transcript, length:', animatedText.length);
           setAnimatedTranscript(animatedText);
         },
         () => {
@@ -129,8 +130,10 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     };
   }, [isDemoActive, demoStage, advanceDemoStage]);
 
+  // Clinical plan simulation - prevent loops with more specific conditions
   useEffect(() => {
-    if (isDemoActive && demoStage === 'simulatingPlanGeneration') {
+    if (isDemoActive && demoStage === 'simulatingPlanGeneration' && !DemoAnimationService.isClinicalPlanSimulating()) {
+      console.log('[DemoOrchestrator] Starting clinical plan simulation');
       DemoAnimationService.startClinicalPlanSimulation(
         () => advanceDemoStage('showingPlan')
       );

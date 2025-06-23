@@ -122,7 +122,7 @@ export default function ConsultationPanel({
   const isCurrentlyCreatingEncounter = useRef(false);
   const [mounted, setMounted] = useState(false);
   
-  // Development render count guard with circuit breaker
+  // Render counting and circuit breaker - optimize for less interference
   const renderCountRef = useRef(0);
   const circuitBreakerRef = useRef(false);
   const lastResetTimeRef = useRef(Date.now());
@@ -131,25 +131,27 @@ export default function ConsultationPanel({
   if (process.env.NODE_ENV === 'development' && !circuitBreakerRef.current) {
     renderCountRef.current++;
     
-    // Reset counter every 5 seconds to handle normal re-renders during user interactions
+    // Reset counter every 10 seconds to handle normal re-renders during user interactions (increased from 5s)
     const now = Date.now();
-    if (now - lastResetTimeRef.current > 5000) {
+    if (now - lastResetTimeRef.current > 10000) {
       renderCountRef.current = 1;
       lastResetTimeRef.current = now;
     }
     
-    if (renderCountRef.current > 15) {
-      console.error('[ConsultationPanel] Excessive renders detected (>15), enabling circuit breaker!');
+    // Increase threshold for demo mode since it has legitimate frequent re-renders
+    const threshold = isDemoMode ? 25 : 20;
+    if (renderCountRef.current > threshold) {
+      console.error(`[ConsultationPanel] Excessive renders detected (>${threshold}), enabling circuit breaker!`);
       console.trace();
       circuitBreakerRef.current = true;
       
-      // Reset after a delay to allow normal operation
+      // Reset after a shorter delay for demo mode
       setTimeout(() => {
         renderCountRef.current = 0;
         circuitBreakerRef.current = false;
         lastResetTimeRef.current = Date.now();
         console.log('[ConsultationPanel] Circuit breaker reset');
-      }, 3000);
+      }, isDemoMode ? 2000 : 3000);
     }
   }
   

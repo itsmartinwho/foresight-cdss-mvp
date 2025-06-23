@@ -318,7 +318,7 @@ export const useResourcePreloader = (resources: string[]) => {
 };
 
 // Memory usage monitor
-export const useMemoryMonitor = () => {
+export const useMemoryMonitor = (enableAutoUpdate: boolean = false) => {
   const [memoryInfo, setMemoryInfo] = useState<{
     usedJSHeapSize?: number;
     totalJSHeapSize?: number;
@@ -338,10 +338,13 @@ export const useMemoryMonitor = () => {
     };
 
     updateMemoryInfo();
-    const interval = setInterval(updateMemoryInfo, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
+    
+    // Only set interval if explicitly enabled to prevent unwanted re-renders
+    if (enableAutoUpdate) {
+      const interval = setInterval(updateMemoryInfo, 10000); // Increase to 10 seconds if enabled
+      return () => clearInterval(interval);
+    }
+  }, [enableAutoUpdate]);
 
   return memoryInfo;
 };

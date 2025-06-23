@@ -145,15 +145,21 @@ function ForesightApp() {
   );
 }
 
-// Simple debug component to test demo context
+// Simple debug component to test demo context - optimized for performance
 function DemoDebugComponent() {
   const { hasDemoRun, isDemoModalOpen, demoStage } = useDemo();
   
+  // Only log on initial load and significant demo state changes
   useEffect(() => {
-    console.log('DemoDebugComponent - Demo state:', { hasDemoRun, isDemoModalOpen, demoStage });
+    // Debounce logging to prevent excessive console output
+    const logTimeout = setTimeout(() => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('DemoDebugComponent - Demo state:', { hasDemoRun, isDemoModalOpen, demoStage });
+      }
+    }, 100);
     
-    // Expose reset function globally for testing
-    if (typeof window !== 'undefined') {
+    // Expose reset function globally for testing - only on initial load
+    if (typeof window !== 'undefined' && !window.hasOwnProperty('resetDemo')) {
       // Simple reset function
       (window as any).resetDemo = function() {
         try {
@@ -178,12 +184,16 @@ function DemoDebugComponent() {
         }
       };
       
-      // Simple manual reset instructions
-      console.log('=== DEMO RESET INSTRUCTIONS ===');
-      console.log('1. Type: resetDemo()');
-      console.log('2. Or type: forceShowDemo()');
-      console.log('3. Or manually: localStorage.removeItem("hasDemoRun_v3"); location.reload();');
+      // Simple manual reset instructions - only log once
+      if (process.env.NODE_ENV === 'development') {
+        console.log('=== DEMO RESET INSTRUCTIONS ===');
+        console.log('1. Type: resetDemo()');
+        console.log('2. Or type: forceShowDemo()');
+        console.log('3. Or manually: localStorage.removeItem("hasDemoRun_v3"); location.reload();');
+      }
     }
+    
+    return () => clearTimeout(logTimeout);
   }, [hasDemoRun, isDemoModalOpen, demoStage]);
   
   return null;

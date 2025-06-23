@@ -94,15 +94,20 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
     }
   }, [pendingRestoredDashboardModal]);
 
-  // Debug demo state
+  // Debug demo state - reduce frequency and use useMemo to prevent object recreation
+  const demoStateDebug = useMemo(() => ({
+    hasDemoRun,
+    isDemoModalOpen,
+    demoStage,
+    isDemoActive
+  }), [hasDemoRun, isDemoModalOpen, demoStage, isDemoActive]);
+
   useEffect(() => {
-    console.log('DashboardView demo state:', {
-      hasDemoRun,
-      isDemoModalOpen,
-      demoStage,
-      isDemoActive
-    });
-  }, [hasDemoRun, isDemoModalOpen, demoStage, isDemoActive]);
+    // Only log demo state changes in development and less frequently
+    if (process.env.NODE_ENV === 'development') {
+      console.log('DashboardView demo state:', demoStateDebug);
+    }
+  }, [demoStateDebug]);
 
   useEffect(() => {
     const loadUpcomingAppointments = async () => {
