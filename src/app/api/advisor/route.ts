@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { supabaseDataService } from "@/lib/supabaseDataService";
 import { searchGuidelines } from "@/services/guidelines/search-service";
 import { Specialty } from "@/types/guidelines";
+import { AIModelType } from "@/types/ai-models";
 
 // 1. Model routing (default to gpt-4.1-mini)
 // 2. Invoke chat-completions with streaming
@@ -562,7 +563,7 @@ export async function GET(req: NextRequest) {
 
           try {
             const completionStream = await openai.chat.completions.create({
-              model: "gpt-4o-mini",
+              model: AIModelType.GPT_4_1_MINI,
               stream: true,
               messages: chatMessages,
             });
