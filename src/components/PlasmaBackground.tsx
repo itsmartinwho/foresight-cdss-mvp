@@ -259,8 +259,26 @@ export default function PlasmaBackground() {
 
     const clock = new THREE.Clock();
     let frameId: number;
+    let lastFrameTime = 0;
+    const targetFPS = 30; // Limit to 30 FPS to reduce interference with React rendering
+    const frameInterval = 1000 / targetFPS;
+    
     const animate = () => {
       frameId = requestAnimationFrame(animate);
+      
+      const now = performance.now();
+      
+      // Skip frame if not enough time has passed (frame limiting)
+      if (now - lastFrameTime < frameInterval) {
+        return;
+      }
+      
+      // Skip rendering if the page is not visible to prevent unnecessary work
+      if (document.hidden) {
+        return;
+      }
+      
+      lastFrameTime = now;
       uniforms.u_time.value = clock.getElapsedTime();
       renderer.render(scene, camera);
     };

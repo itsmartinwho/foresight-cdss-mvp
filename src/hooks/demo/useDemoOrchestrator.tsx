@@ -105,45 +105,55 @@ export function useDemoOrchestrator(): UseDemoOrchestratorReturn {
     setDemoStage(stage);
   }, []);
 
-  // Animation management - prevent loops with more specific conditions
+  // Animation management - prevent loops with more specific conditions and debouncing
   useEffect(() => {
     if (isDemoActive && demoStage === 'animatingTranscript' && !DemoAnimationService.isTranscriptAnimating()) {
       console.log('[DemoOrchestrator] Starting transcript animation');
-      const transcriptLines = DemoDataService.getTranscriptLines();
       
-      DemoAnimationService.startTranscriptAnimation(
-        transcriptLines,
-        (animatedText) => {
-          setAnimatedTranscript(animatedText);
-        },
-        () => {
-          console.log('[DemoOrchestrator] Animation completed, advancing to simulatingPlanGeneration');
-          advanceDemoStage('simulatingPlanGeneration');
-        }
-      );
-    }
+      // Debounce to prevent rapid re-triggers
+      const debounceTimer = setTimeout(() => {
+        const transcriptLines = DemoDataService.getTranscriptLines();
+        
+        DemoAnimationService.startTranscriptAnimation(
+          transcriptLines,
+          (animatedText) => {
+            setAnimatedTranscript(animatedText);
+          },
+          () => {
+            console.log('[DemoOrchestrator] Animation completed, advancing to simulatingPlanGeneration');
+            advanceDemoStage('simulatingPlanGeneration');
+          }
+        );
+      }, 100); // Small debounce delay
 
-    return () => {
-      if (demoStage !== 'animatingTranscript') {
-        DemoAnimationService.clearTranscriptAnimation();
-      }
-    };
+      return () => {
+        clearTimeout(debounceTimer);
+        if (demoStage !== 'animatingTranscript') {
+          DemoAnimationService.clearTranscriptAnimation();
+        }
+      };
+    }
   }, [isDemoActive, demoStage, advanceDemoStage]);
 
-  // Clinical plan simulation - prevent loops with more specific conditions
+  // Clinical plan simulation - prevent loops with more specific conditions and debouncing
   useEffect(() => {
     if (isDemoActive && demoStage === 'simulatingPlanGeneration' && !DemoAnimationService.isClinicalPlanSimulating()) {
       console.log('[DemoOrchestrator] Starting clinical plan simulation');
-      DemoAnimationService.startClinicalPlanSimulation(
-        () => advanceDemoStage('showingPlan')
-      );
-    }
+      
+      // Debounce to prevent rapid re-triggers
+      const debounceTimer = setTimeout(() => {
+        DemoAnimationService.startClinicalPlanSimulation(
+          () => advanceDemoStage('showingPlan')
+        );
+      }, 100); // Small debounce delay
 
-    return () => {
-      if (demoStage !== 'simulatingPlanGeneration') {
-        DemoAnimationService.clearClinicalPlanSimulation();
-      }
-    };
+      return () => {
+        clearTimeout(debounceTimer);
+        if (demoStage !== 'simulatingPlanGeneration') {
+          DemoAnimationService.clearClinicalPlanSimulation();
+        }
+      };
+    }
   }, [isDemoActive, demoStage, advanceDemoStage]);
 
   // Demo actions

@@ -83,6 +83,49 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
     persistent: false
   }), []); // Empty dependency array since window dimensions are stable per session
 
+  // Memoize demo modal content to prevent re-rendering
+  const stableDemoModalContent = useMemo(() => {
+    if (demoStage !== 'introModal' || !isDemoModalOpen) {
+      return null;
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
+        <DialogHeader className="space-y-0">
+          <DialogTitle className="text-center text-3xl font-bold">See Foresight in Action</DialogTitle>
+        </DialogHeader>
+        <div className="flex justify-center items-center flex-1">
+          <Image
+            src="/images/background_waves_larger.gif"
+            alt="Foresight Animation"
+            width={600}
+            height={350}
+            className="max-w-full max-h-72 w-auto h-auto object-contain rounded-lg"
+            style={{ maxWidth: '600px', maxHeight: '350px' }}
+            unoptimized
+          />
+        </div>
+        <DialogFooter className="flex flex-row justify-center gap-6 mt-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={skipDemo}
+            className="min-w-[100px]"
+          >
+            Skip
+          </Button>
+          <Button
+            size="lg"
+            onClick={startDemo}
+            className="min-w-[140px]"
+          >
+            Start Demo
+          </Button>
+        </DialogFooter>
+      </div>
+    );
+  }, [demoStage, isDemoModalOpen, startDemo, skipDemo]);
+
   useEffect(() => {
     if (
       pendingRestoredDashboardModal &&
@@ -333,43 +376,7 @@ export default function DashboardView({ onAlertClick, allAlerts }: DashboardView
           <DialogContent 
             className="sm:max-w-[750px] max-h-[650px] p-8 demo-modal-glass"
           >
-            <div className="flex flex-col items-center justify-center text-center space-y-8 min-h-[500px]">
-              <DialogHeader className="space-y-0">
-                <DialogTitle className="text-center text-3xl font-bold">See Foresight in Action</DialogTitle>
-              </DialogHeader>
-              <div className="flex justify-center items-center flex-1">
-                <Image
-                  src="/images/background_waves_larger.gif"
-                  alt="Foresight Animation"
-                  width={600}
-                  height={350}
-                  className="max-w-full max-h-72 w-auto h-auto object-contain rounded-lg"
-                  style={{ maxWidth: '600px', maxHeight: '350px' }}
-                  unoptimized
-                />
-              </div>
-              <DialogFooter className="flex flex-row justify-center gap-6 mt-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => {
-                    skipDemo();
-                  }}
-                  className="min-w-[100px]"
-                >
-                  Skip
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={() => {
-                    startDemo();
-                  }}
-                  className="min-w-[140px]"
-                >
-                  Start Demo
-                </Button>
-              </DialogFooter>
-            </div>
+            {stableDemoModalContent}
           </DialogContent>
         </Dialog>
       )}

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -145,18 +145,26 @@ function ForesightApp() {
   );
 }
 
-// Simple debug component to test demo context - optimized for performance
+// Simple debug component to test demo context - optimized for performance and reduced logging
 function DemoDebugComponent() {
   const { hasDemoRun, isDemoModalOpen, demoStage } = useDemo();
+  const lastLoggedState = useRef<string>('');
   
   // Only log on initial load and significant demo state changes
   useEffect(() => {
-    // Debounce logging to prevent excessive console output
-    const logTimeout = setTimeout(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('DemoDebugComponent - Demo state:', { hasDemoRun, isDemoModalOpen, demoStage });
-      }
-    }, 100);
+    const currentState = JSON.stringify({ hasDemoRun, isDemoModalOpen, demoStage });
+    
+    // Only log if state actually changed and debounce logging
+    if (currentState !== lastLoggedState.current) {
+      const logTimeout = setTimeout(() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('DemoDebugComponent - Demo state changed:', { hasDemoRun, isDemoModalOpen, demoStage });
+          lastLoggedState.current = currentState;
+        }
+      }, 200); // Increased debounce delay
+      
+      return () => clearTimeout(logTimeout);
+    }
     
     // Expose reset function globally for testing - only on initial load
     if (typeof window !== 'undefined' && !window.hasOwnProperty('resetDemo')) {
@@ -192,8 +200,6 @@ function DemoDebugComponent() {
         console.log('3. Or manually: localStorage.removeItem("hasDemoRun_v3"); location.reload();');
       }
     }
-    
-    return () => clearTimeout(logTimeout);
   }, [hasDemoRun, isDemoModalOpen, demoStage]);
   
   return null;
