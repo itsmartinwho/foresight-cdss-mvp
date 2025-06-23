@@ -552,14 +552,24 @@ export async function GET(req: NextRequest) {
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
         if (!thinkMode) {
-          // Use Assistants API but with the faster mini model for regular mode
-          const assistantId = await createOrGetAssistant(AIModelType.GPT_4_1_MINI);
+          // Use Chat Completions API for regular mode (fast, supports basic charts via client-side rendering)
+          const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
-          const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
+          const combinedSystemPrompt = patientSummaryBlock
+            ? `${baseSystemPrompt}\n\n${patientSummaryBlock}`
+            : baseSystemPrompt;
 
-          // If needed, enrich user query with guidelines similar to think mode
-          if (filteredMessages.length > 0) {
-            const latestUserMessage = filteredMessages[filteredMessages.length - 1];
+          chatMessages.push({ role: "system", content: combinedSystemPrompt });
+
+          for (const m of messagesFromClient) {
+            if (m.role === "user" || m.role === "assistant") {
+              chatMessages.push({ role: m.role, content: m.content });
+            }
+          }
+
+          // Enrich user query with guidelines
+          if (chatMessages.length > 1) {
+            const latestUserMessage = chatMessages[chatMessages.length - 1];
             if (latestUserMessage.role === "user") {
               let patientData = null;
               try {
@@ -570,20 +580,46 @@ export async function GET(req: NextRequest) {
                 console.warn("Could not extract patient data for guidelines search:", e);
               }
 
-              const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
+              const messageContent = typeof latestUserMessage.content === 'string' ? latestUserMessage.content : '';
+              const guidelinesEnrichment = await enrichWithGuidelines(messageContent, patientData, specialty as Specialty || undefined);
               if (guidelinesEnrichment) {
-                latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
+                latestUserMessage.content = messageContent + guidelinesEnrichment;
               }
             }
           }
 
-          await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
+          try {
+            const completionStream = await openai.chat.completions.create({
+              model: AIModelType.GPT_4_1_MINI,
+              messages: chatMessages,
+              stream: true,
+              max_tokens: 4000,
+              temperature: 0.7,
+            });
+
+            const encoder = new TextEncoder();
+            for await (const chunk of completionStream) {
+              if (requestAbortController.signal.aborted) break;
+              
+              const content = chunk.choices[0]?.delta?.content;
+              if (content) {
+                const eventData = `data: ${JSON.stringify({ content })}\n\n`;
+                controller.enqueue(encoder.encode(eventData));
+              }
+            }
+          } catch (error) {
+            console.error("Chat completion error:", error);
+            const errorData = `data: ${JSON.stringify({ error: "Connection issue or stream interrupted." })}\n\n`;
+            controller.enqueue(encoder.encode(errorData));
+          }
+
           requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+          closeControllerOnce();
           return;
         }
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
-        const assistantId = await createOrGetAssistant(AIModelType.O4_MINI);
+        const assistantId = await createOrGetAssistant(AIModelType.GPT_4O);
 
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 
