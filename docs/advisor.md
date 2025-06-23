@@ -8,7 +8,7 @@ The Advisor is an AI-powered chatbot that provides general medical information a
 
 ### Key Features
 
-- **Dual-Mode Operation**: Regular mode for fast responses, Think mode for advanced analysis
+- **Dual-Mode Operation**: Both modes support charts, tables, and HTML output. Think mode uses a reasoning model (Code Interpreter) for deeper analysis, while Regular mode relies on the language model.
 - **AI-Powered Chat**: Utilizes OpenAI models (e.g., `gpt-4.1-mini`) for medical queries
 - **Patient Context**: Can answer questions based on the data of a selected patient
 - **Code Interpreter Integration**: Uses OpenAI's Code Interpreter in Think mode for automatic chart and table generation
@@ -19,16 +19,13 @@ The Advisor is an AI-powered chatbot that provides general medical information a
 
 ### Regular Mode (Default)
 - **Fast Response**: Uses Chat Completions API for quick text-based medical advice
-- **Markdown Tables**: Creates structured data comparisons using markdown table syntax
-- **Visualization Guidance**: Acknowledges chart requests and guides users to Think mode for comprehensive visualizations
-- **Clinical Analysis**: Provides detailed clinical interpretation in structured text format
+- **Markdown & Recharts**: Generates tables and charts directly in markdown/HTML or via front-end chart components (no server-side Python execution)
+- **Clinical Analysis**: Provides detailed clinical interpretation and visualizations based on model output
 
 ### Think Mode (Advanced Analysis)
-- **Code Interpreter**: Uses OpenAI's Assistants API with Code Interpreter tool
-- **Automatic Charts**: Generates professional medical visualizations with Python code execution
-- **Time-Series Analysis**: Analyzes lab results, vital signs, and medication history over time
-- **Pattern Recognition**: Identifies clinical trends and correlations in patient data
-- **Comprehensive Tables**: Creates structured data tables with proper medical formatting
+- **Code Interpreter**: Uses OpenAI's Assistants API with Code Interpreter tool for Python-based analysis
+- **Enhanced Visualizations**: Can run Python code to create complex or custom charts and data transformations
+- **Deeper Reasoning**: Offers multi-step reasoning and data processing beyond language model capabilities
 
 ## Code Interpreter Integration (Think Mode)
 
