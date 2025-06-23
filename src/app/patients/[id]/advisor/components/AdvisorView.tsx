@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { parser, default_renderer, parser_write as smd_parser_write, parser_end as smd_parser_end } from "../../../../../components/advisor/streaming-markdown/smd";
 import { ChatMessage, AssistantMessageContent } from "@/components/advisor/chat-types";
+import { useParams } from "next/navigation";
 
 // Define a type for the parser instance from smd.js
 // smd.js doesn't export a specific type for the parser object, so we use 'any'.
@@ -20,6 +21,10 @@ const AdvisorView: React.FC = () => {
   const parsersRef = useRef<Record<string, SmdParser>>({});
   // Ref to store the div elements that the parsers will render into, keyed by message ID
   const markdownRootsRef = useRef<Record<string, HTMLDivElement>>({});
+
+  // Get patientId from route params once when component mounts
+  const params = useParams<{ id: string }>();
+  const patientId = Array.isArray(params?.id) ? params?.id[0] : params?.id;
 
   const closeEventSource = React.useCallback(() => {
     if (eventSourceRef.current) {
@@ -61,7 +66,11 @@ const AdvisorView: React.FC = () => {
     const thinkMode = false;
     const payload = { messages };
     const encodedPayload = encodeURIComponent(JSON.stringify(payload));
-    const apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
+
+    let apiUrl = `/api/advisor?payload=${encodedPayload}&think=${thinkMode}`;
+    if (patientId) {
+      apiUrl += `&patientId=${encodeURIComponent(patientId)}`;
+    }
 
     try {
       console.debug("Opening SSE to", apiUrl);
@@ -174,7 +183,7 @@ const AdvisorView: React.FC = () => {
       console.error("Failed to open EventSource:", error);
       setIsLoading(false);
     }
-  }, [messages, setMessages, setIsLoading, closeEventSource]);
+  }, [messages, setMessages, setIsLoading, closeEventSource, patientId]);
 
   // useEffect to open EventSource when a new user message is added and we are not already loading.
   useEffect(() => {

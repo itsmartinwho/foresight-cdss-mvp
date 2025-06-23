@@ -518,17 +518,19 @@ export async function GET(req: NextRequest) {
       messagesFromClient.unshift({ role: "user", content: patientSummaryBlock });
     }
 
+    // Wrap everything inside a ReadableStream so we can choose strategy (chat vs assistant) and stream back to client quickly
     const stream = new ReadableStream({
       async start(controller) {
-        const isControllerClosedRef = { value: false }; 
+        const encoder = new TextEncoder();
+        const isControllerClosedRef = { value: false };
 
         const closeControllerOnce = () => {
           if (!isControllerClosedRef.value) {
             isControllerClosedRef.value = true;
-            try { controller.close(); } catch (e) { /*ignore*/ }
+            try { controller.close(); } catch {/* ignore */}
           }
         };
-        
+
         const mainAbortListener = () => { closeControllerOnce(); };
         requestAbortController.signal.addEventListener('abort', mainAbortListener, { once: true });
 
@@ -538,17 +540,66 @@ export async function GET(req: NextRequest) {
           return;
         }
 
-        // Create or get assistant
+        // Determine whether to use advanced reasoning (assistant/Code Interpreter) or faster direct chat completion
+        const thinkParamRaw = url.searchParams.get("think");
+        const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
+
+        if (!thinkMode) {
+          // Build chat completion messages with base system prompt and optional patient context
+          const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+
+          const combinedSystemPrompt = patientSummaryBlock
+            ? `${baseSystemPrompt}\n\n${patientSummaryBlock}`
+            : baseSystemPrompt;
+
+          chatMessages.push({ role: "system", content: combinedSystemPrompt });
+
+          for (const m of messagesFromClient) {
+            if (m.role === "user" || m.role === "assistant") {
+              chatMessages.push({ role: m.role, content: m.content });
+            }
+          }
+
+          try {
+            const completionStream = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              stream: true,
+              messages: chatMessages,
+            });
+
+            for await (const chunk of completionStream) {
+              if (requestAbortController.signal.aborted) break;
+
+              const delta = chunk.choices[0]?.delta?.content ?? "";
+              if (delta) {
+                const textPayload = { type: "markdown_chunk", content: delta };
+                controller.enqueue(encoder.encode(`data:${JSON.stringify(textPayload)}\n\n`));
+              }
+            }
+
+            const endPayload = { type: "stream_end" };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
+            closeControllerOnce();
+            requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+            return;
+          } catch (e) {
+            console.error("Chat completion streaming failed:", e);
+            const errorPayload = { type: "error", message: "Connection issue or stream interrupted" };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
+            closeControllerOnce();
+            requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+            return;
+          }
+        }
+
+        // Fallback/think=true path – use Assistants API with Code Interpreter support
         const assistantId = await createOrGetAssistant();
-        
-        // Filter out system messages since assistant instructions are set at creation
+
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
-        
-        // Enrich the latest user message with relevant clinical guidelines
+
         if (filteredMessages.length > 0) {
           const latestUserMessage = filteredMessages[filteredMessages.length - 1];
           if (latestUserMessage.role === "user") {
-            // Extract patient data for guidelines search
             let patientData = null;
             try {
               if (patientSummaryBlock) {
@@ -558,15 +609,14 @@ export async function GET(req: NextRequest) {
               console.warn("Could not extract patient data for guidelines search:", e);
             }
 
-            // Enrich query with relevant guidelines
             const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
             if (guidelinesEnrichment) {
               latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
             }
           }
         }
-  
-        await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, isControllerClosedRef);
+
+        await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
         requestAbortController.signal.removeEventListener('abort', mainAbortListener);
       }
     });
