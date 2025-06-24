@@ -22,7 +22,7 @@ import {
   AIAlertResult
 } from '@/types/ai-models';
 
-import { getModelForUseCase, DEFAULT_REALTIME_MODEL, DEFAULT_POST_CONSULTATION_MODEL, GPT_4_1 } from './ai/gpt-models';
+import { getModelForUseCase, DEFAULT_REALTIME_MODEL, DEFAULT_POST_CONSULTATION_MODEL, GPT_4_1_MINI } from './ai/gpt-models';
 import { getRealTimeTemplate } from './ai/prompt-templates';
 import { getSupabaseClient } from './supabaseClient';
 import { supabaseDataService } from '@/lib/supabaseDataService';
