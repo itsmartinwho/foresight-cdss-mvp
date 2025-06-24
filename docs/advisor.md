@@ -1,96 +1,216 @@
-# Advisor Guide
+# Foresight Medical Advisor
 
-This document provides a guide to the Advisor feature (tool A), including its integration with OpenAI's Code Interpreter for data analysis and visualization.
+The Foresight Medical Advisor provides AI-powered clinical decision support with two modes of operation: think mode (advanced reasoning with code interpreter) and non-think mode (fast responses).
 
-## Overview
+## Architecture Overview
 
-The Advisor is an AI-powered chatbot that provides general medical information and allows users to ask questions based on attached patient data. It operates in two modes to optimize both speed and functionality.
+### API Endpoint: `/api/advisor`
 
-### Key Features
+The advisor uses Server-Sent Events (SSE) streaming to provide real-time responses. It supports two operational modes:
 
-- **Dual-Mode Operation**: Both modes support charts, tables, and HTML output. Think mode uses a reasoning model (Code Interpreter) for deeper analysis, while Regular mode relies on the language model.
-- **AI-Powered Chat**: Utilizes OpenAI models (e.g., `gpt-4.1-mini`) for medical queries
-- **Patient Context**: Can answer questions based on the data of a selected patient
-- **Code Interpreter Integration**: Uses OpenAI's Code Interpreter in Think mode for automatic chart and table generation
-- **Streaming Responses**: Text responses are streamed to the user for a real-time experience
-- **Clinical Guidelines Integration**: References evidence-based guidelines from USPSTF, NICE, NCI PDQ, and RxNorm
+1. **Non-Think Mode** (`think=false`): Uses OpenAI Chat Completions API for fast responses
+2. **Think Mode** (`think=true`): Uses OpenAI Assistants API with code interpreter for advanced analysis
 
-## Operating Modes
+### Recent Improvements (Latest)
 
-### Regular Mode (Default)
-- **Fast Response**: Uses Chat Completions API for quick text-based medical advice
-- **Markdown & Recharts**: Generates tables and charts directly in markdown/HTML or via front-end chart components (no server-side Python execution)
-- **Clinical Analysis**: Provides detailed clinical interpretation and visualizations based on model output
+#### Timeout Prevention for Think Mode
+- **Issue**: Think mode was failing with "Connection issue or stream interrupted" due to serverless function timeouts
+- **Solution**: Implemented heartbeat mechanism and extended timeout handling
+  - Heartbeat messages sent every 10 seconds during processing
+  - Maximum 2-minute timeout with clear error messages
+  - Vercel function timeout increased to 300 seconds (5 minutes)
+  - Progressive timeout handling with helpful error messages
 
-### Think Mode (Advanced Analysis)
-- **Code Interpreter**: Uses OpenAI's Assistants API with Code Interpreter tool for Python-based analysis
-- **Enhanced Visualizations**: Can run Python code to create complex or custom charts and data transformations
-- **Deeper Reasoning**: Offers multi-step reasoning and data processing beyond language model capabilities
+#### Formatting Preservation for Non-Think Mode
+- **Issue**: After leaving tab inactive, formatted responses would revert to plain markdown
+- **Solution**: Enhanced content preservation system
+  - Final content is explicitly saved and preserved
+  - Improved React re-rendering stability
+  - Better markdown accumulator management
 
-## Code Interpreter Integration (Think Mode)
+## API Parameters
 
-The system uses OpenAI's Assistants API with the Code Interpreter tool for advanced medical data analysis and visualization in Think mode.
+### Query Parameters
+- `think`: Boolean indicating mode ("true" for think mode, "false" for non-think mode)
+- `patientId`: Optional patient ID for context
+- `specialty`: Optional medical specialty filter
+- `payload`: JSON-encoded message history
 
-### How It Works
+### Request Format
+```typescript
+{
+  messages: Array<{
+    role: 'user' | 'assistant' | 'system',
+    content: string
+  }>
+}
+```
 
-#### Regular Mode Flow
-1. **Patient Context**: When a patient is selected, their clinical data is fetched
-2. **Chat Completion**: Uses Chat Completions API for fast text-based responses  
-3. **Markdown Analysis**: Creates structured data analysis using markdown tables and lists
-4. **Visualization Guidance**: When users request charts, provides guidance to enable Think mode
-
-#### Think Mode Flow
-1. **Patient Context**: When a patient is selected, their clinical data is fetched
-2. **Assistant Analysis**: A dedicated OpenAI Assistant with Code Interpreter analyzes the data
-3. **Proactive Visualization**: The assistant proactively creates charts and tables for time-series data, comparisons, or clinical trends
-4. **Simulated Streaming**: Text responses are streamed, and chart loading placeholders are displayed
-5. **Result Display**: The final charts and tables are rendered in the chat interface
-
-### API Endpoints
-
--   **`GET /api/advisor/image/[fileId]`**: Serves images generated by the Code Interpreter.
+## Streaming Response Format
 
 ### Event Types
 
-The Advisor handles several server-sent event types:
-- `markdown_chunk`: Text content from the assistant.
-- `code_interpreter_code`: Python code that was executed.
-- `code_interpreter_output`: Text output from code execution.
-- `code_interpreter_image`: The file ID for a generated chart.
-
-### Environment Variables
-
-To use the Code Interpreter integration, you need to set the following environment variables:
-
-```bash
-OPENAI_API_KEY=your_openai_api_key_here
-MEDICAL_ADVISOR_ASSISTANT_ID=asst_your_advisor_assistant_id
-CLINICAL_ENGINE_ASSISTANT_ID=asst_your_clinical_engine_assistant_id
+#### Heartbeat Events (Think Mode)
+```json
+{
+  "type": "heartbeat",
+  "message": "Processing... (15s elapsed)",
+  "status": "in_progress"
+}
 ```
 
-## Usage Guidelines
+#### Content Streaming
+```json
+{
+  "type": "markdown_chunk",
+  "content": "partial response text..."
+}
+```
 
-### When to Use Regular Mode
-- Quick medical consultations and advice
-- General medical questions without complex data analysis
-- Fast text-based clinical guidance
-- Initial patient assessments
+#### Final Content Preservation
+```json
+{
+  "type": "final_content",
+  "content": "complete response for preservation"
+}
+```
 
-### When to Use Think Mode
-- Complex data analysis requiring charts and visualizations
-- Time-series analysis of lab results or vital signs
-- Medication history tracking and trend analysis
-- Comprehensive clinical pattern recognition
-- When specifically requesting charts, graphs, or data visualizations
+#### Code Interpreter Events (Think Mode)
+```json
+{
+  "type": "code_interpreter_code",
+  "content": "python code executed"
+}
+```
 
-## Roadmap and Future Enhancements
+```json
+{
+  "type": "code_interpreter_output",
+  "content": "execution results"
+}
+```
 
-- **Enhanced Visualizations**: Improve chart quality and styling for medical presentations
-- **Interactive Charts**: Future versions may include support for interactive charts
-- **Real-time Progress**: Show real-time progress of chart generation in Think mode
-- **Hybrid Mode**: Automatically detect when visualizations would be beneficial and suggest Think mode
+```json
+{
+  "type": "code_interpreter_image_id",
+  "file_id": "file-abc123"
+}
+```
+
+#### Stream Completion
+```json
+{
+  "type": "stream_end"
+}
+```
+
+#### Error Handling
+```json
+{
+  "type": "error",
+  "message": "Descriptive error message with guidance"
+}
+```
+
+## Frontend Implementation
+
+### Streaming Markdown Rendering
+
+The frontend uses the `smd.js` (streaming-markdown) library for real-time markdown rendering:
+
+1. **Active Streaming**: Content is rendered incrementally using DOM manipulation
+2. **Final State**: Complete content is rendered with ReactMarkdown for full feature support
+3. **Preservation**: Final markdown is stored and preserved across re-renders
+
+### Chart and Table Rendering
+
+- **Charts**: Generated via OpenAI Code Interpreter, displayed as images
+- **Tables**: JSON data is parsed and rendered with TanStack Table
+- **Loading States**: Progressive indicators during chart generation
+
+## Configuration
+
+### Timeout Settings
+
+#### Vercel Configuration (`vercel.json`)
+```json
+{
+  "functions": {
+    "src/app/api/advisor/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
+```
+
+### Environment Variables
+- `OPENAI_API_KEY`: OpenAI API key
+- `MEDICAL_ADVISOR_ASSISTANT_ID`: Pre-created assistant ID for think mode
+
+## Error Handling and Recovery
+
+### Think Mode Timeouts
+- Heartbeat mechanism prevents premature timeouts
+- Clear error messages guide users to non-think mode for reliability
+- Automatic cleanup of resources on timeout
+
+### Connection Interruptions
+- EventSource error handling with fallback messages
+- Graceful degradation when streaming fails
+- User-friendly error messages with actionable guidance
+
+### Performance Optimization
+- Assistant ID caching to avoid recreation
+- Efficient polling with maximum limits
+- Resource cleanup to prevent memory leaks
+
+## Usage Examples
+
+### Basic Query
+```javascript
+const eventSource = new EventSource('/api/advisor?think=false&payload=' + 
+  encodeURIComponent(JSON.stringify({
+    messages: [
+      { role: 'user', content: 'What are the symptoms of pneumonia?' }
+    ]
+  }))
+);
+```
+
+### With Patient Context
+```javascript
+const eventSource = new EventSource('/api/advisor?think=true&patientId=123&specialty=Pulmonology&payload=' + 
+  encodeURIComponent(JSON.stringify({
+    messages: [
+      { role: 'user', content: 'Analyze this patient\'s chest X-ray results' }
+    ]
+  }))
+);
+```
+
+## Best Practices
+
+1. **Mode Selection**: Use non-think mode for quick consultations, think mode for complex analysis
+2. **Error Handling**: Always implement EventSource error handlers
+3. **Patient Context**: Include relevant patient data for better recommendations
+4. **Specialty Filtering**: Use appropriate specialty selection for focused guidelines
+5. **Timeout Management**: Set reasonable expectations for think mode response times
 
 ## Troubleshooting
 
-- **Assistant Creation**: If assistant IDs are not provided in the environment variables, the system will create new ones and log their IDs to the console.
-- **Image Loading Issues**: If charts do not display, check the browser console for errors and verify your OpenAI API key has the correct permissions. 
+### Common Issues
+
+1. **Think Mode Timeouts**: 
+   - Check network connectivity
+   - Try non-think mode for faster responses
+   - Verify OpenAI API key and assistant configuration
+
+2. **Formatting Loss**: 
+   - Ensure proper event handling for `final_content` events
+   - Check React component re-rendering logic
+   - Verify markdown accumulator preservation
+
+3. **Missing Charts/Tables**:
+   - Confirm OpenAI Assistant has code_interpreter enabled
+   - Check image serving endpoint configuration
+   - Verify table data parsing logic 

@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "src/app/api/advisor/route.ts": {
+      "maxDuration": 300
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/advisor/image/(.*)",
+      "destination": "/api/advisor/image/$1"
+    }
+  ]
+} 

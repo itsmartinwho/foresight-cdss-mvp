@@ -316,7 +316,24 @@ export default function AdvisorView() {
     eventSource.onmessage = (ev) => {
       try {
         const data = JSON.parse(ev.data);
-        if (data.type === "markdown_chunk" && data.content) {
+        if (data.type === "heartbeat") {
+          // Handle heartbeat to prevent timeout - optionally show status
+          console.log("Heartbeat:", data.message);
+          if (data.message && currentAssistantMessageIdRef.current) {
+            setMessages(prev => prev.map(m => {
+              if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
+                return {
+                  ...m,
+                  content: {
+                    ...(m.content as AssistantMessageContent),
+                    heartbeatMessage: data.message
+                  }
+                };
+              }
+              return m;
+            }));
+          }
+        } else if (data.type === "markdown_chunk" && data.content) {
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) { // Check if parser exists
             smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
           }
@@ -428,6 +445,14 @@ export default function AdvisorView() {
             }
             return m;
           }));
+        } else if (data.type === "final_content" && currentAssistantMessageIdRef.current) {
+          // Handle final content preservation for non-think mode
+          const assistantMessageId = currentAssistantMessageIdRef.current;
+          const finalContent = data.content || "";
+          
+          // Update the raw markdown accumulator with final content
+          rawMarkdownAccumulatorRef.current[assistantMessageId] = finalContent;
+          
         } else if (data.type === "stream_end" && currentAssistantMessageIdRef.current) {
           const assistantMessageId = currentAssistantMessageIdRef.current;
           if (parsersRef.current[assistantMessageId]) {
@@ -451,21 +476,31 @@ export default function AdvisorView() {
                   ...(m.content as AssistantMessageContent),
                   isMarkdownStream: false, // Switch off smd rendering for the final state
                   finalMarkdown: accumulatedRawMarkdown, // Use accumulated raw markdown
+                  heartbeatMessage: undefined, // Clear heartbeat message when done
                 }
               }
             : m
           ));
           setIsSending(false);
           eventSource.close();
-        } else if (data.type === "error") {
-          console.error("SSE Error:", data.message);
+        } else if (data.type === "error" || data.error) {
+          const errorMessage = data.message || data.error || "Unknown error occurred";
+          console.error("SSE Error:", errorMessage);
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
             smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
             delete parsersRef.current[currentAssistantMessageIdRef.current!];
           }
-          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: `**Error:** ${data.message}` } } : m));
+          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: `**Error:** ${errorMessage}` } } : m));
           setIsSending(false);
           eventSource.close();
+        } else if (data.content && !data.type) {
+          // Legacy format for backward compatibility (when no type is specified)
+          if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
+            smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
+          }
+          if (currentAssistantMessageIdRef.current! in rawMarkdownAccumulatorRef.current) {
+            rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!] += data.content;
+          }
         }
       } catch (err) {
         console.error("Failed to parse SSE data", ev.data, err);
@@ -1069,12 +1104,18 @@ const AssistantMessageRenderer: React.FC<{
     // or if markdownRootDiv is not yet available for some reason.
     return (
       <>
+        {/* Show heartbeat message during processing */}
+        {assistantMessage.heartbeatMessage && (
+          <div className="animate-pulse text-blue-600 dark:text-blue-400 text-sm mb-2">
+            {assistantMessage.heartbeatMessage}
+          </div>
+        )}
         {/* Optional: could show a generic "Assistant is working..." or specific tool call indicators */}
         {/* For now, tool outputs will cover this if they arrive before markdown */}
         {renderToolOutputs()}
         {renderGuidelineReferences()}
-        {/* Show pulsing if no tool output yet */}
-        {!assistantMessage.toolCode && !assistantMessage.codeInterpreterOutputText && !assistantMessage.codeInterpreterImageId && (
+        {/* Show pulsing if no tool output yet and no heartbeat */}
+        {!assistantMessage.toolCode && !assistantMessage.codeInterpreterOutputText && !assistantMessage.codeInterpreterImageId && !assistantMessage.heartbeatMessage && (
             <div className="animate-pulse">Thinking...</div>
         )}
       </>

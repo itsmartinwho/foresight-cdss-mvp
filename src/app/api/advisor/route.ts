@@ -153,11 +153,42 @@ async function createAssistantResponse(
       assistant_id: assistantId,
     });
 
-    // Poll for completion
+    // Send initial heartbeat to indicate processing started
+    const heartbeatPayload = { type: "heartbeat", message: "Processing request..." };
+    controller.enqueue(encoder.encode(`data:${JSON.stringify(heartbeatPayload)}\n\n`));
+
+    // Enhanced polling with heartbeat and timeout protection
     let runStatus = run;
+    let pollCount = 0;
+    const maxPolls = 120; // 2 minutes max
+    const heartbeatInterval = 10; // Send heartbeat every 10 polls (10 seconds)
+    
     while (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
       if (reqSignal.aborted) {
         break;
+      }
+      
+      pollCount++;
+      
+      // Send periodic heartbeat to prevent client/server timeout
+      if (pollCount % heartbeatInterval === 0) {
+        const heartbeat = { 
+          type: "heartbeat", 
+          message: `Processing... (${Math.floor(pollCount / 10)}s elapsed)`,
+          status: runStatus.status 
+        };
+        controller.enqueue(encoder.encode(`data:${JSON.stringify(heartbeat)}\n\n`));
+      }
+      
+      // Check for maximum polling timeout
+      if (pollCount >= maxPolls) {
+        const timeoutPayload = { 
+          type: "error", 
+          message: "Request timeout - assistant processing is taking too long. Please try again or use non-think mode for faster responses." 
+        };
+        controller.enqueue(encoder.encode(`data:${JSON.stringify(timeoutPayload)}\n\n`));
+        cleanupAndCloseController();
+        return;
       }
       
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -175,6 +206,17 @@ async function createAssistantResponse(
       const assistantMessage = threadMessages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
       
       if (assistantMessage) {
+        // Check for images first
+        for (const content of assistantMessage.content) {
+          if (content.type === 'image_file') {
+            const imagePayload = { 
+              type: "code_interpreter_image_id", 
+              file_id: content.image_file.file_id 
+            };
+            controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
+          }
+        }
+
         // Send text content with simulated streaming for better UX
         for (const content of assistantMessage.content) {
           if (content.type === 'text') {
@@ -199,74 +241,38 @@ async function createAssistantResponse(
                 await new Promise(resolve => setTimeout(resolve, 30));
               }
             }
-          } else if (content.type === 'image_file') {
-            // Send image file reference
-            const imagePayload = { 
-              type: "code_interpreter_image", 
-              file_id: content.image_file.file_id 
-            };
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
           }
         }
       }
-
-      // Get run steps to check for code interpreter outputs
-      const runSteps = await openai.beta.threads.runs.steps.list(thread.id, run.id);
-      
-      for (const step of runSteps.data) {
-        if (step.type === 'tool_calls' && 'tool_calls' in step.step_details) {
-          for (const toolCall of step.step_details.tool_calls) {
-            if (toolCall.type === 'code_interpreter') {
-              // Send code that was executed
-              if (toolCall.code_interpreter.input) {
-                const codePayload = { 
-                  type: "code_interpreter_code", 
-                  content: toolCall.code_interpreter.input 
-                };
-                controller.enqueue(encoder.encode(`data:${JSON.stringify(codePayload)}\n\n`));
-              }
-
-              // Send outputs
-              for (const output of toolCall.code_interpreter.outputs) {
-                if (output.type === 'logs') {
-                  const logPayload = { 
-                    type: "code_interpreter_output", 
-                    content: output.logs 
-                  };
-                  controller.enqueue(encoder.encode(`data:${JSON.stringify(logPayload)}\n\n`));
-                } else if (output.type === 'image') {
-                  const imagePayload = { 
-                    type: "code_interpreter_image", 
-                    file_id: output.image.file_id 
-                  };
-                  controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
-                }
-              }
-            }
-          }
-        }
-      }
-    } else {
-      // Handle error cases
-      const errorPayload = { type: "error", message: `Assistant run failed with status: ${runStatus.status}` };
+    } else if (runStatus.status === 'failed') {
+      const errorMsg = runStatus.last_error?.message || 'Assistant run failed';
+      const errorPayload = { type: "error", message: errorMsg };
       controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
+    } else if (runStatus.status === 'expired') {
+      const expiredPayload = { 
+        type: "error", 
+        message: "Request expired - please try again or use non-think mode for faster responses." 
+      };
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(expiredPayload)}\n\n`));
+    } else {
+      const unknownPayload = { 
+        type: "error", 
+        message: `Unexpected status: ${runStatus.status}. Please try again.` 
+      };
+      controller.enqueue(encoder.encode(`data:${JSON.stringify(unknownPayload)}\n\n`));
     }
-
-    // Clean up the thread
-    await openai.beta.threads.del(thread.id);
 
   } catch (error: any) {
-    if (!(error.name === 'AbortError' || reqSignal.aborted)) {
-      console.error(`Error in createAssistantResponse:`, error);
-      if (!isControllerClosedRef.value) {
-        const errorPayload = { type: "error", message: `Assistant error: ${error.message || 'Unknown error'}` };
-        controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
-      }
-    }
-  } finally {
-    reqSignal.removeEventListener('abort', clientDisconnectListener);
-    cleanupAndCloseController();
+    console.error("Assistant API error:", error);
+    const errorPayload = { 
+      type: "error", 
+      message: `Assistant error: ${error.message || 'Unknown error'}. Try using non-think mode for better reliability.` 
+    };
+    controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
   }
+
+  reqSignal.removeEventListener('abort', clientDisconnectListener);
+  cleanupAndCloseController();
 }
 
 async function enrichWithGuidelines(query: string, patientData?: any, specialty?: Specialty): Promise<string> {
@@ -597,19 +603,28 @@ export async function GET(req: NextRequest) {
               temperature: 0.7,
             });
 
-            const encoder = new TextEncoder();
+            let accumulatedContent = "";
             for await (const chunk of completionStream) {
               if (requestAbortController.signal.aborted) break;
               
               const content = chunk.choices[0]?.delta?.content;
               if (content) {
-                const eventData = `data: ${JSON.stringify({ content })}\n\n`;
+                accumulatedContent += content;
+                // Send chunk as markdown
+                const eventData = `data: ${JSON.stringify({ type: "markdown_chunk", content })}\n\n`;
                 controller.enqueue(encoder.encode(eventData));
               }
             }
+
+            // Send final accumulated content for preservation
+            if (accumulatedContent) {
+              const finalData = `data: ${JSON.stringify({ type: "final_content", content: accumulatedContent })}\n\n`;
+              controller.enqueue(encoder.encode(finalData));
+            }
+
           } catch (error) {
             console.error("Chat completion error:", error);
-            const errorData = `data: ${JSON.stringify({ error: "Connection issue or stream interrupted." })}\n\n`;
+            const errorData = `data: ${JSON.stringify({ type: "error", message: "Connection issue or stream interrupted." })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
           }
 

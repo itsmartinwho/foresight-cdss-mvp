@@ -100,6 +100,7 @@ export interface AssistantMessageContent {
   } | null;
   codeInterpreterOutputFormat?: 'json' | 'csv' | 'plaintext';
   chartLoading?: boolean; // For showing chart loading placeholder
+  heartbeatMessage?: string; // For showing progress during long operations
 }
 
 export interface ChatMessage {
