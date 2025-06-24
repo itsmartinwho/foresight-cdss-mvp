@@ -153,9 +153,9 @@ async function createAssistantResponse(
       assistant_id: assistantId,
     });
 
-    // Send initial heartbeat to indicate processing started
-    const heartbeatPayload = { type: "heartbeat", message: "Processing request..." };
-    controller.enqueue(encoder.encode(`data:${JSON.stringify(heartbeatPayload)}\n\n`));
+    // Send initial processing message in standard format
+    const eventData = `data: ${JSON.stringify({ content: "Processing request..." })}\n\n`;
+    controller.enqueue(encoder.encode(eventData));
 
     // Enhanced polling with heartbeat and timeout protection
     let runStatus = run;
@@ -170,23 +170,16 @@ async function createAssistantResponse(
       
       pollCount++;
       
-      // Send periodic heartbeat to prevent client/server timeout
+      // Send periodic processing updates in standard format
       if (pollCount % heartbeatInterval === 0) {
-        const heartbeat = { 
-          type: "heartbeat", 
-          message: `Processing... (${Math.floor(pollCount / 10)}s elapsed)`,
-          status: runStatus.status 
-        };
-        controller.enqueue(encoder.encode(`data:${JSON.stringify(heartbeat)}\n\n`));
+        const eventData = `data: ${JSON.stringify({ content: `\n\n*Processing... (${Math.floor(pollCount / 10)}s elapsed)*\n\n` })}\n\n`;
+        controller.enqueue(encoder.encode(eventData));
       }
       
       // Check for maximum polling timeout
       if (pollCount >= maxPolls) {
-        const timeoutPayload = { 
-          type: "error", 
-          message: "Request timeout - assistant processing is taking too long. Please try again or use non-think mode for faster responses." 
-        };
-        controller.enqueue(encoder.encode(`data:${JSON.stringify(timeoutPayload)}\n\n`));
+        const errorData = `data: ${JSON.stringify({ error: "Request timeout - assistant processing is taking too long. Please try again or use non-think mode for faster responses." })}\n\n`;
+        controller.enqueue(encoder.encode(errorData));
         cleanupAndCloseController();
         return;
       }
@@ -206,14 +199,11 @@ async function createAssistantResponse(
       const assistantMessage = threadMessages.data.find(msg => msg.role === 'assistant' && msg.run_id === run.id);
       
       if (assistantMessage) {
-        // Check for images first
+        // Check for images first and send in content format
         for (const content of assistantMessage.content) {
           if (content.type === 'image_file') {
-            const imagePayload = { 
-              type: "code_interpreter_image_id", 
-              file_id: content.image_file.file_id 
-            };
-            controller.enqueue(encoder.encode(`data:${JSON.stringify(imagePayload)}\n\n`));
+            const eventData = `data: ${JSON.stringify({ content: `![Generated Chart](image:${content.image_file.file_id})` })}\n\n`;
+            controller.enqueue(encoder.encode(eventData));
           }
         }
 
@@ -229,12 +219,12 @@ async function createAssistantResponse(
               chunks.push(fullText.slice(i, i + chunkSize));
             }
             
-            // Send chunks with small delays to simulate streaming
+            // Send chunks in original working format
             for (let i = 0; i < chunks.length; i++) {
               if (reqSignal.aborted) break;
               
-              const textPayload = { type: "markdown_chunk", content: chunks[i] };
-              controller.enqueue(encoder.encode(`data:${JSON.stringify(textPayload)}\n\n`));
+              const eventData = `data: ${JSON.stringify({ content: chunks[i] })}\n\n`;
+              controller.enqueue(encoder.encode(eventData));
               
               // Small delay for streaming effect (skip delay for last chunk)
               if (i < chunks.length - 1) {
@@ -246,29 +236,20 @@ async function createAssistantResponse(
       }
     } else if (runStatus.status === 'failed') {
       const errorMsg = runStatus.last_error?.message || 'Assistant run failed';
-      const errorPayload = { type: "error", message: errorMsg };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
+      const errorData = `data: ${JSON.stringify({ error: errorMsg })}\n\n`;
+      controller.enqueue(encoder.encode(errorData));
     } else if (runStatus.status === 'expired') {
-      const expiredPayload = { 
-        type: "error", 
-        message: "Request expired - please try again or use non-think mode for faster responses." 
-      };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(expiredPayload)}\n\n`));
+      const errorData = `data: ${JSON.stringify({ error: "Request expired - please try again or use non-think mode for faster responses." })}\n\n`;
+      controller.enqueue(encoder.encode(errorData));
     } else {
-      const unknownPayload = { 
-        type: "error", 
-        message: `Unexpected status: ${runStatus.status}. Please try again.` 
-      };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(unknownPayload)}\n\n`));
+      const errorData = `data: ${JSON.stringify({ error: `Unexpected status: ${runStatus.status}. Please try again.` })}\n\n`;
+      controller.enqueue(encoder.encode(errorData));
     }
 
   } catch (error: any) {
     console.error("Assistant API error:", error);
-    const errorPayload = { 
-      type: "error", 
-      message: `Assistant error: ${error.message || 'Unknown error'}. Try using non-think mode for better reliability.` 
-    };
-    controller.enqueue(encoder.encode(`data:${JSON.stringify(errorPayload)}\n\n`));
+    const errorData = `data: ${JSON.stringify({ error: `Assistant error: ${error.message || 'Unknown error'}. Try using non-think mode for better reliability.` })}\n\n`;
+    controller.enqueue(encoder.encode(errorData));
   }
 
   reqSignal.removeEventListener('abort', clientDisconnectListener);
@@ -596,7 +577,7 @@ export async function GET(req: NextRequest) {
 
           try {
             const completionStream = await openai.chat.completions.create({
-              model: AIModelType.GPT_4_1_MINI,
+              model: AIModelType.GPT_4O_MINI,
               messages: chatMessages,
               stream: true,
               max_tokens: 4000,
@@ -625,7 +606,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
-        const assistantId = await createOrGetAssistant(AIModelType.O3_MINI);
+        const assistantId = await createOrGetAssistant(AIModelType.O3);
 
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 

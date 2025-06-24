@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from "react-dom";
 import type { Patient, Encounter, EncounterDetailsWrapper, Treatment, LabResult, Diagnosis, ClinicalTrial } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash, CircleNotch } from '@phosphor-icons/react';
+import { Eye, Trash, CircleNotch, Play as PlayIcon, Stop as StopIcon } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RenderDetailTable from "@/components/ui/RenderDetailTable";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { supabaseDataService } from '@/lib/supabaseDataService';
 import { format } from 'date-fns';
-import type { RichTextEditorRef } from '@/components/ui/rich-text-editor';
+import { RichTextEditor, type RichTextEditorRef } from '@/components/ui/rich-text-editor';
+import { AudioWaveform } from '@/components/ui/AudioWaveform';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 interface ConsolidatedConsultationTabProps {
@@ -509,13 +510,32 @@ export default function ConsolidatedConsultationTab({
         </div>
       </div>
 
-      {/* Summary Notes (SOAP Notes) */}
+      {/* Live Transcription Interface */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-foreground flex items-center justify-between">
-            Summary Notes
+            Live Transcription
             <div className="flex gap-2">
-              {selectedEncounter.transcript && (
+              <Button
+                variant={isTranscribing ? "destructive" : "default"}
+                size="sm"
+                onClick={isTranscribing ? stopTranscriptionAndSave : startTranscription}
+                disabled={isPaused}
+                className="flex items-center gap-2"
+              >
+                {isTranscribing ? (
+                  <>
+                    <StopIcon className="h-4 w-4" />
+                    Stop & Save
+                  </>
+                ) : (
+                  <>
+                    <PlayIcon className="h-4 w-4" />
+                    Start Recording
+                  </>
+                )}
+              </Button>
+              {transcriptText && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -523,10 +543,43 @@ export default function ConsolidatedConsultationTab({
                   className="flex items-center gap-2"
                 >
                   <Eye className="h-4 w-4" />
-                  View Transcript
+                  View Full Transcript
                 </Button>
               )}
             </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="relative min-h-[300px]">
+          <RichTextEditor
+            ref={richTextEditorRef}
+            content={transcriptText}
+            onContentChange={(content) => setTranscriptText(content)}
+            placeholder="Start recording to begin live transcription, or type your consultation notes here..."
+            disabled={isTranscribing}
+            showToolbar={!isTranscribing}
+            minHeight="200px"
+            className="h-full"
+          />
+          
+          {/* Audio Waveform Controls */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+            <AudioWaveform
+              isRecording={isTranscribing}
+              isPaused={isPaused}
+              mediaStream={audioStreamRef.current}
+              onPause={pauseTranscription}
+              onResume={resumeTranscription}
+              onStop={stopTranscriptionAndSave}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary Notes (SOAP Notes) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-foreground">
+            Summary Notes
           </CardTitle>
         </CardHeader>
         <CardContent>

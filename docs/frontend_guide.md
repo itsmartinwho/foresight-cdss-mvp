@@ -18,7 +18,8 @@ The application supports differentiated behavior when interacting with upcoming 
 - **Row Click**: Clicking elsewhere in any consultation row navigates to the patient's workspace without auto-starting
 
 ### Technical Implementation
-- Uses `autoStart=true` URL parameter to trigger automatic consultation modal opening
+- Uses `autoStartTranscription=true` URL parameter to trigger automatic consultation modal opening and transcription start
+- Legacy `autoStart=true` parameter also supported for backward compatibility
 - ConsultationPanel supports `selectedEncounter` and `autoStartTranscription` props
 - URL parameters are automatically cleaned up after modal interaction
 - Consultation metadata (date, reason, etc.) is preserved during auto-start

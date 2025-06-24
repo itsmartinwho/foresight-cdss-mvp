@@ -104,7 +104,8 @@ export default function PatientWorkspaceViewModern({ patient: initialPatientStub
         
         // Check if we should auto-start the consultation panel (for existing encounters)
         const autoStart = searchParams.get('autoStart');
-        if (autoStart === 'true') {
+        const autoStartTranscription = searchParams.get('autoStartTranscription');
+        if (autoStart === 'true' || autoStartTranscription === 'true') {
           // Save current selection to restore if modal is discarded
           previousEncounterRef.current = foundEncounter;
           setShowConsultationPanel(true);
