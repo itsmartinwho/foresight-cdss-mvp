@@ -86,8 +86,8 @@ async function createOrGetAssistant(model: string): Promise<string> {
   // Use model name as cache key
   if (assistantIdCache[model]) return assistantIdCache[model];
 
-  // If an environment variable is provided for the default model (gpt-4.1-mini), reuse it
-  if (model === "gpt-4.1-mini-2025-04-14" && MEDICAL_ADVISOR_ASSISTANT_ID) {
+  // If an environment variable is provided for the default model (o3), reuse it
+  if (model === "o3-2025-04-16" && MEDICAL_ADVISOR_ASSISTANT_ID) {
     assistantIdCache[model] = MEDICAL_ADVISOR_ASSISTANT_ID;
     return MEDICAL_ADVISOR_ASSISTANT_ID;
   }
@@ -118,8 +118,6 @@ async function createAssistantResponse(
     streamEndedByThisFunction = true;
     isControllerClosedRef.value = true;
     try {
-      const endPayload = { type: "stream_end" };
-      controller.enqueue(encoder.encode(`data:${JSON.stringify(endPayload)}\n\n`));
       controller.close();
     } catch (e) {
       console.warn("Error closing controller in createAssistantResponse cleanup:", e);

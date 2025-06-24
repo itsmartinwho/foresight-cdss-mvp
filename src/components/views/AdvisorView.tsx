@@ -316,24 +316,8 @@ export default function AdvisorView() {
     eventSource.onmessage = (ev) => {
       try {
         const data = JSON.parse(ev.data);
-        if (data.type === "heartbeat") {
-          // Handle heartbeat to prevent timeout - optionally show status
-          console.log("Heartbeat:", data.message);
-          if (data.message && currentAssistantMessageIdRef.current) {
-            setMessages(prev => prev.map(m => {
-              if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
-                return {
-                  ...m,
-                  content: {
-                    ...(m.content as AssistantMessageContent),
-                    heartbeatMessage: data.message
-                  }
-                };
-              }
-              return m;
-            }));
-          }
-        } else if (data.type === "markdown_chunk" && data.content) {
+        if (data.content) {
+          resetStreamEndTimeout(); // Reset timeout on new content
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) { // Check if parser exists
             smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
           }
@@ -445,44 +429,6 @@ export default function AdvisorView() {
             }
             return m;
           }));
-        } else if (data.type === "final_content" && currentAssistantMessageIdRef.current) {
-          // Handle final content preservation for non-think mode
-          const assistantMessageId = currentAssistantMessageIdRef.current;
-          const finalContent = data.content || "";
-          
-          // Update the raw markdown accumulator with final content
-          rawMarkdownAccumulatorRef.current[assistantMessageId] = finalContent;
-          
-        } else if (data.type === "stream_end" && currentAssistantMessageIdRef.current) {
-          const assistantMessageId = currentAssistantMessageIdRef.current;
-          if (parsersRef.current[assistantMessageId]) {
-            smd_parser_end(parsersRef.current[assistantMessageId]);
-          }
-
-          const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
-          
-
-          // Clean up refs for this specific message
-          delete parsersRef.current[assistantMessageId];
-          delete markdownRootsRef.current[assistantMessageId];
-          delete rawMarkdownAccumulatorRef.current[assistantMessageId];
-
-          setMessages(prev => prev.map(m =>
-            m.id === assistantMessageId
-            ? {
-                ...m,
-                isStreaming: false,
-                content: {
-                  ...(m.content as AssistantMessageContent),
-                  isMarkdownStream: false, // Switch off smd rendering for the final state
-                  finalMarkdown: accumulatedRawMarkdown, // Use accumulated raw markdown
-                  heartbeatMessage: undefined, // Clear heartbeat message when done
-                }
-              }
-            : m
-          ));
-          setIsSending(false);
-          eventSource.close();
         } else if (data.error) {
           console.error("SSE Error:", data.error);
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
@@ -496,6 +442,48 @@ export default function AdvisorView() {
       } catch (err) {
         console.error("Failed to parse SSE data", ev.data, err);
       }
+    };
+
+    // Handle natural end of stream
+    const handleStreamEnd = () => {
+      const assistantMessageId = currentAssistantMessageIdRef.current;
+      if (assistantMessageId) {
+        if (parsersRef.current[assistantMessageId]) {
+          smd_parser_end(parsersRef.current[assistantMessageId]);
+        }
+
+        const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
+        
+        // Clean up refs for this specific message
+        delete parsersRef.current[assistantMessageId];
+        delete markdownRootsRef.current[assistantMessageId];
+        delete rawMarkdownAccumulatorRef.current[assistantMessageId];
+
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessageId
+          ? {
+              ...m,
+              isStreaming: false,
+              content: {
+                ...(m.content as AssistantMessageContent),
+                isMarkdownStream: false,
+                finalMarkdown: accumulatedRawMarkdown,
+              }
+            }
+          : m
+        ));
+        setIsSending(false);
+      }
+    };
+
+    // Use a timeout to detect when the stream has ended naturally
+    let streamEndTimeout: NodeJS.Timeout;
+    const resetStreamEndTimeout = () => {
+      if (streamEndTimeout) clearTimeout(streamEndTimeout);
+      streamEndTimeout = setTimeout(() => {
+        handleStreamEnd();
+        eventSource.close();
+      }, 2000); // 2 second timeout after last message
     };
 
     eventSource.onerror = (err) => {
