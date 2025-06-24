@@ -18,7 +18,7 @@ import { getSupabaseClient } from './supabaseClient';
 import { UnifiedAlertsService } from './unifiedAlertsService';
 import { AlertStatus } from '@/types/alerts';
 import OpenAI from 'openai';
-import { GPT_4_1_MINI } from './ai/gpt-models';
+import { GPT_4O_MINI } from './ai/gpt-models';
 import { getDiagnosisPrompt, getTreatmentPrompt, getTreatmentGuidelinesPrompt } from './ai/prompt-templates';
 
 // Clinical Engine Assistant ID
@@ -392,7 +392,7 @@ Latest Encounter Transcript: ${transcript}
 Please generate differential diagnoses based on this information.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -475,7 +475,7 @@ Differential Diagnoses from Colleague: ${JSON.stringify(differentialDiagnoses, n
 Please provide your primary diagnosis.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -539,7 +539,7 @@ Clinical Guidelines Recommendations: ${guidelinesRecommendations}
 Please provide a comprehensive treatment plan with decision tree.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -713,7 +713,7 @@ Patient Context: ${JSON.stringify({
 Please provide evidence-based treatment recommendations from clinical guidelines.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -796,7 +796,7 @@ Please provide evidence-based treatment recommendations from clinical guidelines
   ): Promise<string> {
     try {
       const completion = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [
           { 
             role: "system", 
@@ -908,7 +908,7 @@ Generate a concise, professional Subjective section (2-4 sentences) that capture
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 300,
         temperature: 0.3
@@ -979,7 +979,7 @@ Generate a concise, professional Objective section (2-4 sentences) that captures
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: GPT_4_1_MINI,
+        model: GPT_4O_MINI,
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 300,
         temperature: 0.3

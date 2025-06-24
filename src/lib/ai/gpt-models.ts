@@ -1,12 +1,11 @@
 // OpenAI GPT Model Configurations for Clinical Alerts System
 import { AIModelType, AIModelConfig, AI_MODEL_CONFIGS, AIModelCapability } from '@/types/ai-models';
 
-// Export the correct model identifiers
+// Export individual model types for easy import
 export const GPT_4O = AIModelType.GPT_4O;
 export const GPT_4O_MINI = AIModelType.GPT_4O_MINI;
 export const O3 = AIModelType.O3;
 export const O3_MINI = AIModelType.O3_MINI;
-export const GPT_4_1_MINI = AIModelType.GPT_4_1_MINI;
 
 // Default model for real-time alerts processing - using gpt-4o-mini for speed and efficiency
 export const DEFAULT_REALTIME_MODEL = GPT_4O_MINI;

@@ -248,10 +248,10 @@ async function createAssistantResponse(
     console.error("Assistant API error:", error);
     const errorData = `data: ${JSON.stringify({ error: `Assistant error: ${error.message || 'Unknown error'}. Try using non-think mode for better reliability.` })}\n\n`;
     controller.enqueue(encoder.encode(errorData));
-  }
+      }
 
-  reqSignal.removeEventListener('abort', clientDisconnectListener);
-  cleanupAndCloseController();
+    reqSignal.removeEventListener('abort', clientDisconnectListener);
+    cleanupAndCloseController();
 }
 
 async function enrichWithGuidelines(query: string, patientData?: any, specialty?: Specialty): Promise<string> {

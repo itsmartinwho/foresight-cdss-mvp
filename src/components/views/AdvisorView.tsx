@@ -29,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DataTable } from "@/components/ui/data-table"; // Added
 import type { ColumnDef } from "@tanstack/react-table"; // Added
 import Image from 'next/image';
+import { ChartRenderer } from '@/components/advisor/chart-renderer';
 // Removed old Pyodide-based chart and table renderers - now using OpenAI Code Interpreter
 
 // Local types for Web Speech API to avoid 'any'
@@ -446,33 +447,33 @@ export default function AdvisorView() {
 
     // Handle natural end of stream
     const handleStreamEnd = () => {
-      const assistantMessageId = currentAssistantMessageIdRef.current;
+          const assistantMessageId = currentAssistantMessageIdRef.current;
       if (assistantMessageId) {
-        if (parsersRef.current[assistantMessageId]) {
-          smd_parser_end(parsersRef.current[assistantMessageId]);
-        }
+          if (parsersRef.current[assistantMessageId]) {
+            smd_parser_end(parsersRef.current[assistantMessageId]);
+          }
 
-        const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
-        
-        // Clean up refs for this specific message
-        delete parsersRef.current[assistantMessageId];
-        delete markdownRootsRef.current[assistantMessageId];
-        delete rawMarkdownAccumulatorRef.current[assistantMessageId];
+          const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
 
-        setMessages(prev => prev.map(m =>
-          m.id === assistantMessageId
-          ? {
-              ...m,
-              isStreaming: false,
-              content: {
-                ...(m.content as AssistantMessageContent),
+          // Clean up refs for this specific message
+          delete parsersRef.current[assistantMessageId];
+          delete markdownRootsRef.current[assistantMessageId];
+          delete rawMarkdownAccumulatorRef.current[assistantMessageId];
+
+          setMessages(prev => prev.map(m =>
+            m.id === assistantMessageId
+            ? {
+                ...m,
+                isStreaming: false,
+                content: {
+                  ...(m.content as AssistantMessageContent),
                 isMarkdownStream: false,
                 finalMarkdown: accumulatedRawMarkdown,
+                }
               }
-            }
-          : m
-        ));
-        setIsSending(false);
+            : m
+          ));
+          setIsSending(false);
       }
     };
 
@@ -482,7 +483,7 @@ export default function AdvisorView() {
       if (streamEndTimeout) clearTimeout(streamEndTimeout);
       streamEndTimeout = setTimeout(() => {
         handleStreamEnd();
-        eventSource.close();
+          eventSource.close();
       }, 2000); // 2 second timeout after last message
     };
 
@@ -996,6 +997,35 @@ const AssistantMessageRenderer: React.FC<{
     thead: ({node, ...props}: any) => <thead className="bg-gray-100 dark:bg-gray-800" {...props} />,
     th: ({node, ...props}: any) => <th className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-left" {...props} />,
     td: ({node, ...props}: any) => <td className="border border-gray-300 dark:border-gray-600 px-2 py-1" {...props} />,
+    code: ({node, inline, className, children, ...props}: any) => {
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match && match[1];
+      const codeContent = String(children).replace(/\n$/, '');
+      
+      // Check if this is a Python code block containing matplotlib
+      if (!inline && language === 'python' && (codeContent.includes('plt.') || codeContent.includes('matplotlib'))) {
+        return (
+          <ChartRenderer 
+            pythonCode={codeContent}
+            description="Generated visualization from AI response"
+          />
+        );
+      }
+      
+      // Regular code block rendering
+      if (!inline) {
+        return (
+          <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto my-2" {...props}>
+            <code className={className} {...props}>
+              {children}
+            </code>
+          </pre>
+        );
+      }
+      
+      // Inline code
+      return <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-sm" {...props}>{children}</code>;
+    },
   };
 
   // Common rendering for tool outputs
