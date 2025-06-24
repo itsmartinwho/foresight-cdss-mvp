@@ -483,24 +483,15 @@ export default function AdvisorView() {
           ));
           setIsSending(false);
           eventSource.close();
-        } else if (data.type === "error" || data.error) {
-          const errorMessage = data.message || data.error || "Unknown error occurred";
-          console.error("SSE Error:", errorMessage);
+        } else if (data.error) {
+          console.error("SSE Error:", data.error);
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
             smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
             delete parsersRef.current[currentAssistantMessageIdRef.current!];
           }
-          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: `**Error:** ${errorMessage}` } } : m));
+          setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: `**Error:** ${data.error}` } } : m));
           setIsSending(false);
           eventSource.close();
-        } else if (data.content && !data.type) {
-          // Legacy format for backward compatibility (when no type is specified)
-          if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
-            smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
-          }
-          if (currentAssistantMessageIdRef.current! in rawMarkdownAccumulatorRef.current) {
-            rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!] += data.content;
-          }
         }
       } catch (err) {
         console.error("Failed to parse SSE data", ev.data, err);

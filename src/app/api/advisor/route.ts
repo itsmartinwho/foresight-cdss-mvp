@@ -87,7 +87,7 @@ async function createOrGetAssistant(model: string): Promise<string> {
   if (assistantIdCache[model]) return assistantIdCache[model];
 
   // If an environment variable is provided for the default model (gpt-4.1-mini), reuse it
-  if (model === "gpt-4.1-mini" && MEDICAL_ADVISOR_ASSISTANT_ID) {
+  if (model === "gpt-4.1-mini-2025-04-14" && MEDICAL_ADVISOR_ASSISTANT_ID) {
     assistantIdCache[model] = MEDICAL_ADVISOR_ASSISTANT_ID;
     return MEDICAL_ADVISOR_ASSISTANT_ID;
   }
@@ -603,28 +603,19 @@ export async function GET(req: NextRequest) {
               temperature: 0.7,
             });
 
-            let accumulatedContent = "";
             for await (const chunk of completionStream) {
               if (requestAbortController.signal.aborted) break;
               
               const content = chunk.choices[0]?.delta?.content;
               if (content) {
-                accumulatedContent += content;
-                // Send chunk as markdown
-                const eventData = `data: ${JSON.stringify({ type: "markdown_chunk", content })}\n\n`;
+                const eventData = `data: ${JSON.stringify({ content })}\n\n`;
                 controller.enqueue(encoder.encode(eventData));
               }
             }
 
-            // Send final accumulated content for preservation
-            if (accumulatedContent) {
-              const finalData = `data: ${JSON.stringify({ type: "final_content", content: accumulatedContent })}\n\n`;
-              controller.enqueue(encoder.encode(finalData));
-            }
-
           } catch (error) {
             console.error("Chat completion error:", error);
-            const errorData = `data: ${JSON.stringify({ type: "error", message: "Connection issue or stream interrupted." })}\n\n`;
+            const errorData = `data: ${JSON.stringify({ error: "Connection issue or stream interrupted." })}\n\n`;
             controller.enqueue(encoder.encode(errorData));
           }
 
@@ -634,7 +625,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
-        const assistantId = await createOrGetAssistant(AIModelType.GPT_4O);
+        const assistantId = await createOrGetAssistant(AIModelType.O3_MINI);
 
         const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 
