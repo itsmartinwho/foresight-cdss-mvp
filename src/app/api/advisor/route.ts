@@ -613,31 +613,54 @@ export async function GET(req: NextRequest) {
         }
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
-        const assistantId = await createOrGetAssistant(AIModelType.O3);
+        try {
+          // o3 model is named "o3-2025-04-16" per the user's documentation
+          const modelName = AIModelType.O3; // This should be "o3-2025-04-16"
+          console.log('Think mode selected, attempting to create assistant with model:', modelName);
+          
+          const assistantId = await createOrGetAssistant(modelName);
+          console.log('Assistant created/retrieved successfully:', assistantId);
 
-        const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
+          const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
 
-        if (filteredMessages.length > 0) {
-          const latestUserMessage = filteredMessages[filteredMessages.length - 1];
-          if (latestUserMessage.role === "user") {
-            let patientData = null;
-            try {
-              if (patientSummaryBlock) {
-                patientData = { summary: patientSummaryBlock };
+          if (filteredMessages.length > 0) {
+            const latestUserMessage = filteredMessages[filteredMessages.length - 1];
+            if (latestUserMessage.role === "user") {
+              let patientData = null;
+              try {
+                if (patientSummaryBlock) {
+                  patientData = { summary: patientSummaryBlock };
+                }
+              } catch (e) {
+                console.warn("Could not extract patient data for guidelines search:", e);
               }
-            } catch (e) {
-              console.warn("Could not extract patient data for guidelines search:", e);
-            }
 
-            const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
-            if (guidelinesEnrichment) {
-              latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
+              const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
+              if (guidelinesEnrichment) {
+                latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
+              }
             }
           }
-        }
 
-        await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
-        requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+          await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+        } catch (assistantError: any) {
+          console.error('Think mode error:', assistantError);
+          console.error('Error details:', {
+            message: assistantError.message,
+            status: assistantError.status,
+            code: assistantError.code,
+            type: assistantError.type,
+            stack: assistantError.stack
+          });
+          
+          // Send error to client
+          const errorData = `data: ${JSON.stringify({ 
+            error: `Think mode error: ${assistantError.message || 'Failed to initialize assistant'}. Please try non-think mode.` 
+          })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+          closeControllerOnce();
+        }
       }
     });
 
