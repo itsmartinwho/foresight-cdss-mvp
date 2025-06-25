@@ -524,45 +524,95 @@ export async function GET(req: NextRequest) {
           return;
         }
 
-        // Determine whether to use advanced reasoning (assistant/Code Interpreter) or faster direct chat completion
+        // Determine whether to use advanced reasoning (o3) or faster processing (gpt-4.1-mini)
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // Use Assistants API with Code Interpreter for BOTH modes (like the stable version)
-        // This ensures charts/tables work properly in both think and non-think modes
-        
+        // Select the appropriate model for the mode
+        const modelName = thinkMode ? AIModelType.O3 : AIModelType.GPT_4_1_MINI;
+        console.log(`Advisor mode: ${thinkMode ? 'think' : 'non-think'}, using model: ${modelName}`);
+
         try {
-          // Use working models instead of problematic o3
-          const modelName = thinkMode 
-            ? AIModelType.GPT_4O      // Think mode: GPT-4o (excellent reasoning + stable)
-            : AIModelType.GPT_4_1_MINI; // Non-think mode: GPT-4.1-mini (fast + reliable)
+          // Prepare the input for the Responses API
+          const input: any[] = [];
           
-          console.log(`${thinkMode ? 'Think' : 'Standard'} mode selected, using model:`, modelName);
+          // Add system/developer message with patient context
+          const combinedSystemPrompt = patientSummaryBlock
+            ? `${baseSystemPrompt}\n\n${patientSummaryBlock}`
+            : baseSystemPrompt;
           
-          const assistantId = await createOrGetAssistant(modelName);
-          console.log('Assistant created/retrieved successfully:', assistantId);
+          // For reasoning models (o3), use "developer" role; for others use "system"
+          const systemRole = thinkMode ? "developer" : "system";
+          input.push({ 
+            role: systemRole, 
+            content: [{ type: "input_text", text: combinedSystemPrompt }]
+          });
+
+          // Add conversation messages
+          for (const m of messagesFromClient) {
+            if (m.role === "user" || m.role === "assistant") {
+              input.push({
+                role: m.role,
+                content: [{ type: "input_text", text: m.content }]
+              });
+            }
+          }
+
+          // Configure tools for code interpreter functionality
+          const tools: any[] = [{ 
+            type: "code_interpreter",
+            container: { type: "auto" }
+          }];
+
+          // Configure reasoning options for think mode
+          const reasoningOptions = thinkMode ? {
+            effort: "medium" as const,
+            summary: "auto" as const
+          } : undefined;
+
+          // Make the Responses API call
+          const response = await openai.responses.create({
+            model: modelName,
+            input: input,
+            tools: tools,
+            max_output_tokens: 4000,
+            ...(reasoningOptions && { reasoning: reasoningOptions })
+          });
+
+          // Extract the text content from the response
+          let outputText = "";
+          for (const item of response.output) {
+            if (item.type === "message" && item.content) {
+              for (const contentItem of item.content) {
+                if (contentItem.type === "output_text") {
+                  outputText += contentItem.text;
+                }
+              }
+            }
+          }
+
+          // Stream the response back to the client
+          const eventData = `data: ${JSON.stringify({ content: outputText })}\n\n`;
+          controller.enqueue(encoder.encode(eventData));
+
+          // Send done event
+          const doneData = `data: [DONE]\n\n`;
+          controller.enqueue(encoder.encode(doneData));
           
-          // Filter out system messages since Assistants API doesn't accept them in the thread
-          const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
-          
-          await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
-          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
-        } catch (assistantError: any) {
-          console.error('Assistant API error:', assistantError);
+        } catch (error: any) {
+          console.error('Responses API error:', error);
           console.error('Error details:', {
-            message: assistantError.message,
-            status: assistantError.status,
-            code: assistantError.code,
-            type: assistantError.type,
-            stack: assistantError.stack
+            message: error.message,
+            status: error.status,
+            code: error.code,
+            type: error.type
           });
           
           // Send error to client
           const errorData = `data: ${JSON.stringify({ 
-            error: `Assistant error: ${assistantError.message || 'Failed to initialize assistant'}. Please try again.` 
+            error: `API error: ${error.message || 'Failed to process request'}. Please try again.` 
           })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
-          closeControllerOnce();
         }
       }
     });
