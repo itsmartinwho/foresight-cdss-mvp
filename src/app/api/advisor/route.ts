@@ -153,10 +153,6 @@ async function createAssistantResponse(
       assistant_id: assistantId,
     });
 
-    // Send initial processing message in standard format
-    const eventData = `data: ${JSON.stringify({ content: "Processing with advanced reasoning..." })}\n\n`;
-    controller.enqueue(encoder.encode(eventData));
-
     // Enhanced polling with heartbeat and timeout protection
     let runStatus = run;
     let pollCount = 0;
@@ -170,15 +166,9 @@ async function createAssistantResponse(
       
       pollCount++;
       
-      // Send periodic processing updates in standard format
-      if (pollCount % heartbeatInterval === 0) {
-        const eventData = `data: ${JSON.stringify({ content: `\n\n*Processing... (${Math.floor(pollCount / 10)}s elapsed)*\n\n` })}\n\n`;
-        controller.enqueue(encoder.encode(eventData));
-      }
-      
       // Check for maximum polling timeout
       if (pollCount >= maxPolls) {
-        const errorData = `data: ${JSON.stringify({ error: "Request timeout - assistant processing is taking too long. Please try again or use non-think mode for faster responses." })}\n\n`;
+        const errorData = `data: ${JSON.stringify({ error: "Request timeout - processing is taking too long. Please try again." })}\n\n`;
         controller.enqueue(encoder.encode(errorData));
         cleanupAndCloseController();
         return;
@@ -239,7 +229,7 @@ async function createAssistantResponse(
       const errorData = `data: ${JSON.stringify({ error: errorMsg })}\n\n`;
       controller.enqueue(encoder.encode(errorData));
     } else if (runStatus.status === 'expired') {
-      const errorData = `data: ${JSON.stringify({ error: "Request expired - please try again or use non-think mode for faster responses." })}\n\n`;
+      const errorData = `data: ${JSON.stringify({ error: "Request expired - please try again." })}\n\n`;
       controller.enqueue(encoder.encode(errorData));
     } else {
       const errorData = `data: ${JSON.stringify({ error: `Unexpected status: ${runStatus.status}. Please try again.` })}\n\n`;
@@ -248,7 +238,7 @@ async function createAssistantResponse(
 
   } catch (error: any) {
     console.error("Assistant API error:", error);
-    const errorData = `data: ${JSON.stringify({ error: `Assistant error: ${error.message || 'Unknown error'}. Try using non-think mode for better reliability.` })}\n\n`;
+    const errorData = `data: ${JSON.stringify({ error: `Assistant error: ${error.message || 'Unknown error'}. Please try again.` })}\n\n`;
     controller.enqueue(encoder.encode(errorData));
   }
 
@@ -538,79 +528,16 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        if (!thinkMode) {
-          // Use Chat Completions API for regular mode (fast, supports basic charts via client-side rendering)
-          const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-
-          const combinedSystemPrompt = patientSummaryBlock
-            ? `${baseSystemPrompt}\n\n${patientSummaryBlock}`
-            : baseSystemPrompt;
-
-          chatMessages.push({ role: "system", content: combinedSystemPrompt });
-
-          for (const m of messagesFromClient) {
-            if (m.role === "user" || m.role === "assistant") {
-              chatMessages.push({ role: m.role, content: m.content });
-            }
-          }
-
-          // Enrich user query with guidelines
-          if (chatMessages.length > 1) {
-            const latestUserMessage = chatMessages[chatMessages.length - 1];
-            if (latestUserMessage.role === "user") {
-              let patientData = null;
-              try {
-                if (patientSummaryBlock) {
-                  patientData = { summary: patientSummaryBlock };
-                }
-              } catch (e) {
-                console.warn("Could not extract patient data for guidelines search:", e);
-              }
-
-              const messageContent = typeof latestUserMessage.content === 'string' ? latestUserMessage.content : '';
-              const guidelinesEnrichment = await enrichWithGuidelines(messageContent, patientData, specialty as Specialty || undefined);
-              if (guidelinesEnrichment) {
-                latestUserMessage.content = messageContent + guidelinesEnrichment;
-              }
-            }
-          }
-
-          try {
-            // Use GPT-4.1-mini for non-think mode per latest guidance
-            const completionStream = await openai.chat.completions.create({
-              model: AIModelType.GPT_4_1_MINI,
-              messages: chatMessages,
-              stream: true,
-              max_tokens: 4000,
-              temperature: 0.7,
-            });
-
-            for await (const chunk of completionStream) {
-              if (requestAbortController.signal.aborted) break;
-              
-              const content = chunk.choices[0]?.delta?.content;
-              if (content) {
-                const eventData = `data: ${JSON.stringify({ content })}\n\n`;
-                controller.enqueue(encoder.encode(eventData));
-              }
-            }
-
-          } catch (error) {
-            console.error("Chat completion error:", error);
-            const errorData = `data: ${JSON.stringify({ error: "Connection issue or stream interrupted." })}\n\n`;
-            controller.enqueue(encoder.encode(errorData));
-          }
-
-          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
-          closeControllerOnce();
-          return;
-        }
-
-        // Fallback/think=true path – use Assistants API with Code Interpreter support
+        // Use Assistants API with Code Interpreter for BOTH modes (like the stable version)
+        // This ensures charts/tables work properly in both think and non-think modes
+        
         try {
-          // Use the correct o3 model name - the API expects "o3-2025-04-16"
-          const modelName = AIModelType.O3; // "o3-2025-04-16"
-          console.log('Think mode selected, attempting to create assistant with model:', modelName);
+          // Use working models instead of problematic o3
+          const modelName = thinkMode 
+            ? AIModelType.GPT_4O      // Think mode: GPT-4o (excellent reasoning + stable)
+            : AIModelType.GPT_4_1_MINI; // Non-think mode: GPT-4.1-mini (fast + reliable)
+          
+          console.log(`${thinkMode ? 'Think' : 'Standard'} mode selected, using model:`, modelName);
           
           const assistantId = await createOrGetAssistant(modelName);
           console.log('Assistant created/retrieved successfully:', assistantId);
@@ -621,7 +548,7 @@ export async function GET(req: NextRequest) {
           await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
           requestAbortController.signal.removeEventListener('abort', mainAbortListener);
         } catch (assistantError: any) {
-          console.error('Think mode error:', assistantError);
+          console.error('Assistant API error:', assistantError);
           console.error('Error details:', {
             message: assistantError.message,
             status: assistantError.status,
@@ -632,7 +559,7 @@ export async function GET(req: NextRequest) {
           
           // Send error to client
           const errorData = `data: ${JSON.stringify({ 
-            error: `Think mode error: ${assistantError.message || 'Failed to initialize assistant'}. Please try non-think mode.` 
+            error: `Assistant error: ${assistantError.message || 'Failed to initialize assistant'}. Please try again.` 
           })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
           closeControllerOnce();
