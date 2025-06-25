@@ -82,21 +82,28 @@ const MEDICAL_ADVISOR_ASSISTANT_ID = process.env.MEDICAL_ADVISOR_ASSISTANT_ID;
 // Cache assistant IDs in memory to avoid recreating each request
 const assistantIdCache: Record<string, string> = {};
 
-async function createOrGetAssistant(model: string): Promise<string> {
-  // Use model name as cache key
-  if (assistantIdCache[model]) return assistantIdCache[model];
+async function createOrGetAssistant(model: string, patientContext?: string): Promise<string> {
+  // Use model name as cache key - include patient context hash for more specific caching if needed
+  const cacheKey = patientContext ? `${model}_${Buffer.from(patientContext).toString('base64').slice(0, 10)}` : model;
+  if (assistantIdCache[cacheKey]) return assistantIdCache[cacheKey];
 
   try {
     console.log(`Creating assistant with model: ${model}`);
+    
+    // Enhance system prompt with patient context if provided
+    const enhancedSystemPrompt = patientContext ? 
+      `${baseSystemPrompt}\n\n${patientContext}` : 
+      baseSystemPrompt;
+    
     const assistant = await openai.beta.assistants.create({
       name: `Foresight Medical Advisor (${model})`,
-      instructions: baseSystemPrompt,
+      instructions: enhancedSystemPrompt,
       model,
       tools: [{ type: "code_interpreter" }],
     });
 
     console.log(`Assistant created successfully with ID: ${assistant.id}`);
-    assistantIdCache[model] = assistant.id;
+    assistantIdCache[cacheKey] = assistant.id;
     return assistant.id;
   } catch (error: any) {
     console.error(`Failed to create assistant for model ${model}:`, error);
@@ -542,39 +549,14 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // For think mode, use Assistant API with o3 advanced reasoning
-        if (thinkMode) {
-          console.log('Using Assistant API with o3 for think mode');
-          
-          // Use o3 for advanced reasoning with optimized patient data
-          const assistantId = await createOrGetAssistant(AIModelType.O3);
-          
-          // Filter messages to only include user and assistant roles
-          const assistantMessages = messagesFromClient.filter(
-            m => m.role === "user" || m.role === "assistant"
-          ) as Array<{ role: "user" | "assistant"; content: string }>;
-          
-          await createAssistantResponse(
-            assistantId,
-            assistantMessages,
-            controller,
-            requestAbortController.signal,
-            isControllerClosedRef
-          );
-          
-          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
-          return;
-        }
-
-        // For non-think mode, use Responses API
-        const modelName = AIModelType.GPT_4_1_MINI;
-        console.log(`Advisor mode: non-think, using model: ${modelName}`);
+        // Choose model based on think mode
+        const modelName = thinkMode ? AIModelType.O3 : AIModelType.GPT_4_1_MINI;
+        console.log(`Advisor mode: ${thinkMode ? 'think' : 'non-think'}, using model: ${modelName}`);
 
         try {
           // Prepare the input for the Responses API
           const input: any[] = [];
           
-          // Add system/developer message with patient context
           // Enhanced system prompt to ensure code interpreter usage
           const enhancedSystemPrompt = `${baseSystemPrompt}
 
@@ -613,17 +595,23 @@ ax.grid(True, axis='x')
 plt.tight_layout()
 plt.savefig('timeline.png')
 plt.show()
-\`\`\`
-
-${patientSummaryBlock}`;
+\`\`\``;
           
           const combinedSystemPrompt = enhancedSystemPrompt;
           
-          // For non-reasoning models, use "system" role
-          input.push({ 
-            role: "system", 
-            content: [{ type: "input_text", text: combinedSystemPrompt }]
-          });
+          // For reasoning models (o3), use "developer" role
+          if (thinkMode) {
+            input.push({ 
+              role: "developer", 
+              content: [{ type: "input_text", text: combinedSystemPrompt }]
+            });
+          } else {
+            // For non-reasoning models, use "system" role  
+            input.push({ 
+              role: "system", 
+              content: [{ type: "input_text", text: combinedSystemPrompt }]
+            });
+          }
 
           // Add conversation messages
           for (const m of messagesFromClient) {
