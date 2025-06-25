@@ -233,8 +233,8 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
     description: 'Fast and cost-effective model for general tasks'
   },
   [AIModelType.O3]: {
-    name: 'o1',
-    displayName: 'o1',
+    name: 'o3-2025-04-16',
+    displayName: 'o3',
     maxTokens: 200000,
     costPer1000Tokens: 8.0,
     capabilities: [
@@ -244,9 +244,9 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
     ],
     description: 'Advanced reasoning model for complex problem-solving - ideal for think mode'
   },
-  [AIModelType.O3_MINI]: {
-    name: 'o1-mini',
-    displayName: 'o1-mini',
+  [AIModelType.O4_MINI]: {
+    name: 'o4-mini-2025-04-16',
+    displayName: 'o4-mini',
     maxTokens: 200000,
     costPer1000Tokens: 1.155,
     capabilities: [
@@ -255,6 +255,19 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
       AIModelCapability.CODE_GENERATION
     ],
     description: 'Advanced reasoning model designed for efficient reasoning tasks'
+  },
+  [AIModelType.GPT_4_1_MINI]: {
+    name: 'gpt-4.1-mini-2025-04-14',
+    displayName: 'GPT-4.1 Mini',
+    maxTokens: 128000,
+    costPer1000Tokens: 0.2,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.CODE_GENERATION,
+      AIModelCapability.MULTIMODAL,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'GPT-4.1 Mini model for fast and high-quality responses'
   }
 };
 
