@@ -532,23 +532,86 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // Select the appropriate model for the mode
-        const modelName = thinkMode ? AIModelType.O3 : AIModelType.GPT_4_1_MINI;
-        console.log(`Advisor mode: ${thinkMode ? 'think' : 'non-think'}, using model: ${modelName}`);
+        // For think mode, use Assistant API with GPT-4o (stable and fast)
+        if (thinkMode) {
+          console.log('Using Assistant API with GPT-4o for think mode');
+          
+          // Use GPT-4o for stable Assistant API with code interpreter
+          const assistantId = await createOrGetAssistant(AIModelType.GPT_4O);
+          
+          // Filter messages to only include user and assistant roles
+          const assistantMessages = messagesFromClient.filter(
+            m => m.role === "user" || m.role === "assistant"
+          ) as Array<{ role: "user" | "assistant"; content: string }>;
+          
+          await createAssistantResponse(
+            assistantId,
+            assistantMessages,
+            controller,
+            requestAbortController.signal,
+            isControllerClosedRef
+          );
+          
+          requestAbortController.signal.removeEventListener('abort', mainAbortListener);
+          return;
+        }
+
+        // For non-think mode, use Responses API
+        const modelName = AIModelType.GPT_4_1_MINI;
+        console.log(`Advisor mode: non-think, using model: ${modelName}`);
 
         try {
           // Prepare the input for the Responses API
           const input: any[] = [];
           
           // Add system/developer message with patient context
-          const combinedSystemPrompt = patientSummaryBlock
-            ? `${baseSystemPrompt}\n\n${patientSummaryBlock}`
-            : baseSystemPrompt;
+          // Enhanced system prompt to ensure code interpreter usage
+          const enhancedSystemPrompt = `${baseSystemPrompt}
+
+CRITICAL INSTRUCTIONS FOR CHART GENERATION:
+When the user asks for charts, visualizations, or visual summaries:
+1. You MUST use the Python tool (code_interpreter) to generate actual charts
+2. DO NOT output placeholder markdown images like ![Chart description]
+3. Use matplotlib to create the visualization and save it
+4. The generated chart will be automatically displayed to the user
+
+Example: If asked for a timeline chart, write Python code like:
+\`\`\`python
+import matplotlib.pyplot as plt
+import pandas as pd
+from datetime import datetime
+
+# Create the data
+dates = ['2025-05-24', '2025-06-09', '2025-06-17']
+events = ['URI diagnosis', 'Headache presentation', 'RA diagnosis']
+
+# Convert to datetime
+dates = pd.to_datetime(dates)
+
+# Create timeline
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.scatter(dates, [1, 1, 1], s=100, c='blue')
+
+for i, (date, event) in enumerate(zip(dates, events)):
+    ax.annotate(event, (date, 1), xytext=(0, 20), 
+                textcoords='offset points', ha='center')
+
+ax.set_ylim(0.5, 1.5)
+ax.set_xlabel('Date')
+ax.set_title('Patient Clinical Timeline')
+ax.grid(True, axis='x')
+plt.tight_layout()
+plt.savefig('timeline.png')
+plt.show()
+\`\`\`
+
+${patientSummaryBlock}`;
           
-          // For reasoning models (o3), use "developer" role; for others use "system"
-          const systemRole = thinkMode ? "developer" : "system";
+          const combinedSystemPrompt = enhancedSystemPrompt;
+          
+          // For non-reasoning models, use "system" role
           input.push({ 
-            role: systemRole, 
+            role: "system", 
             content: [{ type: "input_text", text: combinedSystemPrompt }]
           });
 
@@ -568,12 +631,6 @@ export async function GET(req: NextRequest) {
             container: { type: "auto" }
           }];
 
-          // Configure reasoning options for think mode
-          const reasoningOptions = thinkMode ? {
-            effort: "medium" as const,
-            summary: "auto" as const
-          } : undefined;
-
           // Make the Responses API call
           const response = await openai.responses.create({
             model: modelName,
@@ -581,29 +638,19 @@ export async function GET(req: NextRequest) {
             tools: tools,
             max_output_tokens: 4000,
             include: ["code_interpreter_call.outputs"] as any, // Request code interpreter outputs
-            ...(reasoningOptions && { reasoning: reasoningOptions })
           });
-
-          // Debug logging
-          console.log('Responses API output structure:', JSON.stringify(response.output, null, 2));
 
           // Extract the text content from the response
           let outputText = "";
           const chartOutputs: string[] = [];
           
           for (const item of response.output) {
-            console.log('Processing output item type:', item.type);
-            
             if (item.type === "message" && item.content) {
               for (const contentItem of item.content) {
-                // Log each content item type
-                console.log('Content item type:', (contentItem as any).type);
-                
                 if (contentItem.type === "output_text") {
                   outputText += contentItem.text;
                 } else if ((contentItem as any).type === "output_code_interpreter_figure") {
                   // Handle charts/figures from code interpreter
-                  console.log('Found code interpreter figure:', contentItem);
                   const figureData = (contentItem as any).figure;
                   if (figureData?.type === "image" && figureData.image?.url) {
                     // Extract file ID from URL if possible
@@ -622,11 +669,9 @@ export async function GET(req: NextRequest) {
               }
             } else if (item.type === "code_interpreter_call") {
               // Check for code interpreter outputs that might contain images
-              console.log('Found code interpreter call:', item);
               const outputs = (item as any).outputs;
               if (outputs && Array.isArray(outputs)) {
                 for (const output of outputs) {
-                  console.log('Code interpreter output type:', output.type);
                   if (output.type === "image" && output.image?.url) {
                     const url = output.image.url;
                     const fileIdMatch = url.match(/file-[a-zA-Z0-9]+/);
