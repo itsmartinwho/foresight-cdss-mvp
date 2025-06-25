@@ -175,7 +175,10 @@ async function createAssistantResponse(
       }
       
       await new Promise(resolve => setTimeout(resolve, 1000));
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+      runStatus = await openai.beta.threads.runs.retrieve({
+        thread_id: thread.id,
+        run_id: run.id
+      });
     }
 
     if (reqSignal.aborted) {
