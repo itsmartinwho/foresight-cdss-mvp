@@ -235,6 +235,27 @@
     font-weight: 300 !important;
   }
 
+  /* Styling for markdown code blocks created by smd.js streaming parser */
+  .prose pre {
+    @apply bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto my-2 border border-gray-300 dark:border-gray-600;
+  }
+  
+  .prose pre code {
+    @apply text-sm text-gray-800 dark:text-gray-200;
+    background: transparent !important; /* Override any existing background */
+    padding: 0 !important; /* Remove any existing padding since pre already has it */
+  }
+  
+  .prose code:not(pre code) {
+    @apply bg-gray-100 dark:bg-gray-800 px-1 rounded text-sm text-gray-800 dark:text-gray-200;
+  }
+  
+  /* Ensure proper text visibility and formatting */
+  .prose pre, .prose code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    font-feature-settings: normal;
+  }
+
   /* Low-opacity grain overlay for tactile depth (from brief) */
   body::after {
     content: "";
