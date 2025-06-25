@@ -444,6 +444,15 @@ plt.show()
             container: { type: "auto" }
           }];
 
+          // Log the full OpenAI request payload
+          console.log('OpenAI request payload:', {
+            model: modelName,
+            input,
+            tools,
+            max_output_tokens: 4000,
+            stream: true
+          });
+
           // Make the Responses API call with streaming enabled
           const stream = await openai.responses.create({
             model: modelName,
@@ -464,10 +473,14 @@ plt.show()
             if (event.type === 'response.delta' && event.delta.content) {
               // @ts-ignore
               for (const contentItem of event.delta.content) {
+                // Log every event received from OpenAI
+                console.log('OpenAI stream event (delta):', contentItem);
                 if (contentItem.type === 'output_text_delta' && contentItem.text) {
                   // Stream text content
                   const eventData = `data: ${JSON.stringify({ content: contentItem.text })}\n\n`;
                   controller.enqueue(encoder.encode(eventData));
+                  // Log every event sent to the client
+                  console.log('Sent to client:', { content: contentItem.text });
                 } else if (contentItem.type === 'output_code_interpreter_figure') {
                   // Handle and stream chart/figure data
                   const figureData = contentItem.figure;
@@ -482,12 +495,16 @@ plt.show()
                       };
                       const eventData = `data: ${JSON.stringify(imageData)}\n\n`;
                       controller.enqueue(encoder.encode(eventData));
+                      // Log every event sent to the client
+                      console.log('Sent to client:', imageData);
                     }
                   }
                 }
               }
             // @ts-ignore
             } else if (event.type === 'tool_code_chunk') {
+              // Log every event received from OpenAI
+              console.log('OpenAI stream event (tool_code_chunk):', event);
               // Forward tool code chunks for display
               const toolData = {
                 type: 'tool_code_chunk',
@@ -498,12 +515,15 @@ plt.show()
               };
               const eventData = `data: ${JSON.stringify(toolData)}\n\n`;
               controller.enqueue(encoder.encode(eventData));
+              // Log every event sent to the client
+              console.log('Sent to client:', toolData);
             }
           }
 
           // Send done event
           const doneData = `data: [DONE]\n\n`;
           controller.enqueue(encoder.encode(doneData));
+          console.log('Sent to client: [DONE]');
           
         } catch (error: any) {
           console.error('Responses API error:', error);
@@ -519,6 +539,7 @@ plt.show()
             error: `API error: ${error.message || 'Failed to process request'}. Please try again.` 
           })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
+          console.log('Sent to client:', { error: error.message });
         }
       }
     });
