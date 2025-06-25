@@ -580,20 +580,30 @@ export async function GET(req: NextRequest) {
             input: input,
             tools: tools,
             max_output_tokens: 4000,
+            include: ["code_interpreter_call.outputs"] as any, // Request code interpreter outputs
             ...(reasoningOptions && { reasoning: reasoningOptions })
           });
+
+          // Debug logging
+          console.log('Responses API output structure:', JSON.stringify(response.output, null, 2));
 
           // Extract the text content from the response
           let outputText = "";
           const chartOutputs: string[] = [];
           
           for (const item of response.output) {
+            console.log('Processing output item type:', item.type);
+            
             if (item.type === "message" && item.content) {
               for (const contentItem of item.content) {
+                // Log each content item type
+                console.log('Content item type:', (contentItem as any).type);
+                
                 if (contentItem.type === "output_text") {
                   outputText += contentItem.text;
                 } else if ((contentItem as any).type === "output_code_interpreter_figure") {
                   // Handle charts/figures from code interpreter
+                  console.log('Found code interpreter figure:', contentItem);
                   const figureData = (contentItem as any).figure;
                   if (figureData?.type === "image" && figureData.image?.url) {
                     // Extract file ID from URL if possible
@@ -605,6 +615,24 @@ export async function GET(req: NextRequest) {
                       chartOutputs.push(`![Generated Chart](image:${fileIdMatch[0]})`);
                     } else {
                       // Fallback to direct URL if we can't extract file ID
+                      chartOutputs.push(`![Generated Chart](${url})`);
+                    }
+                  }
+                }
+              }
+            } else if (item.type === "code_interpreter_call") {
+              // Check for code interpreter outputs that might contain images
+              console.log('Found code interpreter call:', item);
+              const outputs = (item as any).outputs;
+              if (outputs && Array.isArray(outputs)) {
+                for (const output of outputs) {
+                  console.log('Code interpreter output type:', output.type);
+                  if (output.type === "image" && output.image?.url) {
+                    const url = output.image.url;
+                    const fileIdMatch = url.match(/file-[a-zA-Z0-9]+/);
+                    if (fileIdMatch) {
+                      chartOutputs.push(`![Generated Chart](image:${fileIdMatch[0]})`);
+                    } else {
                       chartOutputs.push(`![Generated Chart](${url})`);
                     }
                   }
