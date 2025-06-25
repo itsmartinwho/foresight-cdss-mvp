@@ -4,8 +4,9 @@
 export enum AIModelType {
   GPT_4O = 'gpt-4o',
   GPT_4O_MINI = 'gpt-4o-mini',
-  O3 = 'o1',
-  O3_MINI = 'o1-mini'
+  GPT_4_1_MINI = 'gpt-4.1-mini-2025-04-14',
+  O3 = 'o3-2025-04-16',
+  O4_MINI = 'o4-mini-2025-04-16'
 }
 
 export interface AIModelConfig {
