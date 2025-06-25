@@ -175,7 +175,8 @@ async function createAssistantResponse(
       }
       
       await new Promise(resolve => setTimeout(resolve, 1000));
-      runStatus = await openai.beta.threads.runs.retrieve({
+      // OpenAI SDK v5: cast to any until typings updated
+      runStatus = await (openai.beta.threads.runs.retrieve as any)({
         thread_id: thread.id,
         run_id: run.id
       });
