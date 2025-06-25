@@ -349,6 +349,23 @@
     opacity: 0.75 !important;
   }
   */
+
+  /* Styling for tables created by smd.js streaming parser */
+  .prose table {
+    @apply table-auto w-full my-2 border-collapse border border-gray-300 dark:border-gray-600;
+  }
+  
+  .prose thead {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+  
+  .prose th {
+    @apply border border-gray-300 dark:border-gray-600 px-2 py-1 text-left font-semibold;
+  }
+  
+  .prose td {
+    @apply border border-gray-300 dark:border-gray-600 px-2 py-1;
+  }
 }
 
 /* Safari fallback for backdrop-filter (Brief §14.3 / User §12) */

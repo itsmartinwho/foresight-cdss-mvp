@@ -608,12 +608,12 @@ export async function GET(req: NextRequest) {
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
         try {
-          // Use gpt-4o for think mode since o3 doesn't support Assistants API
-          // gpt-4o has excellent reasoning capabilities and supports code interpreter
-          const modelName = AIModelType.GPT_4O; 
+          // Use the correct o3 model name - the API expects "o3-2025-04-16"
+          const modelName = AIModelType.O3; // "o3-2025-04-16"
           console.log('Think mode selected, attempting to create assistant with model:', modelName);
           
           const assistantId = await createOrGetAssistant(modelName);
+          console.log('Assistant created/retrieved successfully:', assistantId);
           
           // Filter out system messages since Assistants API doesn't accept them in the thread
           const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
