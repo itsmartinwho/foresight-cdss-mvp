@@ -372,15 +372,12 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // Choose model based on think mode - using known working models for testing
-        const modelName = thinkMode ? 'gpt-4o' : 'gpt-4o-mini';
+        // Choose model based on think mode - using user-specified models with Code Interpreter
+        const modelName = thinkMode ? AIModelType.O3 : AIModelType.GPT_4_1_MINI;
         console.log(`Advisor mode: ${thinkMode ? 'think' : 'non-think'}, using model: ${modelName}`);
 
         try {
-          // Prepare the input for the Responses API
-          const input: any[] = [];
-          
-          // Enhanced system prompt to ensure code interpreter usage
+          // Enhanced system prompt for Code Interpreter
           const enhancedSystemPrompt = `${baseSystemPrompt}
 
 CRITICAL INSTRUCTIONS FOR CHART GENERATION:
@@ -419,73 +416,101 @@ plt.tight_layout()
 plt.savefig('timeline.png')
 plt.show()
 \`\`\``;
-          
-          const combinedSystemPrompt = enhancedSystemPrompt;
-          
-          // Use "developer" role for both modes as 'responses' API may require it
-          input.push({ 
-            role: "developer", 
-            content: [{ type: "input_text", text: combinedSystemPrompt }]
-          });
 
-          // Add conversation messages
-          for (const m of messagesFromClient) {
-            if (m.role === "user" || m.role === "assistant") {
-              input.push({
-                role: m.role,
-                content: [{ type: "input_text", text: m.content }]
-              });
-            }
-          }
-
-          // Configure tools for code interpreter functionality
-          const tools: any[] = [{ 
-            type: "code_interpreter",
-            container: { type: "auto" }
-          }];
-
-          // Log the full OpenAI request payload
-          console.log('OpenAI request payload:', {
+          // Create assistant with Code Interpreter tool
+          console.log('Creating assistant with Code Interpreter for model:', modelName);
+          const assistant = await openai.beta.assistants.create({
+            name: `Foresight Medical Advisor - ${thinkMode ? 'Think' : 'Standard'} Mode`,
+            instructions: enhancedSystemPrompt,
             model: modelName,
-            input,
-            tools,
-            max_output_tokens: 4000,
-            stream: true
+            tools: [{ type: "code_interpreter" }],
           });
 
-          // Use Chat Completions API for testing
-          const messages = input.map(item => ({
-            role: item.role === 'developer' ? 'system' : item.role,
-            content: item.content[0].text
-          }));
+          console.log('Assistant created:', assistant.id);
 
-          const stream = await openai.chat.completions.create({
-            model: modelName,
-            messages: messages,
-            max_tokens: 4000,
-            stream: true,
+          // Create thread
+          const thread = await openai.beta.threads.create();
+          console.log('Thread created:', thread.id);
+
+          // Add user message to thread
+          const userMessage = messagesFromClient[messagesFromClient.length - 1]?.content || "";
+          await openai.beta.threads.messages.create(thread.id, {
+            role: "user",
+            content: userMessage,
           });
 
-          // Process the Chat Completions stream and forward events to the client
-          for await (const chunk of stream) {
-            if (requestAbortController.signal.aborted) {
-              break;
-            }
-            
-            const delta = chunk.choices[0]?.delta;
-            if (delta?.content) {
-              // Stream text content
-              const eventData = `data: ${JSON.stringify({ content: delta.content })}\n\n`;
-              controller.enqueue(encoder.encode(eventData));
-              console.log('Sent to client:', { content: delta.content });
-            }
-          }
+          console.log('Message added to thread');
 
-          // Send done event
-          const doneData = `data: [DONE]\n\n`;
-          controller.enqueue(encoder.encode(doneData));
-          console.log('Sent to client: [DONE]');
-          
+          // Create and stream the run
+          const run = openai.beta.threads.runs.stream(thread.id, {
+            assistant_id: assistant.id,
+          });
+
+          // Process the Assistants API stream and forward events to the client
+          run
+            .on('textCreated', (text) => {
+              console.log('Text created event');
+            })
+            .on('textDelta', (textDelta, snapshot) => {
+              if (requestAbortController.signal.aborted) return;
+              
+              if (textDelta.value) {
+                const eventData = `data: ${JSON.stringify({ content: textDelta.value })}\n\n`;
+                controller.enqueue(encoder.encode(eventData));
+                console.log('Sent to client:', { content: textDelta.value });
+              }
+            })
+            .on('toolCallCreated', (toolCall) => {
+              console.log('Tool call created:', toolCall.type);
+            })
+            .on('toolCallDelta', (toolCallDelta, snapshot) => {
+              if (requestAbortController.signal.aborted) return;
+              
+              if (toolCallDelta.type === 'code_interpreter') {
+                if (toolCallDelta.code_interpreter?.input) {
+                  // Send code chunk to client
+                  const eventData = `data: ${JSON.stringify({ 
+                    type: 'tool_code_chunk',
+                    language: 'python',
+                    content: toolCallDelta.code_interpreter.input 
+                  })}\n\n`;
+                  controller.enqueue(encoder.encode(eventData));
+                  console.log('Sent code chunk to client');
+                }
+                
+                if (toolCallDelta.code_interpreter?.outputs) {
+                  for (const output of toolCallDelta.code_interpreter.outputs) {
+                    if (output.type === 'image') {
+                      // Send image ID to client
+                      const imageData = {
+                        type: 'code_interpreter_image_id',
+                        file_id: output.image.file_id
+                      };
+                      const eventData = `data: ${JSON.stringify(imageData)}\n\n`;
+                      controller.enqueue(encoder.encode(eventData));
+                      console.log('Sent image to client:', output.image.file_id);
+                    }
+                  }
+                }
+              }
+            })
+            .on('end', () => {
+              // Send done event
+              const doneData = `data: [DONE]\n\n`;
+              controller.enqueue(encoder.encode(doneData));
+              console.log('Sent to client: [DONE]');
+              
+              // Clean up assistant and thread
+              openai.beta.assistants.delete(assistant.id).catch(console.error);
+              openai.beta.threads.delete(thread.id).catch(console.error);
+            })
+            .on('error', (error) => {
+              console.error('Assistants API stream error:', error);
+              const errorData = `data: ${JSON.stringify({ 
+                error: `Assistant error: ${error.message || 'Unknown error'}` 
+              })}\n\n`;
+              controller.enqueue(encoder.encode(errorData));
+                         });          
         } catch (error: any) {
           console.error('Responses API error:', error);
           console.error('Error details:', {
