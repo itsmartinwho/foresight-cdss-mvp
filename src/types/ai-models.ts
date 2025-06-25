@@ -4,9 +4,9 @@
 export enum AIModelType {
   GPT_4O = 'gpt-4o',
   GPT_4O_MINI = 'gpt-4o-mini',
-  GPT_4_1_MINI = 'gpt-4.1-mini-2025-04-14',
-  O3 = 'o3-2025-04-16',
-  O4_MINI = 'o4-mini-2025-04-16'
+  GPT_4_1_MINI = 'gpt-4o-mini', // For non-think mode (fast responses)
+  O3 = 'o1-preview', // For think mode (advanced reasoning)
+  O4_MINI = 'gpt-4o-mini'
 }
 
 export interface AIModelConfig {
@@ -233,8 +233,8 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
     description: 'Fast and cost-effective model for general tasks'
   },
   [AIModelType.O3]: {
-    name: 'o3-2025-04-16',
-    displayName: 'o3',
+    name: 'o1-preview',
+    displayName: 'o1-preview',
     maxTokens: 200000,
     costPer1000Tokens: 8.0,
     capabilities: [
@@ -245,29 +245,30 @@ export const AI_MODEL_CONFIGS: Record<AIModelType, AIModelConfig> = {
     description: 'Advanced reasoning model for complex problem-solving - ideal for think mode'
   },
   [AIModelType.O4_MINI]: {
-    name: 'o4-mini-2025-04-16',
-    displayName: 'o4-mini',
-    maxTokens: 200000,
-    costPer1000Tokens: 1.155,
-    capabilities: [
-      AIModelCapability.TEXT_GENERATION,
-      AIModelCapability.REASONING,
-      AIModelCapability.CODE_GENERATION
-    ],
-    description: 'Advanced reasoning model designed for efficient reasoning tasks'
-  },
-  [AIModelType.GPT_4_1_MINI]: {
-    name: 'gpt-4.1-mini-2025-04-14',
-    displayName: 'GPT-4.1 Mini',
+    name: 'gpt-4o-mini',
+    displayName: 'GPT-4o Mini (O4)',
     maxTokens: 128000,
-    costPer1000Tokens: 0.2,
+    costPer1000Tokens: 0.15,
     capabilities: [
       AIModelCapability.TEXT_GENERATION,
       AIModelCapability.CODE_GENERATION,
       AIModelCapability.MULTIMODAL,
       AIModelCapability.FUNCTION_CALLING
     ],
-    description: 'GPT-4.1 Mini model for fast and high-quality responses'
+    description: 'Fast and cost-effective model for general tasks'
+  },
+  [AIModelType.GPT_4_1_MINI]: {
+    name: 'gpt-4o-mini',
+    displayName: 'GPT-4o Mini (Non-think)',
+    maxTokens: 128000,
+    costPer1000Tokens: 0.15,
+    capabilities: [
+      AIModelCapability.TEXT_GENERATION,
+      AIModelCapability.CODE_GENERATION,
+      AIModelCapability.MULTIMODAL,
+      AIModelCapability.FUNCTION_CALLING
+    ],
+    description: 'Fast model for non-think mode advisor responses'
   }
 };
 

@@ -372,8 +372,8 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // Choose model based on think mode - using user-specified models with Code Interpreter
-        const modelName = thinkMode ? AIModelType.O3 : AIModelType.GPT_4_1_MINI;
+        // Choose model based on think mode - using models that support Assistants API with Code Interpreter
+        const modelName = thinkMode ? AIModelType.GPT_4O : AIModelType.GPT_4O_MINI;
         console.log(`Advisor mode: ${thinkMode ? 'think' : 'non-think'}, using model: ${modelName}`);
 
         try {
