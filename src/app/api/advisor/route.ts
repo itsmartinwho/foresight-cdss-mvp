@@ -585,14 +585,38 @@ export async function GET(req: NextRequest) {
 
           // Extract the text content from the response
           let outputText = "";
+          const chartOutputs: string[] = [];
+          
           for (const item of response.output) {
             if (item.type === "message" && item.content) {
               for (const contentItem of item.content) {
                 if (contentItem.type === "output_text") {
                   outputText += contentItem.text;
+                } else if ((contentItem as any).type === "output_code_interpreter_figure") {
+                  // Handle charts/figures from code interpreter
+                  const figureData = (contentItem as any).figure;
+                  if (figureData?.type === "image" && figureData.image?.url) {
+                    // Extract file ID from URL if possible
+                    // URLs typically look like: https://files.oaiusercontent.com/file-xyz123...
+                    const url = figureData.image.url;
+                    const fileIdMatch = url.match(/file-[a-zA-Z0-9]+/);
+                    if (fileIdMatch) {
+                      // Use the existing image format that the frontend expects
+                      chartOutputs.push(`![Generated Chart](image:${fileIdMatch[0]})`);
+                    } else {
+                      // Fallback to direct URL if we can't extract file ID
+                      chartOutputs.push(`![Generated Chart](${url})`);
+                    }
+                  }
                 }
               }
             }
+          }
+
+          // Send chart outputs first if any
+          for (const chartOutput of chartOutputs) {
+            const eventData = `data: ${JSON.stringify({ content: chartOutput })}\n\n`;
+            controller.enqueue(encoder.encode(eventData));
           }
 
           // Stream the response back to the client
