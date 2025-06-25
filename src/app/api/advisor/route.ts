@@ -241,7 +241,7 @@ export async function GET(req: NextRequest) {
                       if (diagContent.subjective || diagContent.objective || diagContent.assessment) {
                         if (diagContent.subjective) {
                           clinicalContext += `- **S:** ${diagContent.subjective}\n`;
-                        }
+                }
                         if (diagContent.objective) {
                           clinicalContext += `- **O:** ${diagContent.objective}\n`;
                         }
@@ -422,19 +422,11 @@ plt.show()
           
           const combinedSystemPrompt = enhancedSystemPrompt;
           
-          // For reasoning models (o3), use "developer" role
-          if (thinkMode) {
-            input.push({ 
-              role: "developer", 
-              content: [{ type: "input_text", text: combinedSystemPrompt }]
-            });
-          } else {
-            // For non-reasoning models, use "system" role  
-            input.push({ 
-              role: "system", 
-              content: [{ type: "input_text", text: combinedSystemPrompt }]
-            });
-          }
+          // Use "developer" role for both modes as 'responses' API may require it
+          input.push({ 
+            role: "developer", 
+            content: [{ type: "input_text", text: combinedSystemPrompt }]
+          });
 
           // Add conversation messages
           for (const m of messagesFromClient) {
@@ -452,70 +444,62 @@ plt.show()
             container: { type: "auto" }
           }];
 
-          // Make the Responses API call
-          const response = await openai.responses.create({
+          // Make the Responses API call with streaming enabled
+          const stream = await openai.responses.create({
             model: modelName,
             input: input,
             tools: tools,
             max_output_tokens: 4000,
-            include: ["code_interpreter_call.outputs"] as any, // Request code interpreter outputs
+            stream: true, // Enable streaming
           });
 
-          // Extract the text content from the response
-          let outputText = "";
-          const chartOutputs: string[] = [];
-          
-          for (const item of response.output) {
-            if (item.type === "message" && item.content) {
-              for (const contentItem of item.content) {
-                if (contentItem.type === "output_text") {
-                  outputText += contentItem.text;
-                } else if ((contentItem as any).type === "output_code_interpreter_figure") {
-                  // Handle charts/figures from code interpreter
-                  const figureData = (contentItem as any).figure;
-                  if (figureData?.type === "image" && figureData.image?.url) {
-                    // Extract file ID from URL if possible
-                    // URLs typically look like: https://files.oaiusercontent.com/file-xyz123...
+          // Process the stream and forward events to the client
+          for await (const event of stream) {
+            if (requestAbortController.signal.aborted) {
+              stream.controller.abort();
+              break;
+            }
+            
+            // @ts-ignore - The event types from the stream are not correctly inferred by TypeScript
+            if (event.type === 'response.delta' && event.delta.content) {
+              // @ts-ignore
+              for (const contentItem of event.delta.content) {
+                if (contentItem.type === 'output_text_delta' && contentItem.text) {
+                  // Stream text content
+                  const eventData = `data: ${JSON.stringify({ content: contentItem.text })}\n\n`;
+                  controller.enqueue(encoder.encode(eventData));
+                } else if (contentItem.type === 'output_code_interpreter_figure') {
+                  // Handle and stream chart/figure data
+                  const figureData = contentItem.figure;
+                  if (figureData?.type === 'image' && figureData.image?.url) {
                     const url = figureData.image.url;
                     const fileIdMatch = url.match(/file-[a-zA-Z0-9]+/);
                     if (fileIdMatch) {
-                      // Use the existing image format that the frontend expects
-                      chartOutputs.push(`![Generated Chart](image:${fileIdMatch[0]})`);
-                    } else {
-                      // Fallback to direct URL if we can't extract file ID
-                      chartOutputs.push(`![Generated Chart](${url})`);
+                      // Send the image ID back to the client so it can be rendered.
+                      const imageData = {
+                        type: 'code_interpreter_image_id',
+                        file_id: fileIdMatch[0]
+                      };
+                      const eventData = `data: ${JSON.stringify(imageData)}\n\n`;
+                      controller.enqueue(encoder.encode(eventData));
                     }
                   }
                 }
               }
-            } else if (item.type === "code_interpreter_call") {
-              // Check for code interpreter outputs that might contain images
-              const outputs = (item as any).outputs;
-              if (outputs && Array.isArray(outputs)) {
-                for (const output of outputs) {
-                  if (output.type === "image" && output.image?.url) {
-                    const url = output.image.url;
-                    const fileIdMatch = url.match(/file-[a-zA-Z0-9]+/);
-                    if (fileIdMatch) {
-                      chartOutputs.push(`![Generated Chart](image:${fileIdMatch[0]})`);
-                    } else {
-                      chartOutputs.push(`![Generated Chart](${url})`);
-                    }
-                  }
-                }
-              }
+            // @ts-ignore
+            } else if (event.type === 'tool_code_chunk') {
+              // Forward tool code chunks for display
+              const toolData = {
+                type: 'tool_code_chunk',
+                // @ts-ignore
+                language: event.language,
+                // @ts-ignore
+                content: event.code,
+              };
+              const eventData = `data: ${JSON.stringify(toolData)}\n\n`;
+              controller.enqueue(encoder.encode(eventData));
             }
           }
-
-          // Send chart outputs first if any
-          for (const chartOutput of chartOutputs) {
-            const eventData = `data: ${JSON.stringify({ content: chartOutput })}\n\n`;
-            controller.enqueue(encoder.encode(eventData));
-          }
-
-          // Stream the response back to the client
-          const eventData = `data: ${JSON.stringify({ content: outputText })}\n\n`;
-          controller.enqueue(encoder.encode(eventData));
 
           // Send done event
           const doneData = `data: [DONE]\n\n`;

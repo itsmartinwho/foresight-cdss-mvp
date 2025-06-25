@@ -315,6 +315,13 @@ export default function AdvisorView() {
     const eventSource = new EventSource(apiUrl);
 
     eventSource.onmessage = (ev) => {
+      // Gracefully handle the end of the stream
+      if (ev.data === '[DONE]') {
+        handleStreamEnd();
+        eventSource.close();
+        return;
+      }
+
       try {
         const data = JSON.parse(ev.data);
         if (data.content) {
@@ -482,9 +489,11 @@ export default function AdvisorView() {
     const resetStreamEndTimeout = () => {
       if (streamEndTimeout) clearTimeout(streamEndTimeout);
       streamEndTimeout = setTimeout(() => {
+        // This logic is now a fallback, as [DONE] is the primary signal
+        console.warn("Stream end timeout reached, forcing closure.");
         handleStreamEnd();
-          eventSource.close();
-      }, 2000); // 2 second timeout after last message
+        eventSource.close();
+      }, 5000); // 5 second timeout after last message
     };
 
     eventSource.onerror = (err) => {
