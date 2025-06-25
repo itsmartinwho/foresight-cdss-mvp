@@ -376,7 +376,7 @@ export async function GET(req: NextRequest) {
               }
             }
 
-            // Optimized clinical context - only demographics and SOAP notes
+            // Optimized clinical context - demographics, SOAP notes, and lab results (no transcripts)
             let clinicalContext = `### Patient Clinical Summary\n`;
             clinicalContext += `**Patient:** ${patientInfo.firstName} ${patientInfo.lastName} (ID: ${patientInfo.id})\n`;
             clinicalContext += `**Demographics:** ${ageText}, ${patientInfo.gender || 'Unknown gender'}\n`;
@@ -388,6 +388,7 @@ export async function GET(req: NextRequest) {
             
             // Only include SOAP notes from encounters (exclude soft-deleted)
             const activeEncounters = encounters.filter(enc => !enc.encounter.isDeleted);
+            const allLabResults: any[] = [];
             
             if (activeEncounters.length > 0) {
               clinicalContext += `\n**Clinical Encounters (${activeEncounters.length} total):**\n`;
@@ -438,13 +439,20 @@ export async function GET(req: NextRequest) {
                   }
                 }
                 
-                // Always include transcript as notes if available
-                if (encounter.transcript) {
-                  const truncatedTranscript = encounter.transcript.length > 200 
-                    ? encounter.transcript.substring(0, 200) + '...' 
-                    : encounter.transcript;
-                  clinicalContext += `- Notes: ${truncatedTranscript}\n`;
-                }
+                // Collect lab results from this encounter
+                allLabResults.push(...encounterWrapper.labResults);
+              });
+            }
+
+            // Include lab results
+            if (allLabResults.length > 0) {
+              clinicalContext += `\n**Laboratory Results:**\n`;
+              allLabResults.forEach(lab => {
+                clinicalContext += `- ${lab.dateTime ? lab.dateTime.split('T')[0] : 'Unknown date'}: ${lab.name} = ${lab.value}`;
+                if (lab.units) clinicalContext += ` ${lab.units}`;
+                if (lab.referenceRange) clinicalContext += ` (Ref: ${lab.referenceRange})`;
+                if (lab.flag) clinicalContext += ` [${lab.flag}]`;
+                clinicalContext += `\n`;
               });
             }
 
@@ -539,7 +547,7 @@ export async function GET(req: NextRequest) {
           console.log('Using Assistant API with o3 for think mode');
           
           // Use o3 for advanced reasoning with optimized patient data
-          const assistantId = await createOrGetAssistant(AIModelType.O3_2025_04_16);
+          const assistantId = await createOrGetAssistant(AIModelType.O3);
           
           // Filter messages to only include user and assistant roles
           const assistantMessages = messagesFromClient.filter(
