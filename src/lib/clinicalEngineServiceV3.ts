@@ -134,7 +134,10 @@ Please:
       let runStatus = run;
       while (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
         await new Promise(resolve => setTimeout(resolve, 2000));
-        runStatus = await this.openai.beta.threads.runs.retrieve(thread.id, run.id);
+        runStatus = await this.openai.beta.threads.runs.retrieve({
+          thread_id: thread.id,
+          run_id: run.id
+        });
       }
 
       if (runStatus.status !== 'completed') {
@@ -160,7 +163,10 @@ Please:
       }
 
       // Get run steps to check for additional generated images
-      const runSteps = await this.openai.beta.threads.runs.steps.list(thread.id, run.id);
+      const runSteps = await this.openai.beta.threads.runs.steps.list({
+        thread_id: thread.id,
+        run_id: run.id
+      });
       
       for (const step of runSteps.data) {
         if (step.type === 'tool_calls' && 'tool_calls' in step.step_details) {
@@ -178,7 +184,7 @@ Please:
       }
 
       // Clean up the thread
-      await this.openai.beta.threads.del(thread.id);
+      await this.openai.beta.threads.delete(thread.id);
 
       return {
         text: analysisText,
