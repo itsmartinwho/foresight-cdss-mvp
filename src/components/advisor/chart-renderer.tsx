@@ -89,8 +89,16 @@ export function ChartRenderer({ pythonCode, description, patientData, showContro
       if (patientData) {
         pyodideInstance.globals.set('patient_data', patientData);
       }
+      
+      // Clean up the Python code to remove problematic commands
+      const cleanedPythonCode = pythonCode
+        .replace(/plt\.show\(\)/g, '# plt.show() - removed for Pyodide')
+        .replace(/from\s+IPython\.display\s+import\s+display/g, '# IPython.display import removed for Pyodide')
+        .replace(/display\([^)]*\)/g, '# display() call removed for Pyodide')
+        .replace(/IPython\.[^\s]*/g, '# IPython call removed for Pyodide');
+      
       const wrappedCode = `
-${pythonCode}
+${cleanedPythonCode}
 
 # Capture the plot as base64 image
 try:

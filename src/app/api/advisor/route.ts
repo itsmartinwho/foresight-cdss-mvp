@@ -92,15 +92,23 @@ async function createOrGetAssistant(model: string): Promise<string> {
   // explicitly specifies the requested model. If you wish to reuse an assistant, make sure its
   // model matches the requested one before adding it to the cache.
 
-  const assistant = await openai.beta.assistants.create({
-    name: `Foresight Medical Advisor (${model})`,
-    instructions: baseSystemPrompt,
-    model,
-    tools: [{ type: "code_interpreter" }],
-  });
+  try {
+    console.log(`Creating assistant with model: ${model}`);
+    const assistant = await openai.beta.assistants.create({
+      name: `Foresight Medical Advisor (${model})`,
+      instructions: baseSystemPrompt,
+      model,
+      tools: [{ type: "code_interpreter" }],
+    });
 
-  assistantIdCache[model] = assistant.id;
-  return assistant.id;
+    console.log(`Assistant created successfully with ID: ${assistant.id}`);
+    assistantIdCache[model] = assistant.id;
+    return assistant.id;
+  } catch (error: any) {
+    console.error(`Failed to create assistant for model ${model}:`, error);
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    throw new Error(`Failed to create assistant: ${error.message || 'Unknown error'}`);
+  }
 }
 
 async function createAssistantResponse(
