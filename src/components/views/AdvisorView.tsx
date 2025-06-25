@@ -1081,7 +1081,7 @@ const AssistantMessageRenderer: React.FC<{
       </>
     );
   } else if (assistantMessage.finalMarkdown) {
-    // Stream finished, render with ReactMarkdown
+    // Stream finished, render with ReactMarkdown (PRIORITY: final markdown over fallback)
     const cleanHtml = DOMPurify.sanitize(assistantMessage.finalMarkdown);
     
     return (
@@ -1094,8 +1094,8 @@ const AssistantMessageRenderer: React.FC<{
         {renderGuidelineReferences()}
       </div>
     );
-  } else if (assistantMessage.isFallback && assistantMessage.fallbackMarkdown) {
-    // Fallback logic
+  } else if (assistantMessage.fallbackMarkdown) {
+    // Fallback logic (only if no finalMarkdown)
     const cleanHtml = DOMPurify.sanitize(assistantMessage.fallbackMarkdown);
     
     return (
