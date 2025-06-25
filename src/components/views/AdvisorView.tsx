@@ -313,10 +313,14 @@ export default function AdvisorView() {
     }
     
     const eventSource = new EventSource(apiUrl);
+    console.log('EventSource created with URL:', apiUrl);
 
     eventSource.onmessage = (ev) => {
+      console.log('SSE message received:', ev.data);
+      
       // Gracefully handle the end of the stream
       if (ev.data === '[DONE]') {
+        console.log('Stream ended with [DONE]');
         handleStreamEnd();
         eventSource.close();
         return;
@@ -324,7 +328,10 @@ export default function AdvisorView() {
 
       try {
         const data = JSON.parse(ev.data);
+        console.log('Parsed SSE data:', data);
+        
         if (data.content) {
+          console.log('Processing content:', data.content);
           resetStreamEndTimeout(); // Reset timeout on new content
           if (parsersRef.current[currentAssistantMessageIdRef.current!]) { // Check if parser exists
             smd_parser_write(parsersRef.current[currentAssistantMessageIdRef.current!], data.content);
@@ -333,6 +340,7 @@ export default function AdvisorView() {
             rawMarkdownAccumulatorRef.current[currentAssistantMessageIdRef.current!] += data.content;
           }
         } else if (data.type === "tool_code_chunk" && currentAssistantMessageIdRef.current) {
+          console.log('Processing tool_code_chunk:', data);
           setMessages(prev => prev.map(m => {
             if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
               const currentToolCode = (m.content as AssistantMessageContent).toolCode;
@@ -350,6 +358,7 @@ export default function AdvisorView() {
             return m;
           }));
         } else if (data.type === "code_interpreter_output" && currentAssistantMessageIdRef.current) {
+          console.log('Processing code_interpreter_output:', data);
           setMessages(prev => prev.map(m => {
             if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
               let parsedTableData = null;
@@ -425,6 +434,7 @@ export default function AdvisorView() {
             return m;
           }));
         } else if (data.type === "code_interpreter_image_id" && currentAssistantMessageIdRef.current) {
+          console.log('Processing code_interpreter_image_id:', data);
           setMessages(prev => prev.map(m => {
             if (m.id === currentAssistantMessageIdRef.current && typeof m.content === 'object') {
               return {
@@ -454,39 +464,43 @@ export default function AdvisorView() {
 
     // Handle natural end of stream
     const handleStreamEnd = () => {
-          const assistantMessageId = currentAssistantMessageIdRef.current;
+      console.log('handleStreamEnd called');
+      const assistantMessageId = currentAssistantMessageIdRef.current;
       if (assistantMessageId) {
-          if (parsersRef.current[assistantMessageId]) {
-            smd_parser_end(parsersRef.current[assistantMessageId]);
-          }
+        console.log('Processing stream end for message:', assistantMessageId);
+        if (parsersRef.current[assistantMessageId]) {
+          smd_parser_end(parsersRef.current[assistantMessageId]);
+        }
 
-          const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
+        const accumulatedRawMarkdown = rawMarkdownAccumulatorRef.current[assistantMessageId] || "";
+        console.log('Accumulated markdown:', accumulatedRawMarkdown);
 
-          // Clean up refs for this specific message
-          delete parsersRef.current[assistantMessageId];
-          delete markdownRootsRef.current[assistantMessageId];
-          delete rawMarkdownAccumulatorRef.current[assistantMessageId];
+        // Clean up refs for this specific message
+        delete parsersRef.current[assistantMessageId];
+        delete markdownRootsRef.current[assistantMessageId];
+        delete rawMarkdownAccumulatorRef.current[assistantMessageId];
 
-          setMessages(prev => prev.map(m =>
-            m.id === assistantMessageId
-            ? {
-                ...m,
-                isStreaming: false,
-                content: {
-                  ...(m.content as AssistantMessageContent),
-                isMarkdownStream: false,
-                finalMarkdown: accumulatedRawMarkdown,
-                }
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessageId
+          ? {
+              ...m,
+              isStreaming: false,
+              content: {
+                ...(m.content as AssistantMessageContent),
+              isMarkdownStream: false,
+              finalMarkdown: accumulatedRawMarkdown,
               }
-            : m
-          ));
-          setIsSending(false);
+            }
+          : m
+        ));
+        setIsSending(false);
       }
     };
 
     // Use a timeout to detect when the stream has ended naturally
     let streamEndTimeout: NodeJS.Timeout;
     const resetStreamEndTimeout = () => {
+      console.log('Resetting stream timeout');
       if (streamEndTimeout) clearTimeout(streamEndTimeout);
       streamEndTimeout = setTimeout(() => {
         // This logic is now a fallback, as [DONE] is the primary signal
@@ -498,6 +512,7 @@ export default function AdvisorView() {
 
     eventSource.onerror = (err) => {
       console.error("EventSource failed:", err);
+      console.error("EventSource readyState:", eventSource.readyState);
       if (parsersRef.current[currentAssistantMessageIdRef.current!]) {
         smd_parser_end(parsersRef.current[currentAssistantMessageIdRef.current!]);
         delete parsersRef.current[currentAssistantMessageIdRef.current!];
@@ -505,6 +520,10 @@ export default function AdvisorView() {
       setMessages(prev => prev.map(m => m.id === currentAssistantMessageIdRef.current ? { ...m, isStreaming: false, content: { ...(m.content as AssistantMessageContent), isFallback: true, fallbackMarkdown: "**Error:** Connection issue or stream interrupted." } } : m));
       setIsSending(false);
       eventSource.close();
+    };
+
+    eventSource.onopen = (event) => {
+      console.log('EventSource connection opened:', event);
     };
   };
 

@@ -372,8 +372,8 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // Choose model based on think mode
-        const modelName = thinkMode ? AIModelType.O3 : AIModelType.GPT_4_1_MINI;
+        // Choose model based on think mode - using known working models for testing
+        const modelName = thinkMode ? 'gpt-4o' : 'gpt-4o-mini';
         console.log(`Advisor mode: ${thinkMode ? 'think' : 'non-think'}, using model: ${modelName}`);
 
         try {
@@ -453,70 +453,31 @@ plt.show()
             stream: true
           });
 
-          // Make the Responses API call with streaming enabled
-          const stream = await openai.responses.create({
+          // Use Chat Completions API for testing
+          const messages = input.map(item => ({
+            role: item.role === 'developer' ? 'system' : item.role,
+            content: item.content[0].text
+          }));
+
+          const stream = await openai.chat.completions.create({
             model: modelName,
-            input: input,
-            tools: tools,
-            max_output_tokens: 4000,
-            stream: true, // Enable streaming
+            messages: messages,
+            max_tokens: 4000,
+            stream: true,
           });
 
-          // Process the stream and forward events to the client
-          for await (const event of stream) {
+          // Process the Chat Completions stream and forward events to the client
+          for await (const chunk of stream) {
             if (requestAbortController.signal.aborted) {
-              stream.controller.abort();
               break;
             }
             
-            // @ts-ignore - The event types from the stream are not correctly inferred by TypeScript
-            if (event.type === 'response.delta' && event.delta.content) {
-              // @ts-ignore
-              for (const contentItem of event.delta.content) {
-                // Log every event received from OpenAI
-                console.log('OpenAI stream event (delta):', contentItem);
-                if (contentItem.type === 'output_text_delta' && contentItem.text) {
-                  // Stream text content
-                  const eventData = `data: ${JSON.stringify({ content: contentItem.text })}\n\n`;
-                  controller.enqueue(encoder.encode(eventData));
-                  // Log every event sent to the client
-                  console.log('Sent to client:', { content: contentItem.text });
-                } else if (contentItem.type === 'output_code_interpreter_figure') {
-                  // Handle and stream chart/figure data
-                  const figureData = contentItem.figure;
-                  if (figureData?.type === 'image' && figureData.image?.url) {
-                    const url = figureData.image.url;
-                    const fileIdMatch = url.match(/file-[a-zA-Z0-9]+/);
-                    if (fileIdMatch) {
-                      // Send the image ID back to the client so it can be rendered.
-                      const imageData = {
-                        type: 'code_interpreter_image_id',
-                        file_id: fileIdMatch[0]
-                      };
-                      const eventData = `data: ${JSON.stringify(imageData)}\n\n`;
-                      controller.enqueue(encoder.encode(eventData));
-                      // Log every event sent to the client
-                      console.log('Sent to client:', imageData);
-                    }
-                  }
-                }
-              }
-            // @ts-ignore
-            } else if (event.type === 'tool_code_chunk') {
-              // Log every event received from OpenAI
-              console.log('OpenAI stream event (tool_code_chunk):', event);
-              // Forward tool code chunks for display
-              const toolData = {
-                type: 'tool_code_chunk',
-                // @ts-ignore
-                language: event.language,
-                // @ts-ignore
-                content: event.code,
-              };
-              const eventData = `data: ${JSON.stringify(toolData)}\n\n`;
+            const delta = chunk.choices[0]?.delta;
+            if (delta?.content) {
+              // Stream text content
+              const eventData = `data: ${JSON.stringify({ content: delta.content })}\n\n`;
               controller.enqueue(encoder.encode(eventData));
-              // Log every event sent to the client
-              console.log('Sent to client:', toolData);
+              console.log('Sent to client:', { content: delta.content });
             }
           }
 
