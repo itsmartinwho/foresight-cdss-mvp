@@ -86,12 +86,6 @@ async function createOrGetAssistant(model: string): Promise<string> {
   // Use model name as cache key
   if (assistantIdCache[model]) return assistantIdCache[model];
 
-  // We previously reused a pre-created assistant via MEDICAL_ADVISOR_ASSISTANT_ID, but this could
-  // accidentally point at an assistant configured for a different model (e.g. o1 instead of o3).
-  // To guarantee the correct model is always used, we now always create a new assistant that
-  // explicitly specifies the requested model. If you wish to reuse an assistant, make sure its
-  // model matches the requested one before adding it to the cache.
-
   try {
     console.log(`Creating assistant with model: ${model}`);
     const assistant = await openai.beta.assistants.create({
@@ -160,7 +154,7 @@ async function createAssistantResponse(
     });
 
     // Send initial processing message in standard format
-    const eventData = `data: ${JSON.stringify({ content: "Processing request..." })}\n\n`;
+    const eventData = `data: ${JSON.stringify({ content: "Processing with advanced reasoning..." })}\n\n`;
     controller.enqueue(encoder.encode(eventData));
 
     // Enhanced polling with heartbeat and timeout protection
@@ -256,10 +250,10 @@ async function createAssistantResponse(
     console.error("Assistant API error:", error);
     const errorData = `data: ${JSON.stringify({ error: `Assistant error: ${error.message || 'Unknown error'}. Try using non-think mode for better reliability.` })}\n\n`;
     controller.enqueue(encoder.encode(errorData));
-      }
+  }
 
-    reqSignal.removeEventListener('abort', clientDisconnectListener);
-    cleanupAndCloseController();
+  reqSignal.removeEventListener('abort', clientDisconnectListener);
+  cleanupAndCloseController();
 }
 
 async function enrichWithGuidelines(query: string, patientData?: any, specialty?: Specialty): Promise<string> {
@@ -614,34 +608,16 @@ export async function GET(req: NextRequest) {
 
         // Fallback/think=true path – use Assistants API with Code Interpreter support
         try {
-          // o3 model is named "o3-2025-04-16" per the user's documentation
-          const modelName = AIModelType.O3; // This should be "o3-2025-04-16"
+          // Use gpt-4o for think mode since o3 doesn't support Assistants API
+          // gpt-4o has excellent reasoning capabilities and supports code interpreter
+          const modelName = AIModelType.GPT_4O; 
           console.log('Think mode selected, attempting to create assistant with model:', modelName);
           
           const assistantId = await createOrGetAssistant(modelName);
-          console.log('Assistant created/retrieved successfully:', assistantId);
-
+          
+          // Filter out system messages since Assistants API doesn't accept them in the thread
           const filteredMessages = messagesFromClient.filter(m => m.role === "user" || m.role === "assistant") as Array<{ role: "user" | "assistant"; content: string }>;
-
-          if (filteredMessages.length > 0) {
-            const latestUserMessage = filteredMessages[filteredMessages.length - 1];
-            if (latestUserMessage.role === "user") {
-              let patientData = null;
-              try {
-                if (patientSummaryBlock) {
-                  patientData = { summary: patientSummaryBlock };
-                }
-              } catch (e) {
-                console.warn("Could not extract patient data for guidelines search:", e);
-              }
-
-              const guidelinesEnrichment = await enrichWithGuidelines(latestUserMessage.content, patientData, specialty as Specialty || undefined);
-              if (guidelinesEnrichment) {
-                latestUserMessage.content = latestUserMessage.content + guidelinesEnrichment;
-              }
-            }
-          }
-
+          
           await createAssistantResponse(assistantId, filteredMessages, controller, requestAbortController.signal, { value: false });
           requestAbortController.signal.removeEventListener('abort', mainAbortListener);
         } catch (assistantError: any) {
