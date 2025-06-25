@@ -376,7 +376,8 @@ export async function GET(req: NextRequest) {
               }
             }
 
-            let clinicalContext = `### Complete Patient Clinical Data\n`;
+            // Optimized clinical context - only demographics and SOAP notes
+            let clinicalContext = `### Patient Clinical Summary\n`;
             clinicalContext += `**Patient:** ${patientInfo.firstName} ${patientInfo.lastName} (ID: ${patientInfo.id})\n`;
             clinicalContext += `**Demographics:** ${ageText}, ${patientInfo.gender || 'Unknown gender'}\n`;
             if (patientInfo.dateOfBirth) clinicalContext += `**Date of Birth:** ${patientInfo.dateOfBirth}\n`;
@@ -385,82 +386,83 @@ export async function GET(req: NextRequest) {
             if (patientInfo.maritalStatus) clinicalContext += `**Marital Status:** ${patientInfo.maritalStatus}\n`;
             if (patientInfo.language) clinicalContext += `**Language:** ${patientInfo.language}\n`;
             
-            // Collect all diagnoses across encounters
-            const allDiagnoses: any[] = [];
-            const allLabResults: any[] = [];
-            const allTreatments: any[] = [];
+            // Only include SOAP notes from encounters (exclude soft-deleted)
+            const activeEncounters = encounters.filter(enc => !enc.encounter.isDeleted);
             
-            if (encounters.length > 0) {
-              clinicalContext += `\n**Recent Encounters:**\n`;
-              encounters.forEach(encounterWrapper => { // Show all encounters
+            if (activeEncounters.length > 0) {
+              clinicalContext += `\n**Clinical Encounters (${activeEncounters.length} total):**\n`;
+              activeEncounters.forEach(encounterWrapper => {
                 const encounter = encounterWrapper.encounter;
-                clinicalContext += `- ${encounter.scheduledStart.split('T')[0]}: ${encounter.reasonDisplayText || encounter.reasonCode || 'General visit'}`;
+                const date = encounter.scheduledStart.split('T')[0];
+                clinicalContext += `\n**${date}: ${encounter.reasonDisplayText || encounter.reasonCode || 'General visit'}**\n`;
+                
+                // Include SOAP notes if available - check for rich content fields
+                const hasSOAP = encounter.diagnosis_rich_content || encounter.treatments_rich_content;
+                
+                if (hasSOAP) {
+                  // Extract SOAP-like content from rich content fields
+                  if (encounter.diagnosis_rich_content) {
+                    try {
+                      const diagContent = typeof encounter.diagnosis_rich_content === 'string' 
+                        ? JSON.parse(encounter.diagnosis_rich_content) 
+                        : encounter.diagnosis_rich_content;
+                      
+                      if (diagContent.subjective || diagContent.objective || diagContent.assessment) {
+                        if (diagContent.subjective) {
+                          clinicalContext += `- **S:** ${diagContent.subjective}\n`;
+                        }
+                        if (diagContent.objective) {
+                          clinicalContext += `- **O:** ${diagContent.objective}\n`;
+                        }
+                        if (diagContent.assessment) {
+                          clinicalContext += `- **A:** ${diagContent.assessment}\n`;
+                        }
+                      }
+                    } catch (e) {
+                      // Parsing failed, skip
+                    }
+                  }
+                  
+                  if (encounter.treatments_rich_content) {
+                    try {
+                      const treatContent = typeof encounter.treatments_rich_content === 'string' 
+                        ? JSON.parse(encounter.treatments_rich_content) 
+                        : encounter.treatments_rich_content;
+                      
+                      if (treatContent.plan) {
+                        clinicalContext += `- **P:** ${treatContent.plan}\n`;
+                      }
+                    } catch (e) {
+                      // Parsing failed, skip
+                    }
+                  }
+                }
+                
+                // Always include transcript as notes if available
                 if (encounter.transcript) {
-                  const truncatedTranscript = encounter.transcript.length > 100 
-                    ? encounter.transcript.substring(0, 100) + '...' 
+                  const truncatedTranscript = encounter.transcript.length > 200 
+                    ? encounter.transcript.substring(0, 200) + '...' 
                     : encounter.transcript;
-                  clinicalContext += ` - Notes: ${truncatedTranscript}`;
-                }
-                clinicalContext += `\n`;
-                
-                // Collect diagnoses from this encounter
-                allDiagnoses.push(...encounterWrapper.diagnoses);
-                allLabResults.push(...encounterWrapper.labResults);
-                
-                // Collect treatments from encounter if available
-                if (encounter.treatments) {
-                  allTreatments.push(...encounter.treatments);
+                  clinicalContext += `- Notes: ${truncatedTranscript}\n`;
                 }
               });
             }
 
-            if (allDiagnoses.length > 0) {
-              clinicalContext += `\n**Medical Conditions/Diagnoses:**\n`;
-              allDiagnoses.forEach(diagnosis => {
-                clinicalContext += `- ${diagnosis.description || 'Unknown condition'}`;
-                if (diagnosis.code) clinicalContext += ` (${diagnosis.code})`;
-                clinicalContext += `\n`;
-              });
-            }
-
-            if (allLabResults.length > 0) {
-              clinicalContext += `\n**Laboratory Results:**\n`;
-              allLabResults.forEach(lab => { // Show all lab results
-                clinicalContext += `- ${lab.dateTime ? lab.dateTime.split('T')[0] : 'Unknown date'}: ${lab.name} = ${lab.value}`;
-                if (lab.units) clinicalContext += ` ${lab.units}`;
-                if (lab.referenceRange) clinicalContext += ` (Ref: ${lab.referenceRange})`;
-                if (lab.flag) clinicalContext += ` [${lab.flag}]`;
-                clinicalContext += `\n`;
-              });
-            }
-
-            if (allTreatments.length > 0) {
-              clinicalContext += `\n**Current/Recent Treatments:**\n`;
-              allTreatments.forEach(treatment => { // Show all treatments
-                clinicalContext += `- ${treatment.drug}`;
-                if (treatment.status) clinicalContext += ` (Status: ${treatment.status})`;
-                if (treatment.rationale) clinicalContext += ` - ${treatment.rationale}`;
-                clinicalContext += `\n`;
-              });
-            }
-
+            // Include clinical alerts
             if (patientInfo.alerts && patientInfo.alerts.length > 0) {
-              clinicalContext += `\n**Clinical Alerts:**\n`;
+              clinicalContext += `\n**Active Clinical Alerts:**\n`;
               patientInfo.alerts.forEach(alert => {
-                clinicalContext += `- ${alert.severity?.toUpperCase()} Alert: ${alert.msg || 'No message'}`;
-                if (alert.type) clinicalContext += ` (Type: ${alert.type})`;
-                clinicalContext += `\n`;
+                clinicalContext += `- ${alert.severity?.toUpperCase()}: ${alert.msg || 'No message'}\n`;
               });
             }
 
             clinicalContext += `\n**Chart Creation Instructions:** 
-- When creating timeline charts, only plot actual encounter dates - do not include empty date ranges
-- Use compact, focused date ranges that highlight actual clinical activity periods
-- For medical timelines: focus on encounter dates, symptom progression, and treatment changes
-- Ensure charts are visually clean with proper spacing and professional medical styling
-- Filter out any null/empty dates to create cleaner visualizations
+- When creating timeline charts, only plot actual encounter dates
+- Use compact, focused date ranges that highlight actual clinical activity
+- For medical timelines: focus on encounter dates and key clinical events
+- Ensure charts are visually clean with proper spacing
 
-**Analysis Instructions:** Analyze this complete clinical data to provide comprehensive medical insights. Generate charts and tables for trends, comparisons, and clinical correlations as clinically appropriate. Do not invent data - use only the information provided above.\n\n--------------------\n\n`;
+**Analysis Instructions:** Provide focused medical insights based on the SOAP notes and demographics. Generate charts and tables for trends when clinically appropriate.\n\n--------------------\n\n`;
             
             patientSummaryBlock = clinicalContext;
           }
@@ -532,12 +534,12 @@ export async function GET(req: NextRequest) {
         const thinkParamRaw = url.searchParams.get("think");
         const thinkMode = thinkParamRaw === "true"; // treat any value other than explicit 'true' as false
 
-        // For think mode, use Assistant API with GPT-4o (stable and fast)
+        // For think mode, use Assistant API with o3 advanced reasoning
         if (thinkMode) {
-          console.log('Using Assistant API with GPT-4o for think mode');
+          console.log('Using Assistant API with o3 for think mode');
           
-          // Use GPT-4o for stable Assistant API with code interpreter
-          const assistantId = await createOrGetAssistant(AIModelType.GPT_4O);
+          // Use o3 for advanced reasoning with optimized patient data
+          const assistantId = await createOrGetAssistant(AIModelType.O3_2025_04_16);
           
           // Filter messages to only include user and assistant roles
           const assistantMessages = messagesFromClient.filter(
