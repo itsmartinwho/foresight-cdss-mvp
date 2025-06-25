@@ -10,9 +10,16 @@ interface ChartRendererProps {
   pythonCode: string;
   description?: string;
   patientData?: any;
+  /**
+   * When true, shows the execute / view / download controls (intended for
+   * developer or debug views). For inline advisor responses we hide controls so
+   * the chart renders automatically without extra clicks, restoring previous
+   * behaviour.
+   */
+  showControls?: boolean;
 }
 
-export function ChartRenderer({ pythonCode, description, patientData }: ChartRendererProps) {
+export function ChartRenderer({ pythonCode, description, patientData, showControls = false }: ChartRendererProps) {
   const [pyodide, setPyodide] = useState<PyodideInterface | null>(null);
   const [loading, setLoading] = useState(false);
   const [executed, setExecuted] = useState(false);
@@ -156,6 +163,14 @@ except Exception as e:
     }
   };
 
+  // Auto-execute the provided Python code on initial render to restore placeholder behavior
+  useEffect(() => {
+    if (!executed && pythonCode) {
+      executeCode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="border rounded-lg p-4 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
       {description && (
@@ -167,30 +182,32 @@ except Exception as e:
         <pre className="text-xs font-mono whitespace-pre-wrap">{pythonCode}</pre>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 mb-4">
-        <Button 
-          onClick={executeCode} 
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <PlayIcon className="w-4 h-4 mr-2" />
-          {loading ? 'Generating Chart...' : 'Execute & Render Chart'}
-        </Button>
-        
-        {chartUrl && (
-          <>
-            <Button variant="outline" onClick={viewFullScreen}>
-              <EyeIcon className="w-4 h-4 mr-2" />
-              View Full Screen
-            </Button>
-            <Button variant="outline" onClick={downloadChart}>
-              <DownloadIcon className="w-4 h-4 mr-2" />
-              Download PNG
-            </Button>
-          </>
-        )}
-      </div>
+      {/* Action Buttons (optional) */}
+      {showControls && (
+        <div className="flex gap-2 mb-4">
+          <Button 
+            onClick={executeCode} 
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <PlayIcon className="w-4 h-4 mr-2" />
+            {loading ? 'Generating Chart...' : executed ? 'Re-generate Chart' : 'Execute & Render Chart'}
+          </Button>
+          
+          {chartUrl && (
+            <>
+              <Button variant="outline" onClick={viewFullScreen}>
+                <EyeIcon className="w-4 h-4 mr-2" />
+                View Full Screen
+              </Button>
+              <Button variant="outline" onClick={downloadChart}>
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                Download PNG
+              </Button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (
@@ -210,6 +227,16 @@ except Exception as e:
             className="w-full h-auto"
             unoptimized={true}
           />
+        </div>
+      )}
+
+      {/* Placeholder while awaiting chart generation */}
+      {!chartUrl && (loading || !executed) && (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-sm text-muted-foreground">
+            {loading ? 'Generating chart...' : 'Preparing chart...'}
+          </span>
         </div>
       )}
 

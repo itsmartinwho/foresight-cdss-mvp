@@ -86,11 +86,11 @@ async function createOrGetAssistant(model: string): Promise<string> {
   // Use model name as cache key
   if (assistantIdCache[model]) return assistantIdCache[model];
 
-  // If an environment variable is provided for the default model (o3), reuse it
-  if (model === "o3-2025-04-16" && MEDICAL_ADVISOR_ASSISTANT_ID) {
-    assistantIdCache[model] = MEDICAL_ADVISOR_ASSISTANT_ID;
-    return MEDICAL_ADVISOR_ASSISTANT_ID;
-  }
+  // We previously reused a pre-created assistant via MEDICAL_ADVISOR_ASSISTANT_ID, but this could
+  // accidentally point at an assistant configured for a different model (e.g. o1 instead of o3).
+  // To guarantee the correct model is always used, we now always create a new assistant that
+  // explicitly specifies the requested model. If you wish to reuse an assistant, make sure its
+  // model matches the requested one before adding it to the cache.
 
   const assistant = await openai.beta.assistants.create({
     name: `Foresight Medical Advisor (${model})`,
@@ -574,8 +574,9 @@ export async function GET(req: NextRequest) {
           }
 
           try {
+            // Use GPT-4.1-mini for non-think mode per latest guidance
             const completionStream = await openai.chat.completions.create({
-              model: AIModelType.GPT_4O_MINI,
+              model: AIModelType.GPT_4_1_MINI,
               messages: chatMessages,
               stream: true,
               max_tokens: 4000,
